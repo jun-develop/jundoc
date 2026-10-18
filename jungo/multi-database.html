@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Multiple databases · Jundoc</title>
+  <meta name="description" content="How Jungo is structured for more than one database: one Go type per database, Executor(ctx), per-database transactions, and checklists for adding a database or an engine.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+<body>
+<div id="jd-app" data-root="..">
+<article class="jd-content">
+
+  <!-- ============================================================ HERO -->
+  <header class="jd-hero">
+    <div class="jd-eyebrow">Jungo · <span lang="en">multiple databases</span><span lang="vi">nhiều database</span></div>
+    <h1><span lang="en">Multiple databases</span><span lang="vi">Nhiều database</span></h1>
+    <p lang="en">Jungo runs on one PostgreSQL database today. The code is laid out so a second one — another Postgres or a different engine — plugs in without editing the repositories you already have, and the compiler stops a repository from talking to the wrong database.</p>
+    <p lang="vi">Hiện tại Jungo chạy trên một database PostgreSQL. Code được tổ chức sẵn để thêm database thứ hai — một Postgres khác hoặc một engine khác — mà không phải sửa các repository đang có, và compiler sẽ chặn một repository dùng nhầm database.</p>
+    <div class="jd-chips">
+      <span class="jd-chip">*primary.DB</span>
+      <span class="jd-chip">Executor(ctx)</span>
+      <span class="jd-chip">junkit/database/postgres</span>
+      <span class="jd-chip">sqlc · raw SQL</span>
+    </div>
+  </header>
+
+  <nav class="jd-quickmap" aria-label="Sections">
+    <a class="jd-quick c-blue" href="#layout"><span class="num">1</span>
+      <b lang="en">Layout</b><b lang="vi">Cấu trúc</b>
+      <span lang="en">Where each piece lives</span><span lang="vi">Mỗi phần nằm ở đâu</span></a>
+    <a class="jd-quick c-green" href="#pick"><span class="num">2</span>
+      <b lang="en">Picking a DB</b><b lang="vi">Chọn database</b>
+      <span lang="en">One Go type per database</span><span lang="vi">Mỗi database một kiểu Go</span></a>
+    <a class="jd-quick c-purple" href="#sqlc"><span class="num">3</span>
+      <b lang="en">sqlc or raw SQL</b><b lang="vi">sqlc hay SQL tay</b>
+      <span lang="en">Both traced, both in tx</span><span lang="vi">Đều được trace, đều vào tx</span></a>
+    <a class="jd-quick c-orange" href="#tx"><span class="num">4</span>
+      <b lang="en">Transactions</b><b lang="vi">Transaction</b>
+      <span lang="en">One transaction, one DB</span><span lang="vi">Một transaction, một DB</span></a>
+    <a class="jd-quick c-pink" href="#add-postgres"><span class="num">5</span>
+      <b lang="en">Add a database</b><b lang="vi">Thêm database</b>
+      <span lang="en">Postgres or a new engine</span><span lang="vi">Postgres hoặc engine mới</span></a>
+  </nav>
+
+  <!-- ============================================================ 1. LAYOUT -->
+  <section id="layout" class="jd-section c-blue">
+    <div class="jd-section-head">
+      <span class="jd-badge">1</span>
+      <div>
+        <h2><span lang="en">Layout</span><span lang="vi">Cấu trúc thư mục</span></h2>
+        <p class="jd-sub" lang="en">Databases are named by <b>role</b> in jungo (<code>primary</code>, <code>analytics</code>). Engines are named by <b>engine</b> in junkit (<code>postgres</code>, <code>mysql</code>).</p>
+        <p class="jd-sub" lang="vi">Trong jungo, database được đặt tên theo <b>vai trò</b> (<code>primary</code>, <code>analytics</code>). Trong junkit, package được đặt tên theo <b>engine</b> (<code>postgres</code>, <code>mysql</code>).</p>
+      </div>
+    </div>
+
+    <div class="jd-flow" style="margin-top:22px" data-wires='[
+      {"from":"l-primary","to":"l-pg","color":"blue","label":{"en":"uses","vi":"dùng"}},
+      {"from":"l-pg","to":"l-db","color":"green","dashed":true,"label":{"en":"registers classifier","vi":"đăng ký classifier"}}]'>
+      <div class="jd-node is-tint c-blue" data-node="l-primary">
+        <span class="k">jungo</span>
+        <span class="t mono">internal/database/primary/</span>
+        <div class="p">db.go · module.go · migrations/ · functions/ · queries/ · seeders/ · sqlc/</div>
+        <div class="d" lang="en">The primary database: type <code>primary.DB</code>, its Fx module, schema, queries and sqlc code. A second database is a sibling folder.</div>
+        <div class="d" lang="vi">Database chính: kiểu <code>primary.DB</code>, Fx module, schema, query và code sqlc của nó. Database thứ hai là một thư mục ngang hàng.</div>
+      </div>
+      <div class="jd-node is-tint c-green" data-node="l-pg">
+        <span class="k">junkit</span>
+        <span class="t mono">database/postgres</span>
+        <div class="d" lang="en">pgx engine: pool, <code>Executor(ctx)</code>, <code>WithTransaction</code>, <code>Ping</code>, query logging, Postgres error classifier. Another engine is a sibling package (<code>database/mysql</code>, …).</div>
+        <div class="d" lang="vi">Engine pgx: pool, <code>Executor(ctx)</code>, <code>WithTransaction</code>, <code>Ping</code>, log query, bộ phân loại lỗi Postgres. Engine khác là package ngang hàng (<code>database/mysql</code>, …).</div>
+      </div>
+      <div class="jd-node is-tint c-green" data-node="l-db">
+        <span class="k">junkit · shared</span>
+        <span class="t mono">database</span>
+        <div class="d" lang="en">Driver-independent: <code>Match</code>, <code>Classify</code>, <code>IsNotFound</code>, …, <code>RegisterClassifier</code>, <code>MaskDSN</code>. Repositories map errors the same way whatever the engine.</div>
+        <div class="d" lang="vi">Không phụ thuộc driver: <code>Match</code>, <code>Classify</code>, <code>IsNotFound</code>, …, <code>RegisterClassifier</code>, <code>MaskDSN</code>. Repository map lỗi giống nhau dù engine nào.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 2. PICK -->
+  <section id="pick" class="jd-section c-green">
+    <div class="jd-section-head">
+      <span class="jd-badge">2</span>
+      <div>
+        <h2><span lang="en">How a repository picks its database</span><span lang="vi">Repository chọn database như thế nào</span></h2>
+        <p class="jd-sub" lang="en">No <code>name:</code> tags, no string keys. The Go type is the choice.</p>
+        <p class="jd-sub" lang="vi">Không cần tag <code>name:</code>, không cần key dạng chuỗi. Kiểu Go chính là lựa chọn.</p>
+      </div>
+    </div>
+
+    <div class="jd-rules">
+      <div class="jd-rule"><span class="n" style="background:var(--green)">1</span>
+        <p lang="en"><b>A distinct type per database.</b> <code>primary.DB</code> embeds <code>*postgres.DB</code>. A repository that declares <code>db *primary.DB</code> can only be given the primary database — Fx and the compiler refuse anything else.</p>
+        <p lang="vi"><b>Mỗi database một kiểu riêng.</b> <code>primary.DB</code> nhúng <code>*postgres.DB</code>. Repository khai báo <code>db *primary.DB</code> thì chỉ nhận được database chính — Fx và compiler từ chối mọi thứ khác.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--blue)">2</span>
+        <p lang="en"><b><code>Queries(ctx)</code> is bound to that database's sqlc package.</b> <code>primary.DB.Queries</code> returns <code>*primary/sqlc.Queries</code>, so you can't call another database's queries on it.</p>
+        <p lang="vi"><b><code>Queries(ctx)</code> gắn với package sqlc của chính database đó.</b> <code>primary.DB.Queries</code> trả về <code>*primary/sqlc.Queries</code>, nên không thể gọi query của database khác trên nó.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--purple)">3</span>
+        <p lang="en"><b>The transaction key is per DB instance.</b> A transaction begun on one database is never picked up by another database's <code>Executor(ctx)</code>.</p>
+        <p lang="vi"><b>Key transaction riêng cho từng DB instance.</b> Transaction mở trên database này không bao giờ bị <code>Executor(ctx)</code> của database khác dùng nhầm.</p></div>
+    </div>
+
+    <h3 style="margin-top:26px"><span lang="en">Every query takes the same path</span><span lang="vi">Mọi query đi cùng một đường</span></h3>
+    <div class="jd-flow" data-wires='[
+      {"from":"p-repo","to":"p-db","color":"green"},
+      {"from":"p-db","to":"p-exec","color":"green"},
+      {"from":"p-exec","to":"p-tracer","color":"purple"},
+      {"from":"p-tracer","to":"p-tx","color":"orange","label":{"en":"tx on ctx","vi":"có tx trên ctx"}},
+      {"from":"p-tracer","to":"p-pool","color":"blue","dashed":true,"delay":900,"label":{"en":"otherwise","vi":"không có"}}]'>
+      <div class="jd-node is-tint c-green" data-node="p-repo">
+        <span class="k">repository</span>
+        <span class="t mono">r.db.Queries(ctx)</span>
+        <div class="d"><span lang="en">or <code>r.db.Executor(ctx)</code> for raw SQL</span><span lang="vi">hoặc <code>r.db.Executor(ctx)</code> cho SQL viết tay</span></div>
+      </div>
+      <div class="jd-node is-tint c-green" data-node="p-db">
+        <span class="k">jungo</span>
+        <span class="t mono">*primary.DB</span>
+        <div class="d"><span lang="en">The type decides which database.</span><span lang="vi">Kiểu quyết định database nào.</span></div>
+      </div>
+      <div class="jd-node is-tint c-green" data-node="p-exec">
+        <span class="k">junkit</span>
+        <span class="t mono">Executor(ctx)</span>
+        <div class="d"><span lang="en">The only way to run a query — there is no raw pool accessor.</span><span lang="vi">Cách duy nhất để chạy query — không có hàm lấy pool trực tiếp.</span></div>
+      </div>
+      <div class="jd-node is-tint c-purple" data-node="p-tracer">
+        <span class="k">Decorate</span>
+        <span class="t mono">tracer.PgxWrapper</span>
+        <div class="d"><span lang="en">Records the query for <code>t_debug</code>.</span><span lang="vi">Ghi lại query cho <code>t_debug</code>.</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <div class="jd-node is-tint c-orange" data-node="p-tx">
+          <span class="t mono">pgx.Tx</span>
+          <div class="d"><span lang="en">This DB's transaction from <code>ctx</code>.</span><span lang="vi">Transaction của DB này lấy từ <code>ctx</code>.</span></div>
+        </div>
+        <div class="jd-node is-tint c-blue" data-node="p-pool">
+          <span class="t mono">pgxpool</span>
+          <div class="d"><span lang="en">This DB's connection pool.</span><span lang="vi">Connection pool của DB này.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="jd-term" style="margin-top:22px">
+      <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/database/primary/db.go</span></div>
+<pre data-hl="go">
+type DB struct {
+	*postgres.DB
+}
+
+func (d *DB) Queries(ctx context.Context) *sqlc.Queries {
+	return sqlc.New(d.Executor(ctx))
+}
+</pre>
+    </div>
+  </section>
+
+  <!-- ============================================================ 3. SQLC -->
+  <section id="sqlc" class="jd-section c-purple">
+    <div class="jd-section-head">
+      <span class="jd-badge">3</span>
+      <div>
+        <h2><span lang="en">sqlc or hand-written SQL</span><span lang="vi">sqlc hay SQL viết tay</span></h2>
+        <p class="jd-sub" lang="en">Both go through <code>Executor(ctx)</code>, so both are traced and both join the active transaction. Tracing lives at the executor layer, not in sqlc.</p>
+        <p class="jd-sub" lang="vi">Cả hai đều đi qua <code>Executor(ctx)</code>, nên đều được trace và đều tham gia transaction đang mở. Tracing nằm ở tầng executor, không nằm trong sqlc.</p>
+      </div>
+    </div>
+
+    <div class="jd-grid-2" style="margin-top:22px;gap:20px;align-items:start">
+      <div>
+        <h3><span lang="en">sqlc-generated</span><span lang="vi">Do sqlc sinh</span></h3>
+        <div class="jd-term">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>repository</span></div>
+<pre data-hl="go">
+row, err := r.db.Queries(ctx).GetUserByUUID(ctx, id)
+</pre>
+        </div>
+      </div>
+      <div>
+        <h3><span lang="en">Hand-written</span><span lang="vi">Viết tay</span></h3>
+        <div class="jd-term">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>repository</span></div>
+<pre data-hl="go">
+rows, err := r.db.Executor(ctx).Query(ctx,
+	`SELECT id, email FROM users WHERE status = $1`, status)
+</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="jd-callout c-purple" style="margin-top:18px">
+      <b lang="en">Engines sqlc doesn't support</b><b lang="vi">Engine mà sqlc không hỗ trợ</b>
+      <span lang="en">— ClickHouse, for example — use hand-written SQL only. Nothing else changes: it still runs through that engine's <code>Executor(ctx)</code> and is still traced.</span>
+      <span lang="vi">— ví dụ ClickHouse — chỉ dùng SQL viết tay. Ngoài ra không có gì khác: vẫn chạy qua <code>Executor(ctx)</code> của engine đó và vẫn được trace.</span>
+    </div>
+  </section>
+
+  <!-- ============================================================ 4. TX -->
+  <section id="tx" class="jd-section c-orange">
+    <div class="jd-section-head">
+      <span class="jd-badge">4</span>
+      <div>
+        <h2><span lang="en">Transactions across databases</span><span lang="vi">Transaction giữa nhiều database</span></h2>
+        <p class="jd-sub" lang="en">One <code>WithTransaction</code> covers one database. Writes to two databases are <b>never atomic</b>.</p>
+        <p class="jd-sub" lang="vi">Một <code>WithTransaction</code> chỉ bao một database. Ghi vào hai database thì <b>không bao giờ atomic</b>.</p>
+      </div>
+    </div>
+
+    <div class="jd-rules">
+      <div class="jd-rule"><span class="n" style="background:var(--orange)">1</span>
+        <p lang="en"><b>Calling another database's repository inside <code>txCtx</code> is safe</b> — it runs on its own pool, never on this transaction. But it is not part of the transaction: if this one rolls back, that write stays.</p>
+        <p lang="vi"><b>Gọi repository của database khác bên trong <code>txCtx</code> là an toàn</b> — nó chạy trên pool riêng, không bao giờ chạy trên transaction này. Nhưng nó không thuộc transaction: nếu transaction này rollback, lần ghi kia vẫn còn.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--orange)">2</span>
+        <p lang="en"><b>Need both writes to happen?</b> Write an outbox row in the same transaction as the main data, then let a worker apply it to the other database asynchronously (with retries).</p>
+        <p lang="vi"><b>Cần cả hai lần ghi đều xảy ra?</b> Ghi một dòng outbox trong cùng transaction với dữ liệu chính, rồi để worker áp dụng sang database kia một cách bất đồng bộ (có retry).</p></div>
+    </div>
+
+    <div class="jd-term" style="margin-top:22px" lang="en">
+      <div class="jd-term-bar"><i></i><i></i><i></i><span>service</span></div>
+<pre data-hl="go" data-lines="2,6">
+err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
+	if err := s.repo.Create(txCtx, order); err != nil {
+		return err
+	}
+	// same database: commits or rolls back with the order
+	return s.repo.AddOutboxEvent(txCtx, event)
+})
+
+// a worker later reads the outbox and writes to analytics
+</pre>
+    </div>
+    <div class="jd-term" style="margin-top:22px" lang="vi">
+      <div class="jd-term-bar"><i></i><i></i><i></i><span>service</span></div>
+<pre data-hl="go" data-lines="2,6">
+err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
+	if err := s.repo.Create(txCtx, order); err != nil {
+		return err
+	}
+	// cùng database: commit hoặc rollback cùng với order
+	return s.repo.AddOutboxEvent(txCtx, event)
+})
+
+// sau đó worker đọc outbox và ghi sang analytics
+</pre>
+    </div>
+  </section>
+
+  <!-- ============================================================ 5. ADD POSTGRES -->
+  <section id="add-postgres" class="jd-section c-pink">
+    <div class="jd-section-head">
+      <span class="jd-badge">5</span>
+      <div>
+        <h2><span lang="en">Checklist: a second PostgreSQL database</span><span lang="vi">Checklist: thêm database PostgreSQL thứ hai</span></h2>
+        <p class="jd-sub" lang="en">Example: <code>analytics</code>. Existing repositories don't change.</p>
+        <p class="jd-sub" lang="vi">Ví dụ: <code>analytics</code>. Các repository đang có không phải sửa.</p>
+      </div>
+    </div>
+
+    <div class="jd-rules">
+      <div class="jd-rule"><span class="n" style="background:var(--pink)">1</span>
+        <p lang="en">Copy <code>internal/database/primary/</code> to <code>internal/database/analytics/</code>, empty its migrations and queries, rename the package and set <code>Name: "analytics"</code>.</p>
+        <p lang="vi">Copy <code>internal/database/primary/</code> thành <code>internal/database/analytics/</code>, xóa trống migrations và queries, đổi tên package và đặt <code>Name: "analytics"</code>.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--pink)">2</span>
+        <p lang="en"><code>internal/config/config.go</code>: add <code>Analytics DatabaseConfig `envPrefix:"ANALYTICS_"`</code> and read it in <code>analytics.New</code> (env vars become <code>ANALYTICS_DB_HOST</code>, …).</p>
+        <p lang="vi"><code>internal/config/config.go</code>: thêm <code>Analytics DatabaseConfig `envPrefix:"ANALYTICS_"`</code> và đọc nó trong <code>analytics.New</code> (biến môi trường thành <code>ANALYTICS_DB_HOST</code>, …).</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--pink)">3</span>
+        <p lang="en"><code>sqlc.yaml</code>: add a <code>name: "analytics"</code> entry pointing at <code>internal/database/analytics/...</code>.</p>
+        <p lang="vi"><code>sqlc.yaml</code>: thêm mục <code>name: "analytics"</code> trỏ tới <code>internal/database/analytics/...</code>.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--pink)">4</span>
+        <p lang="en"><code>internal/app/fx.go</code>: add <code>analytics.Module</code> next to <code>primary.Module</code>.</p>
+        <p lang="vi"><code>internal/app/fx.go</code>: thêm <code>analytics.Module</code> cạnh <code>primary.Module</code>.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--pink)">5</span>
+        <p lang="en"><code>Makefile</code>: add <code>ANALYTICS_DSN</code> / <code>ANALYTICS_DIR</code> and the matching <code>migrate-*</code> targets.</p>
+        <p lang="vi"><code>Makefile</code>: thêm <code>ANALYTICS_DSN</code> / <code>ANALYTICS_DIR</code> và các target <code>migrate-*</code> tương ứng.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--pink)">6</span>
+        <p lang="en">Ping it from <code>health:check</code>; add the <code>ANALYTICS_*</code> variables to <code>.env.example</code> and <code>deploy/</code>.</p>
+        <p lang="vi">Ping nó trong <code>health:check</code>; thêm các biến <code>ANALYTICS_*</code> vào <code>.env.example</code> và <code>deploy/</code>.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--pink)">7</span>
+        <p lang="en">Repositories that use it declare <code>db *analytics.DB</code> and call <code>r.db.Queries(ctx)</code>.</p>
+        <p lang="vi">Repository nào dùng nó thì khai báo <code>db *analytics.DB</code> và gọi <code>r.db.Queries(ctx)</code>.</p></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 6. ADD ENGINE -->
+  <section id="add-engine" class="jd-section c-red">
+    <div class="jd-section-head">
+      <span class="jd-badge">6</span>
+      <div>
+        <h2><span lang="en">Checklist: a different engine</span><span lang="vi">Checklist: thêm engine khác</span></h2>
+        <p class="jd-sub" lang="en">First a new package <code>junkit/database/&lt;engine&gt;</code>, modelled on <code>database/postgres</code>. Then the jungo side is the same as section 5.</p>
+        <p class="jd-sub" lang="vi">Trước tiên là package mới <code>junkit/database/&lt;engine&gt;</code>, làm theo mẫu <code>database/postgres</code>. Sau đó phía jungo làm giống mục 5.</p>
+      </div>
+    </div>
+
+    <div class="jd-rules">
+      <div class="jd-rule"><span class="n" style="background:var(--red)">1</span>
+        <p lang="en"><b>Executor only.</b> Queries run through <code>Executor(ctx)</code>; expose <code>Ping(ctx)</code> for health checks, not the raw pool.</p>
+        <p lang="vi"><b>Chỉ qua Executor.</b> Query chạy qua <code>Executor(ctx)</code>; cung cấp <code>Ping(ctx)</code> cho health check, không lộ pool trực tiếp.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--red)">2</span>
+        <p lang="en"><b>Per-instance transaction key</b> — a context key that carries the owning <code>*DB</code>, like <code>txContextKey{db: d}</code> in postgres.</p>
+        <p lang="vi"><b>Key transaction theo từng instance</b> — key context mang theo <code>*DB</code> sở hữu nó, giống <code>txContextKey{db: d}</code> trong postgres.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--red)">3</span>
+        <p lang="en"><b>Error classifier</b> registered in <code>init</code> with <code>database.RegisterClassifier</code>, so <code>database.Match</code> keeps working in repositories.</p>
+        <p lang="vi"><b>Bộ phân loại lỗi</b> đăng ký trong <code>init</code> bằng <code>database.RegisterClassifier</code>, để <code>database.Match</code> trong repository vẫn chạy như cũ.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--red)">4</span>
+        <p lang="en"><b>Tracer wrapper</b> built on <code>tracer.BeginQuery</code> / <code>Finish</code>, with the bind that matches the placeholders: <code>sqlfmt.Bind</code> for <code>$1</code>, <code>sqlfmt.BindQuestion</code> for <code>?</code>.</p>
+        <p lang="vi"><b>Tracer wrapper</b> dựng trên <code>tracer.BeginQuery</code> / <code>Finish</code>, với hàm bind khớp placeholder: <code>sqlfmt.Bind</code> cho <code>$1</code>, <code>sqlfmt.BindQuestion</code> cho <code>?</code>.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--red)">5</span>
+        <p lang="en"><b>Pass the tracer contract test</b> — like postgres's <code>TestExecutor_TracesEveryQuery</code>: every query method through <code>Executor</code>, inside and outside a transaction, reaches the Debugger.</p>
+        <p lang="vi"><b>Vượt qua contract test của tracer</b> — giống <code>TestExecutor_TracesEveryQuery</code> của postgres: mọi hàm query qua <code>Executor</code>, trong lẫn ngoài transaction, đều tới được Debugger.</p></div>
+    </div>
+
+    <div class="jd-term" style="margin-top:22px">
+      <div class="jd-term-bar"><i></i><i></i><i></i><span>junkit/database/mysql · tracer wrapper (database/sql)</span></div>
+<pre data-hl="go">
+func (w *tracedDB) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	q := tracer.BeginQuery(ctx, query, args, sqlfmt.BindQuestion)
+	res, err := w.inner.ExecContext(ctx, query, args...)
+	if q != nil {
+		q.Finish(tracer.SQLData{}, err)
+	}
+	return res, err
+}
+</pre>
+    </div>
+
+    <h3 style="margin-top:26px"><span lang="en">Likely engines</span><span lang="vi">Các engine hay gặp</span></h3>
+    <div class="jd-tablewrap"><table class="jd-params is-prose">
+      <tr><th>Engine</th><th>sqlc</th><th><span lang="en">Notes</span><span lang="vi">Ghi chú</span></th></tr>
+      <tr><td>MySQL</td><td><span lang="en">yes</span><span lang="vi">có</span></td><td><span lang="en"><code>database/sql</code> driver, <code>?</code> placeholders → <code>sqlfmt.BindQuestion</code>.</span><span lang="vi">Driver <code>database/sql</code>, placeholder <code>?</code> → <code>sqlfmt.BindQuestion</code>.</span></td></tr>
+      <tr><td>SQLite</td><td><span lang="en">yes</span><span lang="vi">có</span></td><td><span lang="en"><code>database/sql</code>, <code>?</code> placeholders → <code>sqlfmt.BindQuestion</code>.</span><span lang="vi"><code>database/sql</code>, placeholder <code>?</code> → <code>sqlfmt.BindQuestion</code>.</span></td></tr>
+      <tr><td>ClickHouse</td><td><span lang="en">no</span><span lang="vi">không</span></td><td><span lang="en">Hand-written SQL only, no transactions (<code>WithTransaction</code> doesn't apply), write in batches.</span><span lang="vi">Chỉ SQL viết tay, không có transaction (không áp dụng <code>WithTransaction</code>), ghi theo batch.</span></td></tr>
+    </table></div>
+  </section>
+
+  <footer class="jd-footer">
+    <span>Jundoc · Jungo multiple databases</span>
+    <span lang="en">Source of truth: the Jungo repository — this page explains it, the code decides.</span>
+    <span lang="vi">Nguồn chuẩn: repo Jungo — trang này giải thích, code mới là quyết định.</span>
+  </footer>
+</article>
+</div>
+</body>
+</html>

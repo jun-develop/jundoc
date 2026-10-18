@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit response · Jundoc</title>
+  <meta name="description"
+    content="junkit/response: one JSON envelope for every endpoint, domain errors mapped to HTTP status codes, translated messages and optional field filtering.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+
+<body>
+  <div id="jd-app" data-root="..">
+    <article class="jd-content">
+
+      <!-- ============================================================ HERO -->
+      <header class="jd-hero"
+        style="background:radial-gradient(1000px 380px at 0% 0%, rgba(96,165,250,.55), transparent 60%),linear-gradient(135deg,#1e3a8a,#1d4ed8 55%,#4338ca)">
+        <div class="jd-eyebrow">Junkit · response</div>
+        <h1>response</h1>
+        <p lang="en">The only way handlers write HTTP responses: one JSON envelope for every endpoint, translated
+          messages, and domain errors (<code>*AppError</code>) mapped to HTTP status codes.</p>
+        <p lang="vi">Chuẩn hóa cách handler trả về HTTP response: định dạng JSON envelope đồng nhất cho mọi endpoint,
+          thông điệp phản hồi đa ngôn ngữ qua i18n, và tự động ánh xạ lỗi nghiệp vụ (<code>*AppError</code>) sang mã
+          HTTP tương ứng.</p>
+        <div class="jd-chips">
+          <span class="jd-chip">github.com/jun-develop/junkit/response</span>
+          <span class="jd-chip"><span lang="en">Fx Module → provides <code>response.Responder</code></span><span
+              lang="vi">Fx Module → cung cấp <code>response.Responder</code></span></span>
+          <span class="jd-chip"><span lang="en">needs <code>response.Options</code> +
+              <code>*i18n.Translator</code></span><span lang="vi">cần <code>response.Options</code> +
+              <code>*i18n.Translator</code></span></span>
+          <span class="jd-chip">gin · junkit/i18n · junkit/pagination</span>
+          <span class="jd-chip"><span lang="en">subpackage <code>response/filter</code></span><span lang="vi">subpackage
+              <code>response/filter</code></span></span>
+        </div>
+      </header>
+
+      <!-- ============================================================ 1. WHAT -->
+      <section id="what" class="jd-section c-blue">
+        <div class="jd-section-head">
+          <span class="jd-badge">1</span>
+          <div>
+            <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
+            <p class="jd-sub" lang="en">A handler hands over a status code, an i18n key and (maybe) data or an error.
+              The Responder turns that into the same JSON shape every time.</p>
+            <p class="jd-sub" lang="vi">Handler chỉ cần truyền vào status code, i18n message key, cùng dữ liệu (data)
+              hoặc lỗi (error). Responder sẽ chuẩn hóa thành định dạng JSON đồng nhất cho mọi API.</p>
+          </div>
+        </div>
+        <div class="jd-flow" style="margin-top:22px" data-wires='[
+      {"from":"r1","to":"r2","color":"blue","label":"key"},
+      {"from":"r2","to":"r3","color":"purple","label":"i18n"},
+      {"from":"r3","to":"r4","color":"green","label":"filter"}]'>
+          <div class="jd-node is-tint c-blue" data-node="r1"><span class="k">1 · handler</span><span class="t mono"
+              style="font-size:15px">responder.SendWithData(…)</span>
+            <div class="d" lang="en">Or <code>Send</code>, <code>Pagination</code>, <code>Error</code>. Never
+              <code>ctx.JSON</code> directly.</div>
+            <div class="d" lang="vi">Hoặc <code>Send</code>, <code>Pagination</code>, <code>Error</code>. Không gọi
+              <code>ctx.JSON</code> trực tiếp.</div>
+          </div>
+          <div class="jd-node is-tint c-purple" data-node="r2"><span class="k">2 · translate</span><span class="t mono"
+              style="font-size:15px">i18n.Translator</span>
+            <div class="d" lang="en"><code>"user_created"</code> → <code>"User created successfully"</code> in
+              <code>Options.Language</code>.</div>
+            <div class="d" lang="vi"><code>"user_created"</code> → <code>"User created successfully"</code> theo
+              <code>Options.Language</code>.</div>
+          </div>
+          <div class="jd-node is-tint c-orange" data-node="r3"><span class="k">3 · envelope</span><span class="t mono"
+              style="font-size:15px">response.Response</span>
+            <div class="d" lang="en">status, code, message, data / error, plus <code>api_info</code> read from the gin
+              context.</div>
+            <div class="d" lang="vi">status, code, message, data / error, cộng <code>api_info</code> đọc từ gin context.
+            </div>
+          </div>
+          <div class="jd-node is-tint c-green" data-node="r4"><span class="k">4 · JSON</span><span class="t mono"
+              style="font-size:15px">ctx.JSON(status, …)</span>
+            <div class="d" lang="en">2xx/3xx responses with data can be trimmed by <code>response/filter</code>.</div>
+            <div class="d" lang="vi">Response 2xx/3xx có data có thể được cắt gọn bởi <code>response/filter</code>.
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:28px"><span lang="en">The envelope</span><span lang="vi">Envelope</span></h3>
+        <p lang="en">Every field except <code>status</code> has <code>omitempty</code>, so it simply disappears when
+          empty. Real outputs from Jungo:</p>
+        <p lang="vi">Mọi field trừ <code>status</code> đều có <code>omitempty</code>, nên khi rỗng thì không xuất hiện.
+          Output thật từ Jungo:</p>
+        <div class="jd-tabs c-blue" style="margin-top:12px">
+          <div class="jd-tablist">
+            <button class="jd-tab" type="button" aria-selected="true">201 SendWithData</button>
+            <button class="jd-tab" type="button" aria-selected="false">200 Pagination</button>
+            <button class="jd-tab c-red" type="button" aria-selected="false">422 SendWithData</button>
+            <button class="jd-tab c-red" type="button" aria-selected="false">409 Error(*AppError)</button>
+            <button class="jd-tab c-red" type="button" aria-selected="false">500 Error(err)</button>
+            <button class="jd-tab" type="button" aria-selected="false">200 Send</button>
+          </div>
+          <div class="jd-tabpanel">
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>POST /api/v1/users → 201</span></div>
+              <pre data-hl="json">
+{
+  "status": "success",
+  "message": "User created successfully",
+  "data": {
+    "uuid": "0b6f3c1e-6a0e-4f3a-9a49-3f1d2c7b8e51",
+    "email": "jane@example.com",
+    "first_name": "Jane",
+    "last_name": "Doe",
+    "status": "active",
+    "active": true,
+    "created_at": "2026-10-16T09:12:44.318201+07:00"
+  },
+  "api_info": {
+    "trace_id": "eb9b3d81-869d-4b62-80b8-5780f2da2f30",
+    "timestamp": "2026-10-16T09:12:44+07:00",
+    "latency": "41.207ms",
+    "version": "v0.1.0",
+    "env": "development"
+  }
+}
+</pre>
+            </div>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>GET /api/v1/users?page=1&amp;page_size=2 → 200</span>
+              </div>
+              <pre data-hl="json">
+{
+  "status": "success",
+  "message": "Users listed successfully",
+  "data": {
+    "items": [ { "uuid": "…", "email": "jane@example.com", "…": "…" }, { "…": "…" } ],
+    "pagination": {
+      "page": 1, "page_size": 2, "total_items": 5, "total_pages": 3,
+      "has_next": true, "has_prev": false, "next_page": 2, "prev_page": null
+    }
+  },
+  "api_info": { "trace_id": "…", "timestamp": "…", "latency": "8.912ms", "version": "v0.1.0", "env": "development" }
+}
+</pre>
+            </div>
+            <p class="jd-sub" lang="en">Pagination lives <b>inside</b> <code>data</code> (<code>PaginatedData</code>).
+              The top-level <code>pagination</code> field of <code>Response</code> is never filled by the Responder.</p>
+            <p class="jd-sub" lang="vi">Pagination nằm <b>bên trong</b> <code>data</code> (<code>PaginatedData</code>).
+              Field <code>pagination</code> ở cấp ngoài cùng của <code>Response</code> không bao giờ được Responder
+              điền.</p>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>POST /api/v1/auth/login {"email":"nope"} → 422</span>
+              </div>
+              <pre data-hl="json">
+{
+  "status": "error",
+  "message": "Validation error",
+  "error": {
+    "email": "email must be a valid email format",
+    "password": "password is required"
+  },
+  "api_info": { "trace_id": "…", "timestamp": "…", "latency": "0.412ms", "version": "v0.1.0", "env": "development" }
+}
+</pre>
+            </div>
+            <p class="jd-sub" lang="en">Same <code>SendWithData</code> call, but status ≥ 400 → the value goes to
+              <code>"error"</code>, not <code>"data"</code>. No <code>"code"</code> here.</p>
+            <p class="jd-sub" lang="vi">Vẫn là <code>SendWithData</code>, nhưng status ≥ 400 → giá trị nằm ở
+              <code>"error"</code>, không phải <code>"data"</code>. Không có <code>"code"</code>.</p>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>POST /api/v1/users (email taken) → 409</span></div>
+              <pre data-hl="json">
+{
+  "status": "error",
+  "code": "CONFLICT",
+  "message": "This email is already registered",
+  "api_info": { "trace_id": "…", "timestamp": "…", "latency": "6.530ms", "version": "v0.1.0", "env": "development" }
+}
+</pre>
+            </div>
+            <p class="jd-sub" lang="en"><code>"code"</code> appears <b>only</b> in responses written by
+              <code>Error</code> with an <code>*AppError</code>.</p>
+            <p class="jd-sub" lang="vi"><code>"code"</code> <b>chỉ</b> xuất hiện trong response do <code>Error</code>
+              ghi với một <code>*AppError</code>.</p>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>responder.Error(ctx, errors.New("boom")) → 500</span>
+              </div>
+              <pre data-hl="json">
+{
+  "status": "error",
+  "message": "Internal Server Error",
+  "api_info": { "trace_id": "…", "timestamp": "…", "latency": "3.004ms", "version": "v0.1.0", "env": "development" }
+}
+</pre>
+            </div>
+            <p class="jd-sub" lang="en">A plain error is never shown to the client. It is recorded with
+              <code>ctx.Error(err)</code> so logging middleware can see it.</p>
+            <p class="jd-sub" lang="vi">Error thường không bao giờ lộ ra client. Nó được ghi bằng
+              <code>ctx.Error(err)</code> để middleware log nhìn thấy.</p>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>GET /health → 200</span></div>
+              <pre data-hl="json">
+{
+  "status": "success",
+  "message": "The API is running",
+  "api_info": { "trace_id": "…", "timestamp": "…", "latency": "0.081ms", "version": "v0.1.0", "env": "development" }
+}
+</pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-blue">
+            <tr>
+              <th>json</th>
+              <th><span lang="en">when it appears</span><span lang="vi">khi nào xuất hiện</span></th>
+            </tr>
+            <tr>
+              <td>status</td>
+              <td lang="en">Always. <code>"error"</code> if the HTTP status ≥ 400, otherwise <code>"success"</code>.
+              </td>
+              <td lang="vi">Luôn có. <code>"error"</code> nếu HTTP status ≥ 400, ngược lại <code>"success"</code>.</td>
+            </tr>
+            <tr>
+              <td>code</td>
+              <td lang="en">Only from <code>Error(ctx, *AppError)</code> — the <code>ErrorCode</code>, e.g.
+                <code>"NOT_FOUND"</code>.</td>
+              <td lang="vi">Chỉ từ <code>Error(ctx, *AppError)</code> — giá trị <code>ErrorCode</code>, ví dụ
+                <code>"NOT_FOUND"</code>.</td>
+            </tr>
+            <tr>
+              <td>message</td>
+              <td lang="en">The translated key. Omitted only if the translation is an empty string.</td>
+              <td lang="vi">Key đã dịch. Chỉ bị bỏ khi bản dịch là chuỗi rỗng.</td>
+            </tr>
+            <tr>
+              <td>data</td>
+              <td lang="en"><code>SendWithData</code> with status &lt; 400, and <code>Pagination</code> (as
+                <code>{items, pagination}</code>).</td>
+              <td lang="vi"><code>SendWithData</code> với status &lt; 400, và <code>Pagination</code> (dạng
+                <code>{items, pagination}</code>).</td>
+            </tr>
+            <tr>
+              <td>error</td>
+              <td lang="en"><code>SendWithData</code> with status ≥ 400 — e.g. the field map from <a
+                  href="validation.html">validation</a>.</td>
+              <td lang="vi"><code>SendWithData</code> với status ≥ 400 — ví dụ map field từ <a
+                  href="validation.html">validation</a>.</td>
+            </tr>
+            <tr>
+              <td>pagination</td>
+              <td lang="en">Never set by the Responder (kept for your own use).</td>
+              <td lang="vi">Responder không bao giờ điền (để bạn tự dùng nếu cần).</td>
+            </tr>
+            <tr>
+              <td>api_info</td>
+              <td lang="en">Always. <code>timestamp</code> is always set; <code>trace_id</code>, <code>latency</code>,
+                <code>version</code>, <code>env</code> only when <a
+                  href="middleware.html"><code>middleware.Trace</code></a> ran before the handler.</td>
+              <td lang="vi">Luôn có. <code>timestamp</code> luôn có; <code>trace_id</code>, <code>latency</code>,
+                <code>version</code>, <code>env</code> chỉ có khi <a
+                  href="middleware.html"><code>middleware.Trace</code></a> đã chạy trước handler.</td>
+            </tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============================================================ 2. SETUP -->
+      <section id="setup" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">2</span>
+          <div>
+            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối</span></h2>
+            <p class="jd-sub" lang="en">The Responder needs an <code>*i18n.Translator</code> — provide
+              <code>i18n.Module</code> next to it.</p>
+            <p class="jd-sub" lang="vi">Responder cần một <code>*i18n.Translator</code> — cung cấp
+              <code>i18n.Module</code> ngay cạnh nó.</p>
+          </div>
+        </div>
+        <div class="jd-tabs c-purple" style="margin-top:18px">
+          <div class="jd-tablist">
+            <button type="button" class="jd-tab" aria-selected="true"><span lang="en">with Fx (as Jungo)</span><span
+                lang="vi">với Fx (như Jungo)</span></button>
+            <button type="button" class="jd-tab" aria-selected="false"><span lang="en">without Fx</span><span
+                lang="vi">Không dùng Fx</span></button>
+          </div>
+          <div class="jd-tabpanel">
+            <div class="jd-term" data-copy>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go</span></div>
+              <pre data-hl="go">
+// in CoreModules(cfg)
+fx.Provide(provideResponseOptions),
+i18n.Module,
+response.Module,
+
+// provideResponseOptions builds response.Options from cfg.
+func provideResponseOptions(cfg *config.Config) response.Options {
+    return response.Options{Language: cfg.Language}
+}
+</pre>
+            </div>
+            <p class="jd-sub" style="margin-top:10px" lang="en"><code>cfg.Language</code> comes from
+              <code>API_LANGUAGE</code> (default <code>en</code>). Any constructor can now ask for
+              <code>response.Responder</code>.</p>
+            <p class="jd-sub" style="margin-top:10px" lang="vi"><code>cfg.Language</code> lấy từ
+              <code>API_LANGUAGE</code> (mặc định <code>en</code>). Mọi constructor giờ có thể xin
+              <code>response.Responder</code>.</p>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-term" data-copy>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
+              <pre data-hl="go">
+translator := i18n.NewTranslator() // built-in English catalog
+translator.AddTranslations(map[string]map[string]string{
+    i18n.LangEN: {"user_created": "User created successfully"},
+})
+
+responder := response.NewResponder(response.Options{Language: "en"}, translator)
+</pre>
+            </div>
+            <p class="jd-sub" style="margin-top:10px" lang="en">Without Fx, initialize the translator and pass it into
+              <code>response.NewResponder</code> manually.</p>
+            <p class="jd-sub" style="margin-top:10px" lang="vi">Không dùng Fx, tự khởi tạo translator và truyền thủ công
+              vào <code>response.NewResponder</code>.</p>
+          </div>
+        </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-purple">
+            <tr>
+              <th>Options field</th>
+              <th>type</th>
+              <th><span lang="en">zero value</span><span lang="vi">giá trị rỗng</span></th>
+              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+            </tr>
+            <tr>
+              <td>Language</td>
+              <td>string</td>
+              <td><span lang="en"><code>""</code> → the translator's default language (<code>en</code> unless changed
+                  with <code>SetDefaultLang</code>).</span><span lang="vi"><code>""</code> → ngôn ngữ mặc định của
+                  translator (<code>en</code> trừ khi đổi bằng <code>SetDefaultLang</code>).</span></td>
+              <td><span lang="en">Locale used for <b>every</b> message. Fixed at construction — not read per
+                  request.</span><span lang="vi">Locale dùng cho <b>mọi</b> message. Cố định lúc khởi tạo — không đọc
+                  theo từng request.</span></td>
+            </tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============================================================ 3. QUICK START -->
+      <section id="quick" class="jd-section c-green">
+        <div class="jd-section-head">
+          <span class="jd-badge">3</span>
+          <div>
+            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <p class="jd-sub" lang="en">Jungo's create-user handler. Hover an explanation to light up its lines.</p>
+            <p class="jd-sub" lang="vi">Handler tạo user của Jungo. Rê chuột vào giải thích để làm sáng các dòng tương
+              ứng.</p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <div class="jd-sticky">
+              <div class="jd-term" data-copy>
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>domain/errors.go</span></div>
+                <pre data-hl="go" id="code-quick-err">
+var ErrEmailAlreadyExists = response.New(response.Conflict, "email_already_exists")
+</pre>
+              </div>
+              <div class="jd-term" data-copy style="margin-top:12px">
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>user_handler.go</span></div>
+                <pre data-hl="go" id="code-quick-hdl">
+func (h *UserHandler) CreateUser(ctx *gin.Context) {
+    var req v1dto.CreateUserRequest
+    if err := ctx.ShouldBindJSON(&amp;req); err != nil {
+        h.responder.SendWithData(ctx, http.StatusUnprocessableEntity, "validation_error",
+            h.validator.GetValidationErrors(ctx, err))
+        return
+    }
+
+    user, err := h.service.CreateUser(ctx.Request.Context(), v1dto.ToCreateUserInput(req))
+    if err != nil {
+        h.responder.Error(ctx, err)
+        return
+    }
+
+    h.responder.SendWithData(ctx, http.StatusCreated, "user_created", v1dto.NewUserResponse(user))
+}
+</pre>
+              </div>
+            </div>
+          </div>
+          <div class="jd-explain">
+            <div class="jd-ex c-green" data-code="#code-quick-err" data-show="1"><span class="n">1</span><span
+                class="w">response.New</span><span class="x" lang="en">A domain error = an <code>ErrorCode</code>
+                (decides the HTTP status) + an i18n key (decides the message). Services return it; they never touch
+                gin.</span><span class="x" lang="vi">Lỗi domain = một <code>ErrorCode</code> (quyết định HTTP status) +
+                một i18n key (quyết định message). Service trả nó về; service không đụng tới gin.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick-hdl" data-show="3-7"><span class="n">2</span><span
+                class="w">422 via SendWithData</span><span class="x" lang="en">Status ≥ 400, so the field map goes into
+                <code>"error"</code>; message = translation of <code>"validation_error"</code> →
+                <code>"Validation error"</code>.</span><span class="x" lang="vi">Status ≥ 400 nên map field nằm ở
+                <code>"error"</code>; message = bản dịch của <code>"validation_error"</code> →
+                <code>"Validation error"</code>.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick-hdl" data-show="9-13"><span class="n">3</span><span
+                class="w">responder.Error</span><span class="x" lang="en">Finds an <code>*AppError</code> anywhere in
+                the chain (<code>errors.As</code>) → 409 <code>"CONFLICT"</code> +
+                <code>"This email is already registered"</code>. Anything else → 500
+                <code>"Internal Server Error"</code>.</span><span class="x" lang="vi">Tìm <code>*AppError</code> ở bất
+                kỳ đâu trong chuỗi lỗi (<code>errors.As</code>) → 409 <code>"CONFLICT"</code> +
+                <code>"This email is already registered"</code>. Lỗi khác → 500
+                <code>"Internal Server Error"</code>.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick-hdl" data-show="15"><span class="n">4</span><span
+                class="w">201 via SendWithData</span><span class="x" lang="en">Status &lt; 400 → the DTO goes into
+                <code>"data"</code>. Pass a response DTO, not your DB row.</span><span class="x" lang="vi">Status &lt;
+                400 → DTO nằm ở <code>"data"</code>. Truyền DTO response, đừng truyền nguyên dòng DB.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 4. TRY IT -->
+      <section id="try" class="jd-section c-orange">
+        <div class="jd-section-head">
+          <span class="jd-badge">4</span>
+          <div>
+            <h2><span lang="en">Try it</span><span lang="vi">Thử ngay</span></h2>
+            <p class="jd-sub" lang="en">Mirrors the status/field routing and the ErrorCode → HTTP mapping. Messages use
+              the built-in English catalog; an unknown key comes back as-is.</p>
+            <p class="jd-sub" lang="vi">Mô phỏng cách chọn status/field và bảng ánh xạ ErrorCode → HTTP. Message dùng
+              catalog tiếng Anh có sẵn; key không có thì trả về nguyên key.</p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <div class="jd-calc c-orange">
+              <label>call <select id="rs-call">
+                  <option value="send">Send</option>
+                  <option value="data" selected>SendWithData</option>
+                  <option value="apperr">Error(*AppError)</option>
+                  <option value="plain">Error(plain error)</option>
+                </select></label>
+              <label>statusCode <input type="number" id="rs-status" value="422"></label>
+              <label>key <input type="text" id="rs-key" value="validation_error"></label>
+              <label>ErrorCode <select id="rs-code">
+                  <option>BAD_REQUEST</option>
+                  <option>UNAUTHORIZED</option>
+                  <option selected>NOT_FOUND</option>
+                  <option>FORBIDDEN</option>
+                  <option>CONFLICT</option>
+                  <option>UNPROCESSABLE_ENTITY</option>
+                  <option>UNSUPPORTED_MEDIA_TYPE</option>
+                  <option>TOO_MANY_REQUESTS</option>
+                  <option>INTERNAL_SERVER_ERROR</option>
+                  <option>SOMETHING_ELSE</option>
+                </select></label>
+            </div>
+            <p class="jd-sub" lang="en"><code>statusCode</code> is used by Send / SendWithData; <code>ErrorCode</code>
+              and <code>key</code> (as <code>AppError.Message</code>) by Error(*AppError). Data is a fixed
+              <code>{"email":"required"}</code>.</p>
+            <p class="jd-sub" lang="vi"><code>statusCode</code> dùng cho Send / SendWithData; <code>ErrorCode</code> và
+              <code>key</code> (làm <code>AppError.Message</code>) dùng cho Error(*AppError). Data cố định là
+              <code>{"email":"required"}</code>.</p>
+          </div>
+          <div class="jd-term">
+            <div class="jd-term-bar"><i></i><i></i><i></i><span id="rs-head">HTTP</span></div>
+            <pre id="rs-json"></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 5. API -->
+      <section id="api" class="jd-section c-blue">
+        <div class="jd-section-head">
+          <span class="jd-badge">5</span>
+          <div>
+            <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+            <p class="jd-sub" lang="en">Everything exported by <code>junkit/response</code> and
+              <code>junkit/response/filter</code>. Signatures copied from the source.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ <code>junkit/response</code> và <code>junkit/response/filter</code>
+              export. Chữ ký chép từ source.</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:18px"><span lang="en">Setup</span><span lang="vi">Khởi tạo</span></h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Options</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type Options struct {
+    // Language is the default locale for i18n messages (e.g. "en").
+    Language string
+}
+</pre>
+            </div>
+            <p lang="en">See the table in <a href="#setup">Wire it up</a>.</p>
+            <p lang="vi">Xem bảng ở phần <a href="#setup">Kết nối</a>.</p>
+          </div>
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NewResponder</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">func NewResponder(opts Options, translator *i18n.Translator) Responder</pre>
+            </div>
+            <p lang="en">Returns the default implementation. No error, no validation: a <code>nil</code> translator is
+              accepted but panics on the first response.</p>
+            <p lang="vi">Trả về bản cài đặt mặc định. Không trả lỗi, không kiểm tra: translator <code>nil</code> vẫn
+              được nhận nhưng sẽ panic ở response đầu tiên.</p>
+          </div>
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">var</span><span class="jd-sym-name">Module</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+var Module = fx.Module("response",
+    fx.Provide(NewResponder),
+)
+</pre>
+            </div>
+            <p lang="en">Provides <code>response.Responder</code>. Requires <code>response.Options</code> and
+              <code>*i18n.Translator</code> in the graph.</p>
+            <p lang="vi">Cung cấp <code>response.Responder</code>. Cần có sẵn <code>response.Options</code> và
+              <code>*i18n.Translator</code> trong graph.</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:22px"><span lang="en">Responder</span><span lang="vi">Responder</span></h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">interface</span><span class="jd-sym-name">Responder</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type Responder interface {
+    Send(ctx *gin.Context, statusCode int, key string, args ...any)
+    SendWithData(ctx *gin.Context, statusCode int, key string, data any, args ...any)
+    Pagination(ctx *gin.Context, statusCode int, key string, data any, pagination pagination.Pagination, args ...any)
+    Translate(key string, args ...any) string
+    Error(ctx *gin.Context, err error)
+}
+</pre>
+            </div>
+            <p lang="en">In every method, <code>key</code> is an i18n key resolved in <code>Options.Language</code>;
+              <code>args</code> fill <code>%[1]s</code>-style verbs (only applied if the message contains
+              <code>%</code>). Unknown keys are returned unchanged. None of the methods abort the gin chain —
+              <code>return</code> after calling them.</p>
+            <p lang="vi">Ở mọi method, <code>key</code> là i18n key được dịch theo <code>Options.Language</code>;
+              <code>args</code> điền vào các verb kiểu <code>%[1]s</code> (chỉ áp dụng khi message có <code>%</code>).
+              Key không tồn tại được trả về nguyên văn. Không method nào abort chuỗi gin — hãy <code>return</code> sau
+              khi gọi.</p>
+          </div>
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">Send</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">Send(ctx *gin.Context, statusCode int, key string, args ...any)</pre>
+            </div>
+            <p lang="en">Message-only response: <code>status</code>, <code>message</code>, <code>api_info</code>. Never
+              filtered. Used by Jungo for 404 <code>"api_not_found"</code>, <code>"user_deleted"</code>,
+              <code>"invalid_uuid"</code>…</p>
+            <p lang="vi">Response chỉ có message: <code>status</code>, <code>message</code>, <code>api_info</code>.
+              Không bao giờ bị filter. Jungo dùng cho 404 <code>"api_not_found"</code>, <code>"user_deleted"</code>,
+              <code>"invalid_uuid"</code>…</p>
+          </div>
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">SendWithData</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">SendWithData(ctx *gin.Context, statusCode int, key string, data any, args ...any)</pre>
+            </div>
+            <ul>
+              <li lang="en"><code>statusCode &lt; 400</code> → <code>data</code> goes into <code>"data"</code>, and
+                <code>?fields</code>/<code>?omit</code> filtering applies.</li>
+              <li lang="vi"><code>statusCode &lt; 400</code> → <code>data</code> vào <code>"data"</code>, và áp dụng
+                filter <code>?fields</code>/<code>?omit</code>.</li>
+              <li lang="en"><code>statusCode &gt;= 400</code> → <code>data</code> goes into <code>"error"</code>, no
+                filtering. This is how 422 validation errors are sent.</li>
+              <li lang="vi"><code>statusCode &gt;= 400</code> → <code>data</code> vào <code>"error"</code>, không
+                filter. Đây là cách gửi lỗi validation 422.</li>
+              <li lang="en">A <code>nil</code> data (or empty slice/map/string) is dropped by <code>omitempty</code>.
+              </li>
+              <li lang="vi"><code>data</code> là <code>nil</code> (hoặc slice/map/chuỗi rỗng) bị <code>omitempty</code>
+                bỏ đi.</li>
+            </ul>
+          </div>
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">Pagination</span>
+            </div>
+            <div class="jd-term">
+              <pre
+                data-hl="go">Pagination(ctx *gin.Context, statusCode int, key string, data any, pagination pagination.Pagination, args ...any)</pre>
+            </div>
+            <p lang="en">Sends <code>"data": {"items": data, "pagination": …}</code> using <a
+                href="pagination.html"><code>pagination.Pagination</code></a> (build it with
+              <code>pagination.NewPagination</code>). Always puts it in <code>"data"</code>, even for status ≥ 400.
+              Filtering applies when status &lt; 400.</p>
+            <p lang="vi">Gửi <code>"data": {"items": data, "pagination": …}</code> với <a
+                href="pagination.html"><code>pagination.Pagination</code></a> (tạo bằng
+              <code>pagination.NewPagination</code>). Luôn đặt vào <code>"data"</code>, kể cả status ≥ 400. Filter áp
+              dụng khi status &lt; 400.</p>
+          </div>
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">Translate</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">Translate(key string, args ...any) string</pre>
+            </div>
+            <p lang="en">Resolves a key without writing anything — e.g. <code>Translate("greeting", "Jane")</code> →
+              <code>"Hello, Jane!"</code> for <code>"Hello, %s!"</code>.</p>
+            <p lang="vi">Dịch một key mà không ghi response — ví dụ <code>Translate("greeting", "Jane")</code> →
+              <code>"Hello, Jane!"</code> với <code>"Hello, %s!"</code>.</p>
+          </div>
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">Error</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">Error(ctx *gin.Context, err error)</pre>
+            </div>
+            <ul>
+              <li lang="en"><code>errors.As(err, &amp;*AppError)</code> succeeds → HTTP status from its
+                <code>Code</code> (table below), <code>"code"</code> = the code, <code>"message"</code> = translation of
+                <code>AppError.Message</code> (no args).</li>
+              <li lang="vi"><code>errors.As(err, &amp;*AppError)</code> thành công → HTTP status theo <code>Code</code>
+                (bảng dưới), <code>"code"</code> = code, <code>"message"</code> = bản dịch của
+                <code>AppError.Message</code> (không args).</li>
+              <li lang="en">Otherwise → <code>ctx.Error(err)</code> (recorded for logging) and
+                <code>Send(ctx, 500, "internal_server_error")</code>.</li>
+              <li lang="vi">Ngược lại → <code>ctx.Error(err)</code> (ghi lại để log) và
+                <code>Send(ctx, 500, "internal_server_error")</code>.</li>
+              <li lang="en">Never filtered. The <code>Cause</code> is never sent to the client.</li>
+              <li lang="vi">Không bao giờ bị filter. <code>Cause</code> không bao giờ gửi cho client.</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3 style="margin-top:22px"><span lang="en">Errors</span><span lang="vi">Lỗi</span></h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-red">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">ErrorCode</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">type ErrorCode string</pre>
+            </div>
+            <div class="jd-tablewrap">
+              <table class="jd-params c-red">
+                <tr>
+                  <th>const</th>
+                  <th><span lang="en">value / json "code"</span><span lang="vi">giá trị / json "code"</span></th>
+                  <th>HTTP</th>
+                </tr>
+                <tr>
+                  <td>BadRequest</td>
+                  <td>"BAD_REQUEST"</td>
+                  <td>400</td>
+                </tr>
+                <tr>
+                  <td>Unauthorized</td>
+                  <td>"UNAUTHORIZED"</td>
+                  <td>401</td>
+                </tr>
+                <tr>
+                  <td>Forbidden</td>
+                  <td>"FORBIDDEN"</td>
+                  <td>403</td>
+                </tr>
+                <tr>
+                  <td>NotFound</td>
+                  <td>"NOT_FOUND"</td>
+                  <td>404</td>
+                </tr>
+                <tr>
+                  <td>Conflict</td>
+                  <td>"CONFLICT"</td>
+                  <td>409</td>
+                </tr>
+                <tr>
+                  <td>UnsupportedMediaType</td>
+                  <td>"UNSUPPORTED_MEDIA_TYPE"</td>
+                  <td>415</td>
+                </tr>
+                <tr>
+                  <td>UnprocessableEntity</td>
+                  <td>"UNPROCESSABLE_ENTITY"</td>
+                  <td>422</td>
+                </tr>
+                <tr>
+                  <td>TooManyRequests</td>
+                  <td>"TOO_MANY_REQUESTS"</td>
+                  <td>429</td>
+                </tr>
+                <tr>
+                  <td>Internal</td>
+                  <td>"INTERNAL_SERVER_ERROR"</td>
+                  <td>500</td>
+                </tr>
+                <tr>
+                  <td><span lang="en">any other value</span><span lang="vi">giá trị khác</span></td>
+                  <td><span lang="en">sent as-is</span><span lang="vi">gửi nguyên văn</span></td>
+                  <td>500</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <div class="jd-sym c-red">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">AppError</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type AppError struct {
+    Code    ErrorCode
+    Message string
+    Cause   error
+}
+</pre>
+            </div>
+            <p lang="en"><code>Code</code> picks the HTTP status, <code>Message</code> is an <b>i18n key</b> (not the
+              text), <code>Cause</code> is the optional wrapped error for logs / <code>errors.Is</code>.</p>
+            <p lang="vi"><code>Code</code> chọn HTTP status, <code>Message</code> là <b>i18n key</b> (không phải văn
+              bản), <code>Cause</code> là lỗi gốc tùy chọn cho log / <code>errors.Is</code>.</p>
+          </div>
+          <div class="jd-sym c-red">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">New · Wrap</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+func New(code ErrorCode, message string) *AppError
+func Wrap(code ErrorCode, message string, err error) *AppError
+</pre>
+            </div>
+            <p lang="en"><code>New</code> for sentinel domain errors (<code>var ErrX = response.New(…)</code>);
+              <code>Wrap</code> to keep an underlying cause.</p>
+            <p lang="vi"><code>New</code> cho lỗi domain dạng sentinel (<code>var ErrX = response.New(…)</code>);
+              <code>Wrap</code> để giữ lại lỗi gốc.</p>
+          </div>
+          <div class="jd-sym c-red">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">(*AppError) Error ·
+                Unwrap</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+func (e *AppError) Error() string
+func (e *AppError) Unwrap() error
+</pre>
+            </div>
+            <p lang="en"><code>Error()</code> = <code>Message</code>, or <code>"Message: Cause"</code> when there is a
+              cause (e.g. <code>"failed_to_save_user: connection refused"</code>). <code>Unwrap()</code> returns
+              <code>Cause</code>, so <code>errors.Is(err, cause)</code> works and <code>errors.As</code> finds the
+              <code>*AppError</code> through <code>fmt.Errorf("…: %w", appErr)</code>.</p>
+            <p lang="vi"><code>Error()</code> = <code>Message</code>, hoặc <code>"Message: Cause"</code> khi có cause
+              (ví dụ <code>"failed_to_save_user: connection refused"</code>). <code>Unwrap()</code> trả về
+              <code>Cause</code>, nên <code>errors.Is(err, cause)</code> hoạt động và <code>errors.As</code> tìm được
+              <code>*AppError</code> qua <code>fmt.Errorf("…: %w", appErr)</code>.</p>
+          </div>
+          <div class="jd-sym c-red">
+            <div class="jd-sym-head"><span class="jd-kind">var</span><span class="jd-sym-name">ErrInternalServer ·
+                ErrDatabaseConnection</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+ErrInternalServer     = New(Internal, "internal_server_error")
+ErrDatabaseConnection = New(Internal, "database_connection_error")
+</pre>
+            </div>
+            <p lang="en">Both → 500, messages <code>"Internal Server Error"</code> and
+              <code>"Database connection error"</code> (built-in catalog).</p>
+            <p lang="vi">Cả hai → 500, message <code>"Internal Server Error"</code> và
+              <code>"Database connection error"</code> (catalog có sẵn).</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:22px"><span lang="en">Envelope types &amp; context keys</span><span lang="vi">Kiểu
+            envelope &amp; context key</span></h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Response</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type Response struct {
+    Status     string    `json:"status"`
+    Code       ErrorCode `json:"code,omitempty"`
+    Message    string    `json:"message,omitempty"`
+    Data       any       `json:"data,omitempty"`
+    Error      any       `json:"error,omitempty"`
+    Pagination any       `json:"pagination,omitempty"`
+    APIInfo    *APIInfo  `json:"api_info,omitempty"`
+}
+</pre>
+            </div>
+            <p lang="en">The envelope; see the <a href="#what">when-it-appears table</a>. Useful for decoding responses
+              in tests: <code>json.Unmarshal(body, &amp;res)</code>.</p>
+            <p lang="vi">Envelope; xem <a href="#what">bảng khi nào xuất hiện</a>. Hữu ích để decode response trong
+              test: <code>json.Unmarshal(body, &amp;res)</code>.</p>
+          </div>
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">APIInfo</span></div>
+            <div class="jd-tablewrap">
+              <table class="jd-params c-orange">
+                <tr>
+                  <th>field · json</th>
+                  <th><span lang="en">source</span><span lang="vi">nguồn</span></th>
+                </tr>
+                <tr>
+                  <td>TraceID · trace_id</td>
+                  <td lang="en">gin key <code>"trace_id"</code> — request header <code>X-Trace-Id</code> or a new UUID.
+                  </td>
+                  <td lang="vi">gin key <code>"trace_id"</code> — header <code>X-Trace-Id</code> của request hoặc UUID
+                    mới.</td>
+                </tr>
+                <tr>
+                  <td>Timestamp · timestamp</td>
+                  <td lang="en"><code>time.Now().Format(time.RFC3339)</code> at write time, server local zone. Always
+                    present.</td>
+                  <td lang="vi"><code>time.Now().Format(time.RFC3339)</code> lúc ghi response, theo múi giờ server. Luôn
+                    có.</td>
+                </tr>
+                <tr>
+                  <td>Latency · latency</td>
+                  <td lang="en">Since gin key <code>"start_time"</code> (a <code>time.Time</code>), formatted
+                    <code>"%.3fms"</code>, e.g. <code>"188.280ms"</code>.</td>
+                  <td lang="vi">Tính từ gin key <code>"start_time"</code> (kiểu <code>time.Time</code>), định dạng
+                    <code>"%.3fms"</code>, ví dụ <code>"188.280ms"</code>.</td>
+                </tr>
+                <tr>
+                  <td>Version · version</td>
+                  <td lang="en">gin key <code>"api_version"</code> (Jungo: <code>API_VERSION</code>).</td>
+                  <td lang="vi">gin key <code>"api_version"</code> (Jungo: <code>API_VERSION</code>).</td>
+                </tr>
+                <tr>
+                  <td>Env · env</td>
+                  <td lang="en">gin key <code>"api_env"</code> (Jungo: <code>API_ENVIRONMENT</code>).</td>
+                  <td lang="vi">gin key <code>"api_env"</code> (Jungo: <code>API_ENVIRONMENT</code>).</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">PaginatedData</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type PaginatedData struct {
+    Items      any                   `json:"items"`
+    Pagination pagination.Pagination `json:"pagination,omitempty"`
+}
+</pre>
+            </div>
+            <p lang="en">What <code>Pagination()</code> puts in <code>"data"</code>. <code>items</code> is never omitted
+              (a nil slice becomes <code>null</code>).</p>
+            <p lang="vi">Thứ mà <code>Pagination()</code> đặt vào <code>"data"</code>. <code>items</code> không bao giờ
+              bị bỏ (slice nil thành <code>null</code>).</p>
+          </div>
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">const</span><span class="jd-sym-name">context keys</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">
+const (
+    StartTimeContextKey = "start_time"
+    TraceIDContextKey   = "trace_id"
+    VersionContextKey   = "api_version"
+    EnvContextKey       = "api_env"
+)
+</pre>
+            </div>
+            <p lang="en">Set by <a href="middleware.html"><code>middleware.Trace</code></a>, read to build
+              <code>api_info</code>. Set them yourself if you don't use that middleware (start time must be a
+              <code>time.Time</code>, the rest strings).</p>
+            <p lang="vi"><a href="middleware.html"><code>middleware.Trace</code></a> đặt chúng, Responder đọc để tạo
+              <code>api_info</code>. Tự <code>ctx.Set</code> nếu không dùng middleware đó (start time phải là
+              <code>time.Time</code>, còn lại là string).</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:22px">response/filter</h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-green">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">filter.Filter</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">func Filter(data any, fields []string, omit []string) (any, error)</pre>
+            </div>
+            <p lang="en">Returns a copy of <code>data</code> with only <code>fields</code> kept and/or <code>omit</code>
+              removed. Structs become <code>map[string]any</code> keyed by their JSON tag names (<code>json:"-"</code>
+              and unexported fields skipped, empty <code>omitempty</code> fields dropped even if requested).</p>
+            <p lang="vi">Trả về bản sao của <code>data</code> chỉ giữ <code>fields</code> và/hoặc bỏ <code>omit</code>.
+              Struct thành <code>map[string]any</code> theo tên JSON tag (bỏ qua <code>json:"-"</code> và field
+              unexported; field <code>omitempty</code> rỗng bị bỏ dù có yêu cầu).</p>
+            <div class="jd-tablewrap">
+              <table class="jd-params c-green">
+                <tr>
+                  <th>syntax</th>
+                  <th><span lang="en">example → result</span><span lang="vi">ví dụ → kết quả</span></th>
+                </tr>
+                <tr>
+                  <td><span lang="en">dot</span><span lang="vi">chấm</span></td>
+                  <td><code>"address.city"</code> → <code>{"address":{"city":"Hanoi"}}</code></td>
+                </tr>
+                <tr>
+                  <td><span lang="en">projection</span><span lang="vi">projection</span></td>
+                  <td><code>"address{city,street}"</code> → <code>{"address":{"city":…,"street":…}}</code></td>
+                </tr>
+                <tr>
+                  <td><span lang="en">index (fields)</span><span lang="vi">index (fields)</span></td>
+                  <td><span lang="en"><code>"tags[0]"</code> → <code>{"tags":"admin"}</code> — the element itself, not a
+                      1-item list; out of range → <code>null</code></span><span lang="vi"><code>"tags[0]"</code> →
+                      <code>{"tags":"admin"}</code> — chính phần tử, không phải list 1 phần tử; ngoài phạm vi →
+                      <code>null</code></span></td>
+                </tr>
+                <tr>
+                  <td><span lang="en">index (omit)</span><span lang="vi">index (omit)</span></td>
+                  <td><span lang="en"><code>"tags[0]"</code> → <code>{"tags":["beta"]}</code> — drops that
+                      element</span><span lang="vi"><code>"tags[0]"</code> → <code>{"tags":["beta"]}</code> — bỏ phần tử
+                      đó</span></td>
+                </tr>
+                <tr>
+                  <td><span lang="en">both</span><span lang="vi">cả hai</span></td>
+                  <td><span lang="en">fields <code>["id","address"]</code> + omit <code>["address.street"]</code> →
+                      <code>{"id":1,"address":{"city":"Hanoi"}}</code></span><span lang="vi">fields
+                      <code>["id","address"]</code> + omit <code>["address.street"]</code> →
+                      <code>{"id":1,"address":{"city":"Hanoi"}}</code></span></td>
+                </tr>
+              </table>
+            </div>
+            <p lang="en">No fields and no omit → <code>data</code> returned unchanged. <code>nil</code> or a nil pointer
+              → <code>nil, nil</code>. A path step on a slice applies to every element. The current code never returns a
+              non-nil error.</p>
+            <p lang="vi">Không có fields lẫn omit → trả nguyên <code>data</code>. <code>nil</code> hoặc con trỏ nil →
+              <code>nil, nil</code>. Một bước path trên slice áp dụng cho mọi phần tử. Code hiện tại không bao giờ trả
+              error khác nil.</p>
+          </div>
+          <div class="jd-sym c-muted">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">filter.Node ·
+                NewNode</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type Node struct {
+    Name     string
+    Index    *int
+    Children map[string]*Node
+    IsLeaf   bool
+}
+
+func NewNode(name string) *Node
+</pre>
+            </div>
+            <p lang="en">One segment of the selection tree <code>Filter</code> builds from the path strings. Exported
+              but you never need it — call <code>Filter</code>. (<code>IsLeaf</code> is never set by the parser.)</p>
+            <p lang="vi">Một đoạn của cây lựa chọn mà <code>Filter</code> dựng từ các path. Được export nhưng bạn không
+              cần dùng — hãy gọi <code>Filter</code>. (Parser không bao giờ đặt <code>IsLeaf</code>.)</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 6. IN JUNGO -->
+      <section id="jungo" class="jd-section c-orange">
+        <div class="jd-section-head">
+          <span class="jd-badge">6</span>
+          <div>
+            <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+            <p class="jd-sub" lang="en">Every handler and every response-writing middleware goes through
+              <code>response.Responder</code>.</p>
+            <p class="jd-sub" lang="vi">Mọi handler và mọi middleware có ghi response đều đi qua
+              <code>response.Responder</code>.</p>
+          </div>
+        </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-orange">
+            <tr>
+              <th>file</th>
+              <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
+            </tr>
+            <tr>
+              <td>app/fx.go</td>
+              <td lang="en"><code>provideResponseOptions</code> + <code>i18n.Module</code> +
+                <code>response.Module</code>.</td>
+              <td lang="vi"><code>provideResponseOptions</code> + <code>i18n.Module</code> +
+                <code>response.Module</code>.</td>
+            </tr>
+            <tr>
+              <td>features/user/domain/errors.go</td>
+              <td lang="en"><code>ErrUserNotFound</code> (NotFound), <code>ErrEmailAlreadyExists</code> (Conflict),
+                <code>ErrInvalidAvatarFile</code> (BadRequest).</td>
+              <td lang="vi"><code>ErrUserNotFound</code> (NotFound), <code>ErrEmailAlreadyExists</code> (Conflict),
+                <code>ErrInvalidAvatarFile</code> (BadRequest).</td>
+            </tr>
+            <tr>
+              <td>features/auth/domain/errors.go</td>
+              <td lang="en">13 auth errors: Unauthorized (invalid credentials / token…), Forbidden (inactive user,
+                reCAPTCHA), TooManyRequests (login throttling), NotFound.</td>
+              <td lang="vi">13 lỗi auth: Unauthorized (sai thông tin / token…), Forbidden (user bị khóa, reCAPTCHA),
+                TooManyRequests (chặn đăng nhập), NotFound.</td>
+            </tr>
+            <tr>
+              <td>features/user/module.go<br>features/auth/module.go</td>
+              <td lang="en"><code>registerTranslations</code> adds the English texts for every key used above
+                (<code>"user_created"</code>, <code>"email_already_exists"</code>, …).</td>
+              <td lang="vi"><code>registerTranslations</code> thêm bản tiếng Anh cho mọi key dùng ở trên
+                (<code>"user_created"</code>, <code>"email_already_exists"</code>, …).</td>
+            </tr>
+            <tr>
+              <td>features/user/handler/v1/user_handler.go</td>
+              <td lang="en"><code>SendWithData</code> (201/200/422), <code>Pagination</code> (<code>ListUsers</code>),
+                <code>Send</code> (<code>"user_deleted"</code>, 400 <code>"invalid_avatar_file"</code>),
+                <code>Error</code>.</td>
+              <td lang="vi"><code>SendWithData</code> (201/200/422), <code>Pagination</code> (<code>ListUsers</code>),
+                <code>Send</code> (<code>"user_deleted"</code>, 400 <code>"invalid_avatar_file"</code>),
+                <code>Error</code>.</td>
+            </tr>
+            <tr>
+              <td>features/auth/handler/v1/auth_handler.go</td>
+              <td lang="en">Same pattern for login / refresh / logout / sessions / tokens.</td>
+              <td lang="vi">Cùng mẫu cho login / refresh / logout / sessions / tokens.</td>
+            </tr>
+            <tr>
+              <td>common/httpx/uuid_param.go</td>
+              <td lang="en"><code>ParseUUID</code>: 422 for a missing/invalid <code>:uuid</code>, then 400
+                <code>"invalid_uuid"</code>.</td>
+              <td lang="vi"><code>ParseUUID</code>: 422 khi <code>:uuid</code> thiếu/sai, rồi 400
+                <code>"invalid_uuid"</code>.</td>
+            </tr>
+            <tr>
+              <td>router/router.go</td>
+              <td lang="en"><code>NoRoute</code> → 404 <code>"api_not_found"</code>, <code>NoMethod</code> → 404
+                <code>"method_not_found"</code>, <code>GET /health</code> → <code>"app_running"</code>; passes the
+                Responder to <code>Payload</code>, <code>Limiter</code>, <code>Recover</code> middlewares and
+                <code>BearerAuth</code>.</td>
+              <td lang="vi"><code>NoRoute</code> → 404 <code>"api_not_found"</code>, <code>NoMethod</code> → 404
+                <code>"method_not_found"</code>, <code>GET /health</code> → <code>"app_running"</code>; truyền Responder
+                cho middleware <code>Payload</code>, <code>Limiter</code>, <code>Recover</code> và
+                <code>BearerAuth</code>.</td>
+            </tr>
+            <tr>
+              <td>cmd/scaffold/templates.go</td>
+              <td lang="en"><code>make feature NAME=…</code> generates handlers and domain errors in this same style.
+              </td>
+              <td lang="vi"><code>make feature NAME=…</code> sinh handler và lỗi domain theo đúng kiểu này.</td>
+            </tr>
+          </table>
+        </div>
+        <!-- English commands -->
+        <div class="jd-term" data-copy="commands" style="margin-top:14px" lang="en">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 422 error map</span></div>
+          <pre data-hl="bash">
+# 422 — SendWithData puts the field map into "error"
+$ curl -s -X POST localhost:8080/api/v1/auth/login \
+    -H 'Content-Type: application/json' -d '{"email":"nope"}' | jq
+</pre>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:10px" lang="en">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 404 not found</span></div>
+          <pre data-hl="bash">
+# 404 — NoRoute → Send(ctx, 404, "api_not_found")
+$ curl -s localhost:8080/api/v1/nothing-here | jq
+</pre>
+        </div>
+
+        <!-- Vietnamese commands -->
+        <div class="jd-term" data-copy="commands" style="margin-top:14px" lang="vi">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 422 map lỗi</span></div>
+          <pre data-hl="bash">
+# 422 — SendWithData đặt map các trường lỗi vào "error"
+$ curl -s -X POST localhost:8080/api/v1/auth/login \
+    -H 'Content-Type: application/json' -d '{"email":"nope"}' | jq
+</pre>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:10px" lang="vi">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 404 không tìm thấy</span></div>
+          <pre data-hl="bash">
+# 404 — NoRoute → Send(ctx, 404, "api_not_found")
+$ curl -s localhost:8080/api/v1/nothing-here | jq
+</pre>
+        </div>
+      </section>
+
+      <!-- ============================================================ 7. GOTCHAS -->
+      <section id="gotchas" class="jd-section c-red">
+        <div class="jd-section-head">
+          <span class="jd-badge">!</span>
+          <div>
+            <h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2>
+          </div>
+        </div>
+        <div class="jd-explain" style="margin-top:16px">
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">?fields= is off until
+              you turn it on</span><span class="x" lang="en">The Responder reads <code>[]string</code> from gin keys
+              <code>"_response_fields"</code> / <code>"_response_omit"</code>, but nothing in Junkit or Jungo sets them.
+              Add your own middleware
+              (<code>c.Set("_response_fields", strings.Split(c.Query("fields"), ","))</code>).</span><span class="x"
+              lang="vi">Responder đọc <code>[]string</code> từ gin key <code>"_response_fields"</code> /
+              <code>"_response_omit"</code>, nhưng Junkit và Jungo không chỗ nào đặt chúng. Tự viết middleware
+              (<code>c.Set("_response_fields", strings.Split(c.Query("fields"), ","))</code>).</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Paths start at the
+              envelope</span><span class="x" lang="en">The filter runs on the whole <code>Response</code>, so paths look
+              like <code>data.email</code> or <code>data.items{uuid,email}</code>. In fields-mode only what you list
+              survives — <code>fields=data.email</code> also drops <code>status</code>, <code>message</code> and
+              <code>api_info</code>. If filtering fails, the unfiltered response is sent.</span><span class="x"
+              lang="vi">Filter chạy trên toàn bộ <code>Response</code>, nên path có dạng <code>data.email</code> hoặc
+              <code>data.items{uuid,email}</code>. Ở chế độ fields chỉ những gì bạn liệt kê còn lại —
+              <code>fields=data.email</code> cũng bỏ luôn <code>status</code>, <code>message</code> và
+              <code>api_info</code>. Nếu filter lỗi, response gốc được gửi.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Wrapped causes are not
+              logged</span><span class="x" lang="en"><code>Error</code> only calls <code>ctx.Error(err)</code> for
+              non-<code>AppError</code> errors. <code>response.Wrap(response.Internal, "…", dbErr)</code> answers 500
+              but the <code>dbErr</code> never reaches the gin error list — log it yourself if you need it.</span><span
+              class="x" lang="vi"><code>Error</code> chỉ gọi <code>ctx.Error(err)</code> với lỗi không phải
+              <code>AppError</code>. <code>response.Wrap(response.Internal, "…", dbErr)</code> trả 500 nhưng
+              <code>dbErr</code> không vào danh sách lỗi của gin — tự log nếu cần.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Register every
+              key</span><span class="x" lang="en">A key missing from the catalog is sent as the message verbatim
+              (<code>"failed_to_save_user"</code>). Add texts with <code>translator.AddTranslations</code> (see <a
+                href="i18n.html">i18n</a>).</span><span class="x" lang="vi">Key không có trong catalog được gửi nguyên
+              văn làm message (<code>"failed_to_save_user"</code>). Thêm văn bản bằng
+              <code>translator.AddTranslations</code> (xem <a href="i18n.html">i18n</a>).</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">One language per
+              process</span><span class="x" lang="en"><code>Options.Language</code> is fixed at startup; there is no
+              <code>Accept-Language</code> handling. Only English texts are built in — with <code>"vi"</code>, every key
+              you haven't translated falls back to English.</span><span class="x"
+              lang="vi"><code>Options.Language</code> cố định khi khởi động; không xử lý <code>Accept-Language</code>.
+              Chỉ có sẵn tiếng Anh — với <code>"vi"</code>, key nào bạn chưa dịch sẽ dùng bản tiếng Anh.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Call return
+              yourself</span><span class="x" lang="en">The Responder writes the body but doesn't <code>Abort()</code>.
+              In middleware, call <code>c.Abort()</code> after it; in handlers, <code>return</code>.</span><span
+              class="x" lang="vi">Responder ghi body nhưng không <code>Abort()</code>. Trong middleware, gọi
+              <code>c.Abort()</code> sau đó; trong handler, <code>return</code>.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">Filter ≠ encoding/json
+              for embedded structs</span><span class="x" lang="en">When a filter path walks into a struct, an embedded
+              (anonymous) struct without a JSON tag appears as a nested object named after its type instead of being
+              flattened like <code>encoding/json</code> does.</span><span class="x" lang="vi">Khi path filter đi vào một
+              struct, struct nhúng (anonymous) không có JSON tag sẽ thành object lồng mang tên kiểu thay vì được trải
+              phẳng như <code>encoding/json</code>.</span></div>
+        </div>
+      </section>
+
+      <footer class="jd-footer">
+        <span>Jundoc · Junkit · response</span>
+        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
+              Junkit</span></a></span>
+      </footer>
+    </article>
+  </div>
+
+  <script>
+    document.addEventListener("jd:ready", function () {
+      // Mirrors responder.go: statusText, SendWithData routing, Error + errorCodeToHTTPStatus,
+      // and i18n GetMessage's "unknown key → key" fallback (subset of the built-in EN catalog).
+      var EN = {
+        operation_successful: "Operation successful", validation_error: "Validation error",
+        internal_server_error: "Internal Server Error", not_found: "Not found", invalid_request: "Invalid request",
+        api_not_found: "API is not found", database_connection_error: "Database connection error",
+        too_many_requests: "Too many requests. Please try again later."
+      };
+      var STATUS = {
+        BAD_REQUEST: 400, UNAUTHORIZED: 401, NOT_FOUND: 404, FORBIDDEN: 403, CONFLICT: 409,
+        UNSUPPORTED_MEDIA_TYPE: 415, TOO_MANY_REQUESTS: 429, UNPROCESSABLE_ENTITY: 422, INTERNAL_SERVER_ERROR: 500
+      };
+      function msg(k) { return Object.prototype.hasOwnProperty.call(EN, k) ? EN[k] : k; }
+      function statusText(s) { return s >= 400 ? "error" : "success"; }
+      function respond(call, status, key, code, data) {
+        var info = { trace_id: "…", timestamp: "…", latency: "…", version: "v0.1.0", env: "development" };
+        if (call === "apperr") {
+          var st = STATUS[code] || 500;
+          return { http: st, body: { status: "error", code: code, message: msg(key), api_info: info } };
+        }
+        if (call === "plain") { call = "send"; status = 500; key = "internal_server_error"; }
+        var body = { status: statusText(status) };
+        var m = msg(key); if (m) body.message = m;
+        if (call === "data") { if (status >= 400) body.error = data; else body.data = data; }
+        body.api_info = info;
+        return { http: status, body: body };
+      }
+      var d = { email: "required" };
+      console.assert(respond("data", 422, "validation_error", "", d).body.error === d, "status>=400 → error");
+      console.assert(respond("data", 200, "operation_successful", "", d).body.data === d, "status<400 → data");
+      console.assert(respond("data", 399, "x", "", d).body.status === "success", "399 is success");
+      console.assert(respond("apperr", 0, "k", "UNSUPPORTED_MEDIA_TYPE").http === 415, "415 mapping");
+      console.assert(respond("apperr", 0, "k", "SOMETHING_ELSE").http === 500, "unknown code → 500");
+      var p = respond("plain", 200, "x", "NOT_FOUND");
+      console.assert(p.http === 500 && p.body.message === "Internal Server Error" && !("code" in p.body), "plain error → generic 500");
+
+      var ids = ["rs-call", "rs-status", "rs-key", "rs-code"];
+      function paint() {
+        var call = document.getElementById("rs-call").value;
+        var r = respond(call, parseInt(document.getElementById("rs-status").value, 10) || 0,
+          document.getElementById("rs-key").value, document.getElementById("rs-code").value, d);
+        document.getElementById("rs-head").textContent = "HTTP " + r.http;
+        document.getElementById("rs-json").innerHTML = JD.highlight(JSON.stringify(r.body, null, 2), "json");
+      }
+      ids.forEach(function (id) {
+        var el = document.getElementById(id);
+        el.addEventListener("input", paint); el.addEventListener("change", paint);
+      });
+      paint();
+    });
+  </script>
+</body>
+
+</html>

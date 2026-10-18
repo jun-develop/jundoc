@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit scaffold · Jundoc</title>
+  <meta name="description" content="junkit/scaffold: the engine behind make feature — derive name forms, render text/template files without overwriting, number migrations, and (un)register a module in fx.go.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+<body>
+<div id="jd-app" data-root="..">
+<article class="jd-content">
+
+  <!-- ============================================================ HERO -->
+  <header class="jd-hero" style="background:radial-gradient(1000px 380px at 0% 0%, rgba(192,132,252,.55), transparent 60%),linear-gradient(135deg,#3b0764,#6d28d9 55%,#be185d)">
+    <div class="jd-eyebrow">Junkit · scaffold</div>
+    <h1>scaffold</h1>
+    <p lang="en">The engine behind <code>make feature NAME=product</code>: derive name forms, render your <code>text/template</code> files (never overwriting), pick the next migration number, and add / remove the module in <code>fx.go</code>.</p>
+    <p lang="vi">Công cụ đứng sau lệnh <code>make feature NAME=product</code>: chuẩn hóa các biến thể tên gọi (PascalCase, camelCase, snake_case), sinh mã từ <code>text/template</code> (bảo vệ file sẵn có, không bao giờ ghi đè), tự động tính số thứ tự migration tiếp theo và tự động đăng ký / gỡ bỏ module trong <code>fx.go</code>.</p>
+    <div class="jd-chips">
+      <span class="jd-chip">github.com/jun-develop/junkit/scaffold</span>
+      <span class="jd-chip"><span lang="en">no Fx Module — build-time functions for a <code>go run</code> generator</span><span lang="vi">không có Fx Module — các hàm dùng lúc build cho một generator chạy bằng <code>go run</code></span></span>
+      <span class="jd-chip"><span lang="en">depends on: junkit/console · gofmt on PATH (optional)</span><span lang="vi">phụ thuộc: junkit/console · gofmt trong PATH (tuỳ chọn)</span></span>
+    </div>
+  </header>
+
+  <!-- ============================================================ 1. WHAT -->
+  <section id="what" class="jd-section c-purple">
+    <div class="jd-section-head">
+      <span class="jd-badge">1</span>
+      <div>
+        <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
+        <p class="jd-sub" lang="en">scaffold ships <b>no templates</b>. Your app owns them (Jungo: <code>cmd/scaffold/templates.go</code>); scaffold does the boring file and fx.go plumbing.</p>
+        <p class="jd-sub" lang="vi">Package scaffold <b>không kèm template cố định</b>. Ứng dụng của bạn tự định nghĩa template (trong Jungo: <code>cmd/scaffold/templates.go</code>); scaffold tự động hóa toàn bộ việc tạo file, ghi mã nguồn và liên kết vào hệ thống Fx.</p>
+      </div>
+    </div>
+    <div class="jd-flow" style="margin-top:22px" data-wires='[
+      {"from":"s1","to":"s2","color":"purple"},
+      {"from":"s2","to":"s3","color":"purple"},
+      {"from":"s3","to":"s4","color":"purple"}]'>
+      <div class="jd-node is-tint c-purple" data-node="s1"><span class="k">1 · names</span><span class="t mono" style="font-size:15px">NewFeatureData</span><div class="d" lang="en"><code>order_item</code> → OrderItem, orderItem, order_items.</div><div class="d" lang="vi"><code>order_item</code> → OrderItem, orderItem, order_items.</div></div>
+      <div class="jd-node is-tint c-purple" data-node="s2"><span class="k">2 · plan</span><span class="t mono" style="font-size:15px">NextMigrationSeq + []File</span><div class="d" lang="en">Output paths + template strings, e.g. <code>000004_order_items.up.sql</code>.</div><div class="d" lang="vi">Đường dẫn đầu ra + chuỗi template, vd. <code>000004_order_items.up.sql</code>.</div></div>
+      <div class="jd-node is-tint c-purple" data-node="s3"><span class="k">3 · render</span><span class="t mono" style="font-size:15px">Generate</span><div class="d" lang="en">Refuses if any file exists, renders all, <code>gofmt -w</code> the .go files.</div><div class="d" lang="vi">Từ chối nếu file nào đã tồn tại, render tất cả, <code>gofmt -w</code> các file .go.</div></div>
+      <div class="jd-node is-tint c-purple" data-node="s4"><span class="k">4 · register</span><span class="t mono" style="font-size:15px">fx.go</span><div class="d" lang="en">Adds the import and <code>product.Module,</code> after <code>// FEATURES</code>. <code>Remove</code> undoes it.</div><div class="d" lang="vi">Thêm import và <code>product.Module,</code> sau <code>// FEATURES</code>. <code>Remove</code> gỡ lại.</div></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 2. SETUP -->
+  <section id="setup" class="jd-section c-blue">
+    <div class="jd-section-head">
+      <span class="jd-badge">2</span>
+      <div>
+        <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối vào app</span></h2>
+        <p class="jd-sub" lang="en">Not part of your running app and not used with Fx: put a small <code>package main</code> under <code>cmd/</code>, call it from a Makefile target, run it from the project root (paths are relative to the working directory).</p>
+        <p class="jd-sub" lang="vi">Không nằm trong app đang chạy và không dùng với Fx: đặt một <code>package main</code> nhỏ trong <code>cmd/</code>, gọi từ một target của Makefile, chạy ở thư mục gốc của project (đường dẫn tính theo thư mục làm việc).</p>
+      </div>
+    </div>
+    <div class="jd-grid-2" style="margin-top:18px">
+      <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>Makefile (Jungo)</span></div>
+<pre data-hl="bash">
+feature:
+	go run ./cmd/scaffold -name $(NAME) -table "$(TABLE)"
+feature-remove:
+	go run ./cmd/scaffold -name $(NAME) -mode remove
+command:
+	go run ./cmd/scaffold -type command -name $(NAME) -signature $(SIGNATURE) -feature "$(FEATURE)"
+</pre></div>
+      <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go — the marker</span></div>
+<pre data-hl="go">
+import (
+    // ...
+    "jungo/internal/features/auth"   // ← new import goes after the LAST
+    "jungo/internal/features/user"   //   line containing "jungo/"
+    "jungo/internal/router"
+)
+// ...
+        // =====================================================================
+        // FEATURES
+        // =====================================================================
+        auth.Module,                     // ← new "product.Module," goes here
+        user.Module,
+</pre></div>
+    </div>
+
+    <h3 style="margin-top:22px">GenerateConfig</h3>
+    <div class="jd-tablewrap"><table class="jd-params c-blue">
+      <tr><th>field</th><th><span lang="en">type</span><span lang="vi">kiểu</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+      <tr><td>Data</td><td>FeatureData</td><td><span lang="en">Passed to every template as the dot (<code>{{.Pascal}}</code>, <code>{{.Table}}</code>…). <code>Data.Module</code> also anchors the import insertion — must not be empty.</span><span lang="vi">Truyền vào mọi template làm dấu chấm (<code>{{.Pascal}}</code>, <code>{{.Table}}</code>…). <code>Data.Module</code> còn dùng làm mốc chèn import — không được rỗng.</span></td></tr>
+      <tr><td>Files</td><td>[]File</td><td><span lang="en">Files to create: <code>Path</code> (output) + <code>Template</code> (text/template source).</span><span lang="vi">Các file cần tạo: <code>Path</code> (đầu ra) + <code>Template</code> (mã text/template).</span></td></tr>
+      <tr><td>FxFile</td><td>string</td><td><span lang="en">Composition root to edit, e.g. <code>"internal/app/fx.go"</code>. Required — there is no "files only" mode.</span><span lang="vi">File composition root cần sửa, vd. <code>"internal/app/fx.go"</code>. Bắt buộc — không có chế độ "chỉ tạo file".</span></td></tr>
+      <tr><td>ImportPath</td><td>string</td><td><span lang="en">Inserted as <code>"\t\"" + ImportPath + "\""</code> after the last line containing <code>Data.Module + "/"</code>.</span><span lang="vi">Được chèn thành <code>"\t\"" + ImportPath + "\""</code> sau dòng cuối cùng chứa <code>Data.Module + "/"</code>.</span></td></tr>
+      <tr><td>Marker</td><td>string</td><td><span lang="en">First line <b>containing</b> this text, e.g. <code>"// FEATURES"</code>. If the next line contains <code>// ===</code>, insertion goes after that line.</span><span lang="vi">Dòng đầu tiên <b>chứa</b> chuỗi này, vd. <code>"// FEATURES"</code>. Nếu dòng kế tiếp chứa <code>// ===</code>, sẽ chèn sau dòng đó.</span></td></tr>
+      <tr><td>ModuleLine</td><td>string</td><td><span lang="en">The line inserted (with two tabs), e.g. <code>"product.Module,"</code>.</span><span lang="vi">Dòng được chèn (thụt hai tab), vd. <code>"product.Module,"</code>.</span></td></tr>
+    </table></div>
+
+    <h3 style="margin-top:22px">RemoveConfig</h3>
+    <div class="jd-tablewrap"><table class="jd-params c-blue">
+      <tr><th>field</th><th><span lang="en">type</span><span lang="vi">kiểu</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+      <tr><td>Dirs</td><td>[]string</td><td><span lang="en">Deleted with <code>os.RemoveAll</code>. Missing → warning, not an error.</span><span lang="vi">Xoá bằng <code>os.RemoveAll</code>. Không tồn tại → cảnh báo, không lỗi.</span></td></tr>
+      <tr><td>ExtraFiles</td><td>[]string</td><td><span lang="en">Single files outside <code>Dirs</code> (queries, sqlc output). Missing → skipped silently.</span><span lang="vi">Các file lẻ ngoài <code>Dirs</code> (queries, file sqlc sinh ra). Không tồn tại → bỏ qua.</span></td></tr>
+      <tr><td>FxFile · ImportPath · ModuleLine</td><td>string</td><td><span lang="en">Same values as in Generate. Every line containing <code>"ImportPath"</code> (quoted) or <code>ModuleLine</code> is deleted.</span><span lang="vi">Cùng giá trị như khi Generate. Mọi dòng chứa <code>"ImportPath"</code> (có dấu nháy) hoặc <code>ModuleLine</code> đều bị xoá.</span></td></tr>
+    </table></div>
+  </section>
+
+  <!-- ============================================================ 3. QUICK START -->
+  <section id="quick" class="jd-section c-green">
+    <div class="jd-section-head">
+      <span class="jd-badge">3</span>
+      <div>
+        <h2><span lang="en">Use it in 30 seconds: your own generator</span><span lang="vi">Dùng ngay trong 30 giây: generator của riêng bạn</span></h2>
+        <p class="jd-sub" lang="en">A complete <code>cmd/gen/main.go</code> for a module named <code>github.com/acme/api</code>. Hover an explanation to light up its lines.</p>
+        <p class="jd-sub" lang="vi">Một <code>cmd/gen/main.go</code> hoàn chỉnh cho module tên <code>github.com/acme/api</code>. Rê chuột vào giải thích để làm sáng các dòng tương ứng.</p>
+      </div>
+    </div>
+    <div class="jd-grid-2" style="margin-top:18px">
+      <div><div class="jd-sticky">
+        <div class="jd-term" data-copy><div class="jd-term-bar"><i></i><i></i><i></i><span>cmd/gen/main.go</span></div>
+<pre data-hl="go" id="code-quick">
+package main
+
+import (
+    "flag"
+    "path/filepath"
+
+    "github.com/jun-develop/junkit/console"
+    "github.com/jun-develop/junkit/scaffold"
+)
+
+const moduleTmpl = `package {{.Name}}
+
+import "go.uber.org/fx"
+
+// Module wires the {{.Pascal}} feature.
+var Module = fx.Module("{{.Name}}")
+`
+
+const upTmpl = "CREATE TABLE {{.Table}} (id BIGSERIAL PRIMARY KEY);\n"
+
+func main() {
+    name := flag.String("name", "", "feature name in snake_case")
+    flag.Parse()
+
+    data := scaffold.NewFeatureData(*name, "github.com/acme/api", "")
+
+    seq, err := scaffold.NextMigrationSeq("migrations")
+    if err != nil {
+        console.Fatalf("%v", err)
+    }
+
+    err = scaffold.Generate(scaffold.GenerateConfig{
+        Data: data,
+        Files: []scaffold.File{
+            {Path: filepath.Join("internal/features", data.Name, "module.go"), Template: moduleTmpl},
+            {Path: filepath.Join("migrations", seq+"_"+data.Table+".up.sql"), Template: upTmpl},
+        },
+        FxFile:     "internal/app/fx.go",
+        ImportPath: "github.com/acme/api/internal/features/" + data.Name,
+        Marker:     "// FEATURES",
+        ModuleLine: data.Name + ".Module,",
+    })
+    if err != nil {
+        console.Fatalf("%v", err)
+    }
+}
+</pre></div>
+      </div></div>
+      <div class="jd-explain">
+        <div class="jd-ex c-green" data-code="#code-quick" data-show="11-19"><span class="n">1</span><span class="w">templates are yours</span><span class="x" lang="en">Plain <code>text/template</code> strings. The dot is a <code>FeatureData</code>: <code>.Name .Pascal .Camel .Table .Module</code>.</span><span class="x" lang="vi">Chuỗi <code>text/template</code> bình thường. Dấu chấm là một <code>FeatureData</code>: <code>.Name .Pascal .Camel .Table .Module</code>.</span></div>
+        <div class="jd-ex c-green" data-code="#code-quick" data-show="25"><span class="n">2</span><span class="w">NewFeatureData</span><span class="x" lang="en">Third argument overrides the table name; <code>""</code> → name + "s". Validate the name yourself (Jungo uses <code>^[a-z][a-z0-9_]*$</code>).</span><span class="x" lang="vi">Tham số thứ ba ghi đè tên bảng; <code>""</code> → tên + "s". Tự kiểm tra tên (Jungo dùng <code>^[a-z][a-z0-9_]*$</code>).</span></div>
+        <div class="jd-ex c-green" data-code="#code-quick" data-show="27-30"><span class="n">3</span><span class="w">NextMigrationSeq</span><span class="x" lang="en">Highest <code>NNNNNN_*.up.sql</code> + 1, as 6 digits. Missing dir → <code>"000001"</code>.</span><span class="x" lang="vi">Số lớn nhất của <code>NNNNNN_*.up.sql</code> + 1, dạng 6 chữ số. Thư mục không tồn tại → <code>"000001"</code>.</span></div>
+        <div class="jd-ex c-green" data-code="#code-quick" data-show="32-37"><span class="n">4</span><span class="w">Files</span><span class="x" lang="en">If <b>any</b> path already exists, nothing is written. Parent directories are created.</span><span class="x" lang="vi">Nếu <b>bất kỳ</b> đường dẫn nào đã tồn tại thì không ghi gì cả. Thư mục cha được tự tạo.</span></div>
+        <div class="jd-ex c-green" data-code="#code-quick" data-show="38-41"><span class="n">5</span><span class="w">register in fx.go</span><span class="x" lang="en">Your fx.go needs at least one import containing <code>github.com/acme/api/</code> and a <code>// FEATURES</code> comment inside the option list.</span><span class="x" lang="vi">fx.go của bạn cần ít nhất một import chứa <code>github.com/acme/api/</code> và một comment <code>// FEATURES</code> bên trong danh sách option.</span></div>
+        <div class="jd-ex c-green" data-code="#code-quick" data-show="43-45"><span class="n">6</span><span class="w">errors</span><span class="x" lang="en">Errors come from <code>console.NewError</code>; progress lines (<code>Created …</code>, <code>Registered in …</code>) are printed by scaffold itself.</span><span class="x" lang="vi">Lỗi được tạo bằng <code>console.NewError</code>; các dòng tiến trình (<code>Created …</code>, <code>Registered in …</code>) do scaffold tự in.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 4. TRY IT -->
+  <section id="try" class="jd-section c-pink">
+    <div class="jd-section-head">
+      <span class="jd-badge">4</span>
+      <div>
+        <h2><span lang="en">Try it</span><span lang="vi">Thử ngay</span></h2>
+        <p class="jd-sub" lang="en">Type a feature name. Same name derivation as <code>NewFeatureData</code> and the same fx.go edit as <code>Generate</code> (before gofmt).</p>
+        <p class="jd-sub" lang="vi">Gõ tên feature. Cách suy ra tên giống <code>NewFeatureData</code> và cách sửa fx.go giống <code>Generate</code> (trước khi gofmt).</p>
+      </div>
+    </div>
+    <div class="jd-grid-2" style="margin-top:18px">
+      <div>
+        <div class="jd-calc c-pink">
+          <label>name <input type="text" id="sc-name" value="order_item"></label>
+          <label>table <input type="text" id="sc-table" value="" placeholder="(name + s)"></label>
+        </div>
+        <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>FeatureData</span></div><pre id="sc-data"></pre></div>
+      </div>
+      <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go</span></div><pre id="sc-fx"></pre></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 5. API -->
+  <section id="api" class="jd-section c-purple">
+    <div class="jd-section-head">
+      <span class="jd-badge">5</span>
+      <div>
+        <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+        <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/scaffold/*.go</code>. Template rendering, import insertion and marker insertion are internal steps of <code>Generate</code>, not separate functions.</p>
+        <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/scaffold/*.go</code>. Render template, chèn import và chèn theo marker là các bước nội bộ của <code>Generate</code>, không phải hàm riêng.</p>
+      </div>
+    </div>
+    <div class="jd-syms" style="margin-top:18px">
+
+      <div class="jd-sym c-purple">
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NewFeatureData · FeatureData</span></div>
+        <div class="jd-term"><pre data-hl="go">
+func NewFeatureData(name, module, table string) FeatureData
+
+type FeatureData struct {
+    Name   string // as given, snake_case: "order_item"
+    Pascal string // "OrderItem"
+    Camel  string // "orderItem"
+    Table  string // table arg, or Name + "s": "order_items"
+    Module string // your Go module path
+}
+</pre></div>
+        <ul>
+          <li lang="en">Pascal: split on <code>_</code>, upper-case each part's first byte, drop empty parts. Camel: Pascal with the first byte lower-cased.</li>
+          <li lang="vi">Pascal: tách theo <code>_</code>, viết hoa byte đầu của mỗi phần, bỏ phần rỗng. Camel: Pascal với byte đầu viết thường.</li>
+          <li lang="en">No validation and no real pluralisation: <code>category</code> → <code>categorys</code> — pass <code>table</code> to fix it.</li>
+          <li lang="vi">Không kiểm tra tên và không chia số nhiều thật: <code>category</code> → <code>categorys</code> — truyền <code>table</code> để sửa.</li>
+        </ul>
+      </div>
+
+      <div class="jd-sym c-purple">
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NextMigrationSeq</span></div>
+        <div class="jd-term"><pre data-hl="go">func NextMigrationSeq(dir string) (string, error)</pre></div>
+        <ul>
+          <li lang="en">Scans <code>dir</code> for names matching <code>^(\d{6})_.*\.up\.sql$</code>, returns <code>fmt.Sprintf("%06d", max+1)</code>. <code>.down.sql</code> and other files are ignored.</li>
+          <li lang="vi">Quét <code>dir</code> tìm tên khớp <code>^(\d{6})_.*\.up\.sql$</code>, trả về <code>fmt.Sprintf("%06d", max+1)</code>. File <code>.down.sql</code> và file khác bị bỏ qua.</li>
+          <li lang="en">Missing or empty dir → <code>"000001"</code>, nil. Other read errors → <code>""</code> + <code>read &lt;dir&gt;: …</code>.</li>
+          <li lang="vi">Thư mục không tồn tại hoặc rỗng → <code>"000001"</code>, nil. Lỗi đọc khác → <code>""</code> + <code>read &lt;dir&gt;: …</code>.</li>
+        </ul>
+      </div>
+
+      <div class="jd-sym c-green">
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Generate · File · GenerateConfig</span></div>
+        <div class="jd-term"><pre data-hl="go">
+func Generate(cfg GenerateConfig) error
+
+type File struct {
+    Path     string
+    Template string
+}
+</pre></div>
+        <p lang="en">Steps, in order (fields of <code>GenerateConfig</code> are in <a href="#setup">Wire it up</a>):</p>
+        <p lang="vi">Các bước, theo thứ tự (các field của <code>GenerateConfig</code> ở mục <a href="#setup">Kết nối</a>):</p>
+        <ol>
+          <li lang="en">If any <code>File.Path</code> exists → <code>&lt;path&gt; already exists — refusing to overwrite</code>, nothing written.</li>
+          <li lang="vi">Nếu có <code>File.Path</code> nào đã tồn tại → <code>&lt;path&gt; already exists — refusing to overwrite</code>, không ghi gì.</li>
+          <li lang="en">For each file: parse template, <code>MkdirAll</code> the parent (0755), create, execute with <code>Data</code>; prints <code>Created &lt;path&gt;</code>. Errors: <code>parse template for …</code>, <code>create directory for …</code>, <code>create …</code>, <code>render …</code>.</li>
+          <li lang="vi">Với mỗi file: parse template, <code>MkdirAll</code> thư mục cha (0755), tạo file, execute với <code>Data</code>; in <code>Created &lt;path&gt;</code>. Lỗi: <code>parse template for …</code>, <code>create directory for …</code>, <code>create …</code>, <code>render …</code>.</li>
+          <li lang="en"><code>gofmt -w</code> on the <code>.go</code> outputs (failure → warning only).</li>
+          <li lang="vi"><code>gofmt -w</code> các file <code>.go</code> đầu ra (lỗi → chỉ cảnh báo).</li>
+          <li lang="en">Add the import to <code>FxFile</code> → error <code>add import: …</code> (e.g. <code>no existing "&lt;module&gt;" import found in … to anchor the new import next to</code>).</li>
+          <li lang="vi">Thêm import vào <code>FxFile</code> → lỗi <code>add import: …</code> (vd. <code>no existing "&lt;module&gt;" import found in … to anchor the new import next to</code>).</li>
+          <li lang="en">Insert <code>ModuleLine</code> after <code>Marker</code> → error <code>add module line: …</code> (e.g. <code>marker "// FEATURES" not found in …</code>).</li>
+          <li lang="vi">Chèn <code>ModuleLine</code> sau <code>Marker</code> → lỗi <code>add module line: …</code> (vd. <code>marker "// FEATURES" not found in …</code>).</li>
+          <li lang="en"><code>gofmt -w FxFile</code>, prints <code>Registered in …</code>.</li>
+          <li lang="vi"><code>gofmt -w FxFile</code>, in <code>Registered in …</code>.</li>
+        </ol>
+      </div>
+
+      <div class="jd-sym c-red">
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Remove · RemoveConfig</span></div>
+        <div class="jd-term"><pre data-hl="go">func Remove(cfg RemoveConfig) error</pre></div>
+        <ol>
+          <li lang="en">Delete lines containing <code>ModuleLine</code>, then lines containing <code>"ImportPath"</code> from <code>FxFile</code>; <code>gofmt -w</code>. Errors: <code>remove module line: …</code>, <code>remove import: …</code> (e.g. FxFile unreadable — then nothing is deleted).</li>
+          <li lang="vi">Xoá các dòng chứa <code>ModuleLine</code>, rồi các dòng chứa <code>"ImportPath"</code> trong <code>FxFile</code>; <code>gofmt -w</code>. Lỗi: <code>remove module line: …</code>, <code>remove import: …</code> (vd. không đọc được FxFile — khi đó chưa có gì bị xoá).</li>
+          <li lang="en">Delete <code>ExtraFiles</code> (missing ones skipped), then <code>Dirs</code> (missing ones → warning).</li>
+          <li lang="vi">Xoá <code>ExtraFiles</code> (file không có thì bỏ qua), rồi <code>Dirs</code> (không có → cảnh báo).</li>
+          <li lang="en">Does not touch migrations or the database — that is up to you.</li>
+          <li lang="vi">Không đụng tới migration hay database — việc đó do bạn làm.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 6. IN JUNGO -->
+  <section id="jungo" class="jd-section c-orange">
+    <div class="jd-section-head">
+      <span class="jd-badge">6</span>
+      <div>
+        <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+        <p class="jd-sub" lang="en">How to use <code>make feature</code> day to day is on the <a href="../jungo/overview.html#feature">Jungo overview</a>. Here: what calls what.</p>
+        <p class="jd-sub" lang="vi">Cách dùng <code>make feature</code> hằng ngày có ở <a href="../jungo/overview.html#feature">tổng quan Jungo</a>. Ở đây: cái gì gọi cái gì.</p>
+      </div>
+    </div>
+    <div class="jd-tablewrap" style="margin-top:16px"><table class="jd-params c-orange">
+      <tr><th>file</th><th><span lang="en">what it does</span><span lang="vi">làm gì</span></th></tr>
+      <tr><td>cmd/scaffold/main.go</td><td lang="en">Flags <code>-type</code>, <code>-name</code>, <code>-mode</code>, <code>-table</code>, <code>-signature</code>, <code>-feature</code>. Validates the name with <code>^[a-z][a-z0-9_]*$</code>. Create: <code>NewFeatureData(name, "jungo", table)</code> → <code>NextMigrationSeq("internal/database/primary/migrations")</code> → <code>Generate</code> with <code>FxFile "internal/app/fx.go"</code>, <code>Marker "// FEATURES"</code>, <code>ModuleLine "&lt;name&gt;.Module,"</code>. Remove: <code>Remove</code> with the feature dir + <code>internal/database/primary/sqlc/&lt;name&gt;.sql.go</code> + <code>internal/database/primary/queries/&lt;name&gt;.sql</code>, then prints the manual migrate-down / rm / sqlc steps.</td><td lang="vi">Các flag <code>-type</code>, <code>-name</code>, <code>-mode</code>, <code>-table</code>, <code>-signature</code>, <code>-feature</code>. Kiểm tra tên bằng <code>^[a-z][a-z0-9_]*$</code>. Tạo: <code>NewFeatureData(name, "jungo", table)</code> → <code>NextMigrationSeq("internal/database/primary/migrations")</code> → <code>Generate</code> với <code>FxFile "internal/app/fx.go"</code>, <code>Marker "// FEATURES"</code>, <code>ModuleLine "&lt;name&gt;.Module,"</code>. Gỡ: <code>Remove</code> với thư mục feature + <code>internal/database/primary/sqlc/&lt;name&gt;.sql.go</code> + <code>internal/database/primary/queries/&lt;name&gt;.sql</code>, rồi in các bước thủ công migrate-down / rm / sqlc.</td></tr>
+      <tr><td>cmd/scaffold/templates.go</td><td lang="en"><code>featureFiles(data, seq)</code> returns the 12 <code>scaffold.File</code>s: up/down migration, queries, domain (+ errors), repository, service (+ test), dto, handler, router, module.go. The generated router protects every route with <code>middleware.BearerAuth</code>, like <code>user_router.go</code>. The generated <code>module.go</code> contains a <code>// COMMANDS</code> marker.</td><td lang="vi"><code>featureFiles(data, seq)</code> trả về 12 <code>scaffold.File</code>: migration up/down, queries, domain (+ errors), repository, service (+ test), dto, handler, router, module.go. Router sinh ra bảo vệ mọi route bằng <code>middleware.BearerAuth</code>, giống <code>user_router.go</code>. File <code>module.go</code> sinh ra có marker <code>// COMMANDS</code>.</td></tr>
+      <tr><td>cmd/scaffold/command.go</td><td lang="en"><code>make command</code>. Uses scaffold only for <code>NewFeatureData(…).Pascal</code>; writing the file, inserting the <code>fx.Provide(fx.Annotate(…))</code> block after <code>// COMMANDS</code> and adding imports are done by its <b>own</b> helpers (<code>writeCommandFile</code>, <code>insertAfterMarker</code>, <code>insertImportLineIfMissing</code>) — copies of scaffold's internal logic, also refusing to overwrite.</td><td lang="vi"><code>make command</code>. Chỉ dùng scaffold cho <code>NewFeatureData(…).Pascal</code>; ghi file, chèn khối <code>fx.Provide(fx.Annotate(…))</code> sau <code>// COMMANDS</code> và thêm import do các helper <b>riêng</b> của nó làm (<code>writeCommandFile</code>, <code>insertAfterMarker</code>, <code>insertImportLineIfMissing</code>) — bản sao logic nội bộ của scaffold, cũng từ chối ghi đè.</td></tr>
+      <tr><td>internal/app/fx.go</td><td lang="en">Holds the <code>// FEATURES</code> marker where <code>auth.Module,</code> and <code>user.Module,</code> live.</td><td lang="vi">Chứa marker <code>// FEATURES</code>, nơi có <code>auth.Module,</code> và <code>user.Module,</code>.</td></tr>
+      <tr><td>internal/console/commands/module.go</td><td lang="en">Holds the <code>// COMMANDS</code> marker for global commands.</td><td lang="vi">Chứa marker <code>// COMMANDS</code> cho các command global.</td></tr>
+    </table></div>
+  </section>
+
+  <!-- ============================================================ 7. GOTCHAS -->
+  <section id="gotchas" class="jd-section c-red">
+    <div class="jd-section-head">
+      <span class="jd-badge">!</span>
+      <div><h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2></div>
+    </div>
+    <div class="jd-explain" style="margin-top:16px">
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">Files first, fx.go second</span><span class="x" lang="en">If the fx.go step fails (no marker, no anchor import, wrong FxFile) the files are already on disk. Fix fx.go by hand or delete them before retrying — a rerun will refuse to overwrite.</span><span class="x" lang="vi">Nếu bước fx.go lỗi (không có marker, không có import làm mốc, sai FxFile) thì các file đã nằm trên đĩa. Sửa fx.go bằng tay hoặc xoá chúng trước khi chạy lại — chạy lại sẽ bị từ chối vì không ghi đè.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Module must be set</span><span class="x" lang="en">The import goes after the <b>last line anywhere in the file</b> containing <code>Module + "/"</code>. With an empty Module that is any line with a <code>/</code> — such as the <code>// FEATURES</code> comment.</span><span class="x" lang="vi">Import được chèn sau <b>dòng cuối cùng trong cả file</b> chứa <code>Module + "/"</code>. Nếu Module rỗng thì đó là bất kỳ dòng nào có <code>/</code> — kể cả comment <code>// FEATURES</code>.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Markers are substrings</span><span class="x" lang="en">The first line <i>containing</i> the marker wins. Pick a unique marker: <code>// USER</code> would also match a line <code>// USERS</code> above it.</span><span class="x" lang="vi">Dòng đầu tiên <i>chứa</i> marker sẽ được chọn. Hãy chọn marker duy nhất: <code>// USER</code> cũng sẽ khớp với dòng <code>// USERS</code> nằm phía trên.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Remove matches substrings too</span><span class="x" lang="en">Removing <code>product</code> deletes every line containing <code>product.Module,</code> — which also matches <code>order_product.Module,</code>. Check <code>git diff</code> after removing.</span><span class="x" lang="vi">Gỡ <code>product</code> sẽ xoá mọi dòng chứa <code>product.Module,</code> — khớp luôn cả <code>order_product.Module,</code>. Kiểm tra <code>git diff</code> sau khi gỡ.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">text/template, not html</span><span class="x" lang="en">Nothing is escaped. To emit a Go struct tag backtick inside a Go raw-string template, Jungo writes <code>{{"`"}}</code> via string concatenation.</span><span class="x" lang="vi">Không có gì được escape. Để in dấu backtick của struct tag bên trong template là raw string của Go, Jungo viết <code>{{"`"}}</code> bằng cách nối chuỗi.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">gofmt is optional</span><span class="x" lang="en">Missing <code>gofmt</code> only prints a warning; the inserted lines then keep their hard-coded tab indentation.</span><span class="x" lang="vi">Thiếu <code>gofmt</code> chỉ in cảnh báo; khi đó các dòng được chèn giữ nguyên thụt lề bằng tab cố định.</span></div>
+    </div>
+  </section>
+
+  <footer class="jd-footer">
+    <span>Jundoc · Junkit · scaffold</span>
+    <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package Junkit</span></a></span>
+  </footer>
+</article>
+</div>
+
+<script>
+document.addEventListener("jd:ready", function () {
+  // Mirrors NewFeatureData (toPascalCase / toCamelCase) and addImportLine + addModuleLine.
+  function pascal(s) { return s.split("_").filter(Boolean).map(function (p) { return p[0].toUpperCase() + p.slice(1); }).join(""); }
+  function camel(s) { var p = pascal(s); return p ? p[0].toLowerCase() + p.slice(1) : p; }
+  function featureData(name, module, table) { return { Name: name, Pascal: pascal(name), Camel: camel(name), Table: table || name + "s", Module: module }; }
+  function addImport(lines, module, importPath) {
+    var anchor = -1;
+    lines.forEach(function (l, i) { if (l.indexOf(module + "/") !== -1) anchor = i; });
+    if (anchor === -1) throw new Error("no anchor");
+    return lines.slice(0, anchor + 1).concat(["\t\"" + importPath + "\""], lines.slice(anchor + 1));
+  }
+  function addModule(lines, marker, moduleLine) {
+    var at = -1;
+    for (var i = 0; i < lines.length; i++) if (lines[i].indexOf(marker) !== -1) { at = i; break; }
+    if (at === -1) throw new Error("marker not found");
+    var ins = at + 1;
+    if (ins < lines.length && lines[ins].indexOf("// ===") !== -1) ins++;
+    return lines.slice(0, ins).concat(["\t\t" + moduleLine], lines.slice(ins));
+  }
+  var d = featureData("order_item", "jungo", "");
+  console.assert(d.Pascal === "OrderItem" && d.Camel === "orderItem" && d.Table === "order_items", "NewFeatureData");
+  console.assert(featureData("category", "jungo", "product_categories").Table === "product_categories", "table override");
+
+  var FX = [
+    "import (",
+    "\t\"go.uber.org/fx\"",
+    "",
+    "\t\"jungo/internal/features/auth\"",
+    "\t\"jungo/internal/features/user\"",
+    "\t\"jungo/internal/router\"",
+    ")",
+    "",
+    "\t\t// =====================================================================",
+    "\t\t// FEATURES",
+    "\t\t// =====================================================================",
+    "\t\tauth.Module,",
+    "\t\tuser.Module,"];
+  var out = addModule(addImport(FX, "jungo", "jungo/internal/features/product"), "// FEATURES", "product.Module,");
+  console.assert(out[6] === "\t\"jungo/internal/features/product\"" && out[12] === "\t\tproduct.Module,", "fx.go edit");
+
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function paint() {
+    var name = document.getElementById("sc-name").value.trim();
+    var table = document.getElementById("sc-table").value.trim();
+    var data = featureData(name, "jungo", table);
+    document.getElementById("sc-data").innerHTML = JD.highlight(JSON.stringify(data, null, 2), "json");
+    var res = addModule(addImport(FX, "jungo", "jungo/internal/features/" + name), "// FEATURES", name + ".Module,");
+    var added = { 6: 1, 12: 1 };
+    document.getElementById("sc-fx").innerHTML = res.map(function (l, i) {
+      var t = esc(l.replace(/\t/g, "    "));
+      return added[i] ? '<span style="background:color-mix(in srgb, var(--green) 22%, transparent)">+ ' + t + '</span>' : "  " + t;
+    }).join("\n");
+  }
+  ["sc-name", "sc-table"].forEach(function (id) { document.getElementById(id).addEventListener("input", paint); });
+  paint();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jundoc</title>
+  <meta name="description" content="Visual, bilingual docs for Jungo and Junkit.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/jundoc.css">
+  <script src="assets/js/nav.js"></script>
+  <script src="assets/js/jundoc.js"></script>
+</head>
+<body>
+<div id="jd-app" data-root=".">
+<article class="jd-content">
+  <header class="jd-hero">
+    <div class="jd-eyebrow">Jundoc</div>
+    <h1><span lang="en">Docs you can see</span><span lang="vi">Tài liệu nhìn là hiểu</span></h1>
+    <p lang="en">Animated, bilingual guides for Jungo and Junkit. Pick a page — every diagram shows the real code paths.</p>
+    <p lang="vi">Hướng dẫn có hoạt ảnh, song ngữ cho Jungo và Junkit. Chọn một trang — mọi sơ đồ đều đi theo đúng code thật.</p>
+  </header>
+  <div class="jd-groups" id="jd-groups"></div>
+</article>
+</div>
+<dialog class="jd-pop" id="jd-pop" aria-labelledby="jd-pop-title">
+  <div class="jd-pop-head">
+    <h2 id="jd-pop-title"></h2>
+    <button type="button" class="jd-btn" data-close aria-label="Close">✕</button>
+  </div>
+  <div class="jd-cards" id="jd-pop-cards"></div>
+</dialog>
+<script>
+document.addEventListener("jd:ready", function () {
+  var groups = (window.JUNDOC_NAV || []).filter(function (g) { return g.items.some(function (it) { return it.desc; }); });
+  var pop = document.getElementById("jd-pop");
+
+  function card(g, it) {
+    var c = "var(--" + (it.color || "purple") + ")";
+    var inner = '<span class="jd-soon" style="color:' + c + ';border-color:' + c + '">' + JD.bi(g.group) + "</span>" +
+      "<h3>" + JD.bi(it.title) + "</h3><p>" + JD.bi(it.desc) + "</p>" +
+      (it.soon ? '<p style="margin-top:10px;font-weight:700">' + JD.bi({ en: "Coming soon", vi: "Sắp có" }) + "</p>" : "");
+    return it.soon || !it.href
+      ? '<div class="jd-card is-soon" style="--c:' + c + '">' + inner + "</div>"
+      : '<a class="jd-card" style="--c:' + c + '" href="' + it.href + '">' + inner + "</a>";
+  }
+
+  document.getElementById("jd-groups").innerHTML = groups.map(function (g, i) {
+    var c = "var(--" + (g.items[0].color || "purple") + ")";
+    return '<button type="button" class="jd-card" style="--c:' + c + '" data-group="' + i + '"><h3>' + JD.bi(g.group) + "</h3><p>" +
+      g.items.length + " " + JD.bi({ en: "pages", vi: "trang" }) + "</p></button>";
+  }).join("");
+
+  document.getElementById("jd-groups").addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-group]");
+    if (!btn) return;
+    var g = groups[btn.dataset.group];
+    document.getElementById("jd-pop-title").innerHTML = JD.bi(g.group);
+    document.getElementById("jd-pop-cards").innerHTML = g.items.filter(function (it) { return it.desc; }).map(function (it) { return card(g, it); }).join("");
+    pop.showModal();
+  });
+  // close on ✕ or a click on the backdrop
+  pop.addEventListener("click", function (e) { if (e.target === pop || e.target.closest("[data-close]")) pop.close(); });
+});
+</script>
+</body>
+</html>

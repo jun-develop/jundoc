@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit · Jundoc</title>
+  <meta name="description" content="Junkit: the reusable Go infrastructure packages behind Jungo — how they fit together and one page per package.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+<body>
+<div id="jd-app" data-root="..">
+<article class="jd-content">
+
+  <header class="jd-hero" style="background:radial-gradient(1000px 380px at 0% 0%, rgba(52,211,153,.5), transparent 60%),radial-gradient(900px 380px at 100% 0%, rgba(96,165,250,.45), transparent 60%),linear-gradient(135deg,#064e3b,#065f46 45%,#1e3a8a)">
+    <div class="jd-eyebrow">Junkit</div>
+    <h1>Junkit</h1>
+    <p lang="en">18 modular infrastructure packages for Go backends built on Gin and Uber Fx — logging, database, cache, responses, validation, security, middleware and more. Jungo is built on them, but each package works completely standalone.</p>
+    <p lang="vi">18 package hạ tầng độc lập cho Go backend xây dựng trên Gin và Uber Fx — logging, database, cache, response chuẩn, validation, bảo mật, middleware và hơn thế nữa. Jungo sử dụng bộ kit này làm nền tảng, nhưng từng package đều có thể tách rời và tích hợp vào bất kỳ dự án Go nào.</p>
+    <div class="jd-chips">
+      <span class="jd-chip">go get github.com/jun-develop/junkit</span>
+      <span class="jd-chip">Go 1.26.5+</span>
+      <span class="jd-chip"><span lang="en">Fx optional</span><span lang="vi">Fx không bắt buộc</span></span>
+    </div>
+  </header>
+
+  <!-- ============================================================ 1. PRINCIPLES -->
+  <section id="principles" class="jd-section c-green">
+    <div class="jd-section-head">
+      <span class="jd-badge">1</span>
+      <div>
+        <h2><span lang="en">Four rules that make every package predictable</span><span lang="vi">Bốn nguyên tắc thiết kế nhất quán cho mọi package</span></h2>
+        <p class="jd-sub" lang="en">Learn these once, then every package in Junkit follows the exact same pattern.</p>
+        <p class="jd-sub" lang="vi">Chỉ cần nắm 4 nguyên tắc này, bạn sẽ dễ dàng sử dụng và tích hợp bất kỳ package nào trong Junkit.</p>
+      </div>
+    </div>
+    <div class="jd-rules" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+      <div class="jd-rule"><span class="n" style="background:var(--green)">1</span>
+        <h4><span lang="en">Configured by a plain Options struct</span><span lang="vi">Cấu hình tường minh qua struct Options độc lập</span></h4>
+        <p lang="en">No package reads env vars or files directly. Your application builds each <code>Options</code> (Jungo builds them from <code>.env</code> in <code>internal/app/fx.go</code>).</p>
+        <p lang="vi">Không package nào tự tiện đọc biến môi trường (.env) hay file cấu hình. Ứng dụng của bạn tự khởi tạo Options (trong Jungo, các Options được map từ .env tại <code>internal/app/fx.go</code>).</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--blue)">2</span>
+        <h4><span lang="en">One line to register: Module</span><span lang="vi">Đăng ký một dòng duy nhất: Module</span></h4>
+        <p lang="en">Supply the Options, then add <code>pkg.Module</code>. Every constructor is also exported, so Fx is never mandatory.</p>
+        <p lang="vi">Chỉ cần cung cấp Options, sau đó nạp <code>pkg.Module</code> vào Fx. Tất cả constructor đều được export nên bạn hoàn toàn có thể dùng thủ công mà không phụ thuộc vào Fx.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--purple)">3</span>
+        <h4><span lang="en">Depend on interfaces</span><span lang="vi">Lập trình hướng Interface</span></h4>
+        <p lang="en"><code>Responder</code>, <code>Cache[T]</code>, <code>storage.Service</code>, <code>Notifier</code>, <code>Verifier</code>, <code>TokenSealer</code>… Swap Redis ↔ memory or real ↔ mock via config; easy to inject fakes in tests.</p>
+        <p lang="vi"><code>Responder</code>, <code>Cache[T]</code>, <code>storage.Service</code>, <code>Notifier</code>, <code>Verifier</code>, <code>TokenSealer</code>… Dễ dàng chuyển đổi Redis ↔ Memory hoặc Driver thật ↔ Mock qua cấu hình; thuận tiện truyền Fake/Mock khi viết Unit Test.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--orange)">4</span>
+        <h4><span lang="en">Core never imports optional</span><span lang="vi">Package lõi không import phụ thuộc tùy chọn</span></h4>
+        <p lang="en">Extension points connect them instead — e.g. <code>postgres.Options.Decorate</code> lets <code>tracer</code> monitor every query without <code>database/postgres</code> ever importing it.</p>
+        <p lang="vi">Mở rộng chức năng qua Extension Points — ví dụ <code>postgres.Options.Decorate</code> cho phép tracer ghi nhận mọi câu query mà không bắt database/postgres phải import tracer.</p></div>
+    </div>
+
+    <h3><span lang="en">Standard integration flow for any package with a Module</span><span lang="vi">Luồng tích hợp chuẩn cho package có Module</span></h3>
+    <div class="jd-flow" data-wires='[
+      {"from":"o1","to":"o2","color":"green","label":"Options"},
+      {"from":"o2","to":"o3","color":"green","label":"*DB, Responder…"}]'>
+      <div class="jd-node is-tint c-green" data-node="o1"><span class="k">1 · your config</span><span class="t mono" style="font-size:15px">fx.Provide(provideXOptions)</span><div class="d" lang="en">or <code>fx.Supply(x.Options{…})</code></div><div class="d" lang="vi">hoặc <code>fx.Supply(x.Options{…})</code></div></div>
+      <div class="jd-node is-tint c-green" data-node="o2"><span class="k">2 · Junkit</span><span class="t mono" style="font-size:15px">x.Module</span><div class="d" lang="en">Calls the package constructor with your Options.</div><div class="d" lang="vi">Gọi constructor của package với Options tương ứng.</div></div>
+      <div class="jd-node is-tint c-blue" data-node="o3"><span class="k">3 · your code</span><span class="t mono" style="font-size:15px">func NewThing(db *postgres.DB…)</span><div class="d" lang="en">Request the component as a constructor parameter (see <a href="../jungo/uber-fx.html">Uber Fx</a>).</div><div class="d" lang="vi">Yêu cầu inject đối tượng qua tham số của constructor (xem <a href="../jungo/uber-fx.html">Uber Fx</a>).</div></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 2. PACKAGES -->
+  <section id="packages" class="jd-section c-blue">
+    <div class="jd-section-head">
+      <span class="jd-badge">2</span>
+      <div>
+        <h2><span lang="en">All packages</span><span lang="vi">Tất cả package</span></h2>
+        <p class="jd-sub" lang="en">One page each: what it does, how to wire it, a 30-second example, full API, how Jungo uses it, and pitfalls.</p>
+        <p class="jd-sub" lang="vi">Mỗi package có một trang tài liệu riêng: giải thích tính năng, cách cấu hình &amp; tích hợp, ví dụ nhanh 30 giây, danh sách API đầy đủ, cách Jungo sử dụng thực tế, cùng các lưu ý quan trọng.</p>
+      </div>
+    </div>
+    <div id="pkg-groups"></div>
+  </section>
+
+  <!-- ============================================================ 3. MODULES TABLE -->
+  <section id="modules" class="jd-section c-purple">
+    <div class="jd-section-head">
+      <span class="jd-badge">3</span>
+      <div>
+        <h2><span lang="en">What each Module needs and provides</span><span lang="vi">Mỗi Module cần gì và cung cấp gì</span></h2>
+        <p class="jd-sub" lang="en">Read from each package's <code>module.go</code> / constructor. "Needs" = what must already be in the Fx graph.</p>
+        <p class="jd-sub" lang="vi">Đọc từ <code>module.go</code> / constructor của từng package. "Cần" = những thành phần bắt buộc phải có sẵn trong Fx graph.</p>
+      </div>
+    </div>
+    <div class="jd-tablewrap" style="margin-top:16px"><table class="jd-params c-purple">
+      <tr><th>Module</th><th><span lang="en">needs</span><span lang="vi">cần</span></th><th><span lang="en">provides</span><span lang="vi">cung cấp</span></th><th><span lang="en">in Jungo</span><span lang="vi">trong Jungo</span></th></tr>
+      <tr><td>logger.Module</td><td>logger.Options, fx.Lifecycle</td><td>*zap.Logger</td><td lang="en">not used — Jungo calls <code>logger.ProvideNamed</code> for the app / http / sql / limiter loggers</td><td lang="vi">không dùng — Jungo gọi <code>logger.ProvideNamed</code> để tạo riêng các logger chuyên biệt: app, http, sql, limiter</td></tr>
+      <tr><td>i18n.Module</td><td>—</td><td>*i18n.Translator</td><td>✓</td></tr>
+      <tr><td>response.Module</td><td>response.Options, *i18n.Translator</td><td>response.Responder</td><td>✓</td></tr>
+      <tr><td>validation.Module</td><td>validation.Options, *i18n.Translator</td><td>*validation.Validator</td><td>✓</td></tr>
+      <tr><td>postgres.Module</td><td>postgres.Options, *zap.Logger, fx.Lifecycle</td><td>*postgres.DB</td><td lang="en">not used — one type per database: <code>primary.Module</code> calls <code>postgres.NewDatabase</code> and provides <code>*primary.DB</code>, inside <code>fx.Module("database")</code> with the "sql" logger</td><td lang="vi">không dùng — mỗi database một type riêng: <code>primary.Module</code> gọi <code>postgres.NewDatabase</code> và cung cấp <code>*primary.DB</code>, bên trong <code>fx.Module("database")</code> với logger "sql"</td></tr>
+      <tr><td>security.Module</td><td>security.Options</td><td>security.TokenSealer, security.PasswordHasher</td><td>✓</td></tr>
+      <tr><td>cache.Module</td><td>cache.Options</td><td>cache.Cache[any]</td><td lang="en">✓ (features usually call <code>cache.New[T]</code> for typed caches)</td><td lang="vi">✓ (các feature thường dùng <code>cache.New[T]</code> để có cache định kiểu an toàn)</td></tr>
+      <tr><td>storage.Module</td><td>storage.Options</td><td>storage.Service</td><td>✓</td></tr>
+      <tr><td>httpclient.Module</td><td>httpclient.Options</td><td>*http.Client</td><td lang="en">not used — Jungo provides <code>httpclient.NewDefaultClient</code></td><td lang="vi">không dùng — Jungo cung cấp <code>httpclient.NewDefaultClient</code></td></tr>
+      <tr><td>telegram.Module</td><td>telegram.Options, *http.Client, *zap.Logger</td><td>telegram.Client</td><td>✓</td></tr>
+      <tr><td>notification.Module</td><td>notification.Options, telegram.Client</td><td>notification.Notifier</td><td>✓</td></tr>
+      <tr><td>recaptcha.Module</td><td>recaptcha.Options, *http.Client</td><td>recaptcha.Verifier</td><td>✓</td></tr>
+      <tr><td style="color:var(--muted)">console · pagination · database · sqlfmt · middleware · tracer · scaffold</td><td colspan="3" lang="en">No Module: plain functions, per-route constructors, request-scoped context, or build-time tooling. Import and call them directly.</td><td colspan="3" lang="vi">Không cần Module: các package này cung cấp hàm tiện ích, middleware theo route, context gắn theo request hoặc công cụ CLI lúc build. Bạn chỉ cần import và sử dụng trực tiếp.</td></tr>
+    </table></div>
+  </section>
+
+  <footer class="jd-footer">
+    <span>Jundoc · Junkit</span>
+    <span><a href="../jungo/overview.html"><span lang="en">Jungo overview</span><span lang="vi">Tổng quan Jungo</span></a> · <a href="../jungo/uber-fx.html">Uber Fx</a></span>
+  </footer>
+</article>
+</div>
+
+<script>
+document.addEventListener("jd:ready", function () {
+  var groups = [
+    { t: { en: "Foundation — every app needs these", vi: "Nền tảng — app nào cũng cần" }, p: ["logger", "i18n", "response", "validation", "pagination", "console"] },
+    { t: { en: "Data", vi: "Dữ liệu" }, p: ["database", "cache", "storage", "sqlfmt"] },
+    { t: { en: "Outside services", vi: "Dịch vụ bên ngoài" }, p: ["httpclient", "telegram", "notification", "recaptcha"] },
+    { t: { en: "HTTP & security", vi: "HTTP & bảo mật" }, p: ["security", "middleware", "tracer"] },
+    { t: { en: "Tooling", vi: "Công cụ" }, p: ["scaffold"] }
+  ];
+  var byName = {};
+  (window.JUNDOC_NAV || []).forEach(function (g) { g.items.forEach(function (it) { if (it.pkg) byName[it.title.en] = it; }); });
+  document.getElementById("pkg-groups").innerHTML = groups.map(function (g) {
+    return "<h3>" + JD.bi(g.t) + '</h3><div class="jd-cards" style="margin-top:0">' + g.p.map(function (n) {
+      var it = byName[n], c = "var(--" + (it ? it.color : "green") + ")";
+      return '<a class="jd-card" style="--c:' + c + '" href="' + n + '.html"><span class="jd-soon" style="color:' + c + ";border-color:" + c + '">junkit/' + n + "</span><h3>" + n + "</h3><p>" + (it ? JD.bi(it.desc) : "") + "</p></a>";
+    }).join("") + "</div>";
+  }).join("");
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit database · Jundoc</title>
+  <meta name="description"
+    content="junkit/database + database/postgres: a pgx PostgreSQL pool whose Executor(ctx) joins the transaction in ctx, query logging, and driver-independent error mapping.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+
+<body>
+  <div id="jd-app" data-root="..">
+    <article class="jd-content">
+
+      <!-- ============================================================ HERO -->
+      <header class="jd-hero"
+        style="background:radial-gradient(1000px 380px at 0% 0%, rgba(96,165,250,.5), transparent 60%),linear-gradient(135deg,#1e1b4b,#1e40af 55%,#0369a1)">
+        <div class="jd-eyebrow">Junkit · database</div>
+        <h1>database</h1>
+        <p lang="en">A PostgreSQL pool whose <code>Executor(ctx)</code> picks up the transaction in <code>ctx</code>
+          by itself — so a repository never has to know whether it runs inside one.</p>
+        <p lang="vi">Một pool PostgreSQL có <code>Executor(ctx)</code> tự lấy transaction nằm trong <code>ctx</code> —
+          nên repository không bao giờ phải biết mình có đang chạy trong transaction hay không.</p>
+        <div class="jd-chips">
+          <span class="jd-chip">junkit/database</span>
+          <span class="jd-chip">junkit/database/postgres</span>
+          <span class="jd-chip">pgx/v5 · pgxpool · zap · fx</span>
+        </div>
+      </header>
+
+      <!-- ============================================================ 1. USE -->
+      <section id="use" class="jd-section c-blue">
+        <div class="jd-section-head">
+          <span class="jd-badge">1</span>
+          <div>
+            <h2><span lang="en">Use it in a repository</span><span lang="vi">Dùng trong repository</span></h2>
+            <p class="jd-sub" lang="en">How Jungo writes it. Hover an explanation to highlight the code.</p>
+            <p class="jd-sub" lang="vi">Cách Jungo đang viết. Rê chuột vào phần giải thích để xem dòng code tương
+              ứng.</p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <div class="jd-sticky">
+              <div class="jd-term" data-copy>
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>product_repository.go</span></div>
+                <pre data-hl="go" id="code-repo">
+type ProductRepository struct {
+    db *primary.DB
+}
+
+func NewProductRepository(db *primary.DB) *ProductRepository {
+    return &amp;ProductRepository{db: db}
+}
+
+func (r *ProductRepository) Create(ctx context.Context, input domain.CreateProductInput) (*domain.Product, error) {
+    row, err := r.db.Queries(ctx).CreateProduct(ctx, sqlc.CreateProductParams{Name: input.Name})
+    if err != nil {
+        return nil, database.Match(err, map[database.ErrorType]error{
+            database.ErrorUniqueViolation: domain.ErrProductExists,
+        })
+    }
+    return mapProduct(row), nil
+}
+
+func (r *ProductRepository) ListByCategory(ctx context.Context, categoryID int64) ([]productRow, error) {
+    rows, err := r.db.Executor(ctx).Query(ctx, `SELECT id, name FROM products WHERE category_id = $1`, categoryID)
+    if err != nil {
+        return nil, err
+    }
+    return pgx.CollectRows(rows, pgx.RowToStructByName[productRow])
+}
+
+func (r *ProductRepository) WithTransaction(ctx context.Context, fn func(context.Context) error) error {
+    return r.db.WithTransaction(ctx, fn)
+}
+</pre>
+              </div>
+              <div class="jd-term" data-copy style="margin-top:12px">
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>product_service.go</span></div>
+                <pre data-hl="go" id="code-svc">
+err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
+    if _, err := s.repo.Create(txCtx, input); err != nil {
+        return err // rollback
+    }
+    return s.repo.AddHistory(txCtx, entry) // same transaction
+})
+</pre>
+              </div>
+            </div>
+          </div>
+          <div class="jd-explain">
+            <div class="jd-ex c-blue" data-code="#code-repo" data-show="1-7"><span class="n">1</span><span
+                class="w">*primary.DB</span><span class="x" lang="en">Fx injects it. The type decides which database the
+                repository gets, so it can never be handed the wrong one.</span><span class="x" lang="vi">Fx inject vào.
+                Type này quyết định repository nhận database nào, nên không bao giờ nhận nhầm.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-repo" data-show="10"><span class="n">2</span><span
+                class="w">Queries(ctx)</span><span class="x" lang="en">The sqlc queries, bound to the transaction in
+                <code>ctx</code> if there is one, otherwise to the pool. Call it in every method with that method's
+                <code>ctx</code>.</span><span class="x" lang="vi">Các query của sqlc, gắn với transaction trong
+                <code>ctx</code> nếu có, không thì gắn với pool. Gọi trong mỗi method với đúng <code>ctx</code> của
+                method đó.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-repo" data-show="11-15"><span class="n">3</span><span
+                class="w">Match</span><span class="x" lang="en">Turns a database error into your domain error. An error
+                type not in the map is returned unchanged.</span><span class="x" lang="vi">Đổi lỗi database thành lỗi
+                domain của bạn. Loại lỗi không có trong map thì trả về nguyên vẹn.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-repo" data-show="20-24"><span class="n">4</span><span
+                class="w">hand-written SQL</span><span class="x" lang="en">For queries sqlc can't express, use
+                <code>Executor(ctx)</code> — the same executor <code>Queries</code> uses, so the query is traced and
+                joins the transaction too.</span><span class="x" lang="vi">Với query mà sqlc không viết được, dùng
+                <code>Executor(ctx)</code> — chính executor mà <code>Queries</code> dùng, nên query vẫn được trace và
+                vẫn vào transaction.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-repo" data-show="27-29"><span class="n">5</span><span
+                class="w">WithTransaction</span><span class="x" lang="en">Forward it, so the service depends only on the
+                repository interface.</span><span class="x" lang="vi">Chuyển tiếp hàm này, để service chỉ phụ thuộc vào
+                interface của repository.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-svc" data-show="1-6"><span class="n">6</span><span
+                class="w">txCtx</span><span class="x" lang="en">Pass <code>txCtx</code> to every call that belongs to the
+                transaction. Return <code>nil</code> to commit, an error to roll back.</span><span class="x"
+                lang="vi">Truyền <code>txCtx</code> cho mọi lời gọi thuộc transaction. Trả <code>nil</code> để commit,
+                trả lỗi để rollback.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 2. HOW -->
+      <section id="how" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">2</span>
+          <div>
+            <h2><span lang="en">How it works</span><span lang="vi">Cách hoạt động</span></h2>
+            <p class="jd-sub" lang="en">Every query takes the same path.</p>
+            <p class="jd-sub" lang="vi">Mọi query đều đi cùng một đường.</p>
+          </div>
+        </div>
+        <div class="jd-flow" style="margin-top:14px" data-wires='[
+      {"from":"q1","to":"q2","color":"blue","label":"ctx"},
+      {"from":"q2","to":"q3","color":"purple","label":"DBTX"},
+      {"from":"q3","to":"q4","color":"red","label":"err","dashed":true}]'>
+          <div class="jd-node is-tint c-blue" data-node="q1"><span class="k">1 · repository</span><span class="t mono"
+              style="font-size:15px">Queries(ctx) · Executor(ctx)</span>
+            <div class="d" lang="en">sqlc or hand-written SQL.</div>
+            <div class="d" lang="vi">sqlc hoặc SQL viết tay.</div>
+          </div>
+          <div class="jd-node is-tint c-orange" data-node="q2"><span class="k">2 · pick</span><span class="t mono"
+              style="font-size:15px">tx in ctx ? tx : pool</span>
+            <div class="d" lang="en">Only a transaction begun by this same DB counts.</div>
+            <div class="d" lang="vi">Chỉ tính transaction do chính DB này mở.</div>
+          </div>
+          <div class="jd-node is-tint c-purple" data-node="q3"><span class="k">3 · run</span><span class="t mono"
+              style="font-size:15px">tracer → pgx → log</span>
+            <div class="d" lang="en">Recorded for the debug dashboard and written to the sql log.</div>
+            <div class="d" lang="vi">Được ghi lại cho debug dashboard và vào log sql.</div>
+          </div>
+          <div class="jd-node is-tint c-red" data-node="q4"><span class="k">4 · error</span><span class="t mono"
+              style="font-size:15px">Match(err, map)</span>
+            <div class="d" lang="en">Postgres error → <code>ErrorType</code> → domain error.</div>
+            <div class="d" lang="vi">Lỗi Postgres → <code>ErrorType</code> → lỗi domain.</div>
+          </div>
+        </div>
+
+        <div class="jd-rules" style="margin-top:22px">
+          <div class="jd-rule"><span class="n" style="background:var(--blue)">1</span>
+            <p lang="en"><b><code>Executor(ctx)</code> is the only way to run a query.</b> There is no accessor for the
+              raw pool, so no query can skip the tracer, the log or the transaction.</p>
+            <p lang="vi"><b><code>Executor(ctx)</code> là cách duy nhất để chạy query.</b> Không có hàm lấy pool gốc,
+              nên không query nào đi vòng qua tracer, log hay transaction.</p>
+          </div>
+          <div class="jd-rule"><span class="n" style="background:var(--orange)">2</span>
+            <p lang="en"><b>The transaction travels in <code>ctx</code>, keyed to its DB.</b>
+              <code>WithTransaction</code> puts the tx into <code>txCtx</code>; only that DB's <code>Executor</code>
+              sees it. Another database keeps using its own pool.</p>
+            <p lang="vi"><b>Transaction đi trong <code>ctx</code>, gắn với DB của nó.</b> <code>WithTransaction</code>
+              đặt tx vào <code>txCtx</code>; chỉ <code>Executor</code> của DB đó thấy nó. Database khác vẫn dùng pool
+              riêng.</p>
+          </div>
+          <div class="jd-rule"><span class="n" style="background:var(--red)">3</span>
+            <p lang="en"><b>One transaction, one database, no nesting.</b> Writes to another database are not part of
+              it, and <code>WithTransaction</code> inside <code>WithTransaction</code> opens a second, independent
+              transaction.</p>
+            <p lang="vi"><b>Một transaction, một database, không lồng nhau.</b> Lệnh ghi sang database khác không thuộc
+              transaction, và <code>WithTransaction</code> lồng trong <code>WithTransaction</code> sẽ mở một transaction
+              thứ hai, độc lập.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 3. ERRORS -->
+      <section id="errors" class="jd-section c-red">
+        <div class="jd-section-head">
+          <span class="jd-badge">3</span>
+          <div>
+            <h2><span lang="en">Errors</span><span lang="vi">Lỗi</span></h2>
+            <p class="jd-sub" lang="en"><code>Match</code> and the <code>Is…</code> helpers classify the error first:
+            </p>
+            <p class="jd-sub" lang="vi"><code>Match</code> và các hàm <code>Is…</code> phân loại lỗi trước:</p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:16px">
+          <div class="jd-tablewrap">
+            <table class="jd-params c-red">
+              <tr>
+                <th>ErrorType</th>
+                <th>Postgres</th>
+              </tr>
+              <tr><td>ErrorNotFound</td><td>pgx.ErrNoRows</td></tr>
+              <tr><td>ErrorUniqueViolation</td><td>23505</td></tr>
+              <tr><td>ErrorForeignKey</td><td>23503</td></tr>
+              <tr><td>ErrorCheckViolation</td><td>23514</td></tr>
+              <tr><td>ErrorBusiness</td><td>P0001 (RAISE EXCEPTION)</td></tr>
+              <tr><td>ErrorPermissionDenied</td><td>28P01, 42501</td></tr>
+              <tr><td>ErrorInvalidInput</td><td>22P02, 22007, 22008</td></tr>
+              <tr>
+                <td>ErrorConnection</td>
+                <td><span lang="en">08xxx, or a context timeout / cancel</span><span lang="vi">08xxx, hoặc context
+                    timeout / bị huỷ</span></td>
+              </tr>
+              <tr>
+                <td>ErrorUnknown</td>
+                <td><span lang="en">anything else</span><span lang="vi">mọi lỗi khác</span></td>
+              </tr>
+            </table>
+          </div>
+          <div>
+            <h3 style="margin-top:0"><span lang="en">Try it</span><span lang="vi">Thử ngay</span></h3>
+            <div class="jd-calc c-red">
+              <label>SQLSTATE <input type="text" id="cl-code" value="23505"></label>
+              <label>constraint <input type="text" id="cl-cons" value="users_email_key"></label>
+              <label>message <input type="text" id="cl-msg" value="insufficient balance"></label>
+            </div>
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>Classify(err)</span></div>
+              <pre id="cl-out" style="white-space:pre-wrap;word-break:break-all"></pre>
+            </div>
+            <p class="jd-sub" lang="en">The detail can contain constraint names and raw Postgres messages — log it,
+              don't send it to clients.</p>
+            <p class="jd-sub" lang="vi">Detail có thể chứa tên constraint và message gốc của Postgres — chỉ log, đừng
+              gửi cho client.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 4. CONFIG -->
+      <section id="config" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">4</span>
+          <div>
+            <h2><span lang="en">Configuration</span><span lang="vi">Cấu hình</span></h2>
+            <p class="jd-sub" lang="en">Jungo builds <code>postgres.Options</code> from env vars in
+              <code>internal/database/primary/db.go</code>.</p>
+            <p class="jd-sub" lang="vi">Jungo dựng <code>postgres.Options</code> từ biến môi trường trong
+              <code>internal/database/primary/db.go</code>.</p>
+          </div>
+        </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-purple">
+            <tr>
+              <th>field</th>
+              <th><span lang="en">env (Jungo default)</span><span lang="vi">env (mặc định Jungo)</span></th>
+              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+            </tr>
+            <tr>
+              <td>Name</td>
+              <td>"primary"</td>
+              <td lang="en">Which database the connect / close logs are about.</td>
+              <td lang="vi">Log kết nối / đóng đang nói về database nào.</td>
+            </tr>
+            <tr>
+              <td>DSN</td>
+              <td>DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_SSLMODE</td>
+              <td lang="en">Connection string, built by <code>cfg.DB.DSN(cfg.Timezone)</code>.</td>
+              <td lang="vi">Chuỗi kết nối, dựng bởi <code>cfg.DB.DSN(cfg.Timezone)</code>.</td>
+            </tr>
+            <tr>
+              <td>MaxConnection · MinConnection</td>
+              <td>DB_MAX_CONNECTION=25 · DB_MIN_CONNECTION=5</td>
+              <td lang="en">Pool size bounds.</td>
+              <td lang="vi">Số connection tối đa · tối thiểu của pool.</td>
+            </tr>
+            <tr>
+              <td>MaxConnLifetime · MaxConnIdleTime</td>
+              <td>DB_MAX_CONN_LIFETIME=30m · DB_MAX_CONN_IDLE_TIME=10m</td>
+              <td lang="en">When a connection is replaced · closed for being idle.</td>
+              <td lang="vi">Khi nào connection bị thay mới · bị đóng vì rảnh.</td>
+            </tr>
+            <tr>
+              <td>HealthCheckPeriod</td>
+              <td>DB_HEALTH_CHECK_PERIOD=1m</td>
+              <td lang="en">How often idle connections are checked.</td>
+              <td lang="vi">Chu kỳ kiểm tra connection rảnh.</td>
+            </tr>
+            <tr>
+              <td>QueryLogging · SlowQueryThreshold</td>
+              <td>DB_QUERY_LOGGING=true · DB_SLOW_QUERY_THRESHOLD=200ms</td>
+              <td lang="en">Log every query to <code>storage/logs/sql.log</code>; slower than the threshold → WARN
+                <code>SLOW_QUERY_DETECTION</code>.</td>
+              <td lang="vi">Log mọi query vào <code>storage/logs/sql.log</code>; chậm hơn ngưỡng → WARN
+                <code>SLOW_QUERY_DETECTION</code>.</td>
+            </tr>
+            <tr>
+              <td>Decorate</td>
+              <td>tracer.NewPgxWrapper</td>
+              <td lang="en">Wraps every executor; Jungo uses it to feed the debug dashboard.</td>
+              <td lang="vi">Bọc mọi executor; Jungo dùng nó để đưa query lên debug dashboard.</td>
+            </tr>
+          </table>
+        </div>
+        <p class="jd-sub" style="margin-top:10px" lang="en">On start the pool is pinged — the app refuses to start if
+          the database is unreachable. On stop it is closed.</p>
+        <p class="jd-sub" style="margin-top:10px" lang="vi">Khi khởi động, pool được ping — app không chạy nếu không kết
+          nối được database. Khi dừng, pool được đóng.</p>
+      </section>
+
+      <!-- ============================================================ 5. API -->
+      <section id="api" class="jd-section c-blue">
+        <div class="jd-section-head">
+          <span class="jd-badge">5</span>
+          <div>
+            <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+          </div>
+        </div>
+
+        <h3 style="margin-top:18px">database/postgres</h3>
+        <div class="jd-tablewrap">
+          <table class="jd-params c-blue">
+            <tr>
+              <th>symbol</th>
+              <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
+            </tr>
+            <tr>
+              <td>NewDatabase(p Params) (*DB, error)</td>
+              <td lang="en">Opens the pool from <code>Options</code> and registers the ping / close lifecycle hooks.
+                Meant for Fx.</td>
+              <td lang="vi">Mở pool từ <code>Options</code> và đăng ký hook ping / đóng. Dùng với Fx.</td>
+            </tr>
+            <tr>
+              <td>Module</td>
+              <td lang="en"><code>fx.Provide(NewDatabase)</code> for an app with a single database. Jungo calls
+                <code>NewDatabase</code> from <code>primary.New</code> instead.</td>
+              <td lang="vi"><code>fx.Provide(NewDatabase)</code> cho app chỉ có một database. Jungo thì gọi
+                <code>NewDatabase</code> từ <code>primary.New</code>.</td>
+            </tr>
+            <tr>
+              <td>NewDB(pool DBPool) *DB</td>
+              <td lang="en">Wraps a pool you already have, without logging or <code>Decorate</code>. For tests and code
+                outside Fx.</td>
+              <td lang="vi">Bọc một pool bạn đã có, không log và không <code>Decorate</code>. Dùng cho test và code
+                ngoài Fx.</td>
+            </tr>
+            <tr>
+              <td>(*DB) Executor(ctx) DBTX</td>
+              <td lang="en">The transaction in <code>ctx</code>, or the pool. Accepted by sqlc's <code>New</code>.</td>
+              <td lang="vi">Transaction trong <code>ctx</code>, hoặc pool. Truyền thẳng được vào <code>New</code> của
+                sqlc.</td>
+            </tr>
+            <tr>
+              <td>(*DB) WithTransaction(ctx, fn) error</td>
+              <td lang="en">Runs <code>fn(txCtx)</code>: <code>nil</code> → commit, error → rollback and the same error
+                is returned, panic → rollback and re-panic.</td>
+              <td lang="vi">Chạy <code>fn(txCtx)</code>: <code>nil</code> → commit, lỗi → rollback và trả về đúng lỗi
+                đó, panic → rollback rồi panic lại.</td>
+            </tr>
+            <tr>
+              <td>(*DB) Ping(ctx) error</td>
+              <td lang="en">Health check.</td>
+              <td lang="vi">Kiểm tra kết nối.</td>
+            </tr>
+            <tr>
+              <td>DBTX · DBPool</td>
+              <td lang="en"><code>Exec</code> / <code>Query</code> / <code>QueryRow</code> (pool or tx) · plus
+                <code>Begin</code> / <code>Ping</code> / <code>Close</code> (<code>*pgxpool.Pool</code>).</td>
+              <td lang="vi"><code>Exec</code> / <code>Query</code> / <code>QueryRow</code> (pool hoặc tx) · thêm
+                <code>Begin</code> / <code>Ping</code> / <code>Close</code> (<code>*pgxpool.Pool</code>).</td>
+            </tr>
+            <tr>
+              <td>FormatValue · BindArgsToSQL</td>
+              <td lang="en">Render a value / replace <code>$1…</code> with literals. For logs only.</td>
+              <td lang="vi">Hiển thị giá trị / thay <code>$1…</code> bằng literal. Chỉ để log.</td>
+            </tr>
+          </table>
+        </div>
+
+        <h3 style="margin-top:22px">database</h3>
+        <div class="jd-tablewrap">
+          <table class="jd-params c-red">
+            <tr>
+              <th>symbol</th>
+              <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
+            </tr>
+            <tr>
+              <td>Match(err, map[ErrorType]error) error</td>
+              <td lang="en">Mapped type → your error (the original is dropped). Otherwise <code>err</code> unchanged.</td>
+              <td lang="vi">Loại có trong map → lỗi của bạn (lỗi gốc bị bỏ). Không thì trả <code>err</code> nguyên vẹn.
+              </td>
+            </tr>
+            <tr>
+              <td>Classify(err) (ErrorType, string)</td>
+              <td lang="en">The type and a detail string (see <a href="#errors">Errors</a>).</td>
+              <td lang="vi">Loại lỗi và chuỗi detail (xem <a href="#errors">Lỗi</a>).</td>
+            </tr>
+            <tr>
+              <td>IsNotFound · IsUniqueViolation · IsForeignKeyViolation · IsCheckViolation · IsConnectionError</td>
+              <td lang="en"><code>Classify(err)</code> == that type.</td>
+              <td lang="vi"><code>Classify(err)</code> == loại đó.</td>
+            </tr>
+            <tr>
+              <td>RegisterClassifier(c Classifier)</td>
+              <td lang="en">How an engine package teaches <code>Classify</code> its errors, from <code>init</code>.
+                <code>database/postgres</code> does it for you.</td>
+              <td lang="vi">Cách một package engine dạy <code>Classify</code> nhận lỗi của nó, gọi trong
+                <code>init</code>. <code>database/postgres</code> đã tự làm.</td>
+            </tr>
+            <tr>
+              <td>MaskDSN(dsn) string</td>
+              <td lang="en">Hides <code>password=…</code>-style values for logs.</td>
+              <td lang="vi">Che các giá trị kiểu <code>password=…</code> khi log.</td>
+            </tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============================================================ 6. IN JUNGO -->
+      <section id="jungo" class="jd-section c-green">
+        <div class="jd-section-head">
+          <span class="jd-badge">6</span>
+          <div>
+            <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+          </div>
+        </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-green">
+            <tr>
+              <th>file</th>
+              <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
+            </tr>
+            <tr>
+              <td>database/primary/db.go</td>
+              <td lang="en"><code>primary.DB</code> (embeds <code>*postgres.DB</code>, adds <code>Queries</code>) and
+                its <code>Options</code>.</td>
+              <td lang="vi"><code>primary.DB</code> (nhúng <code>*postgres.DB</code>, thêm <code>Queries</code>) và
+                <code>Options</code> của nó.</td>
+            </tr>
+            <tr>
+              <td>app/fx.go</td>
+              <td lang="en"><code>primary.Module</code>, with the <code>sql</code> logger.</td>
+              <td lang="vi"><code>primary.Module</code>, kèm logger <code>sql</code>.</td>
+            </tr>
+            <tr>
+              <td>features/user/repository/user_repository.go</td>
+              <td lang="en">The repository pattern from section 1.</td>
+              <td lang="vi">Mẫu repository ở mục 1.</td>
+            </tr>
+            <tr>
+              <td>features/auth/service/auth_service.go</td>
+              <td lang="en"><code>Refresh</code>: consume the token, revoke the family, issue a new pair — one
+                transaction.</td>
+              <td lang="vi"><code>Refresh</code>: tiêu thụ token, thu hồi family, cấp cặp mới — trong một
+                transaction.</td>
+            </tr>
+            <tr>
+              <td>console/commands/health_check_command.go</td>
+              <td lang="en"><code>make console CMD="health:check"</code>: <code>Ping</code> + count users.</td>
+              <td lang="vi"><code>make console CMD="health:check"</code>: <code>Ping</code> + đếm user.</td>
+            </tr>
+          </table>
+        </div>
+        <p class="jd-sub" style="margin-top:10px" lang="en">Adding a second database or another engine: see <a
+            href="../jungo/multi-database.html">Multiple databases</a>.</p>
+        <p class="jd-sub" style="margin-top:10px" lang="vi">Thêm database thứ hai hoặc engine khác: xem <a
+            href="../jungo/multi-database.html">Nhiều database</a>.</p>
+      </section>
+
+      <!-- ============================================================ GOTCHAS -->
+      <section id="gotchas" class="jd-section c-red">
+        <div class="jd-section-head">
+          <span class="jd-badge">!</span>
+          <div>
+            <h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2>
+          </div>
+        </div>
+        <div class="jd-explain" style="margin-top:16px">
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">Pass txCtx, not
+              ctx</span><span class="x" lang="en">Inside <code>fn</code>, a call with the outer <code>ctx</code> runs
+              outside the transaction and is not rolled back.</span><span class="x" lang="vi">Bên trong
+              <code>fn</code>, lời gọi dùng <code>ctx</code> bên ngoài sẽ chạy ngoài transaction và không được
+              rollback.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Zero Options
+              aren't defaults</span><span class="x" lang="en"><code>MaxConnection: 0</code> fails to start,
+              <code>HealthCheckPeriod: 0</code> crashes the process, <code>MaxConnLifetime: 0</code> recycles connections
+              constantly. Set every pool field.</span><span class="x" lang="vi"><code>MaxConnection: 0</code> không
+              khởi động được, <code>HealthCheckPeriod: 0</code> làm sập process, <code>MaxConnLifetime: 0</code> thay
+              connection liên tục. Hãy đặt đủ mọi field của pool.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Don't leak the
+              tx</span><span class="x" lang="en">No goroutine may use <code>txCtx</code> after <code>fn</code> returns,
+              and a transaction is not safe for concurrent use.</span><span class="x" lang="vi">Không goroutine nào được
+              dùng <code>txCtx</code> sau khi <code>fn</code> kết thúc, và transaction không an toàn khi dùng đồng
+              thời.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">The sql log holds real
+              data</span><span class="x" lang="en">Logged SQL contains the real values (emails, hashes). Treat the log
+              as sensitive, or set its level to <code>warn</code> to keep only slow and failed queries.</span><span
+              class="x" lang="vi">SQL được log chứa giá trị thật (email, hash). Hãy coi log là dữ liệu nhạy cảm, hoặc
+              đặt level <code>warn</code> để chỉ giữ query chậm và lỗi.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">MaskDSN misses URL
+              passwords</span><span class="x" lang="en"><code>postgres://user:pass@host</code> is logged as is. Jungo
+              uses the <code>key=value</code> form, so it is masked.</span><span class="x" lang="vi">
+              <code>postgres://user:pass@host</code> bị log nguyên văn. Jungo dùng dạng <code>key=value</code> nên vẫn
+              được che.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Match drops the
+              original</span><span class="x" lang="en">Log the original error first if you need the constraint name,
+              and map every type the caller should see as a 4xx — unmapped ones become a 500.</span><span class="x"
+              lang="vi">Hãy log lỗi gốc trước nếu cần tên constraint, và map mọi loại lỗi mà caller cần thấy dưới dạng
+              4xx — loại không map sẽ thành 500.</span></div>
+        </div>
+      </section>
+
+      <footer class="jd-footer">
+        <span>Jundoc · Junkit · database</span>
+        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
+              Junkit</span></a></span>
+      </footer>
+    </article>
+  </div>
+
+  <script>
+    document.addEventListener("jd:ready", function () {
+      // Mirrors classifyPgError (postgres/error.go).
+      function classify(code, cons, msg) {
+        switch (code) {
+          case "P0001": return ["ErrorBusiness", msg];
+          case "23505": return ["ErrorUniqueViolation", "duplicate value violates unique constraint (" + cons + ")"];
+          case "23503": return ["ErrorForeignKey", "foreign key constraint violation (" + cons + ")"];
+          case "23514": return ["ErrorCheckViolation", "check constraint violation (" + cons + ")"];
+          case "28P01": case "42501": return ["ErrorPermissionDenied", "permission denied"];
+          case "08000": case "08001": case "08003": case "08004": case "08006": case "08P01": return ["ErrorConnection", "database connection error"];
+          case "22P02": case "22007": case "22008": return ["ErrorInvalidInput", "invalid input format"];
+          default: return ["ErrorUnknown", "database error (" + code + "): " + msg];
+        }
+      }
+
+      // Cases from postgres/error_test.go.
+      console.assert(classify("23505", "uq_test", "boom")[1].indexOf("uq_test") > 0, "classify unique");
+      console.assert(classify("42501", "", "")[1] === "permission denied", "classify 42501");
+      console.assert(classify("P0001", "", "insufficient balance")[1] === "insufficient balance", "classify P0001");
+      console.assert(classify("99999", "", "boom")[0] === "ErrorUnknown", "classify unknown");
+
+      function val(id) { return document.getElementById(id).value; }
+      function paint() {
+        var r = classify(val("cl-code").trim(), val("cl-cons"), val("cl-msg"));
+        document.getElementById("cl-out").innerHTML = JD.highlight(
+          "database." + r[0] + "\n\"" + r[1] + "\"", "go");
+      }
+      ["cl-code", "cl-cons", "cl-msg"].forEach(function (id) { document.getElementById(id).addEventListener("input", paint); });
+      paint();
+    });
+  </script>
+</body>
+
+</html>

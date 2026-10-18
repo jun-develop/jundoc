@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit sqlfmt · Jundoc</title>
+  <meta name="description"
+    content="junkit/sqlfmt: parse sqlc query names, render SQL with bound arguments and find the code that ran a query — for logs and debugging.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+
+<body>
+  <div id="jd-app" data-root="..">
+    <article class="jd-content">
+
+      <!-- ============================================================ HERO -->
+      <header class="jd-hero"
+        style="background:radial-gradient(1000px 380px at 0% 0%, rgba(244,114,182,.45), transparent 60%),linear-gradient(135deg,#1f2937,#4c1d95 55%,#9d174d)">
+        <div class="jd-eyebrow">Junkit · sqlfmt</div>
+        <h1>sqlfmt</h1>
+        <p lang="en">Turns what pgx sees — <code>-- name: GetUser :one</code> + <code>$1</code> + <code>[]any{…}</code>
+          — into a readable log line: query name, operation, one-line SQL with the real values, and the
+          <code>file:line</code> that ran it.</p>
+        <p lang="vi">Biến những gì pgx thấy — <code>-- name: GetUser :one</code> + <code>$1</code> +
+          <code>[]any{…}</code> — thành một dòng log dễ đọc: tên query, operation, SQL một dòng với giá trị thật, và
+          <code>file:line</code> đã chạy nó.</p>
+        <div class="jd-chips">
+          <span class="jd-chip">github.com/jun-develop/junkit/sqlfmt</span>
+          <span class="jd-chip"><span lang="en">no Fx Module — plain functions</span><span lang="vi">không có Fx Module
+              — chỉ là hàm</span></span>
+          <span class="jd-chip">google/uuid · pgx/v5/pgtype</span>
+          <span class="jd-chip"><span lang="en">used by database + tracer</span><span lang="vi">được dùng bởi database +
+              tracer</span></span>
+        </div>
+      </header>
+
+      <!-- ============================================================ 1. WHAT -->
+      <section id="what" class="jd-section c-pink">
+        <div class="jd-section-head">
+          <span class="jd-badge">1</span>
+          <div>
+            <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
+            <p class="jd-sub" lang="en">A sqlc query on its way to a log line or the tracer dashboard. For display only
+              — nothing here is ever sent to PostgreSQL.</p>
+            <p class="jd-sub" lang="vi">Một câu query sqlc trên đường thành dòng log hoặc mục trên tracer dashboard. Chỉ
+              để hiển thị — không có gì ở đây được gửi tới PostgreSQL.</p>
+          </div>
+        </div>
+        <div class="jd-flow" style="margin-top:22px" data-wires='[
+      {"from":"s1","to":"s2","color":"pink"},
+      {"from":"s2","to":"s3","color":"pink"},
+      {"from":"s3","to":"s4","color":"purple","dashed":true}]'>
+          <div class="jd-node is-tint c-pink" data-node="s1"><span class="k">1 · input</span><span class="t mono"
+              style="font-size:15px">sql + args</span>
+            <div class="d" lang="en">What pgx (database) or the DBTX wrapper (tracer) receives.</div>
+            <div class="d" lang="vi">Những gì pgx (database) hoặc wrapper DBTX (tracer) nhận được.</div>
+          </div>
+          <div class="jd-node is-tint c-pink" data-node="s2"><span class="k">2 · parse</span><span class="t mono"
+              style="font-size:15px">sqlfmt.Parse(sql)</span>
+            <div class="d" lang="en"><code>Name</code>, <code>Operation</code> from the sqlc comment; comments stripped,
+              whitespace collapsed. Cached.</div>
+            <div class="d" lang="vi"><code>Name</code>, <code>Operation</code> từ comment của sqlc; bỏ comment, gộp
+              khoảng trắng. Có cache.</div>
+          </div>
+          <div class="jd-node is-tint c-pink" data-node="s3"><span class="k">3 · bind</span><span class="t mono"
+              style="font-size:15px">Bind(info.SQL, args)</span>
+            <div class="d" lang="en"><code>$1</code> → <code>'jane@example.com'</code> via <code>FormatValue</code>.
+            </div>
+            <div class="d" lang="vi"><code>$1</code> → <code>'jane@example.com'</code> qua <code>FormatValue</code>.
+            </div>
+          </div>
+          <div class="jd-node is-tint c-purple" data-node="s4"><span class="k">4 · locate</span><span class="t mono"
+              style="font-size:15px">sqlfmt.Origin()</span>
+            <div class="d" lang="en">On failure only: the repository line that ran the query.</div>
+            <div class="d" lang="vi">Chỉ khi lỗi: dòng code repository đã chạy query.</div>
+          </div>
+        </div>
+        <div style="margin-top:22px;display:grid;gap:14px">
+          <div class="jd-term">
+            <div class="jd-term-bar"><i></i><i></i><i></i><span><span lang="en">in: what sqlc sends</span><span
+                  lang="vi">vào: thứ sqlc gửi đi</span></span></div>
+            <pre data-hl="go">
+// sql
+-- name: GetUserByEmail :one
+SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL
+
+// args
+[]any{"jane@example.com"}
+</pre>
+          </div>
+          <div class="jd-term">
+            <div class="jd-term-bar"><i></i><i></i><i></i><span><span lang="en">out</span><span
+                  lang="vi">ra</span></span></div>
+            <pre data-hl="go">
+info.Name      = "GetUserByEmail"
+info.Operation = "ONE"
+info.SQL       = "SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL"
+Bind(…)        = "SELECT * FROM users WHERE email = 'jane@example.com' AND deleted_at IS NULL"
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 2. SETUP -->
+      <section id="setup" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">2</span>
+          <div>
+            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối vào app</span></h2>
+            <p class="jd-sub" lang="en">Nothing to wire: no Module, no constructor, no Options. Import and call.</p>
+            <p class="jd-sub" lang="vi">Không có gì để kết nối: không Module, không constructor, không Options. Import
+              rồi gọi.</p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <p lang="en"><b>With Fx:</b> Jungo never touches <code>sqlfmt</code> directly. It reaches it through two
+              packages you already wire: <code>postgres.Options</code> with <code>QueryLogging: true</code> (query logs)
+              and <code>tracer.NewPgxWrapper</code> in <code>Options.Decorate</code> (dashboard) — see <a
+                href="database.html#config">database</a>.</p>
+            <p lang="vi"><b>Với Fx:</b> Jungo không bao giờ gọi <code>sqlfmt</code> trực tiếp. Nó đi qua hai package bạn
+              đã kết nối: <code>postgres.Options</code> với <code>QueryLogging: true</code> (log query) và
+              <code>tracer.NewPgxWrapper</code> trong <code>Options.Decorate</code> (dashboard) — xem <a
+                href="database.html#config">database</a>.</p>
+            <p lang="en"><b>Without Fx:</b> call the functions directly when you build your own SQL logging, e.g. a
+              custom <code>DBTX</code> decorator.</p>
+            <p lang="vi"><b>Không dùng Fx:</b> gọi trực tiếp các hàm khi bạn tự làm log SQL, vd. một decorator
+              <code>DBTX</code> của riêng bạn.</p>
+          </div>
+          <div class="jd-term">
+            <div class="jd-term-bar"><i></i><i></i><i></i><span>import</span></div>
+            <pre data-hl="go">
+import "github.com/jun-develop/junkit/sqlfmt"
+</pre>
+          </div>
+        </div>
+        <h3 style="margin-top:22px"><span lang="en">Built-in settings (not configurable)</span><span lang="vi">Thiết lập
+            có sẵn (không cấu hình được)</span></h3>
+        <div class="jd-tablewrap">
+          <table class="jd-params c-purple">
+            <tr>
+              <th><span lang="en">setting</span><span lang="vi">thiết lập</span></th>
+              <th><span lang="en">value</span><span lang="vi">giá trị</span></th>
+              <th><span lang="en">effect</span><span lang="vi">tác dụng</span></th>
+            </tr>
+            <tr>
+              <td><span lang="en">parse cache size</span><span lang="vi">kích thước cache parse</span></td>
+              <td>1024</td>
+              <td><span lang="en"><code>Parse</code> remembers up to 1024 distinct SQL strings; later ones are parsed
+                  every time but never stored.</span><span lang="vi"><code>Parse</code> nhớ tối đa 1024 chuỗi SQL khác
+                  nhau; các chuỗi sau đó được parse mỗi lần nhưng không được lưu.</span></td>
+            </tr>
+            <tr>
+              <td><span lang="en">frames skipped by Origin</span><span lang="vi">frame bị Origin bỏ qua</span></td>
+              <td>runtime.* · github.com/jackc/pgx/ · junkit/database. · junkit/database/postgres. · junkit/tracer. · junkit/sqlfmt. · *.sql.go</td>
+              <td><span lang="en">Origin walks up the stack (32 frames max) past these and returns the first other
+                  frame.</span><span lang="vi">Origin đi ngược stack (tối đa 32 frame) qua các frame này và trả frame
+                  đầu tiên khác chúng.</span></td>
+            </tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============================================================ 3. QUICK START -->
+      <section id="quick" class="jd-section c-blue">
+        <div class="jd-section-head">
+          <span class="jd-badge">3</span>
+          <div>
+            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <p class="jd-sub" lang="en">A tiny <code>DBTX</code> decorator that logs every <code>Exec</code> — plug it
+              into <code>postgres.Options.Decorate</code>. Hover an explanation.</p>
+            <p class="jd-sub" lang="vi">Một decorator <code>DBTX</code> nhỏ log mọi lệnh <code>Exec</code> — gắn vào
+              <code>postgres.Options.Decorate</code>. Rê chuột vào phần giải thích.</p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <div class="jd-sticky">
+              <div class="jd-term" data-copy>
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>exec_logger.go</span></div>
+                <pre data-hl="go" id="code-quick">
+type execLogger struct {
+    postgres.DBTX
+    log *zap.Logger
+}
+
+func (l execLogger) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+    tag, err := l.DBTX.Exec(ctx, sql, args...)
+
+    info := sqlfmt.Parse(sql)
+    fields := []zap.Field{
+        zap.String("query", info.Name),
+        zap.String("op", info.Operation),
+        zap.String("sql", sqlfmt.Bind(info.SQL, args)),
+    }
+    if err != nil {
+        fields = append(fields, zap.Error(err))
+    }
+    l.log.Info("exec", fields...)
+    return tag, err
+}
+
+// wire it: postgres.Options{Decorate: func(inner postgres.DBTX) postgres.DBTX {
+//     return execLogger{DBTX: inner, log: log}
+// }}
+</pre>
+              </div>
+            </div>
+          </div>
+          <div class="jd-explain">
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="9"><span class="n">1</span><span
+                class="w">Parse</span><span class="x" lang="en">Reads <code>-- name: X :op</code> and returns a cleaned
+                one-line SQL. Cheap to call on every query: results are cached.</span><span class="x" lang="vi">Đọc
+                <code>-- name: X :op</code> và trả SQL một dòng đã làm sạch. Gọi ở mọi query cũng rẻ: kết quả được
+                cache.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="11-12"><span class="n">2</span><span
+                class="w">Name / Operation</span><span class="x" lang="en">For sqlc queries: <code>"CreateUser"</code> /
+                <code>"ONE"</code>. For hand-written SQL: a guess such as <code>"Update"</code> and an empty
+                operation.</span><span class="x" lang="vi">Với query sqlc: <code>"CreateUser"</code> /
+                <code>"ONE"</code>. Với SQL viết tay: một tên đoán như <code>"Update"</code> và operation rỗng.</span>
+            </div>
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="13"><span class="n">3</span><span
+                class="w">Bind the cleaned SQL</span><span class="x" lang="en">Bind <code>info.SQL</code> (not the raw
+                <code>sql</code>) so the log line has no comment and no newlines — that's what database and tracer
+                do.</span><span class="x" lang="vi">Bind <code>info.SQL</code> (không phải <code>sql</code> gốc) để dòng
+                log không có comment và xuống dòng — database và tracer cũng làm vậy.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="15-17"><span class="n">4</span><span
+                class="w">why no Origin here?</span><span class="x" lang="en"><code>Origin</code> skips only Junkit /
+                pgx / runtime / <code>*.sql.go</code> frames. Called from this wrapper (your package), it would return
+                the wrapper's own line — so leave it to database and tracer (see Good to know).</span><span class="x"
+                lang="vi"><code>Origin</code> chỉ bỏ qua frame của Junkit / pgx / runtime / <code>*.sql.go</code>. Gọi
+                từ wrapper này (package của bạn), nó sẽ trả về chính dòng của wrapper — nên hãy để database và tracer lo
+                việc đó (xem Cần lưu ý).</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 4. TRY IT -->
+      <section id="try" class="jd-section c-orange">
+        <div class="jd-section-head">
+          <span class="jd-badge">4</span>
+          <div>
+            <h2><span lang="en">Try it</span><span lang="vi">Thử ngay</span></h2>
+            <p class="jd-sub" lang="en">Same regexes and the same <code>$n</code> scanner as the Go code. Args are a
+              JSON array: strings, booleans, null, arrays; whole numbers act as Go <code>int</code>, others as
+              <code>float64</code>.</p>
+            <p class="jd-sub" lang="vi">Cùng regex và cùng bộ quét <code>$n</code> với code Go. Args là một mảng JSON:
+              chuỗi, boolean, null, mảng; số nguyên tương ứng <code>int</code> của Go, số khác là <code>float64</code>.
+            </p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <div class="jd-calc c-orange">
+              <label style="grid-column:1/-1">sql <textarea id="sf-sql" rows="5"
+                  style="font:600 14px var(--mono);border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);padding:10px 12px;resize:vertical">-- name: ListUsers :many
+SELECT *
+  FROM users   -- active only
+ WHERE email = $1 AND status = $2 AND id = ANY($3)
+ LIMIT $10</textarea></label>
+              <label style="grid-column:1/-1">args (JSON) <input type="text" id="sf-args"
+                  value='["O&#39;Brien@example.com", 1, [4, 5], null, true, 3.5]'></label>
+            </div>
+          </div>
+          <div class="jd-term">
+            <div class="jd-term-bar"><i></i><i></i><i></i><span>Parse · Bind</span></div>
+            <pre id="sf-out" style="white-space:pre-wrap;word-break:break-all"></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 5. API -->
+      <section id="api" class="jd-section c-pink">
+        <div class="jd-section-head">
+          <span class="jd-badge">5</span>
+          <div>
+            <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from
+              <code>junkit/sqlfmt/sqlfmt.go</code> and <code>origin.go</code>. All functions are safe for concurrent
+              use.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/sqlfmt/sqlfmt.go</code> và
+              <code>origin.go</code>. Mọi hàm đều an toàn khi gọi đồng thời.</p>
+          </div>
+        </div>
+        <div class="jd-syms" style="margin-top:18px">
+
+          <div class="jd-sym c-pink">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Info</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type Info struct {
+    // Name is the sqlc query name, or a guess from the leading keyword.
+    Name string
+
+    // Operation is the sqlc operation (ONE, MANY, EXEC, ...), empty if unannotated.
+    Operation string
+
+    // SQL is the query with comments stripped and whitespace collapsed.
+    SQL string
+}
+</pre>
+            </div>
+            <div class="jd-tablewrap">
+              <table class="jd-params c-pink">
+                <tr>
+                  <th>field</th>
+                  <th><span lang="en">filled from</span><span lang="vi">lấy từ</span></th>
+                </tr>
+                <tr>
+                  <td>Name</td>
+                  <td lang="en">The first match of <code>-- name: &lt;Name&gt; :&lt;op&gt;</code>. Without it, from the
+                    first word of the cleaned SQL (case-insensitive): SELECT → <code>"Select"</code>, INSERT →
+                    <code>"Insert"</code>, UPDATE → <code>"Update"</code>, DELETE → <code>"Delete"</code>, WITH →
+                    <code>"With"</code>, anything else (or empty SQL) → <code>"Query"</code>.</td>
+                  <td lang="vi">Kết quả khớp đầu tiên của <code>-- name: &lt;Name&gt; :&lt;op&gt;</code>. Nếu không có,
+                    lấy từ chữ đầu tiên của SQL đã làm sạch (không phân biệt hoa thường): SELECT →
+                    <code>"Select"</code>, INSERT → <code>"Insert"</code>, UPDATE → <code>"Update"</code>, DELETE →
+                    <code>"Delete"</code>, WITH → <code>"With"</code>, còn lại (hoặc SQL rỗng) → <code>"Query"</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Operation</td>
+                  <td lang="en">The <code>:op</code> part, upper-cased (<code>:one</code> → <code>"ONE"</code>,
+                    <code>:execrows</code> → <code>"EXECROWS"</code>). Empty without an annotation.</td>
+                  <td lang="vi">Phần <code>:op</code>, viết hoa (<code>:one</code> → <code>"ONE"</code>,
+                    <code>:execrows</code> → <code>"EXECROWS"</code>). Rỗng nếu không có chú thích.</td>
+                </tr>
+                <tr>
+                  <td>SQL</td>
+                  <td lang="en">Every <code>-- </code> comment (dash dash <b>space</b>, to end of line) removed,
+                    trimmed, every whitespace run → one space. Placeholders stay as <code>$n</code>.</td>
+                  <td lang="vi">Mọi comment <code>-- </code> (hai gạch + <b>dấu cách</b>, tới cuối dòng) bị xoá, cắt
+                    khoảng trắng hai đầu, mỗi chuỗi khoảng trắng → một dấu cách. Placeholder giữ nguyên dạng
+                    <code>$n</code>.</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="jd-sym c-pink">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Parse</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func Parse(sql string) Info</pre>
+            </div>
+            <p lang="en">Returns the <code>Info</code> for <code>sql</code>. Results are cached in a
+              <code>sync.Map</code> keyed by the exact SQL string, for up to 1024 distinct strings; beyond that it still
+              parses correctly, just without caching. Never fails.</p>
+            <p lang="vi">Trả <code>Info</code> của <code>sql</code>. Kết quả được cache trong <code>sync.Map</code> với
+              key là nguyên chuỗi SQL, tối đa 1024 chuỗi khác nhau; vượt quá thì vẫn parse đúng, chỉ là không cache.
+              Không bao giờ lỗi.</p>
+            <div class="jd-term">
+              <pre data-hl="go">
+sqlfmt.Parse("-- name: GetUserByUUID :one\nSELECT * FROM users WHERE uuid = $1")
+// Info{Name: "GetUserByUUID", Operation: "ONE", SQL: "SELECT * FROM users WHERE uuid = $1"}
+
+sqlfmt.Parse("SELECT *\n  -- this is a comment\n  FROM   users\nWHERE  id = 1")
+// Info{Name: "Select", Operation: "", SQL: "SELECT * FROM users WHERE id = 1"}
+</pre>
+            </div>
+          </div>
+
+          <div class="jd-sym c-pink">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Bind</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func Bind(sql string, args []any) string</pre>
+            </div>
+            <ul>
+              <li lang="en">Replaces each <code>$n</code> (n = 1…len(args), multi-digit OK) with
+                <code>FormatValue(args[n-1])</code>.</li>
+              <li lang="vi">Thay mỗi <code>$n</code> (n = 1…len(args), nhiều chữ số vẫn được) bằng
+                <code>FormatValue(args[n-1])</code>.</li>
+              <li lang="en"><code>args</code> empty → <code>sql</code> returned unchanged. <code>$0</code>, out-of-range
+                <code>$n</code> and a <code>$</code> not followed by a digit are left as-is.</li>
+              <li lang="vi"><code>args</code> rỗng → trả nguyên <code>sql</code>. <code>$0</code>, <code>$n</code> ngoài
+                phạm vi và <code>$</code> không theo sau bởi chữ số được giữ nguyên.</li>
+              <li lang="en">Simple text scan: it does not know about string literals or comments.</li>
+              <li lang="vi">Chỉ quét chuỗi đơn giản: nó không biết gì về string literal hay comment.</li>
+            </ul>
+            <div class="jd-term">
+              <pre data-hl="go">
+sqlfmt.Bind("INSERT INTO users (email, status) VALUES ($1, $2)", []any{"jane@example.com", 1})
+// "INSERT INTO users (email, status) VALUES ('jane@example.com', 1)"
+
+sqlfmt.Bind("SELECT $1, $5", []any{"only one arg"})
+// "SELECT 'only one arg', $5"
+</pre>
+            </div>
+          </div>
+
+          <div class="jd-sym c-pink">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">BindQuestion</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func BindQuestion(sql string, args []any) string</pre>
+            </div>
+            <ul>
+              <li lang="en"><code>Bind</code> for drivers with positional <code>?</code> placeholders (MySQL,
+                ClickHouse, SQLite): the n-th <code>?</code> becomes <code>FormatValue(args[n-1])</code>.</li>
+              <li lang="vi"><code>Bind</code> cho các driver dùng placeholder <code>?</code> theo vị trí (MySQL,
+                ClickHouse, SQLite): dấu <code>?</code> thứ n được thay bằng <code>FormatValue(args[n-1])</code>.</li>
+              <li lang="en"><code>args</code> empty → <code>sql</code> returned unchanged. Extra <code>?</code> beyond
+                <code>len(args)</code> are left as-is.</li>
+              <li lang="vi"><code>args</code> rỗng → trả nguyên <code>sql</code>. Các <code>?</code> dư ra ngoài
+                <code>len(args)</code> được giữ nguyên.</li>
+              <li lang="en">Unlike <code>Bind</code>, a <code>?</code> inside a single-quoted string is skipped.</li>
+              <li lang="vi">Khác với <code>Bind</code>, dấu <code>?</code> nằm trong chuỗi nháy đơn được bỏ qua.</li>
+            </ul>
+            <div class="jd-term">
+              <pre data-hl="go">
+sqlfmt.BindQuestion("SELECT * FROM users WHERE email = ? AND note = '?'", []any{"jane@example.com"})
+// "SELECT * FROM users WHERE email = 'jane@example.com' AND note = '?'"
+</pre>
+            </div>
+          </div>
+
+          <div class="jd-sym c-pink">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">FormatValue</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func FormatValue(v any) string</pre>
+            </div>
+            <p lang="en">Renders one value as a PostgreSQL literal. Pointers are dereferenced (any depth); a nil pointer
+              is <code>NULL</code>.</p>
+            <p lang="vi">Hiển thị một giá trị dưới dạng literal PostgreSQL. Con trỏ được giải tham chiếu (bao nhiêu tầng
+              cũng được); con trỏ nil là <code>NULL</code>.</p>
+            <div class="jd-tablewrap">
+              <table class="jd-params c-pink">
+                <tr>
+                  <th><span lang="en">input</span><span lang="vi">đầu vào</span></th>
+                  <th><span lang="en">output</span><span lang="vi">đầu ra</span></th>
+                </tr>
+                <tr>
+                  <td>nil, (*T)(nil)</td>
+                  <td>NULL</td>
+                </tr>
+                <tr>
+                  <td>"O'Brien"</td>
+                  <td>'O''Brien' <span lang="en">(single quotes doubled)</span><span lang="vi">(nháy đơn được nhân
+                      đôi)</span></td>
+                </tr>
+                <tr>
+                  <td>true / false</td>
+                  <td>true / false</td>
+                </tr>
+                <tr>
+                  <td>42, int64(-7) <span lang="en">(any int / uint kind)</span><span lang="vi">(mọi kiểu int /
+                      uint)</span></td>
+                  <td>42, -7</td>
+                </tr>
+                <tr>
+                  <td>3.5 <span lang="en">(float32 / float64)</span><span lang="vi">(float32 / float64)</span></td>
+                  <td>3.5 <span lang="en">(<code>%.15g</code>)</span><span lang="vi">(<code>%.15g</code>)</span></td>
+                </tr>
+                <tr>
+                  <td>time.Time</td>
+                  <td>'2026-01-15T10:30:00Z' <span lang="en">(RFC3339, no fractional seconds)</span><span
+                      lang="vi">(RFC3339, không có phần lẻ giây)</span></td>
+                </tr>
+                <tr>
+                  <td>uuid.UUID</td>
+                  <td>'8040c036-b0a5-4178-8015-c4c4c6b37164'</td>
+                </tr>
+                <tr>
+                  <td>[]int{1, 2, 3} <span lang="en">(any slice / array)</span><span lang="vi">(mọi slice /
+                      array)</span></td>
+                  <td>'{1,2,3}' — <span lang="en">empty → NULL (like pgx sends it)</span><span lang="vi">rỗng → NULL
+                      (giống cách pgx gửi)</span></td>
+                </tr>
+                <tr>
+                  <td>pgtype.UUID · Text · Int8 · Int4 · Int2 · Bool</td>
+                  <td lang="en">like the plain value; <code>Valid: false</code> → NULL</td>
+                  <td lang="vi">như giá trị thường; <code>Valid: false</code> → NULL</td>
+                </tr>
+                <tr>
+                  <td>pgtype.Timestamptz</td>
+                  <td>'2026-01-15T10:30:00Z' <span lang="en">or NULL</span><span lang="vi">hoặc NULL</span></td>
+                </tr>
+                <tr>
+                  <td>pgtype.Timestamp</td>
+                  <td>'2026-01-15 10:30:00' <span lang="en">or NULL</span><span lang="vi">hoặc NULL</span></td>
+                </tr>
+                <tr>
+                  <td>pgtype.Date</td>
+                  <td>'2026-01-15' <span lang="en">or NULL</span><span lang="vi">hoặc NULL</span></td>
+                </tr>
+                <tr>
+                  <td><span lang="en">anything else (structs, maps, other pgtype…)</span><span lang="vi">mọi thứ khác
+                      (struct, map, pgtype khác…)</span></td>
+                  <td lang="en"><code>fmt.Sprintf("%v")</code>, quoted — <code>struct{ X int }{1}</code> →
+                    <code>'{1}'</code></td>
+                  <td lang="vi"><code>fmt.Sprintf("%v")</code>, có nháy — <code>struct{ X int }{1}</code> →
+                    <code>'{1}'</code></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Origin</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func Origin() (location, function string)</pre>
+            </div>
+            <p lang="en">Walks the current goroutine's stack (from its caller, at most 32 frames) and returns the first
+              frame that is not <code>runtime.*</code>, pgx, Junkit <code>database</code> / <code>tracer</code> /
+              <code>sqlfmt</code>, or a sqlc-generated <code>*.sql.go</code> file. <code>location</code> is
+              <code>"/abs/path/file.go:123"</code>, <code>function</code> the fully-qualified name (e.g.
+              <code>jungo/internal/features/user/repository.(*UserRepository).Create</code>). If every frame is skipped:
+              <code>"unknown", "unknown"</code>.</p>
+            <p lang="vi">Duyệt stack của goroutine hiện tại (từ hàm gọi nó, tối đa 32 frame) và trả frame đầu tiên không
+              phải <code>runtime.*</code>, pgx, <code>database</code> / <code>tracer</code> / <code>sqlfmt</code> của
+              Junkit, hay file sqlc sinh ra <code>*.sql.go</code>. <code>location</code> là
+              <code>"/abs/path/file.go:123"</code>, <code>function</code> là tên đầy đủ (vd.
+              <code>jungo/internal/features/user/repository.(*UserRepository).Create</code>). Nếu mọi frame đều bị bỏ
+              qua: <code>"unknown", "unknown"</code>.</p>
+            <p lang="en">It must be called synchronously, on the goroutine that ran the query — which is the case inside
+              pgx tracers and DBTX wrappers.</p>
+            <p lang="vi">Phải gọi đồng bộ, trên chính goroutine đã chạy query — điều này đúng khi ở trong tracer của pgx
+              và wrapper DBTX.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 6. IN JUNGO -->
+      <section id="jungo" class="jd-section c-green">
+        <div class="jd-section-head">
+          <span class="jd-badge">6</span>
+          <div>
+            <h2><span lang="en">In Jungo · who uses it</span><span lang="vi">Trong Jungo · ai dùng nó</span></h2>
+            <p class="jd-sub" lang="en">Jungo's own code never imports <code>sqlfmt</code>; it shows up in Jungo's sql
+              log and tracer dashboard through two Junkit packages.</p>
+            <p class="jd-sub" lang="vi">Code của Jungo không import <code>sqlfmt</code>; nó xuất hiện trong log sql và
+              tracer dashboard của Jungo thông qua hai package Junkit.</p>
+          </div>
+        </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-green">
+            <tr>
+              <th>caller</th>
+              <th><span lang="en">what it uses</span><span lang="vi">dùng gì</span></th>
+            </tr>
+            <tr>
+              <td>junkit/database/postgres/query_tracer.go</td>
+              <td lang="en">pgx query log (<code>QueryLogging: true</code>): <code>Parse</code> →
+                <code>query_name</code>, <code>operation</code>; <code>Bind(info.SQL, args)</code> → <code>sql</code>;
+                <code>Origin()</code> → <code>location</code>, <code>function</code> on failed queries. Also
+                <code>postgres.FormatValue</code> / <code>postgres.BindArgsToSQL</code> are thin aliases of
+                <code>FormatValue</code> / <code>Bind</code>.</td>
+              <td lang="vi">Log query của pgx (<code>QueryLogging: true</code>): <code>Parse</code> →
+                <code>query_name</code>, <code>operation</code>; <code>Bind(info.SQL, args)</code> → <code>sql</code>;
+                <code>Origin()</code> → <code>location</code>, <code>function</code> khi query lỗi. Ngoài ra
+                <code>postgres.FormatValue</code> / <code>postgres.BindArgsToSQL</code> là bí danh mỏng của
+                <code>FormatValue</code> / <code>Bind</code>.</td>
+            </tr>
+            <tr>
+              <td>junkit/tracer/db.go</td>
+              <td lang="en"><code>PgxWrapper</code> (installed in Jungo by <code>database/primary/db.go</code> via
+                <code>Decorate</code>): <code>Parse</code> → entry label = <code>Name</code>, <code>Operation</code>;
+                <code>Bind(info.SQL, args)</code> → displayed SQL; <code>Origin()</code> → <code>Location</code>,
+                <code>Function</code> when the query failed.</td>
+              <td lang="vi"><code>PgxWrapper</code> (Jungo gắn trong <code>database/primary/db.go</code> qua <code>Decorate</code>):
+                <code>Parse</code> → nhãn entry = <code>Name</code>, <code>Operation</code>;
+                <code>Bind(info.SQL, args)</code> → SQL hiển thị; <code>Origin()</code> → <code>Location</code>,
+                <code>Function</code> khi query lỗi.</td>
+            </tr>
+            <tr>
+              <td>database/primary/queries/*.sql (Jungo)</td>
+              <td lang="en">The <code>-- name: GetUserByEmail :one</code> lines that sqlc keeps at the top of every
+                generated query — that's where <code>Name</code> / <code>Operation</code> come from.</td>
+              <td lang="vi">Các dòng <code>-- name: GetUserByEmail :one</code> mà sqlc giữ ở đầu mỗi query được sinh ra
+                — <code>Name</code> / <code>Operation</code> lấy từ đó.</td>
+            </tr>
+          </table>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:14px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+          <pre data-hl="bash">
+# every query of a request, formatted by sqlfmt (DB_QUERY_LOGGING=true, LOG_SQL_LEVEL=info)
+$ tail -f storage/logs/sql.log
+</pre>
+        </div>
+      </section>
+
+      <!-- ============================================================ GOTCHAS -->
+      <section id="gotchas" class="jd-section c-red">
+        <div class="jd-section-head">
+          <span class="jd-badge">!</span>
+          <div>
+            <h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2>
+          </div>
+        </div>
+        <div class="jd-explain" style="margin-top:16px">
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">Never execute Bind's
+              output</span><span class="x" lang="en">The quoting is just enough to read; it is not an escaping function.
+              Always run the original <code>sql</code> with <code>args</code>.</span><span class="x" lang="vi">Cách đặt
+              nháy chỉ đủ để đọc; đây không phải hàm escape. Luôn chạy <code>sql</code> gốc kèm
+              <code>args</code>.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Values end up in
+              logs</span><span class="x" lang="en">Bound SQL contains real data — emails, hashes, tokens. Treat anything
+              built with <code>Bind</code> as sensitive.</span><span class="x" lang="vi">SQL đã bind chứa dữ liệu thật —
+              email, hash, token. Hãy coi mọi thứ tạo bởi <code>Bind</code> là nhạy cảm.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Text-only
+              cleaning</span><span class="x" lang="en"><code>Parse</code> and <code>Bind</code> don't understand SQL:
+              <code>'$1'</code> or <code>'a -- b'</code> inside a string literal is replaced / cut too, spaces inside
+              literals are collapsed, and <code>--comment</code> without a space after the dashes is <b>not</b> removed.
+              The logged SQL may therefore differ slightly from what ran.</span><span class="x"
+              lang="vi"><code>Parse</code> và <code>Bind</code> không hiểu SQL: <code>'$1'</code> hay
+              <code>'a -- b'</code> nằm trong string literal cũng bị thay / cắt, khoảng trắng trong literal bị gộp, và
+              <code>--comment</code> không có dấu cách sau hai gạch thì <b>không</b> bị xoá. Vì vậy SQL được log có thể
+              hơi khác so với SQL đã chạy.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Lossy
+              literals</span><span class="x" lang="en"><code>time.Time</code> loses sub-second precision;
+              <code>[]byte</code> is a slice, so it prints as <code>'{104,105}'</code>; unsupported pgtype values (e.g.
+              <code>pgtype.Numeric</code>, <code>pgtype.Float8</code>) print their Go struct with
+              <code>%v</code>.</span><span class="x" lang="vi"><code>time.Time</code> mất phần lẻ giây;
+              <code>[]byte</code> là slice nên in ra <code>'{104,105}'</code>; các giá trị pgtype không hỗ trợ (vd.
+              <code>pgtype.Numeric</code>, <code>pgtype.Float8</code>) in struct Go bằng <code>%v</code>.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">Origin and your own
+              wrappers</span><span class="x" lang="en">Only Junkit's <code>database</code>, <code>tracer</code>,
+              <code>sqlfmt</code>, pgx, runtime and <code>*.sql.go</code> frames are skipped. If you call
+              <code>Origin</code> from your own logging wrapper, it returns the wrapper's line, not the repository's.
+              Deep stacks (&gt; 32 frames above it) can also yield <code>"unknown"</code>.</span><span class="x"
+              lang="vi">Chỉ các frame của <code>database</code>, <code>tracer</code>, <code>sqlfmt</code> (Junkit), pgx,
+              runtime và <code>*.sql.go</code> bị bỏ qua. Nếu bạn gọi <code>Origin</code> từ wrapper log của riêng mình,
+              nó trả dòng của wrapper, không phải của repository. Stack quá sâu (&gt; 32 frame phía trên) cũng có thể
+              cho <code>"unknown"</code>.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Dynamic SQL and the
+              cache</span><span class="x" lang="en">The cache key is the full SQL text. SQL built with inlined values
+              fills the 1024 slots quickly; after that, new strings are parsed on every call (correct, just slower). Use
+              placeholders.</span><span class="x" lang="vi">Key của cache là toàn bộ chuỗi SQL. SQL dựng bằng cách nhét
+              giá trị trực tiếp sẽ nhanh chóng lấp đầy 1024 chỗ; sau đó chuỗi mới bị parse ở mỗi lần gọi (vẫn đúng, chỉ
+              chậm hơn). Hãy dùng placeholder.</span></div>
+        </div>
+      </section>
+
+      <footer class="jd-footer">
+        <span>Jundoc · Junkit · sqlfmt</span>
+        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
+              Junkit</span></a></span>
+      </footer>
+    </article>
+  </div>
+
+  <script>
+    document.addEventListener("jd:ready", function () {
+      // Mirrors parse / guessName / Bind / FormatValue (sqlfmt.go) for JSON-representable values.
+      var nameRe = /-- name:\s*(\w+)\s*:(\w+)/, commentRe = /-- [^\r\n]*/g, spaceRe = /[\t\n\f\r ]+/g;
+      function guessName(sql) {
+        var first = sql.split(" ")[0].toUpperCase();
+        return { SELECT: "Select", INSERT: "Insert", UPDATE: "Update", DELETE: "Delete", WITH: "With" }[first] || "Query";
+      }
+      function parse(sql) {
+        var info = { Name: "", Operation: "", SQL: "" }, m = nameRe.exec(sql);
+        if (m) { info.Name = m[1]; info.Operation = m[2].toUpperCase(); }
+        info.SQL = sql.replace(commentRe, "").trim().replace(spaceRe, " ");
+        if (!info.Name) info.Name = guessName(info.SQL);
+        return info;
+      }
+      function quote(s) { return "'" + s.split("'").join("''") + "'"; }
+      function g15(x) { // Go %.15g
+        if (x === 0) return "0";
+        var parts = x.toExponential(14).split("e"), exp = parseInt(parts[1], 10);
+        if (exp < -4 || exp >= 15) {
+          var a = Math.abs(exp);
+          return parts[0].replace(/\.?0+$/, "") + "e" + (exp < 0 ? "-" : "+") + (a < 10 ? "0" : "") + a;
+        }
+        var s = x.toPrecision(15);
+        return s.indexOf(".") >= 0 ? s.replace(/\.?0+$/, "") : s;
+      }
+      function formatValue(v) {
+        if (v === null) return "NULL";
+        if (typeof v === "string") return quote(v);
+        if (typeof v === "boolean") return String(v);
+        if (typeof v === "number") return Number.isSafeInteger(v) ? String(v) : g15(v);
+        if (Array.isArray(v)) return v.length === 0 ? "NULL" : "'{" + v.map(formatValue).join(",") + "}'";
+        return "<not mirrored>";
+      }
+      function bind(sql, args) {
+        if (args.length === 0) return sql;
+        var out = "";
+        for (var i = 0; i < sql.length; i++) {
+          if (sql[i] === "$" && i + 1 < sql.length && sql[i + 1] >= "0" && sql[i + 1] <= "9") {
+            var idx = 0, j = i + 1;
+            while (j < sql.length && sql[j] >= "0" && sql[j] <= "9") { idx = idx * 10 + (sql.charCodeAt(j) - 48); j++; }
+            if (idx > 0 && idx <= args.length) { out += formatValue(args[idx - 1]); i = j - 1; continue; }
+          }
+          out += sql[i];
+        }
+        return out;
+      }
+
+      // Cases from sqlfmt_test.go.
+      var eq = function (a, b) { return JSON.stringify(a) === JSON.stringify(b); };
+      console.assert(eq(parse("-- name: GetUserByUUID :one\nSELECT * FROM users WHERE uuid = $1"), { Name: "GetUserByUUID", Operation: "ONE", SQL: "SELECT * FROM users WHERE uuid = $1" }), "parse annotated");
+      console.assert(eq(parse("SELECT *\n  -- this is a comment\n  FROM   users\nWHERE  id = 1"), { Name: "Select", Operation: "", SQL: "SELECT * FROM users WHERE id = 1" }), "parse comments");
+      console.assert(guessName("select * from users") === "Select" && guessName("WITH recent AS (SELECT 1) SELECT * FROM recent") === "With" && guessName("BEGIN") === "Query" && guessName("") === "Query", "guessName");
+      console.assert(bind("SELECT * FROM users WHERE uuid = $1", []) === "SELECT * FROM users WHERE uuid = $1", "bind no args");
+      console.assert(bind("INSERT INTO users (email, status) VALUES ($1, $2)", ["jane@example.com", 1]) === "INSERT INTO users (email, status) VALUES ('jane@example.com', 1)", "bind multi");
+      console.assert(bind("SELECT $10, $1", ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth"]) === "SELECT 'tenth', 'first'", "bind $10");
+      console.assert(bind("SELECT $0", ["x"]) === "SELECT $0" && bind("SELECT $1, $5", ["only one arg"]) === "SELECT 'only one arg', $5", "bind out of range");
+      console.assert(bind("SELECT price_tag FROM t WHERE note = 'costs $ a lot'", ["x"]) === "SELECT price_tag FROM t WHERE note = 'costs $ a lot'", "bind bare $");
+      console.assert(formatValue("O'Brien") === "'O''Brien'" && formatValue(3.5) === "3.5" && formatValue(-7) === "-7" && formatValue([]) === "NULL" && formatValue([1, 2, 3]) === "'{1,2,3}'" && formatValue(null) === "NULL", "formatValue");
+      console.assert(g15(0.1) === "0.1" && g15(1e20) === "1e+20" && g15(1e-5) === "1e-05" && g15(123456.75) === "123456.75", "%.15g");
+
+      function paint() {
+        var sql = document.getElementById("sf-sql").value, args, out;
+        var info = parse(sql);
+        try { args = JSON.parse(document.getElementById("sf-args").value); } catch (e) { args = null; }
+        out = "Info{\n  Name:      \"" + info.Name + "\",\n  Operation: \"" + info.Operation + "\",\n  SQL:       \"" + info.SQL + "\",\n}\n\n";
+        out += Array.isArray(args) ? "Bind(info.SQL, args) =\n\"" + bind(info.SQL, args) + "\"" : "// args must be a JSON array";
+        document.getElementById("sf-out").innerHTML = JD.highlight(out, "go");
+      }
+      document.getElementById("sf-sql").addEventListener("input", paint);
+      document.getElementById("sf-args").addEventListener("input", paint);
+      paint();
+    });
+  </script>
+</body>
+
+</html>

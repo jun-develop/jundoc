@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit console · Jundoc</title>
+  <meta name="description"
+    content="junkit/console: coloured status lines on stdout for CLI tools, generators and bootstrap code.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+
+<body>
+  <div id="jd-app" data-root="..">
+    <article class="jd-content">
+
+      <!-- ============================================================ HERO -->
+      <header class="jd-hero"
+        style="background:radial-gradient(1000px 380px at 0% 0%, rgba(45,212,191,.42), transparent 60%),linear-gradient(135deg,#0f172a,#334155 55%,#0f766e)">
+        <div class="jd-eyebrow">Junkit · console</div>
+        <h1>console</h1>
+        <p lang="en">Coloured, one-line status messages on stdout for CLI tools, code generators and <code>main</code>
+          bootstrap — not for request-time logging (use <a href="logger.html" style="color:inherit">logger</a> for
+          that).</p>
+        <p lang="vi">In các dòng trạng thái có màu ra stdout cho công cụ CLI, trình sinh code và phần khởi động trong
+          <code>main</code> — không dùng để log khi xử lý request (hãy dùng <a href="logger.html"
+            style="color:inherit">logger</a>).</p>
+        <div class="jd-chips">
+          <span class="jd-chip">github.com/jun-develop/junkit/console</span>
+          <span class="jd-chip"><span lang="en">no Fx Module — plain functions</span><span lang="vi">không có Fx Module
+              — chỉ là hàm</span></span>
+          <span class="jd-chip"><span lang="en">standard library only (fmt, os, unicode)</span><span lang="vi">chỉ dùng
+              thư viện chuẩn (fmt, os, unicode)</span></span>
+        </div>
+      </header>
+
+      <!-- ============================================================ 1. WHAT -->
+      <section id="what" class="jd-section c-green">
+        <div class="jd-section-head">
+          <span class="jd-badge">1</span>
+          <div>
+            <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
+            <p class="jd-sub" lang="en">Every printing function does the same four things to your format string. The
+              casing step touches only the <b>first character of the format</b>, never the arguments.</p>
+            <p class="jd-sub" lang="vi">Mọi hàm in đều làm cùng bốn việc với chuỗi format của bạn. Bước đổi hoa/thường
+              chỉ chạm vào <b>ký tự đầu tiên của format</b>, không bao giờ chạm vào các tham số.</p>
+          </div>
+        </div>
+        <div class="jd-flow" style="margin-top:22px" data-wires='[
+      {"from":"c1","to":"c2","color":"green"},
+      {"from":"c2","to":"c3","color":"green"},
+      {"from":"c3","to":"c4","color":"green"}]'>
+          <div class="jd-node is-tint c-green" data-node="c1"><span class="k">1 · call</span><span class="t mono"
+              style="font-size:15px">Successf("done %d", n)</span>
+            <div class="d" lang="en">A <code>fmt</code> format string plus arguments.</div>
+            <div class="d" lang="vi">Một chuỗi format kiểu <code>fmt</code> cùng các tham số.</div>
+          </div>
+          <div class="jd-node is-tint c-green" data-node="c2"><span class="k">2 · case</span><span class="t mono"
+              style="font-size:15px">upper / lower</span>
+            <div class="d" lang="en">Info, Success, Step → first rune upper-cased. Warn, Fatal → lower-cased (it follows
+              a prefix).</div>
+            <div class="d" lang="vi">Info, Success, Step → rune đầu viết hoa. Warn, Fatal → viết thường (vì đứng sau
+              tiền tố).</div>
+          </div>
+          <div class="jd-node is-tint c-green" data-node="c3"><span class="k">3 · style</span><span class="t mono"
+              style="font-size:15px">colour + icon</span>
+            <div class="d" lang="en">ANSI colour code, an emoji / prefix, the reset code and <code>"\n"</code>.</div>
+            <div class="d" lang="vi">Mã màu ANSI, emoji / tiền tố, mã reset và <code>"\n"</code>.</div>
+          </div>
+          <div class="jd-node is-tint c-blue" data-node="c4"><span class="k">4 · print</span><span class="t mono"
+              style="font-size:15px">fmt.Printf → stdout</span>
+            <div class="d" lang="en">Always stdout. <code>Fatalf</code> then calls <code>os.Exit(1)</code>.</div>
+            <div class="d" lang="vi">Luôn là stdout. <code>Fatalf</code> sau đó gọi <code>os.Exit(1)</code>.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 2. SETUP -->
+      <section id="setup" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">2</span>
+          <div>
+            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối vào app</span></h2>
+            <p class="jd-sub" lang="en">Nothing to wire: no Fx Module, no constructor, no <code>Options</code>. Import
+              it and call the functions.</p>
+            <p class="jd-sub" lang="vi">Không có gì để kết nối: không Fx Module, không constructor, không
+              <code>Options</code>. Import rồi gọi hàm là xong.</p>
+          </div>
+        </div>
+        <div class="jd-tabs c-purple" style="margin-top:18px">
+          <div class="jd-tablist">
+            <button type="button" class="jd-tab" aria-selected="true"><span lang="en">with Fx</span><span lang="vi">với
+                Fx</span></button>
+            <button type="button" class="jd-tab" aria-selected="false"><span lang="en">without Fx</span><span
+                lang="vi">Không dùng Fx</span></button>
+          </div>
+          <div class="jd-tabpanel">
+            <p lang="en">Jungo does not register it in <code>internal/app/fx.go</code>; Fx-built console commands simply
+              import it, e.g. <code>internal/console/kernel.go</code>:</p>
+            <p lang="vi">Jungo không đăng ký nó trong <code>internal/app/fx.go</code>; các lệnh console chạy trong Fx
+              chỉ việc import, ví dụ <code>internal/console/kernel.go</code>:</p>
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/console/kernel.go</span></div>
+              <pre data-hl="go">
+import "github.com/jun-develop/junkit/console"
+
+if err := cmd.Run(ctx, args); err != nil {
+    console.Fatalf("command %q failed: %v", name, err)
+}
+</pre>
+            </div>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <p lang="en">Same thing — the package is stateless. Typical in a standalone <code>main</code>:</p>
+            <p lang="vi">Giống hệt — package không giữ trạng thái. Thường dùng trong một <code>main</code> độc lập:</p>
+            <div class="jd-term" data-copy>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>cmd/tool/main.go</span></div>
+              <pre data-hl="go">
+import "github.com/jun-develop/junkit/console"
+
+func main() {
+    console.Infof("starting migration for %s", "users")
+}
+</pre>
+            </div>
+          </div>
+        </div>
+        <h3 style="margin-top:22px"><span lang="en">What each function prints</span><span lang="vi">Mỗi hàm in ra
+            gì</span></h3>
+        <p class="jd-sub" lang="en">There is no configuration; this table is the whole behaviour. Prefix strings are
+          exact (note the spaces).</p>
+        <p class="jd-sub" lang="vi">Không có cấu hình; bảng này là toàn bộ hành vi. Chuỗi tiền tố được chép chính xác
+          (chú ý các dấu cách).</p>
+        <div class="jd-tablewrap">
+          <table class="jd-params c-purple">
+            <tr>
+              <th>function</th>
+              <th><span lang="en">colour</span><span lang="vi">màu</span></th>
+              <th><span lang="en">prefix</span><span lang="vi">tiền tố</span></th>
+              <th><span lang="en">first rune of format</span><span lang="vi">rune đầu của format</span></th>
+              <th><span lang="en">after printing</span><span lang="vi">sau khi in</span></th>
+            </tr>
+            <tr>
+              <td>Infof</td>
+              <td>cyan <code>\033[36m</code></td>
+              <td><code>"⚡ "</code></td>
+              <td><span lang="en">upper</span><span lang="vi">hoa</span></td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Successf</td>
+              <td>green <code>\033[32m</code></td>
+              <td><code>" ✅ "</code></td>
+              <td><span lang="en">upper</span><span lang="vi">hoa</span></td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Warnf</td>
+              <td>yellow <code>\033[33m</code></td>
+              <td><code>"⚠️  Warning: "</code></td>
+              <td><span lang="en">lower</span><span lang="vi">thường</span></td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Fatalf</td>
+              <td>red <code>\033[31m</code></td>
+              <td><code>"⛔ Error: "</code></td>
+              <td><span lang="en">lower</span><span lang="vi">thường</span></td>
+              <td><code>os.Exit(1)</code></td>
+            </tr>
+            <tr>
+              <td>Stepf</td>
+              <td>bold <code>\033[1m</code></td>
+              <td><span lang="en"><code>icon + " "</code> (your icon)</span><span lang="vi"><code>icon + " "</code>
+                  (icon của bạn)</span></td>
+              <td><span lang="en">upper</span><span lang="vi">hoa</span></td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>NewError</td>
+              <td>—</td>
+              <td>—</td>
+              <td><span lang="en">unchanged</span><span lang="vi">giữ nguyên</span></td>
+              <td><span lang="en">prints nothing, returns <code>error</code></span><span lang="vi">không in gì, trả
+                  <code>error</code></span></td>
+            </tr>
+          </table>
+        </div>
+        <p class="jd-sub" lang="en">Every printed line ends with the reset code <code>\033[0m</code> and a newline —
+          don't add <code>\n</code> yourself.</p>
+        <p class="jd-sub" lang="vi">Mỗi dòng in ra kết thúc bằng mã reset <code>\033[0m</code> và xuống dòng — đừng tự
+          thêm <code>\n</code>.</p>
+      </section>
+
+      <!-- ============================================================ 3. QUICK START -->
+      <section id="quick" class="jd-section c-blue">
+        <div class="jd-section-head">
+          <span class="jd-badge">3</span>
+          <div>
+            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <p class="jd-sub" lang="en">A tiny generator. Hover an explanation to light up its lines.</p>
+            <p class="jd-sub" lang="vi">Một trình sinh code nhỏ. Rê chuột vào giải thích để làm sáng các dòng tương ứng.
+            </p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <div class="jd-sticky">
+              <div class="jd-term" data-copy>
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
+                <pre data-hl="go" id="code-quick">
+func main() {
+    name := os.Args[1]
+    console.Stepf("🏗️", "generating feature %s", name)
+
+    if _, err := os.Stat(".env"); err != nil {
+        console.Warnf("No .env file, using defaults")
+    }
+
+    if err := generate(name); err != nil {
+        console.Fatalf("Generate %q: %v", name, err)
+    }
+
+    console.Successf("feature %q generated", name)
+    console.Infof("next: make migrate-up")
+}
+
+func generate(name string) error {
+    tmpl, err := os.ReadFile("templates/feature.tmpl")
+    if err != nil {
+        return console.NewError("template %q: %w", name, err)
+    }
+    return os.WriteFile(name+".go", tmpl, 0o644)
+}
+</pre>
+              </div>
+              <div class="jd-term" style="margin-top:12px">
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>$ go run . product</span></div>
+                <pre><span style="font-weight:800;color:#fff">🏗️ Generating feature product</span>
+<span style="color:#facc15">⚠️  Warning: no .env file, using defaults</span>
+<span style="color:#4ade80"> ✅ Feature "product" generated</span>
+<span style="color:#22d3ee">⚡ Next: make migrate-up</span>
+
+<span lang="en"># or, if the template is missing:</span><span lang="vi"># hoặc, nếu thiếu template:</span>
+<span style="color:#f87171">⛔ Error: generate "product": template "product": open templates/feature.tmpl: no such file or directory</span></pre>
+              </div>
+            </div>
+          </div>
+          <div class="jd-explain">
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="3"><span class="n">1</span><span
+                class="w">Stepf(icon, …)</span><span class="x" lang="en">Bold line starting with any icon you pass.
+                <code>"generating"</code> becomes <code>"Generating"</code>.</span><span class="x" lang="vi">Dòng in đậm
+                bắt đầu bằng icon bạn truyền. <code>"generating"</code> thành <code>"Generating"</code>.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="5-7"><span class="n">2</span><span
+                class="w">Warnf</span><span class="x" lang="en">Adds <code>Warning: </code> and lower-cases the first
+                letter, so <code>"No .env…"</code> reads <code>"no .env…"</code>.</span><span class="x" lang="vi">Thêm
+                <code>Warning: </code> và viết thường chữ đầu, nên <code>"No .env…"</code> thành
+                <code>"no .env…"</code>.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="9-11"><span class="n">3</span><span
+                class="w">Fatalf</span><span class="x" lang="en">Prints <code>Error: …</code> and calls
+                <code>os.Exit(1)</code> — deferred functions do not run. Only for top-level code.</span><span class="x"
+                lang="vi">In <code>Error: …</code> rồi gọi <code>os.Exit(1)</code> — các hàm defer không chạy. Chỉ dùng
+                ở code tầng ngoài cùng.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="13-14"><span class="n">4</span><span
+                class="w">Successf / Infof</span><span class="x" lang="en">Green and cyan; both capitalise the first
+                letter of the format.</span><span class="x" lang="vi">Xanh lá và xanh lơ; cả hai viết hoa chữ đầu của
+                format.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="17-23"><span class="n">5</span><span
+                class="w">NewError</span><span class="x" lang="en">Exactly <code>fmt.Errorf</code>: prints nothing,
+                keeps your casing, supports <code>%w</code> so <code>errors.Is</code> still works.</span><span class="x"
+                lang="vi">Chính là <code>fmt.Errorf</code>: không in gì, giữ nguyên chữ hoa/thường, hỗ trợ
+                <code>%w</code> nên <code>errors.Is</code> vẫn hoạt động.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 4. TRY IT -->
+      <section id="try" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">4</span>
+          <div>
+            <h2><span lang="en">Try it</span><span lang="vi">Thử ngay</span></h2>
+            <p class="jd-sub" lang="en">Same casing and prefix logic as the Go code. Formatting is simplified: only
+              <code>%s</code>, <code>%v</code>, <code>%d</code>, <code>%q</code> and <code>%%</code>, all filled with
+              the one argument.</p>
+            <p class="jd-sub" lang="vi">Cùng logic đổi hoa/thường và tiền tố như code Go. Phần format được đơn giản hoá:
+              chỉ <code>%s</code>, <code>%v</code>, <code>%d</code>, <code>%q</code> và <code>%%</code>, tất cả lấy từ
+              một tham số duy nhất.</p>
+          </div>
+        </div>
+        <div class="jd-calc c-purple" style="margin-top:18px">
+          <label>function <select id="cs-fn">
+              <option>Infof</option>
+              <option>Successf</option>
+              <option selected>Warnf</option>
+              <option>Fatalf</option>
+              <option>Stepf</option>
+            </select></label>
+          <label>format <input type="text" id="cs-format" value="API key for %s is missing"></label>
+          <label>arg <input type="text" id="cs-arg" value="Telegram"></label>
+        </div>
+        <div class="jd-term">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>stdout</span></div>
+          <pre id="cs-out"></pre>
+        </div>
+        <p class="jd-sub" style="margin-top:10px" lang="en">Notice how <code>Warnf</code> turns <code>"API"</code> into
+          <code>"aPI"</code>, and how a format that starts with <code>%s</code> is never capitalised.</p>
+        <p class="jd-sub" style="margin-top:10px" lang="vi">Để ý <code>Warnf</code> biến <code>"API"</code> thành
+          <code>"aPI"</code>, và format bắt đầu bằng <code>%s</code> thì không bao giờ được viết hoa.</p>
+      </section>
+
+      <!-- ============================================================ 5. API -->
+      <section id="api" class="jd-section c-green">
+        <div class="jd-section-head">
+          <span class="jd-badge">5</span>
+          <div>
+            <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from
+              <code>junkit/console/console.go</code>. All printing functions take a <code>fmt</code> format and
+              <code>...any</code> arguments and return nothing.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/console/console.go</code>.
+              Mọi hàm in đều nhận format kiểu <code>fmt</code> cùng tham số <code>...any</code> và không trả về gì.</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:18px"><span lang="en">Print</span><span lang="vi">In ra</span></h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Infof</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func Infof(format string, a ...any)</pre>
+            </div>
+            <p lang="en">Cyan informational line: <code>⚡ </code> + format with its first rune upper-cased.</p>
+            <p lang="vi">Dòng thông tin màu xanh lơ: <code>⚡ </code> + format với rune đầu viết hoa.</p>
+          </div>
+          <div class="jd-sym c-green">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Successf</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func Successf(format string, a ...any)</pre>
+            </div>
+            <p lang="en">Green success line: <code> ✅ </code> (with a leading space) + format with its first rune
+              upper-cased.</p>
+            <p lang="vi">Dòng thành công màu xanh lá: <code> ✅ </code> (có dấu cách ở đầu) + format với rune đầu viết
+              hoa.</p>
+          </div>
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Warnf</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func Warnf(format string, a ...any)</pre>
+            </div>
+            <p lang="en">Yellow warning: <code>⚠️  Warning: </code> + format with its first rune <b>lower-cased</b>.
+              Still written to stdout, not stderr.</p>
+            <p lang="vi">Cảnh báo màu vàng: <code>⚠️  Warning: </code> + format với rune đầu <b>viết thường</b>. Vẫn ghi
+              ra stdout, không phải stderr.</p>
+          </div>
+          <div class="jd-sym c-red">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Fatalf</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func Fatalf(format string, a ...any)</pre>
+            </div>
+            <p lang="en">Red error: <code>⛔ Error: </code> + format with its first rune lower-cased, then
+              <code>os.Exit(1)</code>. Never returns; defers and Fx <code>OnStop</code> hooks are skipped.</p>
+            <p lang="vi">Lỗi màu đỏ: <code>⛔ Error: </code> + format với rune đầu viết thường, sau đó
+              <code>os.Exit(1)</code>. Không bao giờ return; defer và hook <code>OnStop</code> của Fx bị bỏ qua.</p>
+          </div>
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Stepf</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func Stepf(icon, format string, a ...any)</pre>
+            </div>
+            <p lang="en">Bold line: <code>icon</code> + a space + format with its first rune upper-cased. The icon is
+              printed as given (any string).</p>
+            <p lang="vi">Dòng in đậm: <code>icon</code> + một dấu cách + format với rune đầu viết hoa. Icon được in
+              nguyên văn (chuỗi bất kỳ).</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:18px"><span lang="en">Errors</span><span lang="vi">Lỗi</span></h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-muted">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NewError</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func NewError(format string, a ...any) error</pre>
+            </div>
+            <p lang="en">Returns <code>fmt.Errorf(format, a...)</code> — no printing, no colour, no casing.
+              <code>%w</code> wraps:
+              <code>errors.Is(console.NewError("read %q: %w", "config.yaml", cause), cause)</code> is true and the
+              message is <code>read "config.yaml": connection refused</code> (from the tests).</p>
+            <p lang="vi">Trả về <code>fmt.Errorf(format, a...)</code> — không in, không màu, không đổi hoa/thường.
+              <code>%w</code> bọc lỗi:
+              <code>errors.Is(console.NewError("read %q: %w", "config.yaml", cause), cause)</code> là true và thông điệp
+              là <code>read "config.yaml": connection refused</code> (theo test).</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 6. IN JUNGO -->
+      <section id="jungo" class="jd-section c-orange">
+        <div class="jd-section-head">
+          <span class="jd-badge">6</span>
+          <div>
+            <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+            <p class="jd-sub" lang="en">Used by the CLI side only: console commands and the scaffold generator. Paths
+              relative to <code>jungo/internal</code> unless they start with <code>cmd/</code> (repo root).</p>
+            <p class="jd-sub" lang="vi">Chỉ dùng ở phía CLI: các lệnh console và trình scaffold. Đường dẫn tính từ
+              <code>jungo/internal</code>, trừ khi bắt đầu bằng <code>cmd/</code> (gốc repo).</p>
+          </div>
+        </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-orange">
+            <tr>
+              <th>file</th>
+              <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
+            </tr>
+            <tr>
+              <td>console/kernel.go</td>
+              <td lang="en"><code>Fatalf("command %q failed: %v", …)</code> when a command returns an error,
+                <code>Fatalf("unknown command %q (run without arguments to list available commands)", …)</code> for an
+                unknown signature.</td>
+              <td lang="vi"><code>Fatalf("command %q failed: %v", …)</code> khi lệnh trả lỗi,
+                <code>Fatalf("unknown command %q (run without arguments to list available commands)", …)</code> khi
+                signature không tồn tại.</td>
+            </tr>
+            <tr>
+              <td>console/commands/health_check_command.go</td>
+              <td lang="en"><code>health:check</code> → <code>Successf("Database reachable, %d user(s)", count)</code>.
+              </td>
+              <td lang="vi"><code>health:check</code> → <code>Successf("Database reachable, %d user(s)", count)</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>features/user/command/create_user_command.go</td>
+              <td><code>Successf("Created user %s &lt;%s&gt;", user.UUID, user.Email)</code></td>
+            </tr>
+            <tr>
+              <td>features/user/command/list_users_command.go</td>
+              <td><code>Infof("Showing %d of %d user(s)", len(users), total)</code></td>
+            </tr>
+            <tr>
+              <td>features/auth/command/cleanup_tokens_command.go</td>
+              <td><code>Successf("Deleted %d auth tokens expired or revoked before %s", …)</code></td>
+            </tr>
+            <tr>
+              <td>cmd/scaffold/main.go · command.go</td>
+              <td lang="en"><code>make feature</code> / <code>make command</code>: <code>Fatalf</code> for bad input,
+                <code>Infof</code> for next steps, <code>Successf</code> when done, <code>Warnf</code> before the manual
+                DB clean-up on removal. <code>templates.go</code> makes every generated command call
+                <code>console.Infof("TODO: implement {{.Signature}}")</code>.</td>
+              <td lang="vi"><code>make feature</code> / <code>make command</code>: <code>Fatalf</code> khi input sai,
+                <code>Infof</code> cho các bước tiếp theo, <code>Successf</code> khi xong, <code>Warnf</code> trước bước
+                dọn DB thủ công khi xoá. <code>templates.go</code> khiến mọi lệnh được sinh ra gọi
+                <code>console.Infof("TODO: implement {{.Signature}}")</code>.</td>
+            </tr>
+          </table>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:14px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+          <pre data-hl="bash">
+$ make console CMD="health:check"
+#  ✅ Database reachable, &lt;n&gt; user(s)
+$ make console CMD="nope"
+# ⛔ Error: unknown command "nope" (run without arguments to list available commands)
+</pre>
+        </div>
+      </section>
+
+      <!-- ============================================================ 7. GOTCHAS -->
+      <section id="gotchas" class="jd-section c-red">
+        <div class="jd-section-head">
+          <span class="jd-badge">!</span>
+          <div>
+            <h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2>
+          </div>
+        </div>
+        <div class="jd-explain" style="margin-top:16px">
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">Only the first rune
+              changes</span><span class="x" lang="en">Warnf / Fatalf lower-case it even inside acronyms:
+              <code>"API key missing"</code> prints <code>aPI key missing</code>. Start such messages with another word.
+              Arguments are never re-cased; a format starting with <code>%s</code> is left as is.</span><span class="x"
+              lang="vi">Warnf / Fatalf viết thường nó kể cả khi là chữ viết tắt: <code>"API key missing"</code> in ra
+              <code>aPI key missing</code>. Hãy mở đầu bằng từ khác. Tham số không bao giờ bị đổi; format bắt đầu bằng
+              <code>%s</code> được giữ nguyên.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Fatalf =
+              os.Exit(1)</span><span class="x" lang="en">Defers, Fx <code>OnStop</code> hooks and log flushing are
+              skipped. Use it in <code>main</code> / CLI entry points, never in library or request code — return an
+              error (e.g. <code>NewError</code>) instead.</span><span class="x" lang="vi">Defer, hook
+              <code>OnStop</code> của Fx và việc flush log đều bị bỏ qua. Chỉ dùng trong <code>main</code> / điểm vào
+              CLI, không bao giờ trong code thư viện hay xử lý request — hãy trả lỗi (vd. <code>NewError</code>).</span>
+          </div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Everything goes to
+              stdout, always coloured</span><span class="x" lang="en">Errors and warnings are not on stderr, and ANSI
+              codes are written even when output is piped to a file or CI log (no TTY detection).</span><span class="x"
+              lang="vi">Lỗi và cảnh báo không ra stderr, và mã ANSI vẫn được ghi kể cả khi output bị chuyển vào file hay
+              log CI (không kiểm tra TTY).</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">The format is a real
+              fmt format</span><span class="x" lang="en">A literal percent sign must be written <code>%%</code>. Don't
+              pass user input as the format — use <code>console.Infof("%s", s)</code>.</span><span class="x"
+              lang="vi">Dấu phần trăm thật phải viết <code>%%</code>. Đừng truyền input của người dùng làm format — hãy
+              dùng <code>console.Infof("%s", s)</code>.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">Two packages called
+              console</span><span class="x" lang="en">Jungo also has its own <code>jungo/internal/console</code> (the
+              command kernel: <code>Command</code>, <code>RunSelected</code>). It is unrelated — check the import
+              path.</span><span class="x" lang="vi">Jungo còn có package riêng <code>jungo/internal/console</code>
+              (kernel của lệnh: <code>Command</code>, <code>RunSelected</code>). Hai package không liên quan — hãy kiểm
+              tra đường dẫn import.</span></div>
+        </div>
+      </section>
+
+      <footer class="jd-footer">
+        <span>Jundoc · Junkit · console</span>
+        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
+              Junkit</span></a></span>
+      </footer>
+    </article>
+  </div>
+
+  <script>
+    document.addEventListener("jd:ready", function () {
+      // Mirrors ensureUpper / ensureLower: change the first rune only if it isn't already in that case.
+      function recase(s, up) {
+        if (!s) return "";
+        var r = String.fromCodePoint(s.codePointAt(0)), rest = s.slice(r.length);
+        var t = up ? r.toUpperCase() : r.toLowerCase();
+        if (t === r || Array.from(t).length !== 1) return s; // Go keeps runes without a simple 1:1 mapping
+        return t + rest;
+      }
+      var FN = {
+        Infof: ["color:#22d3ee", "⚡ ", true], Successf: ["color:#4ade80", " ✅ ", true],
+        Warnf: ["color:#facc15", "⚠️  Warning: ", false], Fatalf: ["color:#f87171", "⛔ Error: ", false], Stepf: ["font-weight:800;color:#fff", "🏗️ ", true]
+      };
+      // shortcut: one argument, a handful of verbs — enough to show the casing rules.
+      function sprintf(f, arg) {
+        return f.replace(/%[svdq%]/g, function (v) { return v === "%%" ? "%" : v === "%q" ? JSON.stringify(arg) : arg; });
+      }
+      function line(fn, format, arg) { var c = FN[fn]; return c[1] + sprintf(recase(format, c[2]), arg); }
+      console.assert(recase("đẹp trai", true) === "Đẹp trai" && recase("Hello", true) === "Hello", "ensureUpper");
+      console.assert(recase("Hello", false) === "hello" && recase("", false) === "", "ensureLower");
+      console.assert(line("Warnf", "Something looks off", "") === "⚠️  Warning: something looks off", "Warnf");
+      console.assert(line("Infof", "starting migration for %s", "users") === "⚡ Starting migration for users", "Infof");
+      console.assert(line("Infof", "%s ready", "db") === "⚡ db ready", "verbs are not cased");
+      var esc = function (s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); };
+      function paint() {
+        var fn = document.getElementById("cs-fn").value;
+        var out = line(fn, document.getElementById("cs-format").value, document.getElementById("cs-arg").value);
+        document.getElementById("cs-out").innerHTML = '<span style="' + FN[fn][0] + '">' + esc(out) + "</span>" + (fn === "Fatalf" ? '\n<span style="color:#64748b">exit status 1</span>' : "");
+      }
+      ["cs-fn", "cs-format", "cs-arg"].forEach(function (id) { document.getElementById(id).addEventListener("input", paint); });
+      paint();
+    });
+  </script>
+</body>
+
+</html>

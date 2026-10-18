@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit pagination · Jundoc</title>
+  <meta name="description" content="junkit/pagination: bind list query params, turn them into SQL offset/limit, and build pagination metadata.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+<body>
+<div id="jd-app" data-root="..">
+<article class="jd-content">
+
+  <!-- ============================================================ HERO -->
+  <header class="jd-hero" style="background:radial-gradient(1000px 380px at 0% 0%, rgba(52,211,153,.5), transparent 60%),linear-gradient(135deg,#064e3b,#047857 55%,#0e7490)">
+    <div class="jd-eyebrow">Junkit · pagination</div>
+    <h1>pagination</h1>
+    <p lang="en">Turns <code>?page=2&amp;page_size=10</code> into SQL <code>OFFSET</code> / <code>LIMIT</code>, and a total count into the <code>pagination</code> block of a list response.</p>
+    <p lang="vi">Biến <code>?page=2&amp;page_size=10</code> thành <code>OFFSET</code> / <code>LIMIT</code> cho SQL, và biến tổng số bản ghi thành khối <code>pagination</code> trong response dạng danh sách.</p>
+    <div class="jd-chips">
+      <span class="jd-chip">github.com/jun-develop/junkit/pagination</span>
+      <span class="jd-chip"><span lang="en">no Fx Module — plain structs &amp; functions</span><span lang="vi">không có Fx Module — chỉ struct &amp; hàm</span></span>
+      <span class="jd-chip"><span lang="en">no dependencies</span><span lang="vi">không phụ thuộc gì</span></span>
+    </div>
+  </header>
+
+  <!-- ============================================================ 1. WHAT -->
+  <section id="what" class="jd-section c-green">
+    <div class="jd-section-head">
+      <span class="jd-badge">1</span>
+      <div>
+        <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
+        <p class="jd-sub" lang="en">Four steps, from the URL to the JSON. The blue chips are values moving through your handler.</p>
+        <p class="jd-sub" lang="vi">Bốn bước, từ URL tới JSON. Các chip xanh là giá trị đang di chuyển trong handler của bạn.</p>
+      </div>
+    </div>
+    <div class="jd-flow" style="margin-top:22px" data-wires='[
+      {"from":"p1","to":"p2","color":"blue","label":"?page=2"},
+      {"from":"p2","to":"p3","color":"blue","label":"OFFSET 10"},
+      {"from":"p3","to":"p4","color":"blue","label":"total = 35"}]'>
+      <div class="jd-node is-tint c-green" data-node="p1"><span class="k">1 · bind</span><span class="t mono" style="font-size:15px">pagination.Request</span><div class="d" lang="en"><code>ShouldBindQuery</code> reads page, page_size, search, sort_by, sort_order.</div><div class="d" lang="vi"><code>ShouldBindQuery</code> đọc page, page_size, search, sort_by, sort_order.</div></div>
+      <div class="jd-node is-tint c-green" data-node="p2"><span class="k">2 · defaults</span><span class="t mono" style="font-size:15px">req.SetDefaults(…)</span><div class="d" lang="en">Fills page = 1, page_size = 10 and your default sort.</div><div class="d" lang="vi">Điền page = 1, page_size = 10 và cách sắp xếp mặc định của bạn.</div></div>
+      <div class="jd-node is-tint c-green" data-node="p3"><span class="k">3 · query</span><span class="t mono" style="font-size:15px">GetOffset · GetLimit</span><div class="d" lang="en">Pass to SQL; also COUNT(*) the total.</div><div class="d" lang="vi">Truyền vào SQL; đồng thời COUNT(*) tổng số.</div></div>
+      <div class="jd-node is-tint c-green" data-node="p4"><span class="k">4 · respond</span><span class="t mono" style="font-size:15px">NewPagination(…)</span><div class="d" lang="en">Builds page counts and next / prev for the response.</div><div class="d" lang="vi">Tính số trang và trang kế / trước cho response.</div></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 2. QUICK START -->
+  <section id="quick" class="jd-section c-blue">
+    <div class="jd-section-head">
+      <span class="jd-badge">2</span>
+      <div>
+        <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+        <p class="jd-sub" lang="en">A complete list handler. Hover an explanation to light up its lines.</p>
+        <p class="jd-sub" lang="vi">Một handler danh sách hoàn chỉnh. Rê chuột vào giải thích để làm sáng các dòng tương ứng.</p>
+      </div>
+    </div>
+    <div class="jd-grid-2" style="margin-top:18px">
+      <div><div class="jd-sticky">
+        <div class="jd-term" data-copy><div class="jd-term-bar"><i></i><i></i><i></i><span>product_dto.go</span></div>
+<pre data-hl="go" id="code-quick-dto">
+type ListProductsRequest struct {
+    pagination.Request // page, page_size, search, sort_by, sort_order
+}
+</pre></div>
+        <div class="jd-term" data-copy style="margin-top:12px"><div class="jd-term-bar"><i></i><i></i><i></i><span>product_handler.go</span></div>
+<pre data-hl="go" id="code-quick-hdl">
+func (h *ProductHandler) List(ctx *gin.Context) {
+    var req ListProductsRequest
+    if err := ctx.ShouldBindQuery(&amp;req); err != nil {
+        h.responder.SendWithData(ctx, 422, "validation_error",
+            h.validator.GetValidationErrors(ctx, err))
+        return
+    }
+    req.SetDefaults("created_at", "desc")
+
+    items, total, err := h.service.List(ctx, req.GetLimit(), req.GetOffset())
+    if err != nil {
+        h.responder.Error(ctx, err)
+        return
+    }
+
+    meta := pagination.NewPagination(req.Page, req.PageSize, total)
+    h.responder.Pagination(ctx, 200, "products_listed", items, meta)
+}
+</pre></div>
+      </div></div>
+      <div class="jd-explain">
+        <div class="jd-ex c-blue" data-code="#code-quick-dto" data-show="1-3"><span class="n">1</span><span class="w">embed pagination.Request</span><span class="x" lang="en">Your request struct gets the five query params and their validation rules for free. Add your own filters next to it.</span><span class="x" lang="vi">Struct request của bạn có sẵn năm query param cùng luật kiểm tra. Thêm bộ lọc riêng ngay bên cạnh.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="3-7"><span class="n">2</span><span class="w">ShouldBindQuery</span><span class="x" lang="en">Rejects <code>page&lt;1</code>, <code>page_size</code> outside 1–100 and a <code>sort_order</code> other than asc / desc → answer 422.</span><span class="x" lang="vi">Từ chối <code>page&lt;1</code>, <code>page_size</code> ngoài khoảng 1–100 và <code>sort_order</code> khác asc / desc → trả 422.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="8"><span class="n">3</span><span class="w">SetDefaults</span><span class="x" lang="en">Missing page → 1, missing page_size → 10, empty sort → the values you pass.</span><span class="x" lang="vi">Thiếu page → 1, thiếu page_size → 10, sort trống → giá trị bạn truyền vào.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="10"><span class="n">4</span><span class="w">GetLimit / GetOffset</span><span class="x" lang="en">Both return <code>int32</code> — the type sqlc generates for LIMIT / OFFSET params. Also count the total rows.</span><span class="x" lang="vi">Cả hai trả <code>int32</code> — đúng kiểu sqlc sinh ra cho tham số LIMIT / OFFSET. Nhớ đếm luôn tổng số dòng.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="16-17"><span class="n">5</span><span class="w">NewPagination + responder.Pagination</span><span class="x" lang="en">Builds the metadata and sends <code>data: { items, pagination }</code> (see <a href="response.html">response</a>).</span><span class="x" lang="vi">Tạo metadata và gửi <code>data: { items, pagination }</code> (xem <a href="response.html">response</a>).</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 3. TRY IT -->
+  <section id="try" class="jd-section c-purple">
+    <div class="jd-section-head">
+      <span class="jd-badge">3</span>
+      <div>
+        <h2><span lang="en">Try it</span><span lang="vi">Thử ngay</span></h2>
+        <p class="jd-sub" lang="en">Same logic as the Go code. Change the numbers.</p>
+        <p class="jd-sub" lang="vi">Cùng logic với code Go. Thử đổi các con số.</p>
+      </div>
+    </div>
+    <div class="jd-grid-2" style="margin-top:18px">
+      <div>
+        <div class="jd-calc c-purple">
+          <label>page <input type="number" id="pg-page" value="2"></label>
+          <label>page_size <input type="number" id="pg-size" value="10"></label>
+          <label>total_items <input type="number" id="pg-total" value="35" min="0"></label>
+        </div>
+        <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>SQL</span></div><pre id="pg-sql"></pre></div>
+        <p class="jd-sub" style="margin-top:10px" lang="en">Values below 1 are clamped by <code>SetDefaults</code> / <code>NewPagination</code>, but a real request with them is rejected first by validation (422).</p>
+        <p class="jd-sub" style="margin-top:10px" lang="vi">Giá trị nhỏ hơn 1 được <code>SetDefaults</code> / <code>NewPagination</code> chỉnh lại, nhưng request thật mang giá trị đó sẽ bị validation từ chối trước (422).</p>
+      </div>
+      <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>"pagination": …</span></div><pre id="pg-json"></pre></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 4. API -->
+  <section id="api" class="jd-section c-green">
+    <div class="jd-section-head">
+      <span class="jd-badge">4</span>
+      <div>
+        <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+        <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/pagination/pagination.go</code>.</p>
+        <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/pagination/pagination.go</code>.</p>
+      </div>
+    </div>
+    <div class="jd-syms" style="margin-top:18px">
+
+      <div class="jd-sym c-blue">
+        <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Request</span></div>
+        <p lang="en">Standard list query parameters. Embed it in your own request struct and bind with <code>ShouldBindQuery</code>.</p>
+        <p lang="vi">Các query param chuẩn cho danh sách. Nhúng vào struct request của bạn và bind bằng <code>ShouldBindQuery</code>.</p>
+        <div class="jd-tablewrap"><table class="jd-params">
+          <tr><th>field · query</th><th><span lang="en">rule</span><span lang="vi">luật</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+          <tr><td>Page · page</td><td>int · min=1</td><td lang="en">Page number, starting at 1. Default 1.</td><td lang="vi">Số trang, bắt đầu từ 1. Mặc định 1.</td></tr>
+          <tr><td>PageSize · page_size</td><td>int · 1–100</td><td lang="en">Items per page. Default 10.</td><td lang="vi">Số phần tử mỗi trang. Mặc định 10.</td></tr>
+          <tr><td>Search · search</td><td>string</td><td lang="en">Free text; your query decides what it matches.</td><td lang="vi">Chuỗi tự do; câu query của bạn quyết định nó so khớp với gì.</td></tr>
+          <tr><td>SortBy · sort_by</td><td>string</td><td lang="en">Column name. <b>Not validated</b> — whitelist it before putting it in SQL.</td><td lang="vi">Tên cột. <b>Không được kiểm tra</b> — phải đối chiếu danh sách cho phép trước khi đưa vào SQL.</td></tr>
+          <tr><td>SortOrder · sort_order</td><td>asc | desc</td><td lang="en">Anything else → 422.</td><td lang="vi">Giá trị khác → 422.</td></tr>
+        </table></div>
+      </div>
+
+      <div class="jd-sym c-blue">
+        <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">(*Request) SetDefaults</span></div>
+        <div class="jd-term"><pre data-hl="go">func (r *Request) SetDefaults(defaultSortBy, defaultSortOrder string)</pre></div>
+        <ul>
+          <li lang="en"><code>Page &lt;= 0</code> → 1 · <code>PageSize &lt;= 0</code> → 10</li><li lang="vi"><code>Page &lt;= 0</code> → 1 · <code>PageSize &lt;= 0</code> → 10</li>
+          <li lang="en">empty <code>SortBy</code> / <code>SortOrder</code> → the arguments. Values the client sent are kept.</li><li lang="vi"><code>SortBy</code> / <code>SortOrder</code> trống → lấy tham số truyền vào. Giá trị client đã gửi được giữ nguyên.</li>
+        </ul>
+      </div>
+
+      <div class="jd-sym c-blue">
+        <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">(*Request) GetOffset · GetLimit</span></div>
+        <div class="jd-term"><pre data-hl="go">
+func (r *Request) GetOffset() int32 // (Page - 1) * PageSize, clamped to math.MaxInt32
+func (r *Request) GetLimit() int32  // PageSize
+</pre></div>
+        <p lang="en">Call <b>after</b> <code>SetDefaults</code>, otherwise page 0 gives a negative offset.</p>
+        <p lang="vi">Gọi <b>sau</b> <code>SetDefaults</code>, nếu không page 0 sẽ cho offset âm.</p>
+        <p lang="en"><code>page</code> has no upper bound, so a huge one (<code>?page=3000000000</code>) would overflow <code>int32</code> into a negative OFFSET and a 500. <code>GetOffset</code> clamps it to <code>math.MaxInt32</code> instead: the client just gets an empty page.</p>
+        <p lang="vi"><code>page</code> không có giới hạn trên, nên một giá trị rất lớn (<code>?page=3000000000</code>) sẽ tràn <code>int32</code> thành OFFSET âm và gây lỗi 500. <code>GetOffset</code> chặn nó ở <code>math.MaxInt32</code>: client chỉ nhận về một trang rỗng.</p>
+      </div>
+
+      <div class="jd-sym c-green">
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NewPagination</span></div>
+        <div class="jd-term"><pre data-hl="go">func NewPagination(page, pageSize int, totalItems int64) Pagination</pre></div>
+        <ul>
+          <li lang="en"><code>page &lt;= 0</code> → 1, <code>pageSize &lt;= 0</code> → 1.</li><li lang="vi"><code>page &lt;= 0</code> → 1, <code>pageSize &lt;= 0</code> → 1.</li>
+          <li lang="en"><code>TotalPages = ceil(total / pageSize)</code>, but never 0 — an empty list still reports 1 page.</li><li lang="vi"><code>TotalPages = ceil(total / pageSize)</code>, nhưng không bao giờ bằng 0 — danh sách rỗng vẫn báo 1 trang.</li>
+          <li lang="en"><code>NextPage</code> / <code>PrevPage</code> are <code>nil</code> (JSON <code>null</code>) when there is none.</li><li lang="vi"><code>NextPage</code> / <code>PrevPage</code> là <code>nil</code> (JSON <code>null</code>) khi không có.</li>
+        </ul>
+      </div>
+
+      <div class="jd-sym c-green">
+        <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Pagination</span></div>
+        <div class="jd-tablewrap"><table class="jd-params">
+          <tr><th>field · json</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+          <tr><td>Page · page</td><td lang="en">Current page.</td><td lang="vi">Trang hiện tại.</td></tr>
+          <tr><td>PageSize · page_size</td><td lang="en">Items per page.</td><td lang="vi">Số phần tử mỗi trang.</td></tr>
+          <tr><td>TotalItems · total_items</td><td lang="en">All matching rows (int64).</td><td lang="vi">Tổng số dòng khớp (int64).</td></tr>
+          <tr><td>TotalPages · total_pages</td><td lang="en">≥ 1.</td><td lang="vi">≥ 1.</td></tr>
+          <tr><td>HasNext · has_next / HasPrev · has_prev</td><td lang="en">Show / hide the next / previous buttons.</td><td lang="vi">Hiện / ẩn nút trang sau / trang trước.</td></tr>
+          <tr><td>NextPage · next_page / PrevPage · prev_page</td><td lang="en"><code>*int</code> — the page number to request, or null.</td><td lang="vi"><code>*int</code> — số trang cần gọi, hoặc null.</td></tr>
+        </table></div>
+      </div>
+
+      <div class="jd-sym c-muted">
+        <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">PaginatedResponse[T]</span></div>
+        <div class="jd-term"><pre data-hl="go">
+type PaginatedResponse[T any] struct {
+    Items      []T        `json:"items"`
+    Pagination Pagination `json:"pagination"`
+}
+</pre></div>
+        <p lang="en">A typed version of the <code>{ items, pagination }</code> shape — handy for API docs or clients. <code>responder.Pagination</code> builds the same JSON itself, so you don't need it there.</p>
+        <p lang="vi">Phiên bản có kiểu của dạng <code>{ items, pagination }</code> — tiện cho tài liệu API hoặc client. <code>responder.Pagination</code> tự tạo ra đúng JSON này, nên ở đó bạn không cần nó.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 5. IN JUNGO -->
+  <section id="jungo" class="jd-section c-orange">
+    <div class="jd-section-head">
+      <span class="jd-badge">5</span>
+      <div>
+        <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+        <p class="jd-sub" lang="en"><code>GET /api/v1/users</code> is the reference implementation.</p>
+        <p class="jd-sub" lang="vi"><code>GET /api/v1/users</code> là bản cài đặt mẫu.</p>
+      </div>
+    </div>
+    <div class="jd-tablewrap" style="margin-top:16px"><table class="jd-params c-orange">
+      <tr><th>file</th><th><span lang="en">what it does</span><span lang="vi">làm gì</span></th></tr>
+      <tr><td>features/user/dto/v1/user_dto.go</td><td lang="en"><code>ListUsersRequest</code> embeds <code>pagination.Request</code>; <code>ToFilter()</code> copies search, limit, offset, sort order into the domain filter.</td><td lang="vi"><code>ListUsersRequest</code> nhúng <code>pagination.Request</code>; <code>ToFilter()</code> chép search, limit, offset, sort order vào filter của domain.</td></tr>
+      <tr><td>features/user/handler/v1/user_handler.go</td><td lang="en"><code>ListUsers</code>: bind → <code>SetDefaults("created_at", "desc")</code> → service → <code>NewPagination</code> → <code>responder.Pagination</code>.</td><td lang="vi"><code>ListUsers</code>: bind → <code>SetDefaults("created_at", "desc")</code> → service → <code>NewPagination</code> → <code>responder.Pagination</code>.</td></tr>
+      <tr><td>features/user/repository/user_repository.go</td><td lang="en">Runs <code>ListUsers</code> (LIMIT/OFFSET) and <code>CountUsers</code> for the total.</td><td lang="vi">Chạy <code>ListUsers</code> (LIMIT/OFFSET) và <code>CountUsers</code> để lấy tổng.</td></tr>
+    </table></div>
+    <div class="jd-term" data-copy="commands" style="margin-top:14px"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="bash">
+$ curl -s 'localhost:8080/api/v1/users?page=1&amp;page_size=2&amp;search=jungo' \
+    -H 'Authorization: Bearer &lt;access_token&gt;' | jq
+</pre></div>
+  </section>
+
+  <!-- ============================================================ 6. GOTCHAS -->
+  <section id="gotchas" class="jd-section c-red">
+    <div class="jd-section-head">
+      <span class="jd-badge">!</span>
+      <div><h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2></div>
+    </div>
+    <div class="jd-explain" style="margin-top:16px">
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">page_size, not limit</span><span class="x" lang="en">Unknown params such as <code>?limit=</code> are ignored silently — the client gets the default 10.</span><span class="x" lang="vi">Param lạ như <code>?limit=</code> bị bỏ qua mà không báo lỗi — client nhận mặc định 10.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">sort_by is raw input</span><span class="x" lang="en">Never paste it into SQL. Map allowed values to columns yourself. (The user feature currently ignores <code>sort_by</code> and only uses <code>sort_order</code>.)</span><span class="x" lang="vi">Không bao giờ chèn thẳng vào SQL. Tự ánh xạ các giá trị cho phép sang tên cột. (Feature user hiện bỏ qua <code>sort_by</code>, chỉ dùng <code>sort_order</code>.)</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Count with the same filter</span><span class="x" lang="en">The total must use the same <code>search</code> as the page query, or <code>total_pages</code> will be wrong.</span><span class="x" lang="vi">Phép đếm tổng phải dùng cùng <code>search</code> với câu query lấy trang, nếu không <code>total_pages</code> sẽ sai.</span></div>
+    </div>
+  </section>
+
+  <footer class="jd-footer">
+    <span>Jundoc · Junkit · pagination</span>
+    <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package Junkit</span></a></span>
+  </footer>
+</article>
+</div>
+
+<script>
+document.addEventListener("jd:ready", function () {
+  // Mirrors SetDefaults + GetOffset/GetLimit + NewPagination.
+  function calc(page, size, total) {
+    var np = page > 0 ? page : 1, ns = size > 0 ? size : 10; // SetDefaults ran first, as in the handler
+    var p = np, s = ns;
+    var pages = Math.max(1, Math.ceil(total / ns));
+    return {
+      sql: { limit: s, offset: Math.min((p - 1) * s, 2147483647) },
+      meta: { page: np, page_size: ns, total_items: total, total_pages: pages,
+        has_next: np < pages, has_prev: np > 1,
+        next_page: np < pages ? np + 1 : null, prev_page: np > 1 ? np - 1 : null }
+    };
+  }
+  console.assert(JSON.stringify(calc(2, 10, 35).meta) === JSON.stringify({ page: 2, page_size: 10, total_items: 35, total_pages: 4, has_next: true, has_prev: true, next_page: 3, prev_page: 1 }), "pagination calc");
+  console.assert(calc(1, 10, 0).meta.total_pages === 1, "empty list = 1 page");
+  var ids = ["pg-page", "pg-size", "pg-total"];
+  function paint() {
+    var v = ids.map(function (id) { return parseInt(document.getElementById(id).value, 10) || 0; });
+    var r = calc(v[0], v[1], Math.max(0, v[2]));
+    document.getElementById("pg-sql").innerHTML = JD.highlight("SELECT … FROM products\nWHERE …\nORDER BY created_at DESC\nLIMIT " + r.sql.limit + " OFFSET " + r.sql.offset + ";", "go");
+    document.getElementById("pg-json").innerHTML = JD.highlight(JSON.stringify(r.meta, null, 2), "json");
+  }
+  ids.forEach(function (id) { document.getElementById(id).addEventListener("input", paint); });
+  paint();
+});
+</script>
+</body>
+</html>

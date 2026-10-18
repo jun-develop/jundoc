@@ -1,0 +1,1112 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit security · Jundoc</title>
+  <meta name="description"
+    content="junkit/security: sealed opaque tokens (AES-256-GCM + HMAC-SHA256), token hashing, bcrypt passwords and typed identity in the request context.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+
+<body>
+  <div id="jd-app" data-root="..">
+    <article class="jd-content">
+
+      <!-- ============================================================ HERO -->
+      <header class="jd-hero"
+        style="background:radial-gradient(1000px 380px at 0% 0%, rgba(248,113,113,.5), transparent 60%),linear-gradient(135deg,#450a0a,#991b1b 55%,#9d174d)">
+        <div class="jd-eyebrow">Junkit · security</div>
+        <h1>security</h1>
+        <p lang="en">Building blocks for authentication: random opaque tokens, sealed (encrypted + signed) for the
+          client and hashed for the database, bcrypt passwords, and a typed identity in the request context.</p>
+        <p lang="vi">Các thành phần bảo mật cốt lõi: sinh Opaque Token ngẫu nhiên, niêm phong token (mã hóa AES-256-GCM
+          + ký HMAC-SHA256) gửi cho client, lưu mã băm SHA-256 trong database, băm mật khẩu bằng bcrypt và gắn Identity
+          định kiểu vào context của request.</p>
+        <div class="jd-chips">
+          <span class="jd-chip">github.com/jun-develop/junkit/security</span>
+          <span class="jd-chip"><span lang="en">Fx Module → TokenSealer, PasswordHasher (needs an Options)</span><span
+              lang="vi">Fx Module → TokenSealer, PasswordHasher (cần một Options)</span></span>
+          <span class="jd-chip">golang.org/x/crypto/bcrypt</span>
+          <span class="jd-chip">gin-gonic/gin</span>
+          <span class="jd-chip">go.uber.org/fx</span>
+        </div>
+      </header>
+
+      <!-- ============================================================ 1. WHAT -->
+      <section id="what" class="jd-section c-red">
+        <div class="jd-section-head">
+          <span class="jd-badge">1</span>
+          <div>
+            <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
+            <p class="jd-sub" lang="en">The life of one token. The database only ever sees a hash; the client only ever
+              sees a sealed string. The package has no user or session model — that is your app's job.</p>
+            <p class="jd-sub" lang="vi">Vòng đời an toàn của một token: Database chỉ lưu bản hash SHA-256; client chỉ
+              nhận chuỗi token đã niêm phong. Package không quản lý model user hay session — việc đó do ứng dụng của bạn
+              làm chủ.</p>
+          </div>
+        </div>
+        <div class="jd-flow" style="margin-top:22px" data-wires='[
+      {"from":"t1","to":"t2","color":"blue","label":"raw"},
+      {"from":"t2","to":"t3","color":"orange","label":"v1.…"},
+      {"from":"t3","to":"t4","color":"blue","label":"raw"}]'>
+          <div class="jd-node is-tint c-blue" data-node="t1"><span class="k">1 · issue</span><span class="t mono"
+              style="font-size:15px">GenerateToken()</span>
+            <div class="d" lang="en">32 random bytes, base64url. Store <code>HashToken(raw)</code> in the DB.</div>
+            <div class="d" lang="vi">32 byte ngẫu nhiên, base64url. Lưu <code>HashToken(raw)</code> vào DB.</div>
+          </div>
+          <div class="jd-node is-tint c-orange" data-node="t2"><span class="k">2 · seal</span><span class="t mono"
+              style="font-size:15px">sealer.Seal(raw)</span>
+            <div class="d" lang="en">AES-256-GCM encrypt, then HMAC-SHA256 sign → send to the client.</div>
+            <div class="d" lang="vi">Mã hóa AES-256-GCM, rồi ký HMAC-SHA256 → gửi cho client.</div>
+          </div>
+          <div class="jd-node is-tint c-orange" data-node="t3"><span class="k">3 · open</span><span class="t mono"
+              style="font-size:15px">sealer.Open(token)</span>
+            <div class="d" lang="en">Checks the signature first, then decrypts. Any change → error.</div>
+            <div class="d" lang="vi">Kiểm tra chữ ký trước, rồi mới giải mã. Sửa gì cũng → lỗi.</div>
+          </div>
+          <div class="jd-node is-tint c-green" data-node="t4"><span class="k">4 · look up</span><span class="t mono"
+              style="font-size:15px">HashToken(raw)</span>
+            <div class="d" lang="en">Hex SHA-256 → find the session row by hash.</div>
+            <div class="d" lang="vi">SHA-256 dạng hex → tìm dòng session theo hash.</div>
+          </div>
+        </div>
+        <p class="jd-sub" style="margin-top:22px" lang="en">After authentication, the identity travels with the request:
+        </p>
+        <p class="jd-sub" style="margin-top:22px" lang="vi">Sau khi xác thực, identity đi theo request:</p>
+        <div class="jd-flow" style="margin-top:14px" data-wires='[
+      {"from":"i1","to":"i2","color":"purple","label":"*gin.Context"},
+      {"from":"i2","to":"i3","color":"purple","label":"ctx"}]'>
+          <div class="jd-node is-tint c-purple" data-node="i1"><span class="k">middleware</span><span class="t mono"
+              style="font-size:15px">SetIdentity(c, id)</span>
+            <div class="d" lang="en">Done for you by <code>middleware.BearerAuth</code>. Stored in gin keys <b>and</b>
+              the request context.</div>
+            <div class="d" lang="vi"><code>middleware.BearerAuth</code> làm sẵn. Lưu trong gin keys <b>và</b> request
+              context.</div>
+          </div>
+          <div class="jd-node is-tint c-purple" data-node="i2"><span class="k">handler</span><span class="t mono"
+              style="font-size:15px">MustGetIdentity[T](c)</span>
+            <div class="d" lang="en">Typed read; panics if missing.</div>
+            <div class="d" lang="vi">Đọc có kiểu; panic nếu không có.</div>
+          </div>
+          <div class="jd-node is-tint c-purple" data-node="i3"><span class="k">service</span><span class="t mono"
+              style="font-size:15px">GetIdentity[T](ctx)</span>
+            <div class="d" lang="en">Works on <code>c.Request.Context()</code> too.</div>
+            <div class="d" lang="vi">Cũng chạy được trên <code>c.Request.Context()</code>.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 2. SETUP -->
+      <section id="setup" class="jd-section c-blue">
+        <div class="jd-section-head">
+          <span class="jd-badge">2</span>
+          <div>
+            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối</span></h2>
+            <p class="jd-sub" lang="en"><code>security.Module</code> provides <code>TokenSealer</code> and
+              <code>PasswordHasher</code>. You provide one <code>security.Options</code>. Bad keys or cost stop the app
+              at startup.</p>
+            <p class="jd-sub" lang="vi"><code>security.Module</code> cung cấp <code>TokenSealer</code> và
+              <code>PasswordHasher</code>. Bạn cung cấp một <code>security.Options</code>. Key hoặc cost sai sẽ dừng app
+              ngay lúc khởi động.</p>
+          </div>
+        </div>
+        <div class="jd-tabs c-blue" style="margin-top:18px">
+          <div class="jd-tablist">
+            <button class="jd-tab" type="button" aria-selected="true"><span lang="en">with Fx (as Jungo)</span><span
+                lang="vi">dùng Fx (như Jungo)</span></button>
+            <button class="jd-tab" type="button" aria-selected="false"><span lang="en">without Fx</span><span
+                lang="vi">Không dùng Fx</span></button>
+          </div>
+          <div class="jd-tabpanel">
+            <div class="jd-term" data-copy>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go</span></div>
+              <pre data-hl="go">
+// in CoreModules()
+fx.Provide(provideSecurityOptions),
+security.Module,
+
+// provideSecurityOptions builds security.Options from cfg.Auth; development falls back
+// to random keys.
+func provideSecurityOptions(cfg *config.Config, log *zap.Logger) (security.Options, error) {
+	opts := security.Options{Password: security.PasswordOptions{Cost: cfg.Auth.PasswordCost}}
+
+	if cfg.IsDevelopment() &amp;&amp; cfg.Auth.TokenHMACSecret == "" &amp;&amp; cfg.Auth.TokenEncryptionKey == "" {
+		log.Warn("security: AUTH_TOKEN_HMAC_SECRET / AUTH_TOKEN_ENCRYPTION_KEY not set, using random keys; tokens will not survive a restart")
+		opts.TokenHMACSecret = security.RandomBytes(security.MinHMACSecretSize)
+		opts.TokenEncryptionKey = security.RandomBytes(security.EncryptionKeySize)
+
+		return opts, nil
+	}
+
+	var err error
+	if opts.TokenHMACSecret, err = security.DecodeKey(cfg.Auth.TokenHMACSecret); err != nil {
+		return security.Options{}, fmt.Errorf("AUTH_TOKEN_HMAC_SECRET: %w", err)
+	}
+
+	if opts.TokenEncryptionKey, err = security.DecodeKey(cfg.Auth.TokenEncryptionKey); err != nil {
+		return security.Options{}, fmt.Errorf("AUTH_TOKEN_ENCRYPTION_KEY: %w", err)
+	}
+
+	return opts, nil
+}
+</pre>
+            </div>
+            <div class="jd-term" data-copy="commands" style="margin-top:12px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>.env</span></div>
+              <pre data-hl="bash">
+# generate each key with: openssl rand -base64 32
+AUTH_TOKEN_HMAC_SECRET=&lt;base64, ≥ 32 bytes decoded&gt;
+AUTH_TOKEN_ENCRYPTION_KEY=&lt;base64, exactly 32 bytes decoded&gt;
+AUTH_PASSWORD_COST=12
+</pre>
+            </div>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-term" data-copy>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
+              <pre data-hl="go">
+hmacKey, err := security.DecodeKey(os.Getenv("AUTH_TOKEN_HMAC_SECRET"))
+if err != nil {
+	log.Fatal(err)
+}
+encKey, err := security.DecodeKey(os.Getenv("AUTH_TOKEN_ENCRYPTION_KEY"))
+if err != nil {
+	log.Fatal(err)
+}
+
+opts := security.Options{
+	TokenHMACSecret:    hmacKey,
+	TokenEncryptionKey: encKey,
+	Password:           security.PasswordOptions{Cost: 12},
+}
+
+sealer, err := security.NewTokenSealer(opts) // checks the two keys
+if err != nil {
+	log.Fatal(err) // errors.Is(err, security.ErrInvalidKey)
+}
+hasher, err := security.NewPasswordHasher(opts) // checks Password.Cost only
+if err != nil {
+	log.Fatal(err) // security.ErrInvalidPasswordCost
+}
+</pre>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:24px">Options</h3>
+        <div class="jd-tablewrap">
+          <table class="jd-params c-blue">
+            <tr>
+              <th><span lang="en">field</span><span lang="vi">trường</span></th>
+              <th>type</th>
+              <th><span lang="en">zero value / default</span><span lang="vi">giá trị rỗng / mặc định</span></th>
+              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+            </tr>
+            <tr>
+              <td>TokenHMACSecret</td>
+              <td>[]byte</td>
+              <td lang="en">nil → <code>NewTokenSealer</code> fails. Must be <b>≥ 32 bytes</b>
+                (<code>MinHMACSecretSize</code>).</td>
+              <td lang="vi">nil → <code>NewTokenSealer</code> lỗi. Phải <b>≥ 32 byte</b>
+                (<code>MinHMACSecretSize</code>).</td>
+              <td lang="en">HMAC-SHA256 key that signs every sealed token.</td>
+              <td lang="vi">Key HMAC-SHA256 dùng để ký mọi token đã seal.</td>
+            </tr>
+            <tr>
+              <td>TokenEncryptionKey</td>
+              <td>[]byte</td>
+              <td lang="en">nil → <code>NewTokenSealer</code> fails. Must be <b>exactly 32 bytes</b>
+                (<code>EncryptionKeySize</code>); a 16-byte AES-128 key is rejected.</td>
+              <td lang="vi">nil → <code>NewTokenSealer</code> lỗi. Phải <b>đúng 32 byte</b>
+                (<code>EncryptionKeySize</code>); key AES-128 16 byte bị từ chối.</td>
+              <td lang="en">AES-256-GCM key that encrypts the payload.</td>
+              <td lang="vi">Key AES-256-GCM để mã hóa payload.</td>
+            </tr>
+            <tr>
+              <td>Password.Cost</td>
+              <td>int <span class="jd-sub">(PasswordOptions)</span></td>
+              <td lang="en">0 → <code>bcrypt.DefaultCost</code> (10). Valid range 4–31; anything else fails. Jungo
+                default: 12.</td>
+              <td lang="vi">0 → <code>bcrypt.DefaultCost</code> (10). Khoảng hợp lệ 4–31; ngoài khoảng là lỗi. Mặc định
+                trong Jungo: 12.</td>
+              <td lang="en">bcrypt work factor. +1 doubles hashing time.</td>
+              <td lang="vi">Hệ số công bcrypt. +1 là gấp đôi thời gian hash.</td>
+            </tr>
+          </table>
+        </div>
+
+        <h3 style="margin-top:24px"><span lang="en">Validation errors (exact text)</span><span lang="vi">Lỗi kiểm tra
+            (nguyên văn)</span></h3>
+        <div class="jd-tablewrap">
+          <table class="jd-params c-red">
+            <tr>
+              <th><span lang="en">from</span><span lang="vi">từ</span></th>
+              <th>error</th>
+              <th><span lang="en">match with</span><span lang="vi">so khớp bằng</span></th>
+            </tr>
+            <tr>
+              <td>NewTokenSealer</td>
+              <td><code>security: invalid token key: hmac secret must be at least 32 bytes</code></td>
+              <td>errors.Is(err, ErrInvalidKey)</td>
+            </tr>
+            <tr>
+              <td>NewTokenSealer</td>
+              <td><code>security: invalid token key: encryption key must be exactly 32 bytes</code></td>
+              <td>errors.Is(err, ErrInvalidKey)</td>
+            </tr>
+            <tr>
+              <td>DecodeKey</td>
+              <td><code>security: invalid token key: empty</code></td>
+              <td>errors.Is(err, ErrInvalidKey)</td>
+            </tr>
+            <tr>
+              <td>DecodeKey</td>
+              <td><code>security: invalid token key: not valid base64</code></td>
+              <td>errors.Is(err, ErrInvalidKey)</td>
+            </tr>
+            <tr>
+              <td>NewPasswordHasher</td>
+              <td><code>security: invalid bcrypt cost</code></td>
+              <td>errors.Is(err, ErrInvalidPasswordCost)</td>
+            </tr>
+          </table>
+        </div>
+        <p class="jd-sub" style="margin-top:10px" lang="en">The HMAC secret is checked first, so with both keys missing
+          you see the HMAC message. In Jungo the <code>DecodeKey</code> errors are prefixed with the env var name, e.g.
+          <code>AUTH_TOKEN_ENCRYPTION_KEY: security: invalid token key: empty</code>.</p>
+        <p class="jd-sub" style="margin-top:10px" lang="vi">HMAC secret được kiểm tra trước, nên khi thiếu cả hai key
+          bạn sẽ thấy thông báo về HMAC. Trong Jungo, lỗi của <code>DecodeKey</code> có thêm tiền tố tên biến môi
+          trường, ví dụ <code>AUTH_TOKEN_ENCRYPTION_KEY: security: invalid token key: empty</code>.</p>
+      </section>
+
+      <!-- ============================================================ 3. QUICK START -->
+      <section id="quick" class="jd-section c-green">
+        <div class="jd-section-head">
+          <span class="jd-badge">3</span>
+          <div>
+            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <p class="jd-sub" lang="en">A minimal login + authenticate service. <code>Repo</code>, <code>User</code> and
+              the <code>Err…</code> values are yours. Hover an explanation to light up its lines.</p>
+            <p class="jd-sub" lang="vi">Một service login + xác thực tối giản. <code>Repo</code>, <code>User</code> và
+              các giá trị <code>Err…</code> là của bạn. Rê chuột vào giải thích để làm sáng các dòng tương ứng.</p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <div class="jd-sticky">
+              <div class="jd-term" data-copy>
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>session_service.go</span></div>
+                <pre data-hl="go" id="code-quick-svc">
+type SessionService struct {
+    sealer security.TokenSealer    // from security.Module
+    hasher security.PasswordHasher // from security.Module
+    repo   Repo
+}
+
+func (s *SessionService) Login(ctx context.Context, email, password string) (string, error) {
+    user, err := s.repo.UserByEmail(ctx, email) // nil when not found
+    if err != nil {
+        return "", err
+    }
+    if user == nil {
+        s.hasher.CompareDummy(password) // same time as a real check
+        return "", ErrInvalidCredentials
+    }
+    if !s.hasher.Compare(user.PasswordHash, password) {
+        return "", ErrInvalidCredentials
+    }
+
+    raw := security.GenerateToken()
+    if err := s.repo.SaveTokenHash(ctx, user.ID, security.HashToken(raw)); err != nil {
+        return "", err
+    }
+    return s.sealer.Seal(raw) // v1.&lt;nonce+ciphertext&gt;.&lt;signature&gt;
+}
+
+func (s *SessionService) Authenticate(ctx context.Context, token string) (*User, error) {
+    raw, err := s.sealer.Open(token)
+    if err != nil {
+        return nil, ErrInvalidToken // malformed, bad signature or decrypt failure
+    }
+    return s.repo.UserByTokenHash(ctx, security.HashToken(raw))
+}
+</pre>
+              </div>
+              <div class="jd-term" data-copy style="margin-top:12px">
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>handler.go</span></div>
+                <pre data-hl="go" id="code-quick-hdl">
+func (h *Handler) Me(c *gin.Context) {
+    user := security.MustGetIdentity[*User](c)
+    c.JSON(200, user)
+}
+</pre>
+              </div>
+            </div>
+          </div>
+          <div class="jd-explain">
+            <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="1-5"><span class="n">1</span><span
+                class="w">inject the interfaces</span><span class="x" lang="en">Depend on <code>TokenSealer</code> /
+                <code>PasswordHasher</code>, never on the concrete types (they are unexported).</span><span class="x"
+                lang="vi">Phụ thuộc vào <code>TokenSealer</code> / <code>PasswordHasher</code>, không phải kiểu cụ thể
+                (chúng không được export).</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="12-15"><span class="n">2</span><span
+                class="w">CompareDummy</span><span class="x" lang="en">Unknown email still burns one bcrypt compare, so
+                response time does not reveal which emails are registered.</span><span class="x" lang="vi">Email không
+                tồn tại vẫn tốn một lần so sánh bcrypt, nên thời gian phản hồi không tiết lộ email nào đã đăng
+                ký.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="16-18"><span class="n">3</span><span
+                class="w">Compare</span><span class="x" lang="en">Returns only <code>bool</code>. A malformed hash or a
+                password over 72 bytes is simply <code>false</code>.</span><span class="x" lang="vi">Chỉ trả
+                <code>bool</code>. Hash hỏng hoặc mật khẩu quá 72 byte đều cho <code>false</code>.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="20-23"><span class="n">4</span><span
+                class="w">GenerateToken → HashToken</span><span class="x" lang="en">Store only the 64-char hex hash. A
+                DB leak then exposes no usable token.</span><span class="x" lang="vi">Chỉ lưu hash hex 64 ký tự. Lộ DB
+                cũng không lộ token dùng được.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="24"><span class="n">5</span><span
+                class="w">Seal</span><span class="x" lang="en">The sealed string is what the client gets. Without your
+                two keys it can be neither read nor forged.</span><span class="x" lang="vi">Chuỗi đã seal là thứ client
+                nhận. Không có hai key của bạn thì không đọc được, cũng không giả mạo được.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="27-32"><span class="n">6</span><span
+                class="w">Open → HashToken → lookup</span><span class="x" lang="en">Map every <code>Open</code> error to
+                one "invalid token" answer, then find the row by hash. Expiry lives in your DB, not in the
+                token.</span><span class="x" lang="vi">Gộp mọi lỗi của <code>Open</code> thành một câu trả lời "invalid
+                token", rồi tìm dòng theo hash. Thời hạn nằm trong DB của bạn, không nằm trong token.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick-hdl" data-show="1-4"><span class="n">7</span><span
+                class="w">MustGetIdentity</span><span class="x" lang="en">The type parameter must be exactly the type
+                the middleware stored (<code>*User</code> here). Panics if missing — only use behind auth.</span><span
+                class="x" lang="vi">Tham số kiểu phải đúng y kiểu mà middleware đã lưu (<code>*User</code> ở đây). Panic
+                nếu không có — chỉ dùng sau middleware auth.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 4. TRY IT -->
+      <section id="try" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">4</span>
+          <div>
+            <h2><span lang="en">Try it: token anatomy</span><span lang="vi">Thử ngay: giải phẫu token</span></h2>
+            <p class="jd-sub" lang="en">A real seal / open in your browser (Web Crypto), byte-for-byte the same format
+              as the Go code: 12-byte nonce, AES-256-GCM with additional data <code>"v1"</code>, HMAC-SHA256 over
+              <code>"v1.&lt;nonce+ciphertext&gt;"</code>. Keys are random and stay in this page. Edit the token or
+              rotate a key and watch <code>Open</code> fail.</p>
+            <p class="jd-sub" lang="vi">Seal / open thật ngay trong trình duyệt (Web Crypto), cùng định dạng từng byte
+              với code Go: nonce 12 byte, AES-256-GCM với additional data <code>"v1"</code>, HMAC-SHA256 trên
+              <code>"v1.&lt;nonce+ciphertext&gt;"</code>. Key là ngẫu nhiên và chỉ nằm trong trang này. Sửa token hoặc
+              đổi key rồi xem <code>Open</code> thất bại.</p>
+          </div>
+        </div>
+        <div id="tk-unsupported" class="jd-callout c-red" style="margin-top:18px" hidden><span lang="en">This browser
+            does not expose Web Crypto here (try serving the folder over http://localhost).</span><span lang="vi">Trình
+            duyệt không cho dùng Web Crypto ở đây (thử chạy thư mục qua http://localhost).</span></div>
+        <div id="tk-demo" style="margin-top:18px">
+          <div class="jd-sim-btns">
+            <button class="jd-btn good" type="button" id="tk-new">GenerateToken() + Seal()</button>
+            <button class="jd-btn" type="button" id="tk-rot-hmac"><span lang="en">rotate TokenHMACSecret</span><span
+                lang="vi">đổi TokenHMACSecret</span></button>
+            <button class="jd-btn" type="button" id="tk-rot-enc"><span lang="en">rotate TokenEncryptionKey</span><span
+                lang="vi">đổi TokenEncryptionKey</span></button>
+          </div>
+          <div class="jd-token-anatomy" id="tk-anatomy" style="white-space:normal;word-break:break-all"></div>
+          <dl class="jd-kv" style="margin-top:12px">
+            <dt style="color:#f472b6">v1</dt>
+            <dd><span lang="en">format version; anything else → <code>ErrMalformedToken</code></span><span
+                lang="vi">phiên bản định dạng; khác giá trị này → <code>ErrMalformedToken</code></span></dd>
+            <dt style="color:#60a5fa">middle</dt>
+            <dd><span lang="en">base64url( nonce[12] + ciphertext + GCM tag[16] )</span><span lang="vi">base64url(
+                nonce[12] + ciphertext + GCM tag[16] )</span></dd>
+            <dt style="color:var(--yellow)">last</dt>
+            <dd><span lang="en">base64url( HMAC-SHA256 ), 43 chars</span><span lang="vi">base64url( HMAC-SHA256 ), 43 ký
+                tự</span></dd>
+          </dl>
+          <div class="jd-calc c-purple" style="margin-top:14px">
+            <label><span lang="en">token sent back to Open (edit me)</span><span lang="vi">token gửi lại cho Open (sửa
+                thử)</span> <input type="text" id="tk-input" spellcheck="false"></label>
+          </div>
+          <div class="jd-term">
+            <div class="jd-term-bar"><i></i><i></i><i></i><span>result</span></div>
+            <pre id="tk-out"></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 5. API -->
+      <section id="api" class="jd-section c-red">
+        <div class="jd-section-head">
+          <span class="jd-badge">5</span>
+          <div>
+            <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from
+              <code>junkit/security/*.go</code>.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/security/*.go</code>.</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:18px"><span lang="en">Options &amp; keys</span><span lang="vi">Options &amp; key</span>
+        </h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Options ·
+                PasswordOptions</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type Options struct {
+	TokenHMACSecret    []byte
+	TokenEncryptionKey []byte
+	Password           PasswordOptions
+}
+
+type PasswordOptions struct {
+	Cost int
+}
+</pre>
+            </div>
+            <p lang="en">See the <a href="#setup">Options table</a> for limits and defaults. One value feeds both
+              constructors.</p>
+            <p lang="vi">Xem <a href="#setup">bảng Options</a> để biết giới hạn và mặc định. Một giá trị dùng cho cả hai
+              constructor.</p>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">const</span><span class="jd-sym-name">MinHMACSecretSize ·
+                EncryptionKeySize · TokenSize</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+const (
+	MinHMACSecretSize = 32 // minimum HMAC secret length in bytes
+	EncryptionKeySize = 32 // AES-256 key length in bytes
+)
+
+const TokenSize = 32 // random bytes in a generated token
+</pre>
+            </div>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">RandomBytes</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func RandomBytes(n int) []byte</pre>
+            </div>
+            <p lang="en">Returns <code>n</code> bytes from <code>crypto/rand</code>. No error return. Use it for dev /
+              test keys: <code>security.RandomBytes(security.MinHMACSecretSize)</code>.</p>
+            <p lang="vi">Trả về <code>n</code> byte từ <code>crypto/rand</code>. Không trả lỗi. Dùng để tạo key cho dev
+              / test: <code>security.RandomBytes(security.MinHMACSecretSize)</code>.</p>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">DecodeKey</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func DecodeKey(s string) ([]byte, error)</pre>
+            </div>
+            <ul>
+              <li lang="en">Trims spaces, then tries base64 standard, standard raw, URL, URL raw — first that works
+                wins.</li>
+              <li lang="vi">Cắt khoảng trắng, rồi thử lần lượt base64 standard, standard raw, URL, URL raw — cái nào
+                giải mã được thì dùng.</li>
+              <li lang="en">Empty / blank → <code>ErrInvalidKey</code> ("empty"); none decodes →
+                <code>ErrInvalidKey</code> ("not valid base64").</li>
+              <li lang="vi">Rỗng / toàn khoảng trắng → <code>ErrInvalidKey</code> ("empty"); không giải mã được →
+                <code>ErrInvalidKey</code> ("not valid base64").</li>
+              <li lang="en">Does <b>not</b> check length — <code>NewTokenSealer</code> does.</li>
+              <li lang="vi"><b>Không</b> kiểm tra độ dài — việc đó do <code>NewTokenSealer</code> làm.</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3 style="margin-top:24px">Tokens</h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">interface</span><span class="jd-sym-name">TokenSealer</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type TokenSealer interface {
+	Seal(payload string) (string, error)
+	Open(token string) (string, error)
+}
+</pre>
+            </div>
+            <p lang="en">Encrypts (AES-256-GCM) and signs (HMAC-SHA256) a string. Format
+              <code>v1.&lt;nonce+ciphertext&gt;.&lt;signature&gt;</code>, each segment base64url without padding. Safe
+              for concurrent use (no mutable state after construction).</p>
+            <p lang="vi">Mã hóa (AES-256-GCM) và ký (HMAC-SHA256) một chuỗi. Định dạng
+              <code>v1.&lt;nonce+ciphertext&gt;.&lt;signature&gt;</code>, mỗi phần là base64url không padding. Dùng đồng
+              thời an toàn (không có trạng thái thay đổi sau khi tạo).</p>
+          </div>
+
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NewTokenSealer</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">func NewTokenSealer(opts Options) (TokenSealer, error)</pre>
+            </div>
+            <p lang="en">Validates the two keys (error wraps <code>ErrInvalidKey</code>) and copies the HMAC secret.
+              Ignores <code>opts.Password</code>.</p>
+            <p lang="vi">Kiểm tra hai key (lỗi bọc <code>ErrInvalidKey</code>) và sao chép HMAC secret. Bỏ qua
+              <code>opts.Password</code>.</p>
+          </div>
+
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">Seal</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">Seal(payload string) (string, error)</pre>
+            </div>
+            <ul>
+              <li lang="en">Fresh random nonce each call → sealing the same payload twice gives different tokens.</li>
+              <li lang="vi">Mỗi lần gọi có nonce ngẫu nhiên mới → seal cùng payload hai lần cho ra hai token khác nhau.
+              </li>
+              <li lang="en">The current implementation always returns a <code>nil</code> error; check it anyway.</li>
+              <li lang="vi">Bản cài đặt hiện tại luôn trả lỗi <code>nil</code>; vẫn nên kiểm tra.</li>
+              <li lang="en">A 43-char <code>GenerateToken</code> payload seals to a 142-char token.</li>
+              <li lang="vi">Payload 43 ký tự từ <code>GenerateToken</code> sau khi seal dài 142 ký tự.</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">Open</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">Open(token string) (string, error)</pre>
+            </div>
+            <p lang="en">Checks in this order and returns the bare sentinel (compare with <code>errors.Is</code>):</p>
+            <p lang="vi">Kiểm tra theo thứ tự sau và trả về sentinel nguyên bản (so sánh bằng <code>errors.Is</code>):
+            </p>
+            <div class="jd-tablewrap">
+              <table class="jd-params c-orange">
+                <tr>
+                  <th>#</th>
+                  <th><span lang="en">check</span><span lang="vi">kiểm tra</span></th>
+                  <th>error</th>
+                </tr>
+                <tr>
+                  <td>1</td>
+                  <td lang="en">empty or longer than 4096 bytes</td>
+                  <td lang="vi">rỗng hoặc dài hơn 4096 byte</td>
+                  <td>ErrMalformedToken</td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td lang="en">not exactly 3 dot-separated parts, or first part ≠ <code>v1</code></td>
+                  <td lang="vi">không đúng 3 phần ngăn bởi dấu chấm, hoặc phần đầu ≠ <code>v1</code></td>
+                  <td>ErrMalformedToken</td>
+                </tr>
+                <tr>
+                  <td>3</td>
+                  <td lang="en">signature is not base64url</td>
+                  <td lang="vi">chữ ký không phải base64url</td>
+                  <td>ErrMalformedToken</td>
+                </tr>
+                <tr>
+                  <td>4</td>
+                  <td lang="en">HMAC over <code>v1.&lt;middle&gt;</code> differs (constant-time) — <b>before any
+                      decryption</b></td>
+                  <td lang="vi">HMAC trên <code>v1.&lt;middle&gt;</code> không khớp (so sánh constant-time) — <b>trước
+                      khi giải mã</b></td>
+                  <td>ErrBadSignature</td>
+                </tr>
+                <tr>
+                  <td>5</td>
+                  <td lang="en">middle not base64url, or shorter than nonce + tag (28 bytes)</td>
+                  <td lang="vi">phần giữa không phải base64url, hoặc ngắn hơn nonce + tag (28 byte)</td>
+                  <td>ErrMalformedToken</td>
+                </tr>
+                <tr>
+                  <td>6</td>
+                  <td lang="en">AES-GCM open fails (e.g. encryption key changed, HMAC key not)</td>
+                  <td lang="vi">AES-GCM mở thất bại (vd. đổi encryption key nhưng giữ HMAC key)</td>
+                  <td>ErrDecrypt</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">GenerateToken</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">func GenerateToken() string</pre>
+            </div>
+            <p lang="en"><code>TokenSize</code> (32) random bytes, base64url without padding → always 43 chars.</p>
+            <p lang="vi"><code>TokenSize</code> (32) byte ngẫu nhiên, base64url không padding → luôn 43 ký tự.</p>
+          </div>
+
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">HashToken</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func HashToken(raw string) string</pre>
+            </div>
+            <p lang="en">Lower-case hex SHA-256 of <code>raw</code> (64 chars), e.g. <code>HashToken("abc")</code> =
+              <code>ba7816bf…f20015ad</code>. Deterministic and unsalted: store it instead of the raw token and look
+              rows up by it.</p>
+            <p lang="vi">SHA-256 dạng hex chữ thường của <code>raw</code> (64 ký tự), vd. <code>HashToken("abc")</code>
+              = <code>ba7816bf…f20015ad</code>. Tất định, không salt: lưu nó thay cho token gốc và tra cứu theo nó.</p>
+          </div>
+
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">SecureEqual</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func SecureEqual(a, b string) bool</pre>
+            </div>
+            <p lang="en">Constant-time string comparison (<code>crypto/subtle</code>) for shared secrets such as an
+              internal API header. Used by <code>middleware.RequireSecret</code>.</p>
+            <p lang="vi">So sánh chuỗi constant-time (<code>crypto/subtle</code>) cho secret dùng chung như header API
+              nội bộ. Được <code>middleware.RequireSecret</code> dùng.</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:24px"><span lang="en">Passwords</span><span lang="vi">Mật khẩu</span></h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-green">
+            <div class="jd-sym-head"><span class="jd-kind">interface</span><span
+                class="jd-sym-name">PasswordHasher</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type PasswordHasher interface {
+	Hash(plain string) (string, error)
+	Compare(hash, plain string) bool
+	CompareDummy(plain string)
+}
+</pre>
+            </div>
+            <ul>
+              <li lang="en"><b>Hash</b> — bcrypt hash with the configured cost. Input over 72 <b>bytes</b> →
+                <code>ErrPasswordTooLong</code> (no silent truncation).</li>
+              <li lang="vi"><b>Hash</b> — hash bcrypt với cost đã cấu hình. Đầu vào quá 72 <b>byte</b> →
+                <code>ErrPasswordTooLong</code> (không cắt ngầm).</li>
+              <li lang="en"><b>Compare</b> — <code>true</code> only if <code>plain</code> matches <code>hash</code>.
+                Wrong password, garbage hash or <code>plain</code> over 72 bytes → <code>false</code> (the long case
+                still spends one dummy compare).</li>
+              <li lang="vi"><b>Compare</b> — <code>true</code> chỉ khi <code>plain</code> khớp <code>hash</code>. Sai
+                mật khẩu, hash rác hoặc <code>plain</code> quá 72 byte → <code>false</code> (trường hợp quá dài vẫn tốn
+                một lần so sánh giả).</li>
+              <li lang="en"><b>CompareDummy</b> — compares against a hash made at startup with the same cost, so it
+                costs the same time as <code>Compare</code>. Call it when the user does not exist.</li>
+              <li lang="vi"><b>CompareDummy</b> — so sánh với một hash tạo lúc khởi động với cùng cost, nên tốn đúng
+                thời gian như <code>Compare</code>. Gọi khi user không tồn tại.</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-green">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NewPasswordHasher</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">func NewPasswordHasher(opts Options) (PasswordHasher, error)</pre>
+            </div>
+            <p lang="en">Uses <code>opts.Password.Cost</code> (0 → <code>bcrypt.DefaultCost</code>); outside 4–31 →
+              <code>ErrInvalidPasswordCost</code>. Ignores the token keys. Computes one bcrypt hash at construction (the
+              dummy hash), so a high cost slows startup by one hash.</p>
+            <p lang="vi">Dùng <code>opts.Password.Cost</code> (0 → <code>bcrypt.DefaultCost</code>); ngoài 4–31 →
+              <code>ErrInvalidPasswordCost</code>. Bỏ qua các token key. Tính một hash bcrypt lúc tạo (hash giả), nên
+              cost cao làm khởi động chậm thêm một lần hash.</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:24px"><span lang="en">Identity in context</span><span lang="vi">Identity trong
+            context</span></h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">SetIdentity</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func SetIdentity[T any](c *gin.Context, identity T)</pre>
+            </div>
+            <p lang="en">Stores <code>identity</code> under a private key in the gin keys <b>and</b> replaces
+              <code>c.Request</code> with one whose context carries it (when <code>c.Request</code> is not nil).
+              <code>T</code> is inferred from the argument — that is the type you must read back.</p>
+            <p lang="vi">Lưu <code>identity</code> dưới một key riêng trong gin keys <b>và</b> thay
+              <code>c.Request</code> bằng request có context chứa nó (khi <code>c.Request</code> khác nil).
+              <code>T</code> được suy ra từ đối số — đó là kiểu bạn phải đọc lại.</p>
+          </div>
+
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">WithIdentity</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">func WithIdentity[T any](ctx context.Context, identity T) context.Context</pre>
+            </div>
+            <p lang="en">Returns a copy of <code>ctx</code> carrying <code>identity</code> — for tests and background
+              work without gin.</p>
+            <p lang="vi">Trả về bản sao của <code>ctx</code> có chứa <code>identity</code> — cho test và việc chạy nền
+              không có gin.</p>
+          </div>
+
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">GetIdentity</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func GetIdentity[T any](ctx context.Context) (T, bool)</pre>
+            </div>
+            <ul>
+              <li lang="en">Accepts a <code>*gin.Context</code> (checks gin keys, then <code>c.Request.Context()</code>)
+                or any <code>context.Context</code>.</li>
+              <li lang="vi">Nhận <code>*gin.Context</code> (xem gin keys, rồi <code>c.Request.Context()</code>) hoặc bất
+                kỳ <code>context.Context</code> nào.</li>
+              <li lang="en">Missing or stored with another type → zero value, <code>false</code>. A string key such as
+                <code>c.Set("identityKey", …)</code> never collides.</li>
+              <li lang="vi">Không có, hoặc được lưu với kiểu khác → giá trị rỗng, <code>false</code>. Key dạng chuỗi như
+                <code>c.Set("identityKey", …)</code> không bao giờ đụng nhau.</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">MustGetIdentity</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">func MustGetIdentity[T any](ctx context.Context) T</pre>
+            </div>
+            <p lang="en"><code>GetIdentity</code> that <b>panics</b> when not found, with
+              <code>security: no identity of type %T in context</code> (e.g. <code>…type *domain.Identity…</code>). Use
+              only in handlers behind an auth middleware; in Jungo, <code>middleware.Recover</code> turns the panic into
+              a 500.</p>
+            <p lang="vi"><code>GetIdentity</code> nhưng <b>panic</b> khi không tìm thấy, với thông báo
+              <code>security: no identity of type %T in context</code> (vd. <code>…type *domain.Identity…</code>). Chỉ
+              dùng trong handler sau middleware auth; trong Jungo, <code>middleware.Recover</code> biến panic thành lỗi
+              500.</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:24px"><span lang="en">Errors &amp; Fx</span><span lang="vi">Lỗi &amp; Fx</span></h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-red">
+            <div class="jd-sym-head"><span class="jd-kind">var</span><span class="jd-sym-name">Err…</span></div>
+            <div class="jd-tablewrap">
+              <table class="jd-params c-red">
+                <tr>
+                  <th>var</th>
+                  <th><span lang="en">message</span><span lang="vi">thông báo</span></th>
+                  <th><span lang="en">returned by</span><span lang="vi">trả về bởi</span></th>
+                </tr>
+                <tr>
+                  <td>ErrMalformedToken</td>
+                  <td><code>security: malformed token</code></td>
+                  <td>Open</td>
+                </tr>
+                <tr>
+                  <td>ErrBadSignature</td>
+                  <td><code>security: invalid token signature</code></td>
+                  <td>Open</td>
+                </tr>
+                <tr>
+                  <td>ErrDecrypt</td>
+                  <td><code>security: token decryption failed</code></td>
+                  <td>Open</td>
+                </tr>
+                <tr>
+                  <td>ErrInvalidKey</td>
+                  <td><code>security: invalid token key</code></td>
+                  <td lang="en">NewTokenSealer, DecodeKey (wrapped with detail)</td>
+                  <td lang="vi">NewTokenSealer, DecodeKey (bọc kèm chi tiết)</td>
+                </tr>
+                <tr>
+                  <td>ErrInvalidPasswordCost</td>
+                  <td><code>security: invalid bcrypt cost</code></td>
+                  <td>NewPasswordHasher</td>
+                </tr>
+                <tr>
+                  <td>ErrPasswordTooLong</td>
+                  <td><code>security: password exceeds 72 bytes</code></td>
+                  <td>PasswordHasher.Hash</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="jd-sym c-muted">
+            <div class="jd-sym-head"><span class="jd-kind">var</span><span class="jd-sym-name">Module</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+var Module = fx.Module("security",
+	fx.Provide(NewTokenSealer, NewPasswordHasher),
+)
+</pre>
+            </div>
+            <p lang="en">Needs a <code>security.Options</code> in the graph (<code>fx.Supply</code> or a provider).
+              Provides <code>security.TokenSealer</code> and <code>security.PasswordHasher</code>.</p>
+            <p lang="vi">Cần một <code>security.Options</code> trong graph (<code>fx.Supply</code> hoặc một provider).
+              Cung cấp <code>security.TokenSealer</code> và <code>security.PasswordHasher</code>.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 6. IN JUNGO -->
+      <section id="jungo" class="jd-section c-orange">
+        <div class="jd-section-head">
+          <span class="jd-badge">6</span>
+          <div>
+            <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+            <p class="jd-sub" lang="en">The auth feature is the main user. Full flows (login, refresh, reuse detection)
+              are on the <a href="../jungo/auth.html">auth page</a>.</p>
+            <p class="jd-sub" lang="vi">Feature auth là nơi dùng chính. Toàn bộ luồng (login, refresh, phát hiện tái sử
+              dụng) có ở <a href="../jungo/auth.html">trang auth</a>.</p>
+          </div>
+        </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-orange">
+            <tr>
+              <th>file</th>
+              <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
+            </tr>
+            <tr>
+              <td>app/fx.go</td>
+              <td lang="en"><code>provideSecurityOptions</code> + <code>security.Module</code> (see <a
+                  href="#setup">Wire it up</a>). Dev with both keys unset → <code>RandomBytes</code> keys and a warning;
+                otherwise <code>DecodeKey</code> both env vars.</td>
+              <td lang="vi"><code>provideSecurityOptions</code> + <code>security.Module</code> (xem <a href="#setup">Kết
+                  nối</a>). Dev mà chưa đặt cả hai key → key <code>RandomBytes</code> kèm cảnh báo; ngược lại
+                <code>DecodeKey</code> cả hai biến môi trường.</td>
+            </tr>
+            <tr>
+              <td>config/config.go</td>
+              <td lang="en"><code>AuthConfig</code>: <code>AUTH_TOKEN_HMAC_SECRET</code>,
+                <code>AUTH_TOKEN_ENCRYPTION_KEY</code>, <code>AUTH_PASSWORD_COST</code> (default 12).</td>
+              <td lang="vi"><code>AuthConfig</code>: <code>AUTH_TOKEN_HMAC_SECRET</code>,
+                <code>AUTH_TOKEN_ENCRYPTION_KEY</code>, <code>AUTH_PASSWORD_COST</code> (mặc định 12).</td>
+            </tr>
+            <tr>
+              <td>features/auth/service/auth_service.go</td>
+              <td lang="en">Gets <code>Sealer</code> / <code>Hasher</code> via <code>fx.In</code>. <b>Login</b>:
+                <code>CompareDummy</code> for unknown email, else <code>Compare</code>. <b>newTokenPair</b>: two
+                <code>GenerateToken</code>, stores <code>HashToken</code> of each, returns both tokens sealed with
+                <code>Seal</code>. <b>openToken</b>: <code>Open</code> (any error → <code>domain.ErrInvalidToken</code>)
+                then <code>HashToken</code>.</td>
+              <td lang="vi">Nhận <code>Sealer</code> / <code>Hasher</code> qua <code>fx.In</code>. <b>Login</b>:
+                <code>CompareDummy</code> khi email không tồn tại, ngược lại <code>Compare</code>. <b>newTokenPair</b>:
+                hai lần <code>GenerateToken</code>, lưu <code>HashToken</code> của từng cái, trả về token đã
+                <code>Seal</code>. <b>openToken</b>: <code>Open</code> (lỗi nào cũng →
+                <code>domain.ErrInvalidToken</code>) rồi <code>HashToken</code>.</td>
+            </tr>
+            <tr>
+              <td>features/auth/handler/v1/auth_handler.go</td>
+              <td lang="en"><code>security.MustGetIdentity[*domain.Identity](ctx)</code> in Logout, LogoutAll, Me,
+                Sessions.</td>
+              <td lang="vi"><code>security.MustGetIdentity[*domain.Identity](ctx)</code> trong Logout, LogoutAll, Me,
+                Sessions.</td>
+            </tr>
+            <tr>
+              <td>features/auth/router/v1/auth_router.go</td>
+              <td lang="en"><code>middleware.BearerAuth</code> (Junkit) — it calls <code>security.SetIdentity</code>
+                after authenticating.</td>
+              <td lang="vi"><code>middleware.BearerAuth</code> (Junkit) — nó gọi <code>security.SetIdentity</code> sau
+                khi xác thực.</td>
+            </tr>
+            <tr>
+              <td>features/auth/router/private/auth_router.go</td>
+              <td lang="en"><code>middleware.RequireSecret("X-Internal-Secret", …)</code> — compares with
+                <code>security.SecureEqual</code>.</td>
+              <td lang="vi"><code>middleware.RequireSecret("X-Internal-Secret", …)</code> — so sánh bằng
+                <code>security.SecureEqual</code>.</td>
+            </tr>
+            <tr>
+              <td>features/auth/infrastructure/login_guard.go</td>
+              <td lang="en"><code>emailKey</code> = <code>"auth:login:email:" + HashToken(lower(trim(email)))</code>, so
+                Redis keys never contain addresses.</td>
+              <td lang="vi"><code>emailKey</code> = <code>"auth:login:email:" + HashToken(lower(trim(email)))</code>,
+                nên key Redis không chứa địa chỉ email.</td>
+            </tr>
+            <tr>
+              <td>features/user/service/user_service.go</td>
+              <td lang="en"><code>CreateUser</code>: <code>hasher.Hash(input.Password)</code>.</td>
+              <td lang="vi"><code>CreateUser</code>: <code>hasher.Hash(input.Password)</code>.</td>
+            </tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============================================================ 7. GOTCHAS -->
+      <section id="gotchas" class="jd-section c-red">
+        <div class="jd-section-head">
+          <span class="jd-badge">!</span>
+          <div>
+            <h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2>
+          </div>
+        </div>
+        <div class="jd-explain" style="margin-top:16px">
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w"><span
+                lang="en">Changing a key logs everyone out</span><span lang="vi">Đổi key là mọi người bị đăng
+                xuất</span></span><span class="x" lang="en">There is no key ring. New HMAC secret → every old token
+              fails with <code>ErrBadSignature</code>; new encryption key only → <code>ErrDecrypt</code>. Rotate
+              deliberately.</span><span class="x" lang="vi">Không có key ring. HMAC secret mới → mọi token cũ lỗi
+              <code>ErrBadSignature</code>; chỉ đổi encryption key → <code>ErrDecrypt</code>. Hãy chủ động khi đổi
+              key.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">Dev
+                random keys</span><span lang="vi">Key ngẫu nhiên khi dev</span></span><span class="x" lang="en">In
+              Jungo, development with <b>both</b> keys empty uses random keys: tokens die on every restart. Setting only
+              one of the two is a startup error, not a fallback.</span><span class="x" lang="vi">Trong Jungo, môi trường
+              development để trống <b>cả hai</b> key sẽ dùng key ngẫu nhiên: token mất hiệu lực mỗi lần restart. Chỉ đặt
+              một trong hai key là lỗi khởi động, không phải fallback.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">Never
+                store or log raw tokens</span><span lang="vi">Không lưu hay log token gốc</span></span><span class="x"
+              lang="en">Persist <code>HashToken(raw)</code> only. Raw and sealed tokens are both bearer credentials —
+              keep them out of logs and error messages.</span><span class="x" lang="vi">Chỉ lưu
+              <code>HashToken(raw)</code>. Token gốc và token đã seal đều là bearer credential — đừng để chúng xuất hiện
+              trong log hay thông báo lỗi.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span
+                lang="en">HashToken is not for passwords</span><span lang="vi">HashToken không dành cho mật
+                khẩu</span></span><span class="x" lang="en">Plain unsalted SHA-256 is fine for 32 random bytes, far too
+              fast for human passwords. Use <code>PasswordHasher</code>.</span><span class="x" lang="vi">SHA-256 thuần
+              không salt ổn cho 32 byte ngẫu nhiên, nhưng quá nhanh với mật khẩu do người đặt. Hãy dùng
+              <code>PasswordHasher</code>.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w"><span lang="en">72
+                bytes, not characters</span><span lang="vi">72 byte, không phải 72 ký tự</span></span><span class="x"
+              lang="en">The bcrypt limit counts UTF-8 bytes: 37 × "é" (74 bytes) already returns
+              <code>ErrPasswordTooLong</code>. Validate input length in bytes or map the error to a 422.</span><span
+              class="x" lang="vi">Giới hạn bcrypt tính theo byte UTF-8: 37 × "é" (74 byte) đã trả
+              <code>ErrPasswordTooLong</code>. Hãy kiểm tra độ dài theo byte hoặc chuyển lỗi này thành 422.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w"><span lang="en">Small
+                payloads only</span><span lang="vi">Chỉ payload nhỏ</span></span><span class="x"
+              lang="en"><code>Open</code> rejects tokens over 4096 bytes but <code>Seal</code> has no limit: a payload
+              over 3008 bytes seals fine and then can never be opened (<code>ErrMalformedToken</code>). Seal IDs /
+              random tokens, not documents.</span><span class="x" lang="vi"><code>Open</code> từ chối token dài hơn 4096
+              byte nhưng <code>Seal</code> không giới hạn: payload trên 3008 byte vẫn seal được nhưng không bao giờ open
+              được (<code>ErrMalformedToken</code>). Hãy seal ID / token ngẫu nhiên, đừng seal tài liệu.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w"><span lang="en">No
+                expiry inside the token</span><span lang="vi">Token không chứa thời hạn</span></span><span class="x"
+              lang="en">A sealed token opens forever while the keys stay the same. Expiry and revocation must come from
+              your DB row (Jungo stores <code>AccessExpiresAt</code> / <code>RefreshExpiresAt</code>).</span><span
+              class="x" lang="vi">Token đã seal mở được mãi mãi khi key không đổi. Thời hạn và thu hồi phải lấy từ dòng
+              trong DB (Jungo lưu <code>AccessExpiresAt</code> / <code>RefreshExpiresAt</code>).</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">8</span><span class="w"><span
+                lang="en">Identity type must match exactly</span><span lang="vi">Kiểu identity phải khớp chính
+                xác</span></span><span class="x" lang="en">Stored <code>*Identity</code>, asked for
+              <code>Identity</code> → not found (and <code>MustGetIdentity</code> panics). Pick one type for your app
+              and use it everywhere.</span><span class="x" lang="vi">Lưu <code>*Identity</code> mà đọc
+              <code>Identity</code> → không tìm thấy (và <code>MustGetIdentity</code> panic). Chọn một kiểu cho app và
+              dùng thống nhất.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">9</span><span class="w"><span
+                lang="en">SecureEqual leaks length</span><span lang="vi">SecureEqual lộ độ dài</span></span><span
+              class="x" lang="en"><code>subtle.ConstantTimeCompare</code> returns at once when lengths differ, so only
+              the content is compared in constant time. Fine for fixed-length secrets.</span><span class="x"
+              lang="vi"><code>subtle.ConstantTimeCompare</code> trả về ngay khi độ dài khác nhau, nên chỉ phần nội dung
+              được so sánh constant-time. Ổn với secret có độ dài cố định.</span></div>
+        </div>
+      </section>
+
+      <footer class="jd-footer">
+        <span>Jundoc · Junkit · security</span>
+        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
+              Junkit</span></a></span>
+      </footer>
+    </article>
+  </div>
+
+  <script>
+    document.addEventListener("jd:ready", function () {
+      // Mirrors token_sealer.go / token_random.go / token_hash.go with Web Crypto.
+      var subtle = window.crypto && window.crypto.subtle;
+      if (!subtle) {
+        document.getElementById("tk-unsupported").hidden = false;
+        document.getElementById("tk-demo").hidden = true;
+        return;
+      }
+      var te = new TextEncoder(), td = new TextDecoder();
+      function rnd(n) { var b = new Uint8Array(n); crypto.getRandomValues(b); return b; }
+      function b64(bytes) { // base64.RawURLEncoding
+        var s = ""; for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+        return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      }
+      function unb64(s) {
+        if (!/^[A-Za-z0-9_-]*$/.test(s) || s.length % 4 === 1) throw new Error("b64");
+        s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "=";
+        return Uint8Array.from(atob(s), function (c) { return c.charCodeAt(0); });
+      }
+      function hex(buf) { return Array.from(new Uint8Array(buf), function (x) { return x.toString(16).padStart(2, "0"); }).join(""); }
+      function concat(a, b) { var r = new Uint8Array(a.length + b.length); r.set(a); r.set(b, a.length); return r; }
+      function eq(a, b) { if (a.length !== b.length) return false; var d = 0; for (var i = 0; i < a.length; i++) d |= a[i] ^ b[i]; return d === 0; }
+
+      function generateToken() { return b64(rnd(32)); }
+      function hashToken(raw) { return subtle.digest("SHA-256", te.encode(raw)).then(hex); }
+      function newKeys(hmacBytes, encBytes) {
+        return Promise.all([
+          subtle.importKey("raw", hmacBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]),
+          subtle.importKey("raw", encBytes, { name: "AES-GCM" }, false, ["encrypt", "decrypt"])
+        ]).then(function (k) { return { hmac: k[0], enc: k[1] }; });
+      }
+      function sign(keys, msg) { return subtle.sign("HMAC", keys.hmac, te.encode(msg)).then(function (s) { return new Uint8Array(s); }); }
+      function seal(keys, payload) {
+        var nonce = rnd(12);
+        return subtle.encrypt({ name: "AES-GCM", iv: nonce, additionalData: te.encode("v1"), tagLength: 128 }, keys.enc, te.encode(payload))
+          .then(function (ct) {
+            var signed = "v1." + b64(concat(nonce, new Uint8Array(ct)));
+            return sign(keys, signed).then(function (sig) { return signed + "." + b64(sig); });
+          });
+      }
+      function open(keys, token) { // resolves {raw} or {err}
+        var bad = function (e) { return Promise.resolve({ err: e }); };
+        var n = te.encode(token).length;
+        if (n === 0 || n > 4096) return bad("ErrMalformedToken");
+        var p = token.split(".");
+        if (p.length !== 3 || p[0] !== "v1") return bad("ErrMalformedToken");
+        var sig; try { sig = unb64(p[2]); } catch (e) { return bad("ErrMalformedToken"); }
+        return sign(keys, p[0] + "." + p[1]).then(function (want) {
+          if (!eq(sig, want)) return { err: "ErrBadSignature" };
+          var data; try { data = unb64(p[1]); } catch (e) { return { err: "ErrMalformedToken" }; }
+          if (data.length < 12 + 16) return { err: "ErrMalformedToken" };
+          return subtle.decrypt({ name: "AES-GCM", iv: data.slice(0, 12), additionalData: te.encode("v1"), tagLength: 128 }, keys.enc, data.slice(12))
+            .then(function (pt) { return { raw: td.decode(pt) }; }, function () { return { err: "ErrDecrypt" }; });
+        });
+      }
+
+      // Self-checks against the Go tests.
+      (function () {
+        var h = rnd(32), e = rnd(32);
+        Promise.all([newKeys(h, e), newKeys(h, rnd(32)), newKeys(rnd(32), e)]).then(function (k) {
+          var raw = generateToken();
+          console.assert(raw.length === 43, "GenerateToken length");
+          hashToken("abc").then(function (x) { console.assert(x === "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", "HashToken(abc)"); });
+          return Promise.all([seal(k[0], raw), seal(k[0], raw)]).then(function (t) {
+            console.assert(t[0].length === 142 && t[0].indexOf("v1.") === 0 && t[0] !== t[1], "seal shape / randomized");
+            var parts = t[0].split(".");
+            return Promise.all([
+              open(k[0], t[0]), open(k[1], t[0]), open(k[2], t[0]),
+              open(k[0], "v2." + parts[1] + "." + parts[2]), open(k[0], t[0] + ".x"), open(k[0], ""), open(k[0], "a".repeat(5000))
+            ]).then(function (r) {
+              console.assert(r[0].raw === raw, "round trip");
+              console.assert(r[1].err === "ErrDecrypt", "other enc key → ErrDecrypt");
+              console.assert(r[2].err === "ErrBadSignature", "other hmac → ErrBadSignature");
+              console.assert(r[3].err === "ErrMalformedToken" && r[4].err === "ErrMalformedToken" && r[5].err === "ErrMalformedToken" && r[6].err === "ErrMalformedToken", "malformed cases");
+            });
+          });
+        }).catch(function (err) { console.assert(false, "token self-check: " + err); });
+      })();
+
+      // Interactive demo.
+      var hmacBytes = rnd(32), encBytes = rnd(32), keys = null, raw = "";
+      var input = document.getElementById("tk-input"), out = document.getElementById("tk-out"), anat = document.getElementById("tk-anatomy");
+      function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+      function paintAnatomy(tok) {
+        var p = tok.split(".");
+        anat.innerHTML = p.length === 3
+          ? '<span class="a">' + esc(p[0]) + '</span>.<span class="b">' + esc(p[1]) + '</span>.<span class="c">' + esc(p[2]) + "</span>"
+          : esc(tok);
+      }
+      function check() {
+        var tok = input.value;
+        paintAnatomy(tok);
+        open(keys, tok).then(function (r) {
+          if (!r.err) return hashToken(r.raw).then(function (h) {
+            return '// sealer.Open(token)\nraw = "' + r.raw + '"  // ' + r.raw.length + " chars\nerr = nil\n\n// security.HashToken(raw) → look up the session row\n\"" + h + '"';
+          });
+          return "// sealer.Open(token)\nraw = \"\"\nerr = security." + r.err;
+        }).then(function (txt) { out.innerHTML = JD.highlight(txt, "go"); });
+      }
+      function reload() { return newKeys(hmacBytes, encBytes).then(function (k) { keys = k; }); }
+      function issue() {
+        raw = generateToken();
+        seal(keys, raw).then(function (t) { input.value = t; check(); });
+      }
+      input.addEventListener("input", check);
+      document.getElementById("tk-new").addEventListener("click", issue);
+      document.getElementById("tk-rot-hmac").addEventListener("click", function () { hmacBytes = rnd(32); reload().then(check); });
+      document.getElementById("tk-rot-enc").addEventListener("click", function () { encBytes = rnd(32); reload().then(check); });
+      reload().then(issue);
+    });
+  </script>
+</body>
+
+</html>

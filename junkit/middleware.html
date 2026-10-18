@@ -1,0 +1,2166 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit middleware · Jundoc</title>
+  <meta name="description"
+    content="junkit/middleware: Gin middleware for debug tracing, security headers, trace IDs, CORS, body limits, access logs, rate limiting, panic recovery, authentication and gzip compression.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+
+<body>
+  <div id="jd-app" data-root="..">
+    <article class="jd-content">
+
+      <!-- ============================================================ HERO -->
+      <header class="jd-hero"
+        style="background:radial-gradient(1000px 380px at 0% 0%, rgba(251,146,60,.5), transparent 60%),linear-gradient(135deg,#7c2d12,#c2410c 55%,#be123c)">
+        <div class="jd-eyebrow">Junkit · middleware</div>
+        <h1>middleware</h1>
+        <p lang="en">Eleven ready-made Gin middleware: a debug dashboard, security headers, trace IDs, CORS, body
+          limits, access logs, per-IP rate limiting, panic recovery, bearer-token auth, a shared-secret guard and gzip
+          response compression.</p>
+        <p lang="vi">Mười một middleware Gin dùng ngay: dashboard debug, header bảo mật, trace ID, CORS, giới hạn body,
+          access log, rate limit theo IP, bắt panic, xác thực bearer token, chốt chặn bằng shared secret và nén gzip cho
+          response.</p>
+        <div class="jd-chips">
+          <span class="jd-chip">github.com/jun-develop/junkit/middleware</span>
+          <span class="jd-chip"><span lang="en">no Fx Module — construct per route group</span><span lang="vi">không có
+              Fx Module — tự tạo cho từng route group</span></span>
+          <span class="jd-chip">gin · zap · x/time/rate · google/uuid</span>
+          <span class="jd-chip"><span lang="en">uses Junkit response, logger, tracer, security, notification</span><span
+              lang="vi">dùng Junkit response, logger, tracer, security, notification</span></span>
+        </div>
+      </header>
+
+      <!-- ============================================================ 1. WHAT -->
+      <section id="what" class="jd-section c-orange">
+        <div class="jd-section-head">
+          <span class="jd-badge">1</span>
+          <div>
+            <h2><span lang="en">What is in the box</span><span lang="vi">Trong package có gì</span></h2>
+            <p class="jd-sub" lang="en">Ten middleware form the global chain; two (<code>BearerAuth</code>,
+              <code>RequireSecret</code>) guard single route groups. Each one is a plain <code>gin.HandlerFunc</code>:
+              code before <code>c.Next()</code> runs on the way in, code after it on the way out. Press ▶ to follow one
+              request.</p>
+            <p class="jd-sub" lang="vi">Mười middleware tạo thành chuỗi chung; hai cái (<code>BearerAuth</code>,
+              <code>RequireSecret</code>) chỉ canh một route group. Mỗi cái là một <code>gin.HandlerFunc</code> bình
+              thường: code trước <code>c.Next()</code> chạy lúc đi vào, code sau nó chạy lúc đi ra. Bấm ▶ để theo dõi
+              một request.</p>
+          </div>
+        </div>
+
+        <div class="jd-player c-orange" id="mw-player" style="margin-top:26px">
+          <div class="jd-stage rf" data-wires='[
+        {"from":"client","to":"mw","color":"orange"},
+        {"from":"mw","to":"group","color":"orange","dir":"v"},
+        {"from":"group","to":"handler","color":"orange"}]'>
+            <div class="jd-node rf-client c-muted" data-node="client">
+              <span class="t">Client</span>
+              <div class="p">browser · curl</div>
+            </div>
+            <div class="rf-mw" data-node="mw">
+              <span class="k"><span lang="en">r.Use(…) — outer → inner</span><span lang="vi">r.Use(…) — ngoài →
+                  trong</span></span>
+              <span class="p"
+                style="font:600 12px var(--mono);color:var(--muted);margin-left:8px">jungo/internal/router/router.go</span>
+              <div class="rf-mw-grid">
+                <div class="jd-node c-green" data-node="mw1"><span class="t"><small>1</small>TracerDebug</span></div>
+                <div class="jd-node c-green" data-node="mw2"><span class="t"><small>2</small>Security</span></div>
+                <div class="jd-node c-green" data-node="mw3"><span class="t"><small>3</small>Trace</span></div>
+                <div class="jd-node c-green" data-node="mw4"><span class="t"><small>4</small>CORS</span></div>
+                <div class="jd-node c-green" data-node="mw5"><span class="t"><small>5</small>Gzip</span></div>
+                <div class="jd-node c-green" data-node="mw6"><span class="t"><small>6</small>Payload</span></div>
+                <div class="jd-node c-green" data-node="mw7"><span class="t"><small>7</small>AccessLog</span></div>
+                <div class="jd-node c-green" data-node="mw8"><span class="t"><small>8</small>Limiter</span></div>
+                <div class="jd-node c-green" data-node="mwrp"><span class="t"><small>9</small>RoutePatterns</span></div>
+                <div class="jd-node c-green" data-node="mw9"><span class="t"><small>10</small>Recover</span></div>
+              </div>
+            </div>
+            <div class="jd-node is-tint c-purple" data-node="group" style="grid-column:2 / 4">
+              <span class="t">Route group</span><span class="p">BearerAuth · RequireSecret</span>
+              <div class="d" lang="en">per group, not global</div>
+              <div class="d" lang="vi">theo từng group, không phải global</div>
+            </div>
+            <div class="jd-node is-tint c-blue" data-node="handler" style="grid-column:5 / 7">
+              <span class="t">Handler</span><span class="p">your code</span>
+              <div class="d" lang="en">GetPayload · MustGetIdentity</div>
+              <div class="d" lang="vi">GetPayload · MustGetIdentity</div>
+            </div>
+          </div>
+          <div class="jd-controls">
+            <button class="jd-btn primary" type="button" data-act="play"></button>
+            <button class="jd-btn" type="button" data-act="prev">‹ <span lang="en">Back</span><span
+                lang="vi">Lùi</span></button>
+            <button class="jd-btn" type="button" data-act="next"><span lang="en">Next</span><span lang="vi">Tiếp</span>
+              ›</button>
+            <button class="jd-btn" type="button" data-act="restart">↺</button>
+            <div class="jd-progress"><i></i></div>
+          </div>
+          <div class="jd-caption"></div>
+        </div>
+
+        <div class="jd-tablewrap" style="margin-top:22px">
+          <table class="jd-params c-orange">
+            <tr>
+              <th>middleware</th>
+              <th><span lang="en">job</span><span lang="vi">nhiệm vụ</span></th>
+              <th><span lang="en">can stop the request with</span><span lang="vi">có thể chặn request bằng</span></th>
+            </tr>
+            <tr>
+              <td>TracerDebug</td>
+              <td lang="en">Replaces the response with the tracer dashboard when <code>?key=value</code> and the secret
+                header both match.</td>
+              <td lang="vi">Thay response bằng dashboard tracer khi cả <code>?key=value</code> và header secret
+                đều khớp.</td>
+              <td><span lang="en">— (always 200 when active)</span><span lang="vi">— (luôn 200 khi bật)</span></td>
+            </tr>
+            <tr>
+              <td>Security</td>
+              <td lang="en">Security response headers.</td>
+              <td lang="vi">Header bảo mật cho response.</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Trace</td>
+              <td lang="en"><code>X-Trace-Id</code> + data for <code>api_info</code>.</td>
+              <td lang="vi"><code>X-Trace-Id</code> + dữ liệu cho <code>api_info</code>.</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>CORS</td>
+              <td lang="en">CORS headers; answers preflight.</td>
+              <td lang="vi">Header CORS; trả lời preflight.</td>
+              <td>204 (OPTIONS)</td>
+            </tr>
+            <tr>
+              <td>Payload</td>
+              <td lang="en">Limits, reads and caches the body.</td>
+              <td lang="vi">Giới hạn, đọc và cache body.</td>
+              <td>413</td>
+            </tr>
+            <tr>
+              <td>AccessLog</td>
+              <td lang="en">One structured log line per request.</td>
+              <td lang="vi">Một dòng log có cấu trúc cho mỗi request.</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Limiter</td>
+              <td lang="en">Token bucket per client IP.</td>
+              <td lang="vi">Token bucket theo IP client.</td>
+              <td>429</td>
+            </tr>
+            <tr>
+              <td>RoutePatterns</td>
+              <td lang="en">Rejects path parameters that break their rule (<code>:uuid</code>, <code>:id</code>,
+                <code>:slug</code>).</td>
+              <td lang="vi">Chặn path param sai rule của nó (<code>:uuid</code>, <code>:id</code>,
+                <code>:slug</code>).</td>
+              <td>404</td>
+            </tr>
+            <tr>
+              <td>Recover</td>
+              <td lang="en">Turns panics into 500 + log + alert.</td>
+              <td lang="vi">Biến panic thành 500 + log + cảnh báo.</td>
+              <td>500</td>
+            </tr>
+            <tr>
+              <td>BearerAuth</td>
+              <td lang="en">Resolves <code>Authorization: Bearer …</code> into an identity.</td>
+              <td lang="vi">Biến <code>Authorization: Bearer …</code> thành identity.</td>
+              <td><span lang="en">401 / your AppError / 500</span><span lang="vi">401 / AppError của bạn / 500</span>
+              </td>
+            </tr>
+            <tr>
+              <td>RequireSecret</td>
+              <td lang="en">Shared-secret header check for internal routes.</td>
+              <td lang="vi">Kiểm tra header shared secret cho route nội bộ.</td>
+              <td>403</td>
+            </tr>
+            <tr>
+              <td>Gzip</td>
+              <td lang="en">Gzip-compresses responses for clients that accept it. Skip it if a proxy in front already
+                compresses.</td>
+              <td lang="vi">Nén gzip response cho client chấp nhận nó. Bỏ đi nếu proxy phía trước đã nén.</td>
+              <td>—</td>
+            </tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============================================================ 2. SETUP -->
+      <section id="setup" class="jd-section c-blue">
+        <div class="jd-section-head">
+          <span class="jd-badge">2</span>
+          <div>
+            <h2><span lang="en">How Jungo registers them</span><span lang="vi">Jungo đăng ký chúng thế nào</span></h2>
+            <p class="jd-sub" lang="en">There is no <code>middleware.Module</code>: you call the constructors where
+              routes are registered. Jungo does it in two places — once globally, and per feature router for auth.</p>
+            <p class="jd-sub" lang="vi">Không có <code>middleware.Module</code>: bạn gọi constructor ngay chỗ đăng ký
+              route. Jungo làm ở hai nơi — một lần cho toàn bộ, và trong router của từng feature cho phần xác thực.</p>
+          </div>
+        </div>
+
+        <h3><span lang="en">Global chain — internal/router/router.go</span><span lang="vi">Chuỗi chung —
+            internal/router/router.go</span></h3>
+        <div class="jd-grid-2">
+          <div>
+            <div class="jd-sticky">
+              <div class="jd-term" data-copy>
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/router/router.go</span></div>
+                <pre data-hl="go" id="code-router">
+func registerGlobalMiddlewares(p Params) {
+    cfg := p.Config
+    debug := middleware.TracerDebugOptions{
+        QueryKey:     cfg.TracerDebugKey,
+        QueryValue:   cfg.TracerDebugValue,
+        SecretHeader: "X-Internal-Secret",
+        Secret:       cfg.Auth.InternalSecret,
+    }
+
+    p.Router.Use(
+        middleware.TracerDebug(debug),
+        middleware.Security(),
+        middleware.Trace(middleware.TraceOptions{
+            Version:     cfg.Version,
+            Commit:      cfg.Commit,
+            Environment: cfg.Environment,
+        }),
+        middleware.CORS(middleware.CORSOptions{
+            AllowOrigins:     cfg.CORS.AllowOrigins,
+            AllowMethods:     cfg.CORS.AllowMethods,
+            AllowHeaders:     cfg.CORS.AllowHeaders,
+            AllowCredentials: cfg.CORS.AllowCredentials,
+            MaxAge:           cfg.CORS.MaxAge,
+        }),
+        middleware.Gzip(middleware.GzipOptions{Level: gzip.BestSpeed}),
+        middleware.Payload(middleware.PayloadOptions{
+            MaxBodySize: cfg.Security.MaxRequestBodySize,
+        }, p.Responder),
+        middleware.AccessLog(p.HTTPLogger, middleware.AccessLogOptions{
+            SkipIf: debug.Matches,
+        }),
+        middleware.Limiter(middleware.LimiterOptions{
+            RequestsPerSecond: cfg.Limiter.RequestsPerSecond,
+            Burst:             cfg.Limiter.Burst,
+            NumShards:         cfg.Limiter.NumShards,
+            CleanupInterval:   cfg.Limiter.CleanupInterval,
+            ClientTTL:         cfg.Limiter.ClientTTL,
+            LogTTL:            cfg.Limiter.LogTTL,
+            IPWhitelist:       cfg.Limiter.IPWhitelist,
+        }, p.LimiterLogger, p.Responder, p.Notifier),
+        middleware.RoutePatterns(map[string]func(string) bool{
+            "uuid": middleware.IsUUID,
+            "id":   middleware.IsID,
+            "slug": middleware.IsSlug,
+        }, p.Responder),
+        middleware.Recover(p.HTTPLogger, p.Notifier, p.Responder, middleware.RecoverOptions{Debug: debug}),
+    )
+}
+</pre>
+              </div>
+            </div>
+          </div>
+          <div class="jd-explain">
+            <p class="jd-hint" lang="en">Why each position matters (reasoned from the code — router.go itself has no
+              comments on the order):</p>
+            <p class="jd-hint" lang="vi">Vì sao mỗi vị trí quan trọng (suy ra từ code — bản thân router.go không có
+              comment về thứ tự):</p>
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="3-8,11"><span class="n">1</span><span
+                class="w">TracerDebug — outermost</span><span class="x" lang="en">It swaps the response writer and
+                request context before anything else runs, so every layer below records into the tracer, and its
+                deferred render runs last, replacing whatever was written. It also catches <code>tracer.Stop()</code>
+                breakpoints from anywhere below.</span><span class="x" lang="vi">Nó thay response writer và request
+                context trước khi mọi thứ khác chạy, nên mọi lớp bên dưới đều ghi vào tracer, và hàm render (defer) chạy
+                cuối cùng, thay thế mọi thứ đã được ghi. Nó cũng bắt breakpoint <code>tracer.Stop()</code> từ bất kỳ đâu
+                bên dưới.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="12"><span class="n">2</span><span
+                class="w">Security — before anything can answer</span><span class="x" lang="en">Headers are set before
+                <code>c.Next()</code>, so even early answers (204 preflight, 413, 429, 401, 500) carry them.</span><span
+                class="x" lang="vi">Header được đặt trước <code>c.Next()</code>, nên cả những câu trả lời sớm (204
+                preflight, 413, 429, 401, 500) cũng có chúng.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="13-17"><span class="n">3</span><span
+                class="w">Trace — before any responder call</span><span class="x" lang="en"><code>responder.Send</code>
+                reads trace ID, start time, version and env from the Gin context to fill <code>api_info</code>;
+                AccessLog reads the trace ID too. Anything that answers before Trace gets no <code>trace_id</code> and
+                no <code>X-Trace-Id</code>.</span><span class="x" lang="vi"><code>responder.Send</code> đọc trace ID,
+                thời điểm bắt đầu, version và env từ Gin context để điền <code>api_info</code>; AccessLog cũng đọc trace
+                ID. Cái gì trả lời trước Trace sẽ không có <code>trace_id</code> và không có
+                <code>X-Trace-Id</code>.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="18-24"><span class="n">4</span><span
+                class="w">CORS — before body, limits and auth</span><span class="x" lang="en">Preflight
+                <code>OPTIONS</code> is answered 204 before the body is read, before a rate-limit token is spent and
+                before auth. And error answers from later layers (413/429/401/500) still carry
+                <code>Access-Control-Allow-Origin</code>, so the browser lets the front-end read them.</span><span
+                class="x" lang="vi">Preflight <code>OPTIONS</code> được trả 204 trước khi đọc body, trước khi tốn token
+                rate limit và trước khi xác thực. Và lỗi từ các lớp sau (413/429/401/500) vẫn có
+                <code>Access-Control-Allow-Origin</code>, nên trình duyệt cho front-end đọc được.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="25"><span class="n">5</span><span
+                class="w">Gzip — after CORS, around everything that writes a body</span><span class="x"
+                lang="en">Preflights (204, no body) are answered before it. Every body written later — 413, 429, 401,
+                500 and handler JSON — is compressed when the client sent <code>Accept-Encoding: gzip</code>. AccessLog
+                sits inside it, so it still logs the plain body. <code>BestSpeed</code>: JSON compresses well even at
+                the cheapest level.</span><span class="x" lang="vi">Preflight (204, không có body) được trả lời trước
+                nó. Mọi body ghi sau đó — 413, 429, 401, 500 và JSON của handler — đều được nén khi client gửi
+                <code>Accept-Encoding: gzip</code>. AccessLog nằm bên trong nó nên vẫn log body gốc.
+                <code>BestSpeed</code>: JSON nén tốt ngay cả ở mức rẻ nhất.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="26-28"><span class="n">6</span><span
+                class="w">Payload — before AccessLog and handlers</span><span class="x" lang="en">Oversized bodies are
+                cut off with 413 before any further work. It caches the parsed body so AccessLog can log
+                <code>request_payload</code> and handlers can still bind it.</span><span class="x" lang="vi">Body quá
+                lớn bị chặn với 413 trước khi làm gì thêm. Nó cache body đã parse để AccessLog ghi được
+                <code>request_payload</code> và handler vẫn bind được.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="29-31"><span class="n">7</span><span
+                class="w">AccessLog — wraps Limiter, Recover, handler</span><span class="x" lang="en">It logs after
+                <code>c.Next()</code> returns, so it sees the final status — including 429 from Limiter and 500 from
+                Recover. <code>SkipIf</code> keeps debug-dashboard requests out of the log.</span><span class="x"
+                lang="vi">Nó ghi log sau khi <code>c.Next()</code> trả về, nên thấy status cuối cùng — kể cả 429 từ
+                Limiter và 500 từ Recover. <code>SkipIf</code> loại các request dashboard debug khỏi log.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="32-40"><span class="n">8</span><span
+                class="w">Limiter — before the expensive part</span><span class="x" lang="en">A rejected request gets
+                429 without touching handlers or the database, and the rejection is still access-logged.</span><span
+                class="x" lang="vi">Request bị từ chối nhận 429 mà không chạm tới handler hay database, và việc từ chối
+                vẫn được ghi access log.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="41-45"><span class="n">9</span><span
+                class="w">RoutePatterns — after Limiter, before auth</span><span class="x" lang="en">Junk URLs such as
+                <code>/users/abc</code> still spend a rate-limit token, then get 404 before BearerAuth or the handler
+                runs.</span><span class="x" lang="vi">URL rác như <code>/users/abc</code> vẫn tốn token rate limit, rồi
+                nhận 404 trước khi BearerAuth hay handler chạy.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="46"><span class="n">10</span><span
+                class="w">Recover — innermost</span><span class="x" lang="en">It only catches panics from what runs
+                after it (handlers, BearerAuth). Being innermost, its 500 still flows out through AccessLog, CORS, Trace
+                and Security. On a debug request it hands the panic to the tracer instead, so TracerDebug can show
+                it.</span><span class="x" lang="vi">Nó chỉ bắt panic từ những gì chạy sau nó (handler, BearerAuth). Vì
+                nằm trong cùng, response 500 của nó vẫn đi ra qua AccessLog, CORS, Trace và Security. Với request
+                debug, nó chuyển panic cho tracer để TracerDebug hiển thị.</span></div>
+          </div>
+        </div>
+
+        <h3><span lang="en">Per feature — BearerAuth and RequireSecret</span><span lang="vi">Theo feature — BearerAuth
+            và RequireSecret</span></h3>
+        <div class="jd-grid-2">
+          <div>
+            <div class="jd-term" data-copy>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>features/auth/module.go</span></div>
+              <pre data-hl="go">
+// newAccessAuthenticator exposes AuthService.AuthenticateAccess as a middleware.Authenticator.
+func newAccessAuthenticator(svc domain.AuthService) middleware.Authenticator[*domain.Identity] {
+    return middleware.AuthenticatorFunc[*domain.Identity](svc.AuthenticateAccess)
+}
+</pre>
+            </div>
+            <div class="jd-term" data-copy style="margin-top:12px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>features/user/router/v1/user_router.go</span></div>
+              <pre data-hl="go">
+func (r *UserRoutes) Register(group *gin.RouterGroup) {
+    users := group.Group("/users")
+    users.Use(middleware.BearerAuth(r.authenticator, r.responder, middleware.BearerAuthOptions{}))
+    users.POST("", r.handler.CreateUser)
+    users.GET("", r.handler.ListUsers)
+    // …
+}
+</pre>
+            </div>
+          </div>
+          <div>
+            <div class="jd-term" data-copy>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>features/auth/router/v1/auth_router.go</span></div>
+              <pre data-hl="go">
+items := group.Group("/auth")
+items.POST("/login", r.handler.Login)     // public
+items.POST("/refresh", r.handler.Refresh) // public
+
+protected := items.Group("", middleware.BearerAuth(r.authenticator, r.responder, middleware.BearerAuthOptions{}))
+protected.POST("/logout", r.handler.Logout)
+protected.POST("/logout-all", r.handler.LogoutAll)
+protected.GET("/me", r.handler.Me)
+protected.GET("/sessions", r.handler.Sessions)
+</pre>
+            </div>
+            <div class="jd-term" data-copy style="margin-top:12px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>features/auth/router/private/auth_router.go</span>
+              </div>
+              <pre data-hl="go">
+const internalSecretHeader = "X-Internal-Secret"
+
+items := group.Group("/internal/auth",
+    middleware.RequireSecret(internalSecretHeader, r.cfg.Auth.InternalSecret, r.responder))
+items.POST("/token-details", r.handler.TokenDetails)
+</pre>
+            </div>
+          </div>
+        </div>
+        <p class="jd-sub" style="margin-top:12px" lang="en">The authenticator is provided once by Fx and injected into
+          every router that needs it. What <code>AuthenticateAccess</code> checks is explained on <a
+            href="../jungo/auth.html">Jungo · auth</a>; the whole request path is on <a
+            href="../jungo/overview.html#flow">Jungo · overview</a>.</p>
+        <p class="jd-sub" style="margin-top:12px" lang="vi">Authenticator được Fx cung cấp một lần rồi inject vào mọi
+          router cần nó. <code>AuthenticateAccess</code> kiểm tra gì được giải thích ở <a
+            href="../jungo/auth.html">Jungo · auth</a>; toàn bộ đường đi của request có ở <a
+            href="../jungo/overview.html#flow">Jungo · overview</a>.</p>
+      </section>
+
+      <!-- ============================================================ 3. QUICK START -->
+      <section id="quick" class="jd-section c-green">
+        <div class="jd-section-head">
+          <span class="jd-badge">3</span>
+          <div>
+            <h2><span lang="en">A minimal chain in 30 seconds</span><span lang="vi">Chuỗi tối thiểu trong 30 giây</span>
+            </h2>
+            <p class="jd-sub" lang="en">A complete <code>main.go</code> without Fx (imports and
+              <code>type Identity struct{ UserID string }</code> omitted; verified to compile). Hover an explanation to
+              light up its lines.</p>
+            <p class="jd-sub" lang="vi">Một <code>main.go</code> hoàn chỉnh Không dùng Fx (lược bỏ import và
+              <code>type Identity struct{ UserID string }</code>; đã kiểm tra biên dịch được). Rê chuột vào giải thích
+              để làm sáng các dòng tương ứng.</p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <div class="jd-sticky">
+              <div class="jd-term" data-copy>
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
+                <pre data-hl="go" id="code-quick">
+func main() {
+    log := zap.NewExample()
+    responder := response.NewResponder(response.Options{Language: i18n.LangEN}, i18n.NewTranslator())
+    debug := middleware.TracerDebugOptions{QueryKey: "t_debug", QueryValue: "change-me",
+        SecretHeader: "X-Internal-Secret", Secret: "change-me-secret"}
+
+    r := gin.New()
+    _ = r.SetTrustedProxies(nil) // ClientIP() = the TCP peer address
+    r.Use(
+        middleware.TracerDebug(debug),
+        middleware.Security(),
+        middleware.Trace(middleware.TraceOptions{Version: "v1.0.0", Environment: "development"}),
+        middleware.CORS(middleware.CORSOptions{
+            AllowOrigins: []string{"http://localhost:3000"},
+            AllowMethods: []string{"GET", "POST", "OPTIONS"},
+            AllowHeaders: []string{"Authorization", "Content-Type"},
+            MaxAge:       600,
+        }),
+        middleware.Payload(middleware.PayloadOptions{MaxBodySize: 2 &lt;&lt; 20}, responder),
+        middleware.AccessLog(log, middleware.AccessLogOptions{}),
+        middleware.Limiter(middleware.LimiterOptions{
+            RequestsPerSecond: 10,
+            Burst:             30,
+            CleanupInterval:   time.Minute,
+            ClientTTL:         3 * time.Minute,
+            LogTTL:            30 * time.Second,
+        }, log, responder, nil),
+        middleware.Recover(log, nil, responder, middleware.RecoverOptions{Debug: debug}),
+    )
+
+    r.POST("/echo", func(c *gin.Context) {
+        responder.SendWithData(c, http.StatusOK, "operation_successful", middleware.GetPayload(c))
+    })
+
+    authn := middleware.AuthenticatorFunc[*Identity](func(ctx context.Context, token string) (*Identity, error) {
+        if token != "demo" {
+            return nil, response.New(response.Unauthorized, "unauthorized_token")
+        }
+        return &amp;Identity{UserID: "42"}, nil
+    })
+    me := r.Group("/me", middleware.BearerAuth(authn, responder, middleware.BearerAuthOptions{}))
+    me.GET("", func(c *gin.Context) {
+        responder.SendWithData(c, http.StatusOK, "operation_successful", security.MustGetIdentity[*Identity](c))
+    })
+
+    _ = r.Run(":8080")
+}
+</pre>
+              </div>
+            </div>
+          </div>
+          <div class="jd-explain">
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="2-3"><span class="n">1</span><span
+                class="w">logger + responder</span><span class="x" lang="en">Payload, Limiter, Recover and the auth
+                guards answer through a <code>response.Responder</code>, so their messages are i18n texts in the
+                standard envelope. Any <code>*zap.Logger</code> works.</span><span class="x" lang="vi">Payload, Limiter,
+                Recover và các chốt xác thực trả lời qua <code>response.Responder</code>, nên message là text i18n trong
+                envelope chuẩn. <code>*zap.Logger</code> nào cũng được.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="7-8"><span class="n">2</span><span
+                class="w">gin.New + trusted proxies</span><span class="x" lang="en">Use <code>gin.New()</code> (no
+                built-in Logger/Recovery — Junkit replaces them). Limiter and AccessLog use <code>c.ClientIP()</code>,
+                which is only correct if trusted proxies are set right.</span><span class="x" lang="vi">Dùng
+                <code>gin.New()</code> (không có Logger/Recovery có sẵn — Junkit thay thế chúng). Limiter và AccessLog
+                dùng <code>c.ClientIP()</code>, chỉ đúng khi cấu hình trusted proxies đúng.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="4-5,10-12"><span class="n">3</span><span
+                class="w">debug · headers · trace</span><span class="x" lang="en">Pick your own debug value and secret. Trace's
+                version / env show up in every <code>api_info</code>.</span><span class="x" lang="vi">Tự chọn giá trị
+                debug và secret. Version / env của Trace xuất hiện trong mọi <code>api_info</code>.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="13-18"><span class="n">4</span><span
+                class="w">CORS</span><span class="x" lang="en">List exact origins. Methods and headers are sent back
+                verbatim (joined with <code>", "</code>).</span><span class="x" lang="vi">Liệt kê đúng từng origin.
+                Methods và headers được gửi lại nguyên văn (nối bằng <code>", "</code>).</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="19-20"><span class="n">5</span><span
+                class="w">Payload + AccessLog</span><span class="x" lang="en">2 MiB body limit — <b>never leave it 0</b>
+                (every body would get 413). Empty <code>AccessLogOptions</code> uses all defaults.</span><span class="x"
+                lang="vi">Giới hạn body 2 MiB — <b>đừng bao giờ để 0</b> (mọi body sẽ bị 413).
+                <code>AccessLogOptions</code> rỗng nghĩa là dùng toàn bộ mặc định.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="21-27"><span class="n">6</span><span
+                class="w">Limiter</span><span class="x" lang="en">10 req/s per IP, bursts of 30. The three durations are
+                <b>required</b>: 0 makes a background ticker panic and crashes the process. <code>nil</code> notifier =
+                no Telegram alerts.</span><span class="x" lang="vi">10 req/s mỗi IP, burst 30. Ba khoảng thời gian là
+                <b>bắt buộc</b>: để 0 làm ticker chạy nền panic và sập cả process. Notifier <code>nil</code> = không gửi
+                cảnh báo Telegram.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="28"><span class="n">7</span><span
+                class="w">Recover</span><span class="x" lang="en">Last in the list = innermost. Same debug options as
+                TracerDebug so panics show on the dashboard.</span><span class="x" lang="vi">Cuối danh sách = trong
+                cùng. Cùng options debug với TracerDebug để panic hiện lên dashboard.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="31-33"><span class="n">8</span><span
+                class="w">GetPayload</span><span class="x" lang="en">The JSON / form body as
+                <code>map[string]any</code>, already read once by Payload. <code>ShouldBindJSON</code> still works
+                too.</span><span class="x" lang="vi">Body JSON / form dạng <code>map[string]any</code>, Payload đã đọc
+                sẵn một lần. <code>ShouldBindJSON</code> vẫn dùng bình thường.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="35-44"><span class="n">9</span><span
+                class="w">BearerAuth on a group</span><span class="x" lang="en">Your function turns the token into an
+                identity; return a <code>*response.AppError</code> to reject. Handlers read it with
+                <code>security.MustGetIdentity</code>.</span><span class="x" lang="vi">Hàm của bạn biến token thành
+                identity; trả <code>*response.AppError</code> để từ chối. Handler đọc nó bằng
+                <code>security.MustGetIdentity</code>.</span></div>
+          </div>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:16px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 401 no token</span></div>
+          <pre data-hl="bash">
+$ curl -i localhost:8080/me
+</pre>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:10px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 200 identity</span></div>
+          <pre data-hl="bash">
+$ curl -i localhost:8080/me -H 'Authorization: Bearer demo'
+</pre>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:10px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · post echo</span></div>
+          <pre data-hl="bash">
+$ curl -i -X POST localhost:8080/echo -H 'Content-Type: application/json' -d '{"a":1}'
+</pre>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:10px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · json debug report</span></div>
+          <pre data-hl="bash">
+$ curl -s 'localhost:8080/me?t_debug=change-me' -H 'X-Internal-Secret: change-me-secret' | jq
+</pre>
+        </div>
+      </section>
+
+      <!-- ============================================================ 4. API -->
+      <section id="api" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">4</span>
+          <div>
+            <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+            <p class="jd-sub" lang="en">One tab per middleware. Signatures are copied from
+              <code>junkit/middleware/*.go</code>; messages are the built-in English texts from
+              <code>junkit/i18n</code>.</p>
+            <p class="jd-sub" lang="vi">Mỗi tab một middleware. Chữ ký chép từ <code>junkit/middleware/*.go</code>;
+              message là text tiếng Anh có sẵn trong <code>junkit/i18n</code>.</p>
+          </div>
+        </div>
+
+        <div class="jd-tabs jd-ep-tabs c-purple" style="margin-top:18px">
+          <div class="jd-tablist">
+            <button class="jd-tab" type="button" aria-selected="true">TracerDebug</button>
+            <button class="jd-tab" type="button" aria-selected="false">Security</button>
+            <button class="jd-tab" type="button" aria-selected="false">Trace</button>
+            <button class="jd-tab" type="button" aria-selected="false">CORS</button>
+            <button class="jd-tab" type="button" aria-selected="false">Payload</button>
+            <button class="jd-tab" type="button" aria-selected="false">AccessLog</button>
+            <button class="jd-tab" type="button" aria-selected="false">Limiter</button>
+            <button class="jd-tab" type="button" aria-selected="false">RoutePatterns</button>
+            <button class="jd-tab" type="button" aria-selected="false">Recover</button>
+            <button class="jd-tab" type="button" aria-selected="false">BearerAuth</button>
+            <button class="jd-tab" type="button" aria-selected="false">RequireSecret</button>
+            <button class="jd-tab" type="button" aria-selected="false">Gzip</button>
+          </div>
+
+          <!-- ---------------------------------------------------- TracerDebug -->
+          <div class="jd-tabpanel">
+            <div class="jd-syms">
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span
+                    class="jd-sym-name">TracerDebug</span><span class="jd-pill">tracer_debug.go</span></div>
+                <div class="jd-term">
+                  <pre data-hl="go">type TracerDebugOptions struct {
+    QueryKey     string
+    QueryValue   string
+    SecretHeader string
+    Secret       string
+}
+
+func (o TracerDebugOptions) Matches(c *gin.Context) bool
+func TracerDebug(opts TracerDebugOptions) gin.HandlerFunc</pre>
+                </div>
+                <p lang="en">Turns on the <a href="tracer.html">tracer</a> dashboard for requests whose query has
+                  <code>?&lt;QueryKey&gt;=&lt;QueryValue&gt;</code> <b>and</b> whose <code>SecretHeader</code> header
+                  equals <code>Secret</code>. Otherwise it just calls <code>c.Next()</code>.</p>
+                <p lang="vi">Bật dashboard <a href="tracer.html">tracer</a> cho request có query
+                  <code>?&lt;QueryKey&gt;=&lt;QueryValue&gt;</code> <b>và</b> header <code>SecretHeader</code> bằng
+                  <code>Secret</code>. Ngược lại chỉ gọi <code>c.Next()</code>.</p>
+                <ul>
+                  <li lang="en"><code>Matches(c)</code> is that check (the secret is compared in constant time). Pass it
+                    as <code>AccessLogOptions.SkipIf</code> and the same options as <code>RecoverOptions.Debug</code>.</li>
+                  <li lang="vi"><code>Matches(c)</code> chính là phép kiểm tra đó (secret được so sánh constant-time).
+                    Truyền nó làm <code>AccessLogOptions.SkipIf</code> và truyền cùng options làm
+                    <code>RecoverOptions.Debug</code>.</li>
+                  <li lang="en"><b>Disabled</b> when any field is empty.</li>
+                  <li lang="vi"><b>Tắt</b> khi có bất kỳ field nào rỗng.</li>
+                  <li lang="en">When active: puts a fresh tracer into the request context and swaps
+                    <code>c.Writer</code> for one that <b>discards the body</b> the handler writes. The handler still
+                    runs for real (database writes happen).</li>
+                  <li lang="vi">Khi bật: đặt một tracer mới vào request context và thay <code>c.Writer</code> bằng
+                    writer <b>bỏ đi body</b> mà handler ghi. Handler vẫn chạy thật (ghi database vẫn xảy ra).</li>
+                  <li lang="en">Afterwards it always answers <b>200</b> with
+                    <code>Cache-Control: no-cache, no-store, must-revalidate</code>, <code>Pragma: no-cache</code>,
+                    <code>Expires: 0</code>.</li>
+                  <li lang="vi">Sau đó luôn trả <b>200</b> kèm
+                    <code>Cache-Control: no-cache, no-store, must-revalidate</code>, <code>Pragma: no-cache</code>,
+                    <code>Expires: 0</code>.</li>
+                  <li lang="en">Body: if the <code>User-Agent</code> contains <code>curl</code>, <code>httpie</code> or
+                    <code>wget</code> (case-insensitive) → <code>application/json; charset=utf-8</code>; otherwise →
+                    <code>text/html; charset=utf-8</code> (the interactive dashboard).</li>
+                  <li lang="vi">Body: nếu <code>User-Agent</code> chứa <code>curl</code>, <code>httpie</code> hoặc
+                    <code>wget</code> (không phân biệt hoa thường) → <code>application/json; charset=utf-8</code>; ngược
+                    lại → <code>text/html; charset=utf-8</code> (dashboard tương tác).</li>
+                  <li lang="en">A <code>tracer.BreakpointSignal</code> panic (from <code>tracer.Stop()</code>) is caught
+                    and the dashboard notes "⏸ Stopped by tracer.Stop() after …". Any other panic is re-panicked.</li>
+                  <li lang="vi">Panic <code>tracer.BreakpointSignal</code> (từ <code>tracer.Stop()</code>) được bắt và
+                    dashboard ghi "⏸ Stopped by tracer.Stop() after …". Panic khác được panic lại.</li>
+                </ul>
+              </div>
+            </div>
+            <p class="jd-hint" style="margin-top:14px" lang="en">Try it — the debug pair goes in the query string (Jungo
+              default <code>t_debug=0604</code>; the value comes from <code>TRACER_DEBUG_VALUE</code> and differs per environment), the secret in <code>X-Internal-Secret</code> (Jungo uses
+              <code>AUTH_INTERNAL_SECRET</code>):</p>
+            <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — cặp debug nằm trên query string (mặc định
+              của Jungo <code>t_debug=0604</code>; giá trị lấy từ <code>TRACER_DEBUG_VALUE</code>, mỗi môi trường một số khác nhau), secret nằm trong <code>X-Internal-Secret</code> (Jungo dùng
+              <code>AUTH_INTERNAL_SECRET</code>):</p>
+            <div class="jd-term" data-copy="commands">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · Jungo</span></div>
+              <pre data-hl="bash">
+$ curl -s "localhost:8080/api/v1/auth/me?t_debug=$TRACER_DEBUG_VALUE" -H "Authorization: Bearer $TOKEN" \
+    -H "X-Internal-Secret: $AUTH_INTERNAL_SECRET" | jq
+# curl User-Agent → JSON report; in a browser (header added with an extension like ModHeader) → HTML dashboard
+</pre>
+            </div>
+          </div>
+
+          <!-- ---------------------------------------------------- Security -->
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-syms">
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Security</span><span
+                    class="jd-pill">security.go</span></div>
+                <div class="jd-term">
+                  <pre data-hl="go">func Security() gin.HandlerFunc</pre>
+                </div>
+                <p lang="en">No options. Sets these response headers before <code>c.Next()</code> and deletes any
+                  <code>Server</code> header. Never aborts.</p>
+                <p lang="vi">Không có option. Đặt các header response sau trước <code>c.Next()</code> và xoá header
+                  <code>Server</code> nếu có. Không bao giờ abort.</p>
+                <div class="jd-tablewrap">
+                  <table class="jd-params">
+                    <tr>
+                      <th>header</th>
+                      <th><span lang="en">value</span><span lang="vi">giá trị</span></th>
+                    </tr>
+                    <tr>
+                      <td>Strict-Transport-Security</td>
+                      <td><code>max-age=31536000; includeSubDomains; preload</code> — <span lang="en">only when
+                          <code>c.Request.TLS != nil</code></span><span lang="vi">chỉ khi
+                          <code>c.Request.TLS != nil</code></span></td>
+                    </tr>
+                    <tr>
+                      <td>X-Content-Type-Options</td>
+                      <td><code>nosniff</code></td>
+                    </tr>
+                    <tr>
+                      <td>X-Frame-Options</td>
+                      <td><code>DENY</code></td>
+                    </tr>
+                    <tr>
+                      <td>Referrer-Policy</td>
+                      <td><code>strict-origin-when-cross-origin</code></td>
+                    </tr>
+                    <tr>
+                      <td>Cross-Origin-Opener-Policy</td>
+                      <td><code>same-origin-allow-popups</code></td>
+                    </tr>
+                    <tr>
+                      <td>Cross-Origin-Resource-Policy</td>
+                      <td><code>cross-origin</code></td>
+                    </tr>
+                    <tr>
+                      <td>Permissions-Policy</td>
+                      <td><code>camera=(), microphone=(), geolocation=()</code></td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ---------------------------------------------------- Trace -->
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-syms">
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Trace</span><span
+                    class="jd-pill">trace.go</span></div>
+                <div class="jd-term">
+                  <pre data-hl="go">func Trace(opts TraceOptions) gin.HandlerFunc</pre>
+                </div>
+                <ul>
+                  <li lang="en">Reuses the incoming <code>X-Trace-Id</code> request header as-is, or generates
+                    <code>uuid.NewString()</code>.</li>
+                  <li lang="vi">Dùng lại nguyên văn header request <code>X-Trace-Id</code> nếu có, không thì sinh
+                    <code>uuid.NewString()</code>.</li>
+                  <li lang="en">Puts it in the request context with <code>logger.WithTraceID</code> (read it back with
+                    <code>logger.GetTraceID(ctx)</code>) and sets the response header <code>X-Trace-Id</code>.</li>
+                  <li lang="vi">Đưa nó vào request context bằng <code>logger.WithTraceID</code> (đọc lại bằng
+                    <code>logger.GetTraceID(ctx)</code>) và đặt header response <code>X-Trace-Id</code>.</li>
+                  <li lang="en">Stores in the Gin context: <code>response.StartTimeContextKey</code>
+                    (<code>time.Now()</code>), <code>response.TraceIDContextKey</code>,
+                    <code>response.VersionContextKey</code>, <code>response.EnvContextKey</code> — the responder turns
+                    these into <code>api_info.{trace_id, latency, version, env}</code>. Also stores the commit under the
+                    private key <code>"api_commit"</code>.</li>
+                  <li lang="vi">Lưu vào Gin context: <code>response.StartTimeContextKey</code>
+                    (<code>time.Now()</code>), <code>response.TraceIDContextKey</code>,
+                    <code>response.VersionContextKey</code>, <code>response.EnvContextKey</code> — responder biến chúng
+                    thành <code>api_info.{trace_id, latency, version, env}</code>. Commit được lưu dưới key riêng
+                    <code>"api_commit"</code>.</li>
+                  <li lang="en">Never aborts.</li>
+                  <li lang="vi">Không bao giờ abort.</li>
+                </ul>
+              </div>
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">TraceOptions</span>
+                </div>
+                <div class="jd-tablewrap">
+                  <table class="jd-params">
+                    <tr>
+                      <th>field</th>
+                      <th>type · default</th>
+                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+                    </tr>
+                    <tr>
+                      <td>Version</td>
+                      <td>string · ""</td>
+                      <td lang="en">Build version, e.g. "v1.2.0" → <code>api_info.version</code>.</td>
+                      <td lang="vi">Version của build, vd. "v1.2.0" → <code>api_info.version</code>.</td>
+                    </tr>
+                    <tr>
+                      <td>Commit</td>
+                      <td>string · ""</td>
+                      <td lang="en">VCS commit hash; stored in the context, not in <code>api_info</code>.</td>
+                      <td lang="vi">Mã commit; lưu trong context, không có trong <code>api_info</code>.</td>
+                    </tr>
+                    <tr>
+                      <td>Environment</td>
+                      <td>string · ""</td>
+                      <td lang="en">e.g. "production" → <code>api_info.env</code>.</td>
+                      <td lang="vi">vd. "production" → <code>api_info.env</code>.</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+              <div class="jd-sym c-muted">
+                <div class="jd-sym-head"><span class="jd-kind">const</span><span
+                    class="jd-sym-name">HeaderTraceID</span></div>
+                <div class="jd-term">
+                  <pre data-hl="go">const HeaderTraceID = "X-Trace-Id"</pre>
+                </div>
+              </div>
+            </div>
+            <p class="jd-hint" style="margin-top:14px" lang="en">Try it — send your own <code>X-Trace-Id</code> or let
+              Trace generate one:</p>
+            <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — tự gửi <code>X-Trace-Id</code> hoặc để Trace
+              tự sinh:</p>
+            <div class="jd-term" data-copy="commands">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · trace id tự sinh</span></div>
+              <pre data-hl="bash">
+$ curl -si localhost:8080/api/v1/auth/me | grep -i x-trace-id
+</pre>
+            </div>
+            <div class="jd-term" data-copy="commands" style="margin-top:10px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · echo trace id</span></div>
+              <pre data-hl="bash">
+$ curl -si localhost:8080/api/v1/auth/me -H 'X-Trace-Id: my-trace-123' | grep -i x-trace-id
+</pre>
+            </div>
+          </div>
+
+          <!-- ---------------------------------------------------- CORS -->
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-syms">
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">CORS</span><span
+                    class="jd-pill">cors.go</span></div>
+                <div class="jd-term">
+                  <pre data-hl="go">func CORS(opts CORSOptions) gin.HandlerFunc</pre>
+                </div>
+                <ul>
+                  <li lang="en">If the request has an <code>Origin</code> that is allowed (listed, or the list contains
+                    <code>"*"</code>):
+                    <ul>
+                      <li><code>"*"</code> <b>and</b> <code>AllowCredentials == false</code> →
+                        <code>Access-Control-Allow-Origin: *</code></li>
+                      <li>otherwise → <code>Access-Control-Allow-Origin: &lt;the request's Origin&gt;</code> +
+                        <code>Vary: Origin</code></li>
+                      <li><code>AllowCredentials</code> → <code>Access-Control-Allow-Credentials: true</code></li>
+                    </ul>
+                  </li>
+                  <li lang="vi">Nếu request có <code>Origin</code> được phép (có trong danh sách, hoặc danh sách chứa
+                    <code>"*"</code>):
+                    <ul>
+                      <li><code>"*"</code> <b>và</b> <code>AllowCredentials == false</code> →
+                        <code>Access-Control-Allow-Origin: *</code></li>
+                      <li>ngược lại → <code>Access-Control-Allow-Origin: &lt;Origin của request&gt;</code> +
+                        <code>Vary: Origin</code></li>
+                      <li><code>AllowCredentials</code> → <code>Access-Control-Allow-Credentials: true</code></li>
+                    </ul>
+                  </li>
+                  <li lang="en">A disallowed origin is <b>not rejected</b> — it just gets no allow-origin header, so the
+                    browser hides the response.</li>
+                  <li lang="vi">Origin không được phép <b>không bị từ chối</b> — nó chỉ không có header allow-origin,
+                    nên trình duyệt giấu response.</li>
+                  <li lang="en">Always sets <code>Access-Control-Allow-Headers</code>,
+                    <code>Access-Control-Allow-Methods</code> (lists joined with <code>", "</code>) and
+                    <code>Access-Control-Max-Age</code>, on every response.</li>
+                  <li lang="vi">Luôn đặt <code>Access-Control-Allow-Headers</code>,
+                    <code>Access-Control-Allow-Methods</code> (danh sách nối bằng <code>", "</code>) và
+                    <code>Access-Control-Max-Age</code> cho mọi response.</li>
+                  <li lang="en">Every <code>OPTIONS</code> request is aborted with <b>204</b> (empty body) — the route
+                    handler is never reached.</li>
+                  <li lang="vi">Mọi request <code>OPTIONS</code> bị abort với <b>204</b> (body rỗng) — không bao giờ tới
+                    handler của route.</li>
+                </ul>
+              </div>
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">CORSOptions</span>
+                </div>
+                <div class="jd-tablewrap">
+                  <table class="jd-params">
+                    <tr>
+                      <th>field</th>
+                      <th>type · default</th>
+                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+                    </tr>
+                    <tr>
+                      <td>AllowOrigins</td>
+                      <td>[]string · nil</td>
+                      <td lang="en">Exact origins, or <code>"*"</code> for any. Empty = no origin allowed.</td>
+                      <td lang="vi">Origin chính xác, hoặc <code>"*"</code> cho tất cả. Rỗng = không origin nào được
+                        phép.</td>
+                    </tr>
+                    <tr>
+                      <td>AllowMethods</td>
+                      <td>[]string · nil</td>
+                      <td lang="en">Sent as <code>Access-Control-Allow-Methods</code>.</td>
+                      <td lang="vi">Gửi trong <code>Access-Control-Allow-Methods</code>.</td>
+                    </tr>
+                    <tr>
+                      <td>AllowHeaders</td>
+                      <td>[]string · nil</td>
+                      <td lang="en">Sent as <code>Access-Control-Allow-Headers</code>.</td>
+                      <td lang="vi">Gửi trong <code>Access-Control-Allow-Headers</code>.</td>
+                    </tr>
+                    <tr>
+                      <td>AllowCredentials</td>
+                      <td>bool · false</td>
+                      <td lang="en">Adds <code>Access-Control-Allow-Credentials: true</code>; with <code>"*"</code> the
+                        request origin is echoed.</td>
+                      <td lang="vi">Thêm <code>Access-Control-Allow-Credentials: true</code>; khi dùng <code>"*"</code>
+                        thì origin của request được trả lại.</td>
+                    </tr>
+                    <tr>
+                      <td>MaxAge</td>
+                      <td>int · 0</td>
+                      <td lang="en">Preflight cache in seconds (<code>Access-Control-Max-Age</code>). 0 is sent as
+                        <code>"0"</code>.</td>
+                      <td lang="vi">Thời gian cache preflight tính bằng giây (<code>Access-Control-Max-Age</code>). 0
+                        được gửi là <code>"0"</code>.</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <p class="jd-hint" style="margin-top:14px" lang="en">Try it — CORS only reacts to an <code>Origin</code>
+              header (browsers send it, curl does not):</p>
+            <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — CORS chỉ phản ứng khi có header
+              <code>Origin</code> (trình duyệt tự gửi, curl thì không):</p>
+            <div class="jd-term" data-copy="commands">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · preflight request</span></div>
+              <pre data-hl="bash">
+# preflight → 204 + Access-Control-Allow-*
+$ curl -i -X OPTIONS localhost:8080/api/v1/users \
+    -H 'Origin: https://app.example.com' \
+    -H 'Access-Control-Request-Method: POST' \
+    -H 'Access-Control-Request-Headers: Content-Type, Authorization'
+</pre>
+            </div>
+            <div class="jd-term" data-copy="commands" style="margin-top:10px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · normal request</span></div>
+              <pre data-hl="bash">
+# normal request → response carries Access-Control-Allow-Origin
+$ curl -si localhost:8080/api/v1/auth/me -H 'Origin: https://app.example.com' | grep -i access-control
+</pre>
+            </div>
+          </div>
+
+          <!-- ---------------------------------------------------- Payload -->
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-syms">
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Payload</span><span
+                    class="jd-pill">payload.go</span></div>
+                <div class="jd-term">
+                  <pre
+                    data-hl="go">func Payload(opts PayloadOptions, responder response.Responder) gin.HandlerFunc</pre>
+                </div>
+                <ul>
+                  <li lang="en">No body or <code>ContentLength == 0</code> → passes through untouched.</li>
+                  <li lang="vi">Không có body hoặc <code>ContentLength == 0</code> → cho qua, không làm gì.</li>
+                  <li lang="en">Wraps the body in <code>http.MaxBytesReader(…, MaxBodySize)</code> and reads it <b>all
+                      into memory</b>. Any read error (too large, or the client hung up) → <b>413</b>
+                    <code>request_body_too_large</code> "Request body exceeds the maximum allowed size", then abort.
+                  </li>
+                  <li lang="vi">Bọc body bằng <code>http.MaxBytesReader(…, MaxBodySize)</code> và đọc <b>toàn bộ vào bộ
+                      nhớ</b>. Lỗi đọc bất kỳ (quá lớn, hoặc client ngắt) → <b>413</b>
+                    <code>request_body_too_large</code> "Request body exceeds the maximum allowed size", rồi abort.</li>
+                  <li lang="en">Puts the bytes back as <code>c.Request.Body</code>, so <code>ShouldBindJSON</code> still
+                    works, and stores them under <code>PayloadRawKey</code>.</li>
+                  <li lang="vi">Trả lại bytes vào <code>c.Request.Body</code>, nên <code>ShouldBindJSON</code> vẫn chạy,
+                    và lưu chúng dưới <code>PayloadRawKey</code>.</li>
+                  <li lang="en"><code>Content-Type</code> contains <code>application/json</code> → JSON object parsed
+                    into <code>map[string]any</code> (invalid JSON or a non-object → nothing cached). Contains
+                    <code>application/x-www-form-urlencoded</code> → <code>PostForm</code> as a map (single value →
+                    string, several → <code>[]string</code>). Other types (e.g. multipart) → raw bytes only.</li>
+                  <li lang="vi"><code>Content-Type</code> chứa <code>application/json</code> → JSON object được parse
+                    thành <code>map[string]any</code> (JSON sai hoặc không phải object → không cache). Chứa
+                    <code>application/x-www-form-urlencoded</code> → <code>PostForm</code> dạng map (một giá trị →
+                    string, nhiều → <code>[]string</code>). Kiểu khác (vd. multipart) → chỉ có raw bytes.</li>
+                </ul>
+              </div>
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">type</span><span
+                    class="jd-sym-name">PayloadOptions</span></div>
+                <div class="jd-tablewrap">
+                  <table class="jd-params">
+                    <tr>
+                      <th>field</th>
+                      <th>type · default</th>
+                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+                    </tr>
+                    <tr>
+                      <td>MaxBodySize</td>
+                      <td>int64 · 0</td>
+                      <td lang="en">Max body bytes. <b>No default</b>: 0 rejects every non-empty body with 413.</td>
+                      <td lang="vi">Số byte body tối đa. <b>Không có mặc định</b>: 0 sẽ từ chối mọi body không rỗng với
+                        413.</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+              <div class="jd-sym c-blue">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">GetPayload</span>
+                </div>
+                <div class="jd-term">
+                  <pre data-hl="go">func GetPayload(c *gin.Context) map[string]any</pre>
+                </div>
+                <p lang="en">The map cached by Payload, or <code>nil</code> if nothing was cached (no Payload in the
+                  chain, empty body, non-JSON/form content type).</p>
+                <p lang="vi">Map mà Payload đã cache, hoặc <code>nil</code> nếu không có gì (không có Payload trong
+                  chuỗi, body rỗng, content type không phải JSON/form).</p>
+              </div>
+              <div class="jd-sym c-muted">
+                <div class="jd-sym-head"><span class="jd-kind">const</span><span class="jd-sym-name">PayloadKey ·
+                    PayloadRawKey</span></div>
+                <div class="jd-term">
+                  <pre data-hl="go">
+const (
+    PayloadKey    = "_request_payload"  // map[string]any (JSON or form)
+    PayloadRawKey = "_request_body_raw" // []byte
+)
+</pre>
+                </div>
+                <p lang="en">Raw bytes: <code>raw, _ := c.Get(middleware.PayloadRawKey)</code> then
+                  <code>raw.([]byte)</code>.</p>
+                <p lang="vi">Raw bytes: <code>raw, _ := c.Get(middleware.PayloadRawKey)</code> rồi
+                  <code>raw.([]byte)</code>.</p>
+              </div>
+            </div>
+            <p class="jd-hint" style="margin-top:14px" lang="en">Try it — <code>GetPayload</code> only parses bodies
+              sent with a matching <code>Content-Type</code>:</p>
+            <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — <code>GetPayload</code> chỉ parse body có
+              <code>Content-Type</code> phù hợp:</p>
+            <div class="jd-term" data-copy="commands">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · login payload</span></div>
+              <pre data-hl="bash">
+$ curl -i -X POST localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' \
+    -d '{"email":"admin@example.com","password":"secret"}'
+</pre>
+            </div>
+            <div class="jd-term" data-copy="commands" style="margin-top:10px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · body vượt giới hạn</span></div>
+              <pre data-hl="bash">
+# body over SECURITY_MAX_BODY_SIZE (2 MiB) → 413 request_body_too_large
+$ head -c 3000000 /dev/zero | curl -i -X POST localhost:8080/api/v1/auth/login \
+    -H 'Content-Type: application/json' --data-binary @-
+</pre>
+            </div>
+          </div>
+
+          <!-- ---------------------------------------------------- AccessLog -->
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-syms">
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span
+                    class="jd-sym-name">AccessLog</span><span class="jd-pill">access_log.go</span></div>
+                <div class="jd-term">
+                  <pre data-hl="go">func AccessLog(httpLogger *zap.Logger, opts AccessLogOptions) gin.HandlerFunc</pre>
+                </div>
+                <ul>
+                  <li lang="en">Skips (just <code>c.Next()</code>) when <code>c.Request.URL.Path</code> exactly matches
+                    an excluded path, or <code>SkipIf(c)</code> returns true.</li>
+                  <li lang="vi">Bỏ qua (chỉ <code>c.Next()</code>) khi <code>c.Request.URL.Path</code> khớp chính xác
+                    một path loại trừ, hoặc <code>SkipIf(c)</code> trả true.</li>
+                  <li lang="en">Otherwise wraps the writer to copy up to <code>MaxBodySize</code> bytes of the response,
+                    runs <code>c.Next()</code>, then writes <b>one</b> entry with message
+                    <code>"HTTP_ACCESS_LOG"</code>.</li>
+                  <li lang="vi">Ngược lại bọc writer để chép tối đa <code>MaxBodySize</code> byte của response, chạy
+                    <code>c.Next()</code>, rồi ghi <b>một</b> entry với message <code>"HTTP_ACCESS_LOG"</code>.</li>
+                  <li lang="en">Level by final status: <b>5xx → Error</b>, <b>4xx → Warn</b>, else Info.</li>
+                  <li lang="vi">Level theo status cuối: <b>5xx → Error</b>, <b>4xx → Warn</b>, còn lại Info.</li>
+                  <li lang="en">Sensitive fields (case-insensitive, at any depth in maps and arrays of maps) in the
+                    request payload and a JSON response are replaced by <code>"[MASKED]"</code>. A non-JSON response is
+                    logged as a string cut to 200 bytes + <code>"... [truncated]"</code>.</li>
+                  <li lang="vi">Trường nhạy cảm (không phân biệt hoa thường, ở mọi độ sâu trong map và mảng map) trong
+                    request payload và response JSON bị thay bằng <code>"[MASKED]"</code>. Response không phải JSON được
+                    ghi dạng chuỗi, cắt còn 200 byte + <code>"... [truncated]"</code>.</li>
+                  <li lang="en">Never aborts and never changes the response.</li>
+                  <li lang="vi">Không bao giờ abort và không thay đổi response.</li>
+                </ul>
+                <div class="jd-tablewrap">
+                  <table class="jd-params">
+                    <tr>
+                      <th><span lang="en">log field</span><span lang="vi">trường log</span></th>
+                      <th><span lang="en">value</span><span lang="vi">giá trị</span></th>
+                    </tr>
+                    <tr>
+                      <td>trace_id</td>
+                      <td lang="en">From Trace (nil without it).</td>
+                      <td lang="vi">Từ Trace (nil nếu không có).</td>
+                    </tr>
+                    <tr>
+                      <td>hostname</td>
+                      <td><code>os.Hostname()</code></td>
+                    </tr>
+                    <tr>
+                      <td>latency_ms · status · method · path · query</td>
+                      <td lang="en">Query is the raw query string (not masked).</td>
+                      <td lang="vi">Query là chuỗi query thô (không bị che).</td>
+                    </tr>
+                    <tr>
+                      <td>ip · user_agent · resp_size</td>
+                      <td><code>c.ClientIP()</code>, <code>User-Agent</code>, <span lang="en">bytes written</span><span
+                          lang="vi">số byte đã ghi</span></td>
+                    </tr>
+                    <tr>
+                      <td>error</td>
+                      <td lang="en">Private <code>c.Errors</code> as a string (e.g. the cause of a
+                        <code>responder.Error</code> 500), else null.</td>
+                      <td lang="vi"><code>c.Errors</code> loại private dạng chuỗi (vd. nguyên nhân của 500 từ
+                        <code>responder.Error</code>), không thì null.</td>
+                    </tr>
+                    <tr>
+                      <td>request_payload</td>
+                      <td lang="en"><code>GetPayload(c)</code>, masked — needs Payload in the chain.</td>
+                      <td lang="vi"><code>GetPayload(c)</code>, đã che — cần có Payload trong chuỗi.</td>
+                    </tr>
+                    <tr>
+                      <td>response_payload · request_time</td>
+                      <td lang="en">Parsed / truncated body; start time.</td>
+                      <td lang="vi">Body đã parse / cắt; thời điểm bắt đầu.</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">type</span><span
+                    class="jd-sym-name">AccessLogOptions</span></div>
+                <div class="jd-tablewrap">
+                  <table class="jd-params">
+                    <tr>
+                      <th>field</th>
+                      <th>type · default</th>
+                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+                    </tr>
+                    <tr>
+                      <td>ExcludedPaths</td>
+                      <td>[]string · <code>/health</code>, <code>/metrics</code>, <code>/favicon.ico</code></td>
+                      <td lang="en">Exact paths not logged. A non-empty list <b>replaces</b> the defaults.</td>
+                      <td lang="vi">Path chính xác không ghi log. Danh sách không rỗng sẽ <b>thay thế</b> mặc định.</td>
+                    </tr>
+                    <tr>
+                      <td>SensitiveFields</td>
+                      <td>[]string · <span lang="en">see below</span><span lang="vi">xem dưới</span></td>
+                      <td lang="en">Field names to mask. A non-empty list <b>replaces</b> the defaults.</td>
+                      <td lang="vi">Tên trường cần che. Danh sách không rỗng sẽ <b>thay thế</b> mặc định.</td>
+                    </tr>
+                    <tr>
+                      <td>MaxBodySize</td>
+                      <td>int · 100 KB (102400)</td>
+                      <td lang="en">Response bytes buffered for logging (≤ 0 → default).</td>
+                      <td lang="vi">Số byte response được giữ để ghi log (≤ 0 → mặc định).</td>
+                    </tr>
+                    <tr>
+                      <td>SkipIf</td>
+                      <td>func(*gin.Context) bool · nil</td>
+                      <td lang="en">Return true to skip logging this request.</td>
+                      <td lang="vi">Trả true để bỏ qua log của request này.</td>
+                    </tr>
+                  </table>
+                </div>
+                <p lang="en">Default sensitive fields: <code>password</code>, <code>pass</code>, <code>token</code>,
+                  <code>new_password</code>, <code>access_token</code>, <code>refresh_token</code>, <code>secret</code>,
+                  <code>authorization</code>, <code>recaptcha_token</code>.</p>
+                <p lang="vi">Trường nhạy cảm mặc định: <code>password</code>, <code>pass</code>, <code>token</code>,
+                  <code>new_password</code>, <code>access_token</code>, <code>refresh_token</code>, <code>secret</code>,
+                  <code>authorization</code>, <code>recaptcha_token</code>.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ---------------------------------------------------- Limiter -->
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-syms">
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Limiter</span><span
+                    class="jd-pill">limiter.go</span></div>
+                <div class="jd-term">
+                  <pre
+                    data-hl="go">func Limiter(opts LimiterOptions, logger *zap.Logger, responder response.Responder, notifier notification.Notifier) gin.HandlerFunc</pre>
+                </div>
+                <p lang="en">A token bucket (<code>golang.org/x/time/rate</code>) per <code>c.ClientIP()</code>, kept in
+                  memory. Calling <code>Limiter</code> starts two background goroutines (idle-client sweep, log-cache
+                  sweep).</p>
+                <p lang="vi">Một token bucket (<code>golang.org/x/time/rate</code>) cho mỗi <code>c.ClientIP()</code>,
+                  lưu trong bộ nhớ. Gọi <code>Limiter</code> sẽ khởi động hai goroutine nền (dọn client không hoạt động,
+                  dọn log cache).</p>
+                <ul>
+                  <li lang="en">Bypass: IP in <code>IPWhitelist</code>, or <code>User-Agent</code> starting with
+                    <code>PostmanRuntime/</code> or <code>GoHttpTest/</code>.</li>
+                  <li lang="vi">Được bỏ qua: IP có trong <code>IPWhitelist</code>, hoặc <code>User-Agent</code> bắt đầu
+                    bằng <code>PostmanRuntime/</code> hay <code>GoHttpTest/</code>.</li>
+                  <li lang="en">Bucket empty → <b>429</b> <code>too_many_requests</code> "Too many requests. Please try
+                    again later.", then abort.</li>
+                  <li lang="vi">Hết token → <b>429</b> <code>too_many_requests</code> "Too many requests. Please try
+                    again later.", rồi abort.</li>
+                  <li lang="en">At most once per IP per <code>LogTTL</code>:
+                    <code>logger.Warn("middleware: rate limit exceeded")</code> with <code>ip</code>, <code>path</code>,
+                    <code>limit_rps</code>, and — if <code>notifier != nil</code> — an async HTML alert "🚦 Rate Limit
+                    Exceeded" (IP, method, path, time) via <code>notifier.SendMessageHTML(…, "error")</code>.</li>
+                  <li lang="vi">Tối đa một lần mỗi IP trong mỗi <code>LogTTL</code>:
+                    <code>logger.Warn("middleware: rate limit exceeded")</code> với <code>ip</code>, <code>path</code>,
+                    <code>limit_rps</code>, và — nếu <code>notifier != nil</code> — một cảnh báo HTML bất đồng bộ "🚦
+                    Rate Limit Exceeded" (IP, method, path, thời gian) qua
+                    <code>notifier.SendMessageHTML(…, "error")</code>.</li>
+                </ul>
+              </div>
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">type</span><span
+                    class="jd-sym-name">LimiterOptions</span></div>
+                <div class="jd-tablewrap">
+                  <table class="jd-params">
+                    <tr>
+                      <th>field</th>
+                      <th>type · default</th>
+                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+                    </tr>
+                    <tr>
+                      <td>RequestsPerSecond</td>
+                      <td>int · 0</td>
+                      <td lang="en">Sustained rate per IP (token refill per second).</td>
+                      <td lang="vi">Tốc độ duy trì mỗi IP (số token nạp lại mỗi giây).</td>
+                    </tr>
+                    <tr>
+                      <td>Burst</td>
+                      <td>int · 0</td>
+                      <td lang="en">Bucket size — requests allowed at once.</td>
+                      <td lang="vi">Kích thước bucket — số request được phép dồn một lúc.</td>
+                    </tr>
+                    <tr>
+                      <td>CleanupInterval<span class="req">require</span></td>
+                      <td>time.Duration · —</td>
+                      <td lang="en">How often idle clients are swept. <b>Must be &gt; 0</b> or the process panics.</td>
+                      <td lang="vi">Chu kỳ dọn client không hoạt động. <b>Phải &gt; 0</b> nếu không process sẽ panic.
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>ClientTTL</td>
+                      <td>time.Duration · 0</td>
+                      <td lang="en">Idle time before a client's bucket is evicted.</td>
+                      <td lang="vi">Thời gian không hoạt động trước khi bucket của client bị xoá.</td>
+                    </tr>
+                    <tr>
+                      <td>LogTTL<span class="req">require</span></td>
+                      <td>time.Duration · —</td>
+                      <td lang="en">Max one warn/alert per IP per interval. <b>Must be &gt; 0</b> or the process panics.
+                      </td>
+                      <td lang="vi">Tối đa một warn/cảnh báo mỗi IP trong mỗi khoảng. <b>Phải &gt; 0</b> nếu không
+                        process sẽ panic.</td>
+                    </tr>
+                    <tr>
+                      <td>NumShards</td>
+                      <td>int · 64 (≤ 0)</td>
+                      <td lang="en">Lock striping of the client map.</td>
+                      <td lang="vi">Số shard khoá của map client.</td>
+                    </tr>
+                    <tr>
+                      <td>IPWhitelist</td>
+                      <td>[]string · nil</td>
+                      <td lang="en">Exact IPs that are never limited.</td>
+                      <td lang="vi">IP chính xác không bao giờ bị giới hạn.</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+              <div class="jd-sym c-blue">
+                <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">ClientStore</span>
+                </div>
+                <div class="jd-term">
+                  <pre data-hl="go">
+func NewClientStore(opts LimiterOptions) *ClientStore
+func (s *ClientStore) StartCleanup()
+</pre>
+                </div>
+                <p lang="en">The sharded per-IP store <code>Limiter</code> builds for itself. Exported, but its lookup
+                  method is unexported, so from outside the package you can only create it and start its sweep (later
+                  <code>StartCleanup</code> calls are no-ops). You normally never touch it.</p>
+                <p lang="vi">Kho lưu theo IP có chia shard mà <code>Limiter</code> tự tạo. Được export, nhưng hàm tra
+                  cứu thì không, nên từ bên ngoài bạn chỉ có thể tạo nó và bật tiến trình dọn (gọi
+                  <code>StartCleanup</code> lần sau không làm gì). Bình thường bạn không cần đụng tới.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ---------------------------------------------------- RoutePatterns -->
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-syms">
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span
+                    class="jd-sym-name">RoutePatterns</span><span class="jd-pill">route_patterns.go</span></div>
+                <div class="jd-term">
+                  <pre
+                    data-hl="go">func RoutePatterns(patterns map[string]func(string) bool, responder response.Responder) gin.HandlerFunc</pre>
+                </div>
+                <p lang="en">Checks every path parameter of the matched route. If <code>patterns</code> has a rule for
+                  its name and the value fails it → <code>404</code> <code>api_not_found</code> "API is not found" and
+                  abort. Parameters without a rule are not checked.</p>
+                <p lang="vi">Kiểm tra mọi path param của route đã khớp. Nếu <code>patterns</code> có rule cho tên param
+                  và giá trị không qua được → <code>404</code> <code>api_not_found</code> "API is not found" và abort.
+                  Param không có rule thì không bị kiểm tra.</p>
+                <ul>
+                  <li lang="en">gin has no per-route regex (no Laravel <code>-&gt;where()</code>): <code>:uuid</code>
+                    matches any string. This is the global equivalent of Laravel's <code>Route::pattern</code>.</li>
+                  <li lang="vi">gin không có regex theo route (không có <code>-&gt;where()</code> như Laravel):
+                    <code>:uuid</code> khớp mọi chuỗi. Đây là bản global tương đương <code>Route::pattern</code> của
+                    Laravel.</li>
+                  <li lang="en">Global, so it runs before group middleware and the handler:
+                    <code>GET /api/v1/users/abc</code> → 404, not 401 (no token) or 422 (from
+                    <code>httpx.ParseUUID</code>). Keep <code>httpx.ParseUUID</code> in handlers — it gives you a typed
+                    <code>uuid.UUID</code> and is a second line of defence.</li>
+                  <li lang="vi">Là middleware global nên chạy trước middleware của group và handler:
+                    <code>GET /api/v1/users/abc</code> → 404, không phải 401 (thiếu token) hay 422 (từ
+                    <code>httpx.ParseUUID</code>). Vẫn giữ <code>httpx.ParseUUID</code> trong handler — nó cho
+                    <code>uuid.UUID</code> có kiểu và là lớp phòng thủ thứ hai.</li>
+                  <li lang="en">It runs after route matching, so it cannot make gin choose between
+                    <code>/posts/:id</code> and <code>/posts/:slug</code> (gin rejects such duplicate routes anyway).</li>
+                  <li lang="vi">Nó chạy sau khi route đã khớp, nên không thể giúp gin chọn giữa
+                    <code>/posts/:id</code> và <code>/posts/:slug</code> (gin vốn từ chối các route trùng như vậy).</li>
+                </ul>
+              </div>
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">IsUUID · IsID ·
+                    IsSlug</span></div>
+                <div class="jd-term">
+                  <pre data-hl="go">func IsUUID(v string) bool
+func IsID(v string) bool
+func IsSlug(v string) bool</pre>
+                </div>
+                <div class="jd-tablewrap">
+                  <table class="jd-params">
+                    <tr>
+                      <th>rule</th>
+                      <th><span lang="en">accepts</span><span lang="vi">chấp nhận</span></th>
+                      <th><span lang="en">rejects</span><span lang="vi">từ chối</span></th>
+                    </tr>
+                    <tr>
+                      <td>IsUUID</td>
+                      <td lang="en">canonical <code>8-4-4-4-12</code> only</td>
+                      <td lang="vi">chỉ dạng chuẩn <code>8-4-4-4-12</code></td>
+                      <td><code>abc</code>, <span lang="en">no hyphens, <code>{…}</code>, <code>urn:uuid:…</code></span><span
+                          lang="vi">không gạch nối, <code>{…}</code>, <code>urn:uuid:…</code></span></td>
+                    </tr>
+                    <tr>
+                      <td>IsID</td>
+                      <td lang="en">positive integer that fits <code>int64</code></td>
+                      <td lang="vi">số nguyên dương vừa <code>int64</code></td>
+                      <td><code>0</code>, <code>-1</code>, <code>1.5</code>, <code>99999999999999999999</code></td>
+                    </tr>
+                    <tr>
+                      <td>IsSlug</td>
+                      <td><code>^[a-z0-9]+(-[a-z0-9]+)*$</code></td>
+                      <td><code>Hello</code>, <code>a--b</code>, <code>-a</code>, <code>a_b</code></td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="jd-callout c-orange" style="margin-top:14px">
+              <b lang="en">Convention: the parameter name is the type.</b><b lang="vi">Quy ước: tên param chính là
+                kiểu.</b>
+              <span lang="en">Across the whole app <code>:id</code> is always a positive integer, <code>:uuid</code>
+                always a UUID, <code>:slug</code> always a slug. For a free-form value use another name, e.g.
+                <code>:key</code> or <code>:code</code>.</span>
+              <span lang="vi">Trong toàn app, <code>:id</code> luôn là số nguyên dương, <code>:uuid</code> luôn là UUID,
+                <code>:slug</code> luôn là slug. Giá trị tự do thì đặt tên khác, ví dụ <code>:key</code> hoặc
+                <code>:code</code>.</span>
+            </div>
+            <p class="jd-hint" style="margin-top:14px" lang="en">Try it — a malformed uuid is 404 even without a
+              token:</p>
+            <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — uuid sai định dạng trả 404 kể cả khi không
+              có token:</p>
+            <div class="jd-term" data-copy="commands">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · Jungo</span></div>
+              <pre data-hl="bash">
+$ curl -i localhost:8080/api/v1/users/abc
+# 404 "API is not found"
+</pre>
+            </div>
+          </div>
+
+          <!-- ---------------------------------------------------- Recover -->
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-syms">
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Recover</span><span
+                    class="jd-pill">recover.go</span></div>
+                <div class="jd-term">
+                  <pre
+                    data-hl="go">func Recover(logger *zap.Logger, notifier notification.Notifier, responder response.Responder, opts RecoverOptions) gin.HandlerFunc</pre>
+                </div>
+                <p lang="en">Defers a <code>recover()</code> around <code>c.Next()</code>. On a panic:</p>
+                <p lang="vi">Đặt <code>recover()</code> (defer) bao quanh <code>c.Next()</code>. Khi có panic:</p>
+                <ul>
+                  <li lang="en"><code>tracer.BreakpointSignal</code> → re-panicked, for TracerDebug.</li>
+                  <li lang="vi"><code>tracer.BreakpointSignal</code> → panic lại, để TracerDebug xử lý.</li>
+                  <li lang="en"><code>opts.Debug.Matches(c)</code> (debug query and secret header both
+                    match) → recorded with <code>tracer.E(…, "PANIC RECOVERED", r)</code>, no log, no alert, no 500
+                    — the dashboard shows it.</li>
+                  <li lang="vi"><code>opts.Debug.Matches(c)</code> (query debug và header secret đều
+                    khớp) → ghi bằng <code>tracer.E(…, "PANIC RECOVERED", r)</code>, không log, không cảnh báo,
+                    không 500 — dashboard hiển thị nó.</li>
+                  <li lang="en">Otherwise: <code>logger.Error("middleware: panic recovered")</code> with
+                    <code>error</code>, <code>location</code>, <code>line</code>, <code>function</code>,
+                    <code>stack</code>; <code>notifier.SendErrorNotification(c, errorData, 500)</code> if a notifier is
+                    set; then <b>500</b> <code>internal_server_error</code> "Internal Server Error" and abort.</li>
+                  <li lang="vi">Ngược lại: <code>logger.Error("middleware: panic recovered")</code> với
+                    <code>error</code>, <code>location</code>, <code>line</code>, <code>function</code>,
+                    <code>stack</code>; <code>notifier.SendErrorNotification(c, errorData, 500)</code> nếu có notifier;
+                    rồi <b>500</b> <code>internal_server_error</code> "Internal Server Error" và abort.</li>
+                </ul>
+              </div>
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">type</span><span
+                    class="jd-sym-name">RecoverOptions</span></div>
+                <div class="jd-tablewrap">
+                  <table class="jd-params">
+                    <tr>
+                      <th>field</th>
+                      <th>type · default</th>
+                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+                    </tr>
+                    <tr>
+                      <td>Debug</td>
+                      <td>TracerDebugOptions · {}</td>
+                      <td lang="en">Selects requests whose panic goes to the tracer. Use the same options as TracerDebug.
+                        Any empty field → bypass never happens.</td>
+                      <td lang="vi">Chọn request có panic được chuyển sang tracer. Dùng cùng options với TracerDebug.
+                        Có field rỗng → không bao giờ bypass.</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ---------------------------------------------------- BearerAuth -->
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-syms">
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span
+                    class="jd-sym-name">BearerAuth[T]</span><span class="jd-pill">auth.go</span></div>
+                <div class="jd-term">
+                  <pre
+                    data-hl="go">func BearerAuth[T any](a Authenticator[T], responder response.Responder, opts BearerAuthOptions) gin.HandlerFunc</pre>
+                </div>
+                <ul>
+                  <li lang="en">No usable token (see <code>BearerToken</code>) → <b>401</b> with
+                    <code>MessageKey</code>, default <code>unauthorized_token</code> "Authentication token is invalid or
+                    expired". Sent with <code>responder.Send</code>, so there is <b>no <code>"code"</code> field</b>.
+                  </li>
+                  <li lang="vi">Không có token dùng được (xem <code>BearerToken</code>) → <b>401</b> với
+                    <code>MessageKey</code>, mặc định <code>unauthorized_token</code> "Authentication token is invalid
+                    or expired". Gửi bằng <code>responder.Send</code>, nên <b>không có trường <code>"code"</code></b>.
+                  </li>
+                  <li lang="en"><code>a.Authenticate(c.Request.Context(), token)</code> returns an error →
+                    <code>responder.Error(c, err)</code>: a <code>*response.AppError</code> gives its mapped status,
+                    <code>"code"</code> and message; any other error gives <b>500</b> "Internal Server Error". Then
+                    abort.</li>
+                  <li lang="vi"><code>a.Authenticate(c.Request.Context(), token)</code> trả lỗi →
+                    <code>responder.Error(c, err)</code>: <code>*response.AppError</code> cho status tương ứng,
+                    <code>"code"</code> và message; lỗi khác cho <b>500</b> "Internal Server Error". Rồi abort.</li>
+                  <li lang="en">Success → <code>security.SetIdentity(c, identity)</code> (Gin context <b>and</b> request
+                    context), then <code>c.Next()</code>. Read it with <code>security.MustGetIdentity[T](c)</code> or
+                    <code>security.GetIdentity[T](ctx)</code> — see <a href="security.html">security</a>.</li>
+                  <li lang="vi">Thành công → <code>security.SetIdentity(c, identity)</code> (cả Gin context <b>và</b>
+                    request context), rồi <code>c.Next()</code>. Đọc bằng <code>security.MustGetIdentity[T](c)</code>
+                    hoặc <code>security.GetIdentity[T](ctx)</code> — xem <a href="security.html">security</a>.</li>
+                </ul>
+              </div>
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">type</span><span
+                    class="jd-sym-name">BearerAuthOptions</span></div>
+                <div class="jd-tablewrap">
+                  <table class="jd-params">
+                    <tr>
+                      <th>field</th>
+                      <th>type · default</th>
+                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+                    </tr>
+                    <tr>
+                      <td>MessageKey</td>
+                      <td>string · "unauthorized_token"</td>
+                      <td lang="en">i18n key for a <b>missing / malformed</b> header only.</td>
+                      <td lang="vi">Key i18n chỉ dành cho header <b>thiếu / sai dạng</b>.</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+              <div class="jd-sym c-blue">
+                <div class="jd-sym-head"><span class="jd-kind">interface</span><span
+                    class="jd-sym-name">Authenticator[T]</span><span class="jd-kind">func type</span><span
+                    class="jd-sym-name">AuthenticatorFunc[T]</span></div>
+                <div class="jd-term">
+                  <pre data-hl="go">
+type Authenticator[T any] interface {
+    Authenticate(ctx context.Context, token string) (T, error)
+}
+
+type AuthenticatorFunc[T any] func(ctx context.Context, token string) (T, error)
+
+func (f AuthenticatorFunc[T]) Authenticate(ctx context.Context, token string) (T, error)
+</pre>
+                </div>
+                <p lang="en">Return a <code>*response.AppError</code> (e.g.
+                  <code>response.New(response.Unauthorized, "unauthorized_token")</code>) for token problems; anything
+                  else becomes 500. <code>AuthenticatorFunc</code> turns a function or method value into an
+                  <code>Authenticator</code>.</p>
+                <p lang="vi">Trả <code>*response.AppError</code> (vd.
+                  <code>response.New(response.Unauthorized, "unauthorized_token")</code>) cho lỗi token; lỗi khác thành
+                  500. <code>AuthenticatorFunc</code> biến một hàm hoặc method value thành <code>Authenticator</code>.
+                </p>
+              </div>
+              <div class="jd-sym c-blue">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">BearerToken</span>
+                </div>
+                <div class="jd-term">
+                  <pre data-hl="go">func BearerToken(c *gin.Context) (string, bool)</pre>
+                </div>
+                <p lang="en">Reads <code>Authorization</code>. The <code>"Bearer "</code> prefix is case-insensitive
+                  (<code>bearer x</code> works); the rest is trimmed. Returns <code>false</code> for a missing header,
+                  another scheme, or an empty token.</p>
+                <p lang="vi">Đọc <code>Authorization</code>. Tiền tố <code>"Bearer "</code> không phân biệt hoa thường
+                  (<code>bearer x</code> vẫn được); phần còn lại được trim. Trả <code>false</code> khi thiếu header,
+                  scheme khác, hoặc token rỗng.</p>
+              </div>
+            </div>
+            <p class="jd-hint" style="margin-top:14px" lang="en">Try it — log in, keep the access token, send it as
+              <code>Authorization: Bearer …</code>:</p>
+            <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — đăng nhập, giữ access token, gửi nó qua
+              <code>Authorization: Bearer …</code>:</p>
+            <div class="jd-term" data-copy="commands">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 1 · lấy token</span></div>
+              <pre data-hl="bash">
+$ TOKEN=$(curl -s -X POST localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' \
+    -d '{"email":"admin@example.com","password":"secret"}' | jq -r .data.access_token)
+</pre>
+            </div>
+            <div class="jd-term" data-copy="commands" style="margin-top:10px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 2 · 401 no token</span></div>
+              <pre data-hl="bash">
+$ curl -i localhost:8080/api/v1/auth/me
+</pre>
+            </div>
+            <div class="jd-term" data-copy="commands" style="margin-top:10px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 3 · 401 token sai</span></div>
+              <pre data-hl="bash">
+$ curl -i localhost:8080/api/v1/auth/me -H 'Authorization: Bearer nope'
+</pre>
+            </div>
+            <div class="jd-term" data-copy="commands" style="margin-top:10px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 4 · 200 token hợp lệ</span></div>
+              <pre data-hl="bash">
+$ curl -i localhost:8080/api/v1/auth/me -H "Authorization: Bearer $TOKEN"
+</pre>
+            </div>
+          </div>
+
+          <!-- ---------------------------------------------------- RequireSecret -->
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-syms">
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span
+                    class="jd-sym-name">RequireSecret</span><span class="jd-pill">auth.go</span></div>
+                <div class="jd-term">
+                  <pre
+                    data-hl="go">func RequireSecret(header, secret string, responder response.Responder) gin.HandlerFunc</pre>
+                </div>
+                <ul>
+                  <li lang="en">Compares <code>c.GetHeader(header)</code> with <code>secret</code> using
+                    <code>security.SecureEqual</code> (constant time).</li>
+                  <li lang="vi">So sánh <code>c.GetHeader(header)</code> với <code>secret</code> bằng
+                    <code>security.SecureEqual</code> (thời gian hằng định).</li>
+                  <li lang="en">Mismatch, missing header, or <b>empty <code>secret</code></b> (fails closed) →
+                    <b>403</b> <code>forbidden_internal_access</code> "Forbidden internal system access", then abort.
+                  </li>
+                  <li lang="vi">Không khớp, thiếu header, hoặc <b><code>secret</code> rỗng</b> (mặc định đóng) →
+                    <b>403</b> <code>forbidden_internal_access</code> "Forbidden internal system access", rồi abort.
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <p class="jd-hint" style="margin-top:14px" lang="en">Try it — the secret goes in
+              <code>X-Internal-Secret</code> and must equal <code>AUTH_INTERNAL_SECRET</code>:</p>
+            <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — secret nằm trong
+              <code>X-Internal-Secret</code> và phải bằng <code>AUTH_INTERNAL_SECRET</code>:</p>
+            <div class="jd-term" data-copy="commands">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 403 thiếu secret</span></div>
+              <pre data-hl="bash">
+$ curl -i -X POST localhost:8080/api/internal/auth/token-details \
+    -H 'Content-Type: application/json' -d "{\"token\":\"$TOKEN\"}"
+</pre>
+            </div>
+            <div class="jd-term" data-copy="commands" style="margin-top:10px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 200 có secret</span></div>
+              <pre data-hl="bash">
+$ curl -i -X POST localhost:8080/api/internal/auth/token-details \
+    -H "X-Internal-Secret: $AUTH_INTERNAL_SECRET" \
+    -H 'Content-Type: application/json' -d "{\"token\":\"$TOKEN\"}"
+</pre>
+            </div>
+          </div>
+
+          <!-- ---------------------------------------------------- Gzip -->
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-syms">
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Gzip</span><span
+                    class="jd-pill">gzip.go</span></div>
+                <div class="jd-term">
+                  <pre data-hl="go">func Gzip(opts GzipOptions) gin.HandlerFunc</pre>
+                </div>
+                <p lang="en">Compresses the response body with <code>compress/gzip</code> (standard library, pooled
+                  writers). Never aborts.</p>
+                <p lang="vi">Nén body response bằng <code>compress/gzip</code> (thư viện chuẩn, writer được dùng lại qua
+                  pool). Không bao giờ abort.</p>
+                <ul>
+                  <li lang="en">Always adds <code>Vary: Accept-Encoding</code>, so caches keep compressed and plain
+                    copies apart.</li>
+                  <li lang="vi">Luôn thêm <code>Vary: Accept-Encoding</code>, để cache tách bản nén và bản thường.</li>
+                  <li lang="en">Compresses only when <code>Accept-Encoding</code> lists <code>gzip</code> with
+                    <code>q</code> &gt; 0, and the method is not <code>HEAD</code>.</li>
+                  <li lang="vi">Chỉ nén khi <code>Accept-Encoding</code> có <code>gzip</code> với <code>q</code> &gt; 0,
+                    và method không phải <code>HEAD</code>.</li>
+                  <li lang="en">Decides on the <b>first body write</b>, so handlers can still set headers and status.
+                    Skips responses that already have <code>Content-Encoding</code>, status <b>204 / 206 / 304</b>, or
+                    <code>Content-Type: text/event-stream</code>.</li>
+                  <li lang="vi">Quyết định ở <b>lần ghi body đầu tiên</b>, nên handler vẫn đặt được header và status. Bỏ
+                    qua response đã có <code>Content-Encoding</code>, status <b>204 / 206 / 304</b>, hoặc
+                    <code>Content-Type: text/event-stream</code>.</li>
+                  <li lang="en">When compressing: sets <code>Content-Encoding: gzip</code> and removes
+                    <code>Content-Length</code>. <code>c.Writer.Flush()</code> flushes the gzip buffer first.</li>
+                  <li lang="vi">Khi nén: đặt <code>Content-Encoding: gzip</code> và xoá <code>Content-Length</code>.
+                    <code>c.Writer.Flush()</code> đẩy buffer gzip ra trước.</li>
+                </ul>
+              </div>
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">type</span><span
+                    class="jd-sym-name">GzipOptions</span><span class="jd-pill">gzip.go</span></div>
+                <div class="jd-tablewrap">
+                  <table class="jd-params">
+                    <tr>
+                      <th>field</th>
+                      <th><span lang="en">type · default</span><span lang="vi">kiểu · mặc định</span></th>
+                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+                    </tr>
+                    <tr>
+                      <td>Level</td>
+                      <td>int · <code>gzip.DefaultCompression</code></td>
+                      <td><span lang="en"><code>gzip.HuffmanOnly</code>, <code>gzip.BestSpeed</code> …
+                          <code>gzip.BestCompression</code>. 0 or an invalid value falls back to the
+                          default.</span><span lang="vi"><code>gzip.HuffmanOnly</code>, <code>gzip.BestSpeed</code> …
+                          <code>gzip.BestCompression</code>. 0 hoặc giá trị không hợp lệ sẽ dùng mặc định.</span></td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <p class="jd-hint" style="margin-top:14px" lang="en">Try it — compression only happens when the request
+              carries <code>Accept-Encoding: gzip</code>:</p>
+            <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — chỉ nén khi request có
+              <code>Accept-Encoding: gzip</code>:</p>
+            <div class="jd-term" data-copy="commands">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · kiểm tra header nén</span></div>
+              <pre data-hl="bash">
+# headers only: look for Content-Encoding: gzip and Vary: Accept-Encoding
+$ curl -s -D - -o /dev/null localhost:8080/api/v1/users -H "Authorization: Bearer $TOKEN" \
+    -H 'Accept-Encoding: gzip'
+</pre>
+            </div>
+            <div class="jd-term" data-copy="commands" style="margin-top:10px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · uncompressed bytes</span></div>
+              <pre data-hl="bash">
+# compare bytes on the wire (uncompressed)
+$ curl -s -o /dev/null -w 'uncompressed: %{size_download} bytes\n' localhost:8080/api/v1/users -H "Authorization: Bearer $TOKEN"
+</pre>
+            </div>
+            <div class="jd-term" data-copy="commands" style="margin-top:10px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · gzip compressed bytes</span></div>
+              <pre data-hl="bash">
+# compare bytes on the wire (gzip)
+$ curl -s -o /dev/null -w 'gzip: %{size_download} bytes\n' localhost:8080/api/v1/users -H "Authorization: Bearer $TOKEN" \
+    -H 'Accept-Encoding: gzip'
+</pre>
+            </div>
+            <div class="jd-term" data-copy="commands" style="margin-top:10px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · tải và giải nén</span></div>
+              <pre data-hl="bash">
+# --compressed sends the header and decompresses for you
+$ curl -s --compressed localhost:8080/api/v1/users -H "Authorization: Bearer $TOKEN" | jq
+</pre>
+            </div>
+          </div>
+        </div>
+
+        <h3><span lang="en">What the rejections look like</span><span lang="vi">Các response từ chối trông thế
+            nào</span></h3>
+        <div class="jd-grid-2">
+          <div class="jd-term">
+            <div class="jd-term-bar"><i></i><i></i><i></i><span>401 · BearerAuth, no token</span></div>
+            <pre data-hl="json">
+{
+  "status": "error",
+  "message": "Authentication token is invalid or expired",
+  "api_info": {
+    "trace_id": "…",
+    "timestamp": "…",
+    "latency": "…",
+    "version": "…",
+    "env": "…"
+  }
+}
+</pre>
+          </div>
+          <div>
+            <div class="jd-tablewrap">
+              <table class="jd-params c-purple">
+                <tr>
+                  <th>status</th>
+                  <th>key</th>
+                  <th>message</th>
+                  <th><span lang="en">from</span><span lang="vi">từ</span></th>
+                </tr>
+                <tr>
+                  <td>401</td>
+                  <td>unauthorized_token</td>
+                  <td>Authentication token is invalid or expired</td>
+                  <td>BearerAuth</td>
+                </tr>
+                <tr>
+                  <td>403</td>
+                  <td>forbidden_internal_access</td>
+                  <td>Forbidden internal system access</td>
+                  <td>RequireSecret</td>
+                </tr>
+                <tr>
+                  <td>404</td>
+                  <td>api_not_found</td>
+                  <td>API is not found</td>
+                  <td>RoutePatterns</td>
+                </tr>
+                <tr>
+                  <td>413</td>
+                  <td>request_body_too_large</td>
+                  <td>Request body exceeds the maximum allowed size</td>
+                  <td>Payload</td>
+                </tr>
+                <tr>
+                  <td>429</td>
+                  <td>too_many_requests</td>
+                  <td>Too many requests. Please try again later.</td>
+                  <td>Limiter</td>
+                </tr>
+                <tr>
+                  <td>500</td>
+                  <td>internal_server_error</td>
+                  <td>Internal Server Error</td>
+                  <td>Recover · BearerAuth</td>
+                </tr>
+                <tr>
+                  <td>204</td>
+                  <td>—</td>
+                  <td><span lang="en">(empty body)</span><span lang="vi">(body rỗng)</span></td>
+                  <td>CORS · OPTIONS</td>
+                </tr>
+              </table>
+            </div>
+            <p class="jd-sub" lang="en">All of these use <code>responder.Send</code> (no <code>"code"</code> field)
+              except an <code>AppError</code> returned by your Authenticator. The response envelope is described on <a
+                href="response.html">response</a>.</p>
+            <p class="jd-sub" lang="vi">Tất cả đều dùng <code>responder.Send</code> (không có trường
+              <code>"code"</code>) trừ <code>AppError</code> do Authenticator của bạn trả về. Envelope response được mô
+              tả ở <a href="response.html">response</a>.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 5. IN JUNGO -->
+      <section id="jungo" class="jd-section c-orange">
+        <div class="jd-section-head">
+          <span class="jd-badge">5</span>
+          <div>
+            <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+            <p class="jd-sub" lang="en">Paths are relative to <code>jungo/internal</code>.</p>
+            <p class="jd-sub" lang="vi">Đường dẫn tính từ <code>jungo/internal</code>.</p>
+          </div>
+        </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-orange">
+            <tr>
+              <th>file</th>
+              <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
+            </tr>
+            <tr>
+              <td>router/router.go</td>
+              <td lang="en"><code>registerGlobalMiddlewares</code>: the 10-step chain above; RoutePatterns gets the <code>uuid</code> / <code>id</code> /
+                <code>slug</code> rules. HTTPLogger is the zap logger
+                named <code>http</code>, Limiter gets the one named <code>limiter</code>; Notifier is
+                <code>optional:"true"</code>.</td>
+              <td lang="vi"><code>registerGlobalMiddlewares</code>: chuỗi 10 bước ở trên; RoutePatterns nhận rule <code>uuid</code> / <code>id</code> /
+                <code>slug</code>. HTTPLogger là zap logger tên
+                <code>http</code>, Limiter nhận logger tên <code>limiter</code>; Notifier là
+                <code>optional:"true"</code>.</td>
+            </tr>
+            <tr>
+              <td>app/fx.go</td>
+              <td lang="en"><code>provideGin</code>: <code>gin.New()</code> +
+                <code>SetTrustedProxies(SECURITY_TRUSTED_PROXIES)</code>, or <code>nil</code> when unset — what Limiter
+                and AccessLog see as the client IP.</td>
+              <td lang="vi"><code>provideGin</code>: <code>gin.New()</code> +
+                <code>SetTrustedProxies(SECURITY_TRUSTED_PROXIES)</code>, hoặc <code>nil</code> khi không đặt — quyết
+                định IP client mà Limiter và AccessLog nhìn thấy.</td>
+            </tr>
+            <tr>
+              <td>features/auth/module.go</td>
+              <td lang="en"><code>newAccessAuthenticator</code> wraps <code>AuthService.AuthenticateAccess</code> in
+                <code>AuthenticatorFunc[*domain.Identity]</code>.</td>
+              <td lang="vi"><code>newAccessAuthenticator</code> bọc <code>AuthService.AuthenticateAccess</code> trong
+                <code>AuthenticatorFunc[*domain.Identity]</code>.</td>
+            </tr>
+            <tr>
+              <td>features/auth/router/v1/auth_router.go</td>
+              <td lang="en">BearerAuth on <code>/api/v1/auth/logout</code>, <code>/logout-all</code>, <code>/me</code>,
+                <code>/sessions</code>; login and refresh stay public.</td>
+              <td lang="vi">BearerAuth cho <code>/api/v1/auth/logout</code>, <code>/logout-all</code>, <code>/me</code>,
+                <code>/sessions</code>; login và refresh vẫn công khai.</td>
+            </tr>
+            <tr>
+              <td>features/user/router/v1/user_router.go</td>
+              <td lang="en">BearerAuth on every <code>/api/v1/users</code> route.</td>
+              <td lang="vi">BearerAuth cho mọi route <code>/api/v1/users</code>.</td>
+            </tr>
+            <tr>
+              <td>features/auth/router/private/auth_router.go</td>
+              <td lang="en">RequireSecret(<code>X-Internal-Secret</code>, <code>AUTH_INTERNAL_SECRET</code>) on
+                <code>/api/internal/auth/*</code> — all 403 while the secret is unset.</td>
+              <td lang="vi">RequireSecret(<code>X-Internal-Secret</code>, <code>AUTH_INTERNAL_SECRET</code>) cho
+                <code>/api/internal/auth/*</code> — luôn 403 khi chưa đặt secret.</td>
+            </tr>
+            <tr>
+              <td>config/config.go</td>
+              <td lang="en">Env variables below.</td>
+              <td lang="vi">Các biến môi trường bên dưới.</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="jd-tablewrap" style="margin-top:8px">
+          <table class="jd-params c-orange">
+            <tr>
+              <th>env</th>
+              <th>default</th>
+              <th><span lang="en">feeds</span><span lang="vi">dùng cho</span></th>
+            </tr>
+            <tr>
+              <td>TRACER_DEBUG_KEY<br>TRACER_DEBUG_VALUE</td>
+              <td>t_debug · 0604</td>
+              <td>TracerDebug, Recover, AccessLog.SkipIf</td>
+            </tr>
+            <tr>
+              <td>API_VERSION<br>API_COMMIT<br>API_ENVIRONMENT</td>
+              <td>v0.1.0 · unknown · development</td>
+              <td>TraceOptions</td>
+            </tr>
+            <tr>
+              <td>CORS_ALLOW_ORIGINS</td>
+              <td>*</td>
+              <td>CORSOptions.AllowOrigins</td>
+            </tr>
+            <tr>
+              <td>CORS_ALLOW_METHODS</td>
+              <td>GET,&#8203;POST,&#8203;PUT,&#8203;PATCH,&#8203;DELETE,&#8203;OPTIONS</td>
+              <td>CORSOptions.AllowMethods</td>
+            </tr>
+            <tr>
+              <td>CORS_ALLOW_HEADERS</td>
+              <td>Content-Type,&#8203;Authorization,&#8203;X-Device-ID</td>
+              <td>CORSOptions.AllowHeaders</td>
+            </tr>
+            <tr>
+              <td>CORS_ALLOW_CREDENTIALS<br>CORS_MAX_AGE</td>
+              <td>true · 86400</td>
+              <td>CORSOptions</td>
+            </tr>
+            <tr>
+              <td>SECURITY_MAX_BODY_SIZE</td>
+              <td>2097152 (2 MiB)</td>
+              <td>PayloadOptions.MaxBodySize</td>
+            </tr>
+            <tr>
+              <td>SECURITY_TRUSTED_PROXIES</td>
+              <td>—</td>
+              <td>gin.SetTrustedProxies</td>
+            </tr>
+            <tr>
+              <td>LIMITER_RPS<br>LIMITER_BURST<br>LIMITER_SHARDS</td>
+              <td>10 · 30 · 64</td>
+              <td>LimiterOptions</td>
+            </tr>
+            <tr>
+              <td>LIMITER_CLEANUP_INTERVAL<br>LIMITER_CLIENT_TTL<br>LIMITER_LOG_TTL</td>
+              <td>1m · 3m · 30s</td>
+              <td>LimiterOptions</td>
+            </tr>
+            <tr>
+              <td>LIMITER_IP_WHITELIST</td>
+              <td>127.0.0.1,::1</td>
+              <td>LimiterOptions.IPWhitelist</td>
+            </tr>
+            <tr>
+              <td>AUTH_INTERNAL_SECRET</td>
+              <td>—</td>
+              <td>RequireSecret, TracerDebug (<code>X-Internal-Secret</code>)</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="jd-term" data-copy="commands" style="margin-top:14px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · security headers &amp; trace id</span></div>
+          <pre data-hl="bash">
+# security headers + X-Trace-Id on every response
+$ curl -i localhost:8080/health
+</pre>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:10px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 401 authentication token</span></div>
+          <pre data-hl="bash">
+# 401 "Authentication token is invalid or expired" (no "code" field)
+$ curl -i localhost:8080/api/v1/users
+</pre>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:10px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 403 secret sai</span></div>
+          <pre data-hl="bash">
+# 403 "Forbidden internal system access"
+$ curl -i -X POST localhost:8080/api/internal/auth/revoke -H 'X-Internal-Secret: wrong'
+</pre>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:10px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · debug report json</span></div>
+          <pre data-hl="bash">
+# debug report: JSON from curl, HTML dashboard in a browser (add the header with ModHeader or similar)
+$ curl -s "localhost:8080/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" -H 'Authorization: Bearer &lt;access_token&gt;' \
+    -H 'X-Internal-Secret: &lt;AUTH_INTERNAL_SECRET&gt;' | jq
+</pre>
+        </div>
+      </section>
+
+      <!-- ============================================================ 6. GOTCHAS -->
+      <section id="gotchas" class="jd-section c-red">
+        <div class="jd-section-head">
+          <span class="jd-badge">!</span>
+          <div>
+            <h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2>
+          </div>
+        </div>
+        <div class="jd-explain" style="margin-top:16px">
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">Order is
+              behaviour</span><span class="x" lang="en">A middleware only affects what comes after it. In Jungo's order,
+              CORS preflights (204) and Payload's 413 abort <b>before</b> AccessLog, so they are never access-logged;
+              anything that answers before Trace has no trace ID. Recover protects only what runs after it — a panic
+              inside an earlier middleware is not turned into a JSON 500.</span><span class="x" lang="vi">Một middleware
+              chỉ ảnh hưởng tới những gì đứng sau nó. Theo thứ tự của Jungo, preflight CORS (204) và 413 của Payload
+              abort <b>trước</b> AccessLog nên không bao giờ được ghi access log; cái gì trả lời trước Trace sẽ không có
+              trace ID. Recover chỉ bảo vệ những gì chạy sau nó — panic trong một middleware đứng trước không được biến
+              thành JSON 500.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Limiter: zero
+              durations crash</span><span class="x" lang="en"><code>CleanupInterval</code> or <code>LogTTL</code> of 0
+              makes <code>time.NewTicker</code> panic inside a background goroutine, which kills the whole process at
+              startup. Always set both (and <code>ClientTTL</code>).</span><span class="x" lang="vi">Nếu đặt
+              <code>CleanupInterval</code> hoặc <code>LogTTL</code> bằng 0, <code>time.NewTicker</code> sẽ panic trong
+              goroutine nền khiến toàn bộ ứng dụng bị crash ngay khi khởi động. Hãy luôn cấu hình thời gian hợp lệ cho
+              cả hai (cùng với <code>ClientTTL</code>).</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Limiter keys on
+              ClientIP()</span><span class="x" lang="en">Behind a load balancer without
+              <code>SECURITY_TRUSTED_PROXIES</code>, every client has the balancer's IP and shares one bucket. Behind a
+              reverse proxy on the same host, every request comes from <code>127.0.0.1</code> — which is in Jungo's
+              default whitelist, so <b>nothing is limited</b>. Set trusted proxies to your proxy addresses.</span><span
+              class="x" lang="vi">Đứng sau load balancer mà không có <code>SECURITY_TRUSTED_PROXIES</code>, mọi client
+              mang IP của balancer và dùng chung một bucket. Đứng sau reverse proxy cùng máy, mọi request đến từ
+              <code>127.0.0.1</code> — nằm trong whitelist mặc định của Jungo, nên <b>không có gì bị giới hạn</b>. Hãy
+              đặt trusted proxies là địa chỉ proxy của bạn.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Limiter: User-Agent
+              bypass, per process</span><span class="x" lang="en">Any client sending
+              <code>User-Agent: PostmanRuntime/…</code> or <code>GoHttpTest/…</code> skips the limit — the header is
+              client-controlled. Buckets live in process memory: with N instances, a client effectively gets N× the
+              rate.</span><span class="x" lang="vi">Client nào gửi <code>User-Agent: PostmanRuntime/…</code> hoặc
+              <code>GoHttpTest/…</code> đều bỏ qua giới hạn — header này do client tự đặt. Bucket nằm trong bộ nhớ
+              process: với N instance, một client thực tế được N lần tốc độ.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">CORS "*" +
+              credentials</span><span class="x" lang="en">With <code>"*"</code> and <code>AllowCredentials: true</code>
+              (Jungo's defaults), any origin is echoed back with <code>Access-Control-Allow-Credentials: true</code> —
+              every website may make credentialed calls. List real origins in production. Also: disallowed origins are
+              not blocked server-side, and every <code>OPTIONS</code> gets 204.</span><span class="x" lang="vi">Với
+              <code>"*"</code> và <code>AllowCredentials: true</code> (mặc định của Jungo), mọi origin đều được trả lại
+              kèm <code>Access-Control-Allow-Credentials: true</code> — website nào cũng gọi kèm credentials được. Trong
+              production hãy liệt kê origin thật. Ngoài ra: origin không được phép không bị chặn ở server, và mọi
+              <code>OPTIONS</code> đều nhận 204.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Payload buffers
+              everything</span><span class="x" lang="en">The whole body (uploads included — Payload is global) is read
+              into memory, so <code>MaxBodySize</code> is also your upload limit. 0 means "reject every body". A client
+              that disconnects mid-body also gets 413.</span><span class="x" lang="vi">Toàn bộ body (kể cả file upload —
+              Payload là global) được đọc vào bộ nhớ, nên <code>MaxBodySize</code> cũng chính là giới hạn upload. 0
+              nghĩa là "từ chối mọi body". Client ngắt kết nối giữa chừng cũng nhận 413.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">AccessLog masking has
+              limits</span><span class="x" lang="en">Custom <code>SensitiveFields</code> / <code>ExcludedPaths</code>
+              replace the defaults (add the defaults back yourself). The query string is logged raw — never put secrets
+              in URLs. Masking edits the cached payload map in place, after the handler has run.</span><span class="x"
+              lang="vi"><code>SensitiveFields</code> / <code>ExcludedPaths</code> tự đặt sẽ thay thế mặc định (tự thêm
+              lại mặc định nếu cần). Query string được ghi nguyên văn — đừng đặt secret trên URL. Việc che sửa trực tiếp
+              map payload đã cache, sau khi handler chạy xong.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">8</span><span class="w">Debug mode in
+              production</span><span class="x" lang="en">Anyone with the key/value <b>and</b>
+              <code>AUTH_INTERNAL_SECRET</code> gets the full trace (SQL, timings) of any endpoint, and the handler
+              really runs (writes still hit the database). Debug requests are not access-logged. Keep the secret
+              strong; leaving <code>AUTH_INTERNAL_SECRET</code> or <code>TRACER_DEBUG_VALUE</code> empty turns debug
+              mode off.</span><span class="x" lang="vi">Ai có key/value <b>và</b> <code>AUTH_INTERNAL_SECRET</code>
+              đều xem được toàn bộ trace (SQL, thời gian) của mọi endpoint, và handler chạy thật (ghi database vẫn xảy
+              ra). Request debug không được ghi access log. Hãy dùng secret đủ mạnh; để
+              <code>AUTH_INTERNAL_SECRET</code> hoặc <code>TRACER_DEBUG_VALUE</code> rỗng là tắt chế độ debug.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">9</span><span class="w">HSTS needs TLS in
+              Go</span><span class="x" lang="en"><code>Strict-Transport-Security</code> is only sent when Go itself
+              terminated TLS (<code>c.Request.TLS != nil</code>). Behind a TLS-terminating proxy, set HSTS at the
+              proxy.</span><span class="x" lang="vi"><code>Strict-Transport-Security</code> chỉ được gửi khi chính Go xử
+              lý TLS (<code>c.Request.TLS != nil</code>). Đứng sau proxy xử lý TLS thì đặt HSTS ở proxy.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">10</span><span class="w">Trusted
+              inputs</span><span class="x" lang="en">An incoming <code>X-Trace-Id</code> is reused without validation.
+              In an Authenticator, return <code>*response.AppError</code> for bad tokens — a plain
+              <code>errors.New</code> becomes a 500.</span><span class="x" lang="vi"><code>X-Trace-Id</code> gửi lên
+              được dùng lại mà không kiểm tra. Trong Authenticator, hãy trả <code>*response.AppError</code> cho token
+              sai — <code>errors.New</code> thông thường sẽ thành 500.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">11</span><span class="w">Gzip: compress
+              once</span><span class="x" lang="en">If nginx, an ingress or a CDN in front already compresses, leave
+              <code>Gzip</code> out — it costs CPU for nothing. Put it after CORS so preflights skip it; responses
+              written by middleware before it (TracerDebug's dashboard) are not compressed. <code>c.Writer.Size()</code>
+              in AccessLog reports compressed bytes.</span><span class="x" lang="vi">Nếu nginx, ingress hoặc CDN phía
+              trước đã nén, đừng dùng <code>Gzip</code> — tốn CPU vô ích. Đặt nó sau CORS để preflight không đi qua;
+              response do middleware đứng trước ghi (dashboard của TracerDebug) không được nén.
+              <code>c.Writer.Size()</code> trong AccessLog sẽ là số byte đã nén.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">12</span><span class="w">RoutePatterns: names
+              are global</span><span class="x" lang="en">A rule applies to every route with that parameter name. A
+              route that takes free text in <code>:id</code> or <code>:slug</code> starts returning 404 — rename the
+              parameter (<code>:key</code>, <code>:code</code>).</span><span class="x" lang="vi">Rule áp dụng cho mọi
+              route có param cùng tên. Route nhận chuỗi tự do qua <code>:id</code> hay <code>:slug</code> sẽ bắt đầu trả
+              404 — hãy đổi tên param (<code>:key</code>, <code>:code</code>).</span></div>
+        </div>
+      </section>
+
+      <footer class="jd-footer">
+        <span>Jundoc · Junkit · middleware</span>
+        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
+              Junkit</span></a></span>
+      </footer>
+    </article>
+  </div>
+
+  <script>
+    document.addEventListener("jd:ready", function () {
+      var req = "blue", res = "green";
+      JD.player(document.getElementById("mw-player"), [
+        {
+          node: "client", token: "GET /api/v1/users", color: req, ms: 2200,
+          text: {
+            en: "<b>Client</b> sends a request. <code>r.Use(a, b, c)</code> nests them: <code>a</code> runs first on the way in and last on the way out.",
+            vi: "<b>Client</b> gửi request. <code>r.Use(a, b, c)</code> lồng chúng vào nhau: <code>a</code> chạy đầu tiên lúc vào và cuối cùng lúc ra."
+          }
+        },
+        {
+          node: "mw1", token: "?t_debug", color: req,
+          text: {
+            en: "<b>TracerDebug</b> — no matching <code>?key=value</code> + <code>X-Internal-Secret</code>, so it just calls <code>c.Next()</code>. If both matched, it would start a tracer and swallow the real body.",
+            vi: "<b>TracerDebug</b> — không có <code>?key=value</code> + <code>X-Internal-Secret</code> khớp, nên chỉ chuyển tiếp bằng <code>c.Next()</code>. Nếu cả hai khớp, middleware sẽ bật tracer và nuốt body thật (handler vẫn chạy)."
+          }
+        },
+        {
+          node: "mw2", token: "headers", color: req,
+          text: {
+            en: "<b>Security</b> — sets <code>X-Frame-Options: DENY</code>, <code>X-Content-Type-Options: nosniff</code>, <code>Referrer-Policy</code>, … right now, so every later answer has them.",
+            vi: "<b>Security</b> — đặt <code>X-Frame-Options: DENY</code>, <code>X-Content-Type-Options: nosniff</code>, <code>Referrer-Policy</code>, … ngay lúc này, để mọi câu trả lời sau đều có."
+          }
+        },
+        {
+          node: "mw3", token: "X-Trace-Id", color: req,
+          text: {
+            en: "<b>Trace</b> — reuses or generates the trace ID, sets <code>X-Trace-Id</code>, stores start time / version / env for <code>api_info</code>.",
+            vi: "<b>Trace</b> — dùng lại hoặc sinh trace ID, đặt <code>X-Trace-Id</code>, lưu thời điểm bắt đầu / version / env cho <code>api_info</code>."
+          }
+        },
+        {
+          node: "mw4", token: "Origin", color: req,
+          text: {
+            en: "<b>CORS</b> — adds allow-origin / methods / headers. An <code>OPTIONS</code> preflight would stop here with <code>204</code>.",
+            vi: "<b>CORS</b> — thêm allow-origin / methods / headers. Preflight <code>OPTIONS</code> sẽ dừng ở đây với <code>204</code>."
+          }
+        },
+        {
+          node: "mw5", token: "Accept-Encoding", color: req,
+          text: {
+            en: "<b>Gzip</b> — the client sent <code>Accept-Encoding: gzip</code>, so it swaps <code>c.Writer</code> for a compressing writer. Nothing is compressed yet.",
+            vi: "<b>Gzip</b> — client gửi <code>Accept-Encoding: gzip</code>, nên nó thay <code>c.Writer</code> bằng writer có nén. Chưa nén gì cả."
+          }
+        },
+        {
+          node: "mw6", token: "body", color: req,
+          text: {
+            en: "<b>Payload</b> — reads the body once (max <code>MaxBodySize</code>, else <code>413</code>) and caches it for <code>GetPayload</code>.",
+            vi: "<b>Payload</b> — đọc body một lần (tối đa <code>MaxBodySize</code>, vượt thì <code>413</code>) và cache cho <code>GetPayload</code>."
+          }
+        },
+        {
+          node: "mw7", token: "start timer", color: req,
+          text: {
+            en: "<b>AccessLog</b> — starts a timer and tees the response body; it writes its log line later, on the way out.",
+            vi: "<b>AccessLog</b> — bắt đầu đếm giờ và chép response body; nó ghi log sau, lúc đi ra."
+          }
+        },
+        {
+          node: "mw8", token: "1 token", color: req,
+          text: {
+            en: "<b>Limiter</b> — takes one token from this IP's bucket. Empty bucket → <code>429</code> and abort.",
+            vi: "<b>Limiter</b> — lấy một token từ bucket của IP này. Hết token → <code>429</code> và abort."
+          }
+        },
+        {
+          node: "mwrp", token: "params", color: req,
+          text: {
+            en: "<b>RoutePatterns</b> — checks every path parameter that has a rule (<code>:uuid</code>, <code>:id</code>, <code>:slug</code>). <code>/users</code> has none, so it passes. A bad value → <code>404 api_not_found</code> and abort.",
+            vi: "<b>RoutePatterns</b> — kiểm tra mọi path param có rule (<code>:uuid</code>, <code>:id</code>, <code>:slug</code>). <code>/users</code> không có param nào nên đi qua. Giá trị sai → <code>404 api_not_found</code> và abort."
+          }
+        },
+        {
+          node: "mw9", token: "defer recover()", color: req,
+          text: {
+            en: "<b>Recover</b> — arms <code>defer recover()</code> around everything that follows.",
+            vi: "<b>Recover</b> — đặt <code>defer recover()</code> bao quanh mọi thứ phía sau."
+          }
+        },
+        {
+          node: "group", token: "Bearer …", color: req, ms: 2200,
+          text: {
+            en: "<b>BearerAuth</b> on the <code>/users</code> group — no / bad token → <code>401</code>; else the identity is stored with <code>security.SetIdentity</code>.",
+            vi: "<b>BearerAuth</b> trên group <code>/users</code> — không có / sai token → <code>401</code>; ngược lại identity được lưu bằng <code>security.SetIdentity</code>."
+          }
+        },
+        {
+          node: "handler", token: "200", color: res, ms: 2200,
+          text: {
+            en: "<b>Handler</b> reads <code>MustGetIdentity</code> / <code>GetPayload</code> and answers through the responder.",
+            vi: "<b>Handler</b> đọc <code>MustGetIdentity</code> / <code>GetPayload</code> và trả lời qua responder."
+          }
+        },
+        {
+          node: "mw9", token: "no panic", color: res,
+          text: {
+            en: "Back out: <b>Recover</b> sees no panic. With a panic it would log, alert and answer <code>500</code>.",
+            vi: "Đi ra: <b>Recover</b> không thấy panic. Nếu có panic, nó sẽ log, cảnh báo và trả <code>500</code>."
+          }
+        },
+        {
+          node: "mw7", token: "HTTP_ACCESS_LOG", color: res,
+          text: {
+            en: "<b>AccessLog</b> now knows the final status and writes one masked entry (Info / Warn for 4xx / Error for 5xx).",
+            vi: "<b>AccessLog</b> giờ biết status cuối và ghi một entry đã che dữ liệu nhạy cảm (Info / Warn cho 4xx / Error cho 5xx)."
+          }
+        },
+        {
+          node: "mw5", token: "gzip", color: res,
+          text: {
+            en: "<b>Gzip</b> — the body went through it as it was written; it closes the gzip stream. The response carries <code>Content-Encoding: gzip</code> and <code>Vary: Accept-Encoding</code>.",
+            vi: "<b>Gzip</b> — body đã đi qua nó và được nén ngay khi ghi; giờ nó đóng luồng gzip. Response có <code>Content-Encoding: gzip</code> và <code>Vary: Accept-Encoding</code>."
+          }
+        },
+        {
+          node: "mw1", token: "pass", color: res,
+          text: {
+            en: "<b>TracerDebug</b> — not active, nothing to do. When active, this is where it replaces the response with the dashboard (HTML or JSON).",
+            vi: "<b>TracerDebug</b> — không bật, không làm gì. Khi bật, đây là lúc nó thay response bằng dashboard (HTML hoặc JSON)."
+          }
+        },
+        {
+          node: "client", token: "200 + X-Trace-Id", color: res,
+          text: {
+            en: "The <b>client</b> gets the gzipped JSON plus the security, CORS and <code>X-Trace-Id</code> headers.",
+            vi: "<b>Client</b> nhận JSON đã nén gzip cùng các header bảo mật, CORS và <code>X-Trace-Id</code>."
+          }
+        }
+      ]);
+    });
+  </script>
+</body>
+
+</html>

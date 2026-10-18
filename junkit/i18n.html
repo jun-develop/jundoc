@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit i18n · Jundoc</title>
+  <meta name="description"
+    content="junkit/i18n: a thread-safe Translator with per-language catalogs, a built-in English catalog and a requested → default → key fallback chain.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+
+<body>
+  <div id="jd-app" data-root="..">
+    <article class="jd-content">
+
+      <!-- ============================================================ HERO -->
+      <header class="jd-hero"
+        style="background:radial-gradient(1000px 380px at 0% 0%, rgba(244,114,182,.45), transparent 60%),linear-gradient(135deg,#500724,#9d174d 55%,#6d28d9)">
+        <div class="jd-eyebrow">Junkit · i18n</div>
+        <h1>i18n</h1>
+        <p lang="en">Turns message keys like <code>"user_not_found"</code> into text in the right language, with a safe
+          fallback: requested language → default language → the key itself.</p>
+        <p lang="vi">Biến các key thông điệp như <code>"user_not_found"</code> thành văn bản đúng ngôn ngữ, với cơ chế
+          dự phòng an toàn: ngôn ngữ được yêu cầu → ngôn ngữ mặc định → chính cái key.</p>
+        <div class="jd-chips">
+          <span class="jd-chip">github.com/jun-develop/junkit/i18n</span>
+          <span class="jd-chip"><span lang="en">Fx: <code>i18n.Module</code> provides
+              <code>*i18n.Translator</code></span><span lang="vi">Fx: <code>i18n.Module</code> cung cấp
+              <code>*i18n.Translator</code></span></span>
+          <span class="jd-chip"><span lang="en">built-in English catalog (62 keys)</span><span lang="vi">có sẵn catalog
+              tiếng Anh (62 key)</span></span>
+          <span class="jd-chip"><span lang="en">depends on go.uber.org/fx only</span><span lang="vi">chỉ phụ thuộc
+              go.uber.org/fx</span></span>
+        </div>
+      </header>
+
+      <!-- ============================================================ 1. WHAT -->
+      <section id="what" class="jd-section c-pink">
+        <div class="jd-section-head">
+          <span class="jd-badge">1</span>
+          <div>
+            <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
+            <p class="jd-sub" lang="en">One shared <code>Translator</code> holds a map
+              <code>language → key → message</code>. Features add their keys at start-up; <code>response</code> and
+              <code>validation</code> look them up on every request.</p>
+            <p class="jd-sub" lang="vi">Một <code>Translator</code> dùng chung giữ map
+              <code>ngôn ngữ → key → thông điệp</code>. Các feature thêm key của mình lúc khởi động;
+              <code>response</code> và <code>validation</code> tra cứu chúng ở mỗi request.</p>
+          </div>
+        </div>
+        <div class="jd-flow" style="margin-top:22px" data-wires='[
+      {"from":"i1","to":"i2","color":"pink"},
+      {"from":"i2","to":"i3","color":"pink"},
+      {"from":"i3","to":"i4","color":"pink"}]'>
+          <div class="jd-node is-tint c-pink" data-node="i1"><span class="k">1 · fill</span><span class="t mono"
+              style="font-size:15px">AddTranslations</span>
+            <div class="d" lang="en">Built-in English catalog + each feature's <code>registerTranslations</code>. Later
+              calls overwrite keys.</div>
+            <div class="d" lang="vi">Catalog tiếng Anh có sẵn + <code>registerTranslations</code> của từng feature. Lần
+              gọi sau ghi đè key.</div>
+          </div>
+          <div class="jd-node is-tint c-purple" data-node="i2"><span class="k">2 · store</span><span class="t mono"
+              style="font-size:15px">*Translator</span>
+            <div class="d" lang="en">Thread-safe (<code>sync.RWMutex</code>); default language <code>"en"</code>.</div>
+            <div class="d" lang="vi">An toàn đa luồng (<code>sync.RWMutex</code>); ngôn ngữ mặc định <code>"en"</code>.
+            </div>
+          </div>
+          <div class="jd-node is-tint c-pink" data-node="i3"><span class="k">3 · resolve</span><span class="t mono"
+              style="font-size:15px">GetMessage</span>
+            <div class="d" lang="en">lang (or default if empty) → default language → key. Applies
+              <code>fmt.Sprintf</code> only if args were given and the text has a <code>%</code>.</div>
+            <div class="d" lang="vi">lang (hoặc mặc định nếu rỗng) → ngôn ngữ mặc định → key. Chỉ gọi
+              <code>fmt.Sprintf</code> khi có args và văn bản chứa <code>%</code>.</div>
+          </div>
+          <div class="jd-node is-tint c-blue" data-node="i4"><span class="k">4 · use</span><span class="t mono"
+              style="font-size:15px">"message": "…"</span>
+            <div class="d" lang="en"><code>response.Responder</code> fills the JSON <code>message</code>;
+              <code>validation.Validator</code> builds field errors.</div>
+            <div class="d" lang="vi"><code>response.Responder</code> điền <code>message</code> trong JSON;
+              <code>validation.Validator</code> tạo lỗi cho từng field.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 2. SETUP -->
+      <section id="setup" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">2</span>
+          <div>
+            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối vào app</span></h2>
+            <p class="jd-sub" lang="en">No options: the module only provides a <code>*i18n.Translator</code>. Each
+              feature then registers its own keys.</p>
+            <p class="jd-sub" lang="vi">Không có option: module chỉ cung cấp một <code>*i18n.Translator</code>. Sau đó
+              mỗi feature tự đăng ký key của mình.</p>
+          </div>
+        </div>
+        <div class="jd-tabs c-purple" style="margin-top:18px">
+          <div class="jd-tablist">
+            <button class="jd-tab" type="button" aria-selected="true"><span lang="en">with Fx (Jungo)</span><span
+                lang="vi">với Fx (Jungo)</span></button>
+            <button class="jd-tab" type="button" aria-selected="false"><span lang="en">without Fx</span><span
+                lang="vi">Không dùng Fx</span></button>
+          </div>
+          <div class="jd-tabpanel">
+            <div style="display:grid;gap:14px">
+              <div class="jd-term">
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go</span></div>
+                <pre data-hl="go">
+// CoreModules(cfg) …
+fx.Provide(provideResponseOptions),
+i18n.Module,
+response.Module,
+
+fx.Provide(provideValidationOptions),
+validation.Module,
+
+// provideResponseOptions builds response.Options from cfg.
+func provideResponseOptions(cfg *config.Config) response.Options {
+    return response.Options{Language: cfg.Language}
+}
+</pre>
+              </div>
+              <div class="jd-term">
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/features/user/module.go</span></div>
+                <pre data-hl="go">
+var Module = fx.Module("user",
+    // …
+    fx.Invoke(registerTranslations),
+)
+
+// registerTranslations registers domain-specific translation messages.
+func registerTranslations(translator *i18n.Translator) {
+    translator.AddTranslations(map[string]map[string]string{
+        i18n.LangEN: {
+            "user_not_found":       "User not found",
+            "email_already_exists": "This email is already registered",
+            // …
+        },
+    })
+}
+</pre>
+              </div>
+            </div>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-term" data-copy>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
+              <pre data-hl="go">
+t := i18n.NewTranslator() // already contains the English catalog
+t.AddTranslations(map[string]map[string]string{
+    i18n.LangVI: {"required": "%[1]s là bắt buộc"},
+})
+fmt.Println(t.GetMessage("required", i18n.LangVI, "email")) // email là bắt buộc
+</pre>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:22px"><span lang="en">Settings</span><span lang="vi">Thiết lập</span></h3>
+        <p class="jd-sub" lang="en">There is no <code>Options</code> struct. These are the only knobs:</p>
+        <p class="jd-sub" lang="vi">Không có struct <code>Options</code>. Đây là những thứ duy nhất có thể chỉnh:</p>
+        <div class="jd-tablewrap">
+          <table class="jd-params c-purple">
+            <tr>
+              <th><span lang="en">setting</span><span lang="vi">thiết lập</span></th>
+              <th><span lang="en">set with</span><span lang="vi">đặt bằng</span></th>
+              <th><span lang="en">default</span><span lang="vi">mặc định</span></th>
+              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+            </tr>
+            <tr>
+              <td>default language</td>
+              <td><code>SetDefaultLang</code></td>
+              <td><code>"en"</code> (<code>LangEN</code>)</td>
+              <td lang="en">Used when <code>GetMessage</code> gets an empty <code>lang</code>, and as the fallback when
+                a key is missing in the requested language. <code>""</code> resets it to <code>"en"</code>.</td>
+              <td lang="vi">Dùng khi <code>GetMessage</code> nhận <code>lang</code> rỗng, và là ngôn ngữ dự phòng khi
+                key không có trong ngôn ngữ được yêu cầu. <code>""</code> đặt lại về <code>"en"</code>.</td>
+            </tr>
+            <tr>
+              <td>catalogs</td>
+              <td><code>AddTranslations</code></td>
+              <td lang="en">62 English keys (see <a href="#api">API</a>)</td>
+              <td lang="vi">62 key tiếng Anh (xem <a href="#api">API</a>)</td>
+              <td lang="en">Merged per language; same key → overwritten.</td>
+              <td lang="vi">Gộp theo từng ngôn ngữ; trùng key → bị ghi đè.</td>
+            </tr>
+            <tr>
+              <td>request language</td>
+              <td lang="en"><code>lang</code> argument of <code>GetMessage</code></td>
+              <td lang="vi">tham số <code>lang</code> của <code>GetMessage</code></td>
+              <td>—</td>
+              <td lang="en">In Jungo it is fixed at start-up: <code>response.Options.Language</code> and
+                <code>validation.Options.Language</code> both come from <code>API_LANGUAGE</code> (default
+                <code>en</code>).</td>
+              <td lang="vi">Trong Jungo nó cố định lúc khởi động: <code>response.Options.Language</code> và
+                <code>validation.Options.Language</code> đều lấy từ <code>API_LANGUAGE</code> (mặc định
+                <code>en</code>).</td>
+            </tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============================================================ 3. QUICK START -->
+      <section id="quick" class="jd-section c-pink">
+        <div class="jd-section-head">
+          <span class="jd-badge">3</span>
+          <div>
+            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <p class="jd-sub" lang="en">Register keys for a feature, then resolve them. Hover an explanation to light up
+              its lines.</p>
+            <p class="jd-sub" lang="vi">Đăng ký key cho một feature rồi tra cứu chúng. Rê chuột vào giải thích để làm
+              sáng các dòng tương ứng.</p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <div class="jd-sticky">
+              <div class="jd-term" data-copy>
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>order/module.go</span></div>
+                <pre data-hl="go" id="code-quick">
+func registerTranslations(t *i18n.Translator) {
+    t.AddTranslations(map[string]map[string]string{
+        i18n.LangEN: {
+            "order_missing": "Order not found",
+            "order_total":   "Total of %[1]s: %[2]s",
+        },
+        i18n.LangVI: {
+            "order_missing": "Không thấy đơn hàng",
+        },
+    })
+}
+
+// fx.New(i18n.Module, fx.Invoke(registerTranslations), …)
+
+func demo(t *i18n.Translator) {
+    // "Không thấy đơn hàng"
+    t.GetMessage("order_missing", i18n.LangVI)
+    // "Total of A-17: 42" (taken from en)
+    t.GetMessage("order_total", i18n.LangVI, "A-17", "42")
+    // "email is required" (built-in catalog)
+    t.GetMessage("required", "", "email")
+    // "no_such_key"
+    t.GetMessage("no_such_key", i18n.LangEN)
+}
+</pre>
+              </div>
+            </div>
+          </div>
+          <div class="jd-explain">
+            <div class="jd-ex c-pink" data-code="#code-quick" data-show="1-11"><span class="n">1</span><span
+                class="w">AddTranslations</span><span class="x" lang="en"><code>map[language]map[key]message</code>.
+                Messages are <code>fmt</code> formats; indexed verbs like <code>%[1]s</code> let each language reorder
+                the arguments.</span><span class="x" lang="vi"><code>map[ngôn ngữ]map[key]thông điệp</code>. Thông điệp
+                là format của <code>fmt</code>; verb có chỉ số như <code>%[1]s</code> cho phép mỗi ngôn ngữ đổi thứ tự
+                tham số.</span></div>
+            <div class="jd-ex c-pink" data-code="#code-quick" data-show="13"><span class="n">2</span><span
+                class="w">fx.Invoke</span><span class="x" lang="en">Run it once at start-up, typically from the
+                feature's own Fx module.</span><span class="x" lang="vi">Chạy một lần lúc khởi động, thường từ Fx module
+                của chính feature.</span></div>
+            <div class="jd-ex c-pink" data-code="#code-quick" data-show="16-17"><span class="n">3</span><span
+                class="w">requested language</span><span class="x" lang="en">Found in <code>vi</code> → returned as is
+                (no args, so no formatting).</span><span class="x" lang="vi">Có trong <code>vi</code> → trả nguyên văn
+                (không có args nên không format).</span></div>
+            <div class="jd-ex c-pink" data-code="#code-quick" data-show="18-19"><span class="n">4</span><span
+                class="w">fallback to default</span><span class="x" lang="en">Missing in <code>vi</code> → taken from
+                the default language (<code>en</code>), then formatted with the args.</span><span class="x"
+                lang="vi">Không có trong <code>vi</code> → lấy từ ngôn ngữ mặc định (<code>en</code>), rồi format với
+                args.</span></div>
+            <div class="jd-ex c-pink" data-code="#code-quick" data-show="20-21"><span class="n">5</span><span
+                class="w">empty lang · built-ins</span><span class="x" lang="en"><code>""</code> means the default
+                language. <code>required</code> comes from the built-in catalog.</span><span class="x"
+                lang="vi"><code>""</code> nghĩa là ngôn ngữ mặc định. <code>required</code> đến từ catalog có
+                sẵn.</span></div>
+            <div class="jd-ex c-pink" data-code="#code-quick" data-show="22-23"><span class="n">6</span><span
+                class="w">unknown key</span><span class="x" lang="en">Never panics, never empty: the key itself comes
+                back (args are dropped).</span><span class="x" lang="vi">Không bao giờ panic, không bao giờ rỗng: trả
+                lại chính cái key (args bị bỏ).</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 4. TRY IT -->
+      <section id="try" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">4</span>
+          <div>
+            <h2><span lang="en">Try it</span><span lang="vi">Thử ngay</span></h2>
+            <p class="jd-sub" lang="en">Same lookup and fallback as <code>GetMessage</code>. The demo catalog: built-in
+              <code>required</code>, <code>min</code>, <code>app_running</code> (en) plus <code>greeting</code> in en
+              (<code>"Hello, %s!"</code>) and vi (<code>"Xin chào, %s!"</code>). Args are comma-separated and passed as
+              Go strings.</p>
+            <p class="jd-sub" lang="vi">Cùng cách tra cứu và dự phòng như <code>GetMessage</code>. Catalog mẫu:
+              <code>required</code>, <code>min</code>, <code>app_running</code> có sẵn (en) cùng <code>greeting</code>
+              bằng en (<code>"Hello, %s!"</code>) và vi (<code>"Xin chào, %s!"</code>). Args cách nhau bằng dấu phẩy và
+              được truyền dưới dạng string của Go.</p>
+          </div>
+        </div>
+        <div class="jd-calc c-purple" style="margin-top:18px">
+          <label>key <select id="i-key">
+              <option>greeting</option>
+              <option selected>required</option>
+              <option>min</option>
+              <option>app_running</option>
+              <option>no_such_key</option>
+            </select></label>
+          <label>lang <input type="text" id="i-lang" value="vi"></label>
+          <label>SetDefaultLang <select id="i-def">
+              <option value="en" selected>en</option>
+              <option value="vi">vi</option>
+            </select></label>
+          <label>args <input type="text" id="i-args" value="email"></label>
+        </div>
+        <div class="jd-grid-2">
+          <div class="jd-term">
+            <div class="jd-term-bar"><i></i><i></i><i></i><span><span lang="en">lookup</span><span lang="vi">tra
+                  cứu</span></span></div>
+            <pre id="i-trace"></pre>
+          </div>
+          <div class="jd-term">
+            <div class="jd-term-bar"><i></i><i></i><i></i><span>GetMessage(…)</span></div>
+            <pre id="i-out"></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 5. API -->
+      <section id="api" class="jd-section c-pink">
+        <div class="jd-section-head">
+          <span class="jd-badge">5</span>
+          <div>
+            <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from
+              <code>junkit/i18n/i18n.go</code>. All <code>Translator</code> methods are safe for concurrent use.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/i18n/i18n.go</code>. Mọi
+              method của <code>Translator</code> đều an toàn khi dùng đồng thời.</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:18px"><span lang="en">Setup</span><span lang="vi">Khởi tạo</span></h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-pink">
+            <div class="jd-sym-head"><span class="jd-kind">const</span><span class="jd-sym-name">LangEN · LangVI</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">
+const (
+    LangEN = "en"
+    LangVI = "vi"
+)
+</pre>
+            </div>
+            <p lang="en">Language codes. Only <code>LangEN</code> has a built-in catalog; <code>LangVI</code> is just a
+              constant until you add Vietnamese messages. Any other string works as a language code too.</p>
+            <p lang="vi">Mã ngôn ngữ. Chỉ <code>LangEN</code> có catalog sẵn; <code>LangVI</code> chỉ là một hằng số cho
+              tới khi bạn thêm thông điệp tiếng Việt. Chuỗi bất kỳ khác cũng dùng được làm mã ngôn ngữ.</p>
+          </div>
+          <div class="jd-sym c-pink">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Translator</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type Translator struct {
+    // contains unexported fields: a sync.RWMutex,
+    // translations map[string]map[string]string and defaultLang
+}
+</pre>
+            </div>
+            <p lang="en">Holds the catalogs. No exported fields — always create it with <code>NewTranslator</code> (the
+              zero value has a nil map and panics on <code>AddTranslations</code>). Share one instance; it is safe for
+              concurrent reads and writes.</p>
+            <p lang="vi">Giữ các catalog. Không có field export — luôn tạo bằng <code>NewTranslator</code> (giá trị zero
+              có map nil và sẽ panic khi <code>AddTranslations</code>). Dùng chung một instance; an toàn khi đọc và ghi
+              đồng thời.</p>
+          </div>
+          <div class="jd-sym c-pink">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NewTranslator</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">func NewTranslator() *Translator</pre>
+            </div>
+            <p lang="en">Returns a translator with default language <code>"en"</code>, already loaded with the 62
+              built-in English keys listed below.</p>
+            <p lang="vi">Trả về translator với ngôn ngữ mặc định <code>"en"</code>, đã nạp sẵn 62 key tiếng Anh liệt kê
+              bên dưới.</p>
+          </div>
+          <div class="jd-sym c-pink">
+            <div class="jd-sym-head"><span class="jd-kind">var</span><span class="jd-sym-name">Module</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">var Module = fx.Provide(NewTranslator)</pre>
+            </div>
+            <p lang="en">A plain <code>fx.Provide</code> (not an <code>fx.Module</code>): provides one shared
+              <code>*i18n.Translator</code>. Needs nothing from the container.</p>
+            <p lang="vi">Chỉ là <code>fx.Provide</code> (không phải <code>fx.Module</code>): cung cấp một
+              <code>*i18n.Translator</code> dùng chung. Không cần gì từ container.</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:18px"><span lang="en">Methods</span><span lang="vi">Method</span></h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">(*Translator)
+                AddTranslations</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func (t *Translator) AddTranslations(translations map[string]map[string]string)</pre>
+            </div>
+            <p lang="en">Merges <code>language → key → message</code> into the catalogs. New languages are created;
+              existing keys are overwritten; keys not in the call are kept (an <code>en</code>-only update leaves
+              <code>vi</code> untouched). Use it to override built-in English texts too.</p>
+            <p lang="vi">Gộp <code>ngôn ngữ → key → thông điệp</code> vào catalog. Ngôn ngữ mới được tạo; key đã có bị
+              ghi đè; key không có trong lần gọi được giữ nguyên (cập nhật chỉ <code>en</code> không ảnh hưởng
+              <code>vi</code>). Dùng cách này để ghi đè cả văn bản tiếng Anh có sẵn.</p>
+          </div>
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">(*Translator)
+                GetMessage</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func (t *Translator) GetMessage(key string, lang string, args ...any) string</pre>
+            </div>
+            <ol>
+              <li lang="en"><code>lang == ""</code> → use the default language.</li>
+              <li lang="vi"><code>lang == ""</code> → dùng ngôn ngữ mặc định.</li>
+              <li lang="en">Look up <code>key</code> in that language; if missing (and it isn't the default), look in
+                the default language.</li>
+              <li lang="vi">Tìm <code>key</code> trong ngôn ngữ đó; nếu không có (và đó không phải ngôn ngữ mặc định),
+                tìm trong ngôn ngữ mặc định.</li>
+              <li lang="en">Still missing → return <code>key</code> unchanged (args ignored).</li>
+              <li lang="vi">Vẫn không có → trả nguyên <code>key</code> (bỏ qua args).</li>
+              <li lang="en">Found → <code>fmt.Sprintf(message, args...)</code> if <code>len(args) &gt; 0</code> and the
+                message contains <code>%</code>; otherwise the raw message.</li>
+              <li lang="vi">Tìm thấy → <code>fmt.Sprintf(message, args...)</code> nếu <code>len(args) &gt; 0</code> và
+                thông điệp chứa <code>%</code>; ngược lại trả thông điệp thô.</li>
+            </ol>
+            <p lang="en">Never returns an error or an empty string for a known key.</p>
+            <p lang="vi">Không bao giờ trả lỗi, cũng không trả chuỗi rỗng với key đã biết.</p>
+          </div>
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">(*Translator)
+                SetDefaultLang</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func (t *Translator) SetDefaultLang(lang string)</pre>
+            </div>
+            <p lang="en">Sets the fallback language. <code>""</code> resets it to <code>LangEN</code>. Not validated —
+              any string is accepted.</p>
+            <p lang="vi">Đặt ngôn ngữ dự phòng. <code>""</code> đặt lại về <code>LangEN</code>. Không được kiểm tra —
+              chuỗi nào cũng được nhận.</p>
+          </div>
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">(*Translator)
+                GetDefaultLang</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func (t *Translator) GetDefaultLang() string</pre>
+            </div>
+            <p lang="en">Returns the current default language code (<code>"en"</code> after <code>NewTranslator</code>).
+            </p>
+            <p lang="vi">Trả về mã ngôn ngữ mặc định hiện tại (<code>"en"</code> sau <code>NewTranslator</code>).</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:18px"><span lang="en">Built-in English catalog</span><span lang="vi">Catalog tiếng Anh có
+            sẵn</span></h3>
+        <p class="jd-sub" lang="en">Copied from <code>loadValidationTranslations</code> and
+          <code>loadSystemTranslations</code>. <code>%[1]s</code> is usually the field name, <code>%[2]s</code> the rule
+          parameter. Override any of them with <code>AddTranslations</code>.</p>
+        <p class="jd-sub" lang="vi">Chép từ <code>loadValidationTranslations</code> và
+          <code>loadSystemTranslations</code>. <code>%[1]s</code> thường là tên field, <code>%[2]s</code> là tham số của
+          luật. Ghi đè bất kỳ key nào bằng <code>AddTranslations</code>.</p>
+        <div class="jd-tabs c-pink">
+          <div class="jd-tablist">
+            <button class="jd-tab" type="button" aria-selected="true">validation · 23</button>
+            <button class="jd-tab" type="button" aria-selected="false">system · 39</button>
+          </div>
+          <div class="jd-tabpanel">
+            <div class="jd-tablewrap">
+              <table class="jd-params c-pink">
+                <tr>
+                  <th>key</th>
+                  <th>message (en)</th>
+                </tr>
+                <tr>
+                  <td>validation_error</td>
+                  <td><code>Validation error</code></td>
+                </tr>
+                <tr>
+                  <td>gt</td>
+                  <td><code>%[1]s must be greater than %[2]s</code></td>
+                </tr>
+                <tr>
+                  <td>lt</td>
+                  <td><code>%[1]s must be less than %[2]s</code></td>
+                </tr>
+                <tr>
+                  <td>gte</td>
+                  <td><code>%[1]s must be greater than or equal to %[2]s</code></td>
+                </tr>
+                <tr>
+                  <td>lte</td>
+                  <td><code>%[1]s must be less than or equal to %[2]s</code></td>
+                </tr>
+                <tr>
+                  <td>uuid</td>
+                  <td><code>%[1]s must be a valid UUID</code></td>
+                </tr>
+                <tr>
+                  <td>slug</td>
+                  <td><code>%[1]s must only contain lowercase letters, numbers, hyphens, or dots</code></td>
+                </tr>
+                <tr>
+                  <td>min</td>
+                  <td><code>%[1]s must be longer than %[2]s characters</code></td>
+                </tr>
+                <tr>
+                  <td>max</td>
+                  <td><code>%[1]s must be shorter than %[2]s characters</code></td>
+                </tr>
+                <tr>
+                  <td>min_int</td>
+                  <td><code>%[1]s must be greater than %[2]s</code></td>
+                </tr>
+                <tr>
+                  <td>max_int</td>
+                  <td><code>%[1]s must be less than %[2]s</code></td>
+                </tr>
+                <tr>
+                  <td>oneof</td>
+                  <td><code>%[1]s must be one of the values: %[2]s</code></td>
+                </tr>
+                <tr>
+                  <td>required</td>
+                  <td><code>%[1]s is required</code></td>
+                </tr>
+                <tr>
+                  <td>search</td>
+                  <td><code>%[1]s must only contain letters, numbers, and spaces</code></td>
+                </tr>
+                <tr>
+                  <td>email</td>
+                  <td><code>%[1]s must be a valid email format</code></td>
+                </tr>
+                <tr>
+                  <td>date</td>
+                  <td><code>%[1]s must follow the format YYYY-MM-DD</code></td>
+                </tr>
+                <tr>
+                  <td>date_past</td>
+                  <td><code>%[1]s must be a date in the past</code></td>
+                </tr>
+                <tr>
+                  <td>phone_advanced</td>
+                  <td>
+                    <code>%[1]s must contain only digits, optionally starting with + and be 7-15 characters long</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td>datetime</td>
+                  <td><code>%[1]s must follow the format YYYY-MM-DD</code></td>
+                </tr>
+                <tr>
+                  <td>email_advanced</td>
+                  <td><code>%[1]s is invalid or in the forbidden list</code></td>
+                </tr>
+                <tr>
+                  <td>password_strong</td>
+                  <td>
+                    <code>%[1]s must be at least 8 characters including (lowercase, uppercase, number, and special character)</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td>file_ext</td>
+                  <td><code>%[1]s only allows file extensions: %[2]s</code></td>
+                </tr>
+                <tr>
+                  <td>alphanum_dash</td>
+                  <td><code>%[1]s must only contain letters, numbers, hyphens, or underscores</code></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-tablewrap">
+              <table class="jd-params c-pink">
+                <tr>
+                  <th>key</th>
+                  <th>message (en)</th>
+                </tr>
+                <tr>
+                  <td>operation_successful</td>
+                  <td><code>Operation successful</code></td>
+                </tr>
+                <tr>
+                  <td>invalid_request</td>
+                  <td><code>Invalid request</code></td>
+                </tr>
+                <tr>
+                  <td>invalid_type</td>
+                  <td><code>%[1]s must be %[2]s</code></td>
+                </tr>
+                <tr>
+                  <td>invalid_type_value</td>
+                  <td><code>invalid value '%[1]s' for type %[2]s</code></td>
+                </tr>
+                <tr>
+                  <td>invalid_json_syntax</td>
+                  <td><code>Invalid JSON syntax</code></td>
+                </tr>
+                <tr>
+                  <td>type_string</td>
+                  <td><code>string</code></td>
+                </tr>
+                <tr>
+                  <td>type_int</td>
+                  <td><code>integer</code></td>
+                </tr>
+                <tr>
+                  <td>type_int8</td>
+                  <td><code>integer (8-bit)</code></td>
+                </tr>
+                <tr>
+                  <td>type_int16</td>
+                  <td><code>integer (16-bit)</code></td>
+                </tr>
+                <tr>
+                  <td>type_int32</td>
+                  <td><code>integer (32-bit)</code></td>
+                </tr>
+                <tr>
+                  <td>type_int64</td>
+                  <td><code>integer (64-bit)</code></td>
+                </tr>
+                <tr>
+                  <td>type_uint</td>
+                  <td><code>positive integer</code></td>
+                </tr>
+                <tr>
+                  <td>type_uint8</td>
+                  <td><code>positive integer (8-bit)</code></td>
+                </tr>
+                <tr>
+                  <td>type_uint16</td>
+                  <td><code>positive integer (16-bit)</code></td>
+                </tr>
+                <tr>
+                  <td>type_uint32</td>
+                  <td><code>positive integer (32-bit)</code></td>
+                </tr>
+                <tr>
+                  <td>type_uint64</td>
+                  <td><code>positive integer (64-bit)</code></td>
+                </tr>
+                <tr>
+                  <td>type_float32</td>
+                  <td><code>float</code></td>
+                </tr>
+                <tr>
+                  <td>type_float64</td>
+                  <td><code>float</code></td>
+                </tr>
+                <tr>
+                  <td>type_bool</td>
+                  <td><code>boolean</code></td>
+                </tr>
+                <tr>
+                  <td>type_time</td>
+                  <td><code>datetime</code></td>
+                </tr>
+                <tr>
+                  <td>not_found</td>
+                  <td><code>Not found</code></td>
+                </tr>
+                <tr>
+                  <td>api_not_found</td>
+                  <td><code>API is not found</code></td>
+                </tr>
+                <tr>
+                  <td>method_not_found</td>
+                  <td><code>HTTP method is not allowed for this endpoint</code></td>
+                </tr>
+                <tr>
+                  <td>app_running</td>
+                  <td><code>The API is running</code></td>
+                </tr>
+                <tr>
+                  <td>missing_id_param</td>
+                  <td><code>Missing 'id' query parameter</code></td>
+                </tr>
+                <tr>
+                  <td>invalid_uuid</td>
+                  <td><code>Invalid UUID format</code></td>
+                </tr>
+                <tr>
+                  <td>invalid_json</td>
+                  <td><code>Invalid JSON: %[1]s</code></td>
+                </tr>
+                <tr>
+                  <td>tx_failed_begin</td>
+                  <td><code>Failed to begin transaction: %[1]s</code></td>
+                </tr>
+                <tr>
+                  <td>tx_failed_commit</td>
+                  <td><code>Failed to commit transaction: %[1]s</code></td>
+                </tr>
+                <tr>
+                  <td>tx_completed</td>
+                  <td><code>Transaction completed successfully</code></td>
+                </tr>
+                <tr>
+                  <td>debug_data_recorded</td>
+                  <td><code>Debug data recorded. Check debug UI.</code></td>
+                </tr>
+                <tr>
+                  <td>internal_server_error</td>
+                  <td><code>Internal Server Error</code></td>
+                </tr>
+                <tr>
+                  <td>database_connection_error</td>
+                  <td><code>Database connection error</code></td>
+                </tr>
+                <tr>
+                  <td>unauthorized_token</td>
+                  <td><code>Authentication token is invalid or expired</code></td>
+                </tr>
+                <tr>
+                  <td>forbidden_internal_access</td>
+                  <td><code>Forbidden internal system access</code></td>
+                </tr>
+                <tr>
+                  <td>insufficient_permission</td>
+                  <td><code>You do not have permission to perform this action</code></td>
+                </tr>
+                <tr>
+                  <td>too_many_requests</td>
+                  <td><code>Too many requests. Please try again later.</code></td>
+                </tr>
+                <tr>
+                  <td>request_body_too_large</td>
+                  <td><code>Request body exceeds the maximum allowed size</code></td>
+                </tr>
+                <tr>
+                  <td>access_denied</td>
+                  <td><code>Access denied due to suspicious activity or IP restriction</code></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 6. IN JUNGO -->
+      <section id="jungo" class="jd-section c-orange">
+        <div class="jd-section-head">
+          <span class="jd-badge">6</span>
+          <div>
+            <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+            <p class="jd-sub" lang="en">Every <code>message</code> in an API response passes through the translator.</p>
+            <p class="jd-sub" lang="vi">Mọi <code>message</code> trong response của API đều đi qua translator.</p>
+          </div>
+        </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-orange">
+            <tr>
+              <th>file</th>
+              <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
+            </tr>
+            <tr>
+              <td>app/fx.go</td>
+              <td lang="en"><code>i18n.Module</code> next to <code>response.Module</code> and
+                <code>validation.Module</code>; their <code>Options.Language</code> = <code>cfg.Language</code>.</td>
+              <td lang="vi"><code>i18n.Module</code> đặt cạnh <code>response.Module</code> và
+                <code>validation.Module</code>; <code>Options.Language</code> của chúng = <code>cfg.Language</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>config/config.go</td>
+              <td lang="en"><code>Language string `env:"API_LANGUAGE" envDefault:"en"`</code></td>
+              <td lang="vi"><code>Language string `env:"API_LANGUAGE" envDefault:"en"`</code></td>
+            </tr>
+            <tr>
+              <td>features/user/module.go</td>
+              <td lang="en"><code>fx.Invoke(registerTranslations)</code>: English texts for <code>user_not_found</code>,
+                <code>email_already_exists</code>, <code>user_created</code>, <code>users_listed</code>,
+                <code>avatar_uploaded</code>, …</td>
+              <td lang="vi"><code>fx.Invoke(registerTranslations)</code>: văn bản tiếng Anh cho
+                <code>user_not_found</code>, <code>email_already_exists</code>, <code>user_created</code>,
+                <code>users_listed</code>, <code>avatar_uploaded</code>, …</td>
+            </tr>
+            <tr>
+              <td>features/auth/module.go</td>
+              <td lang="en">Same pattern: <code>login_success</code>, <code>invalid_credentials</code>,
+                <code>token_expired</code>, <code>token_reused</code>, …</td>
+              <td lang="vi">Cùng cách làm: <code>login_success</code>, <code>invalid_credentials</code>,
+                <code>token_expired</code>, <code>token_reused</code>, …</td>
+            </tr>
+            <tr>
+              <td>router/router.go</td>
+              <td lang="en">Uses built-in keys through the responder: <code>"api_not_found"</code>,
+                <code>"method_not_found"</code>, <code>"app_running"</code>.</td>
+              <td lang="vi">Dùng key có sẵn qua responder: <code>"api_not_found"</code>,
+                <code>"method_not_found"</code>, <code>"app_running"</code>.</td>
+            </tr>
+            <tr>
+              <td>cmd/scaffold/templates.go</td>
+              <td lang="en"><code>make feature</code> generates a <code>registerTranslations</code> with
+                <code>&lt;name&gt;_not_found</code>, <code>_created</code>, <code>_retrieved</code>,
+                <code>s_listed</code>, <code>_updated</code>, <code>_deleted</code> (path from the repo root).</td>
+              <td lang="vi"><code>make feature</code> sinh ra <code>registerTranslations</code> với
+                <code>&lt;name&gt;_not_found</code>, <code>_created</code>, <code>_retrieved</code>,
+                <code>s_listed</code>, <code>_updated</code>, <code>_deleted</code> (đường dẫn tính từ gốc repo).</td>
+            </tr>
+          </table>
+        </div>
+        <p class="jd-sub" lang="en">Inside Junkit the callers are <code>response/responder.go</code> (every
+          <code>Send…</code> and domain-error message) and <code>validation/validation.go</code> (field errors).</p>
+        <p class="jd-sub" lang="vi">Bên trong Junkit, nơi gọi là <code>response/responder.go</code> (mọi
+          <code>Send…</code> và thông điệp của lỗi domain) và <code>validation/validation.go</code> (lỗi field).</p>
+        <div class="jd-term" data-copy="commands" style="margin-top:10px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · health check</span></div>
+          <pre data-hl="bash">
+$ curl -s localhost:8080/health | jq
+# "message": "The API is running"       ← key "app_running"
+</pre>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:10px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 404 not found</span></div>
+          <pre data-hl="bash">
+$ curl -s localhost:8080/nope | jq
+# "message": "API is not found"         ← key "api_not_found"
+</pre>
+        </div>
+      </section>
+
+      <!-- ============================================================ 7. GOTCHAS -->
+      <section id="gotchas" class="jd-section c-red">
+        <div class="jd-section-head">
+          <span class="jd-badge">!</span>
+          <div>
+            <h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2>
+          </div>
+        </div>
+        <div class="jd-explain" style="margin-top:16px">
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">There is no Vietnamese
+              catalog</span><span class="x" lang="en"><code>LangVI</code> exists, but no <code>vi</code> text ships with
+              Junkit or Jungo. <code>API_LANGUAGE=vi</code> therefore still answers in English (fallback) until you add
+              <code>vi</code> messages.</span><span class="x" lang="vi"><code>LangVI</code> có tồn tại, nhưng Junkit lẫn
+              Jungo đều không kèm văn bản <code>vi</code>. Vì vậy <code>API_LANGUAGE=vi</code> vẫn trả tiếng Anh (dự
+              phòng) cho tới khi bạn thêm thông điệp <code>vi</code>.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Fallback is one level
+              only</span><span class="x" lang="en">requested → default → key. After <code>SetDefaultLang("vi")</code>
+              with an incomplete <code>vi</code> catalog, <code>GetMessage("required", "fr", "email")</code> returns
+              <code>"required"</code> — English is not tried any more.</span><span class="x" lang="vi">được yêu cầu →
+              mặc định → key. Sau <code>SetDefaultLang("vi")</code> mà catalog <code>vi</code> chưa đủ,
+              <code>GetMessage("required", "fr", "email")</code> trả <code>"required"</code> — tiếng Anh không còn được
+              thử nữa.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Pass every
+              argument</span><span class="x" lang="en">No args → the raw template:
+              <code>GetMessage("required", "en")</code> is <code>"%[1]s is required"</code>. Too few → fmt noise:
+              <code>GetMessage("min", "en", "name")</code> is
+              <code>"name must be longer than %!s(BADINDEX) characters"</code>.</span><span class="x" lang="vi">Không có
+              args → trả template thô: <code>GetMessage("required", "en")</code> là <code>"%[1]s is required"</code>.
+              Thiếu args → lỗi của fmt: <code>GetMessage("min", "en", "name")</code> là
+              <code>"name must be longer than %!s(BADINDEX) characters"</code>.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Typos are
+              silent</span><span class="x" lang="en">An unknown key is returned as the message, so a misspelt key shows
+              up as <code>"user_not_fuond"</code> in the API instead of failing. Grep responses for <code>_</code> in
+              tests.</span><span class="x" lang="vi">Key không tồn tại được trả về làm thông điệp, nên key gõ sai sẽ
+              hiện thành <code>"user_not_fuond"</code> trên API thay vì báo lỗi. Hãy kiểm tra dấu <code>_</code> trong
+              response khi viết test.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">A literal % needs
+              %%</span><span class="x" lang="en">When args are passed and the text contains <code>%</code>, it goes
+              through <code>fmt.Sprintf</code>: write <code>"100%% done"</code>, not
+              <code>"100% done"</code>.</span><span class="x" lang="vi">Khi có args và văn bản chứa <code>%</code>, nó
+              đi qua <code>fmt.Sprintf</code>: hãy viết <code>"100%% done"</code>, không phải
+              <code>"100% done"</code>.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">One global
+              namespace</span><span class="x" lang="en">All features share one translator; the last
+              <code>AddTranslations</code> for a key wins, and Fx invoke order decides which. Prefix keys with the
+              feature name to avoid clashes.</span><span class="x" lang="vi">Mọi feature dùng chung một translator; lần
+              <code>AddTranslations</code> cuối cùng cho một key sẽ thắng, và thứ tự invoke của Fx quyết định lần nào là
+              cuối. Hãy đặt tiền tố tên feature cho key để tránh trùng.</span></div>
+        </div>
+      </section>
+
+      <footer class="jd-footer">
+        <span>Jundoc · Junkit · i18n</span>
+        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
+              Junkit</span></a></span>
+      </footer>
+    </article>
+  </div>
+
+  <script>
+    document.addEventListener("jd:ready", function () {
+      var CAT = {
+        en: { required: "%[1]s is required", min: "%[1]s must be longer than %[2]s characters", app_running: "The API is running", greeting: "Hello, %s!", "static": "a plain message" },
+        vi: { greeting: "Xin chào, %s!" }
+      };
+      var own = function (o, k) { return !!o && Object.prototype.hasOwnProperty.call(o, k); };
+      // shortcut: fmt.Sprintf for string args and the verbs %s %v %d %q %% %[n]x only.
+      function sprintf(f, args) {
+        var next = 0, reordered = false;
+        var out = f.replace(/%(?:\[(\d+)\])?([svdq%])/g, function (m, idx, verb) {
+          if (verb === "%" && !idx) return "%";
+          var i = next;
+          if (idx) { reordered = true; i = +idx - 1; if (i < 0 || i >= args.length) return "%!" + verb + "(BADINDEX)"; }
+          else if (i >= args.length) return "%!" + verb + "(MISSING)";
+          next = i + 1;
+          var a = args[i];
+          return verb === "q" ? JSON.stringify(a) : verb === "d" ? "%!d(string=" + a + ")" : a;
+        });
+        if (!reordered && next < args.length) out += "%!(EXTRA " + args.slice(next).map(function (a) { return "string=" + a; }).join(", ") + ")";
+        return out;
+      }
+      // Mirrors Translator.GetMessage.
+      function getMessage(key, lang, def, args) {
+        var steps = [], cur = lang || def;
+        var ok = own(CAT[cur], key), val = ok ? CAT[cur][key] : undefined;
+        steps.push([cur + "." + key, ok]);
+        if (!ok && cur !== def) { ok = own(CAT[def], key); val = ok ? CAT[def][key] : undefined; steps.push([def + "." + key, ok]); }
+        if (!ok) return { steps: steps, out: key, why: "key" };
+        if (args.length > 0 && val.indexOf("%") >= 0) return { steps: steps, out: sprintf(val, args), why: "fmt" };
+        return { steps: steps, out: val, why: "raw" };
+      }
+      console.assert(getMessage("required", "en", "en", ["email"]).out === "email is required", "required");
+      console.assert(getMessage("greeting", "vi", "en", ["Lan"]).out === "Xin chào, Lan!", "vi");
+      console.assert(getMessage("greeting", "", "en", ["Jane"]).out === "Hello, Jane!", "empty lang");
+      console.assert(getMessage("greeting", "fr", "en", ["Marie"]).out === "Hello, Marie!", "fallback");
+      console.assert(getMessage("no_such_key", "en", "en", []).out === "no_such_key", "unknown key");
+      console.assert(getMessage("static", "en", "en", ["ignored"]).out === "a plain message", "no verbs");
+      console.assert(getMessage("required", "en", "en", []).out === "%[1]s is required", "no args → raw");
+      console.assert(getMessage("min", "en", "en", ["name"]).out === "name must be longer than %!s(BADINDEX) characters", "BADINDEX");
+      console.assert(getMessage("required", "fr", "vi", ["email"]).out === "required", "one-level fallback");
+
+      var ids = ["i-key", "i-lang", "i-def", "i-args"];
+      function paint() {
+        var key = document.getElementById("i-key").value, lang = document.getElementById("i-lang").value;
+        var def = document.getElementById("i-def").value, raw = document.getElementById("i-args").value;
+        var args = raw.trim() === "" ? [] : raw.split(",").map(function (s) { return s.trim(); });
+        var r = getMessage(key, lang, def, args);
+        var lines = r.steps.map(function (s) { return (s[1] ? "✓ " : "✗ ") + s[0]; });
+        lines.push(r.why === "key" ? "→ return key" : r.why === "fmt" ? "→ fmt.Sprintf(msg, args...)" : "→ return message as is");
+        document.getElementById("i-trace").innerHTML = JD.highlight(lines.join("\n"), "");
+        document.getElementById("i-out").innerHTML = JD.highlight(JSON.stringify(r.out), "json");
+      }
+      ids.forEach(function (id) { document.getElementById(id).addEventListener("input", paint); });
+      paint();
+    });
+  </script>
+</body>
+
+</html>

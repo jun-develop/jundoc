@@ -1,0 +1,1057 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit tracer · Jundoc</title>
+  <meta name="description"
+    content="junkit/tracer: a per-request debug recorder. Add ?t_debug=… to a URL and get every SQL query, span, note and error of that request as an HTML dashboard or JSON.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+
+<body>
+  <div id="jd-app" data-root="..">
+    <article class="jd-content">
+
+      <!-- ============================================================ HERO -->
+      <header class="jd-hero"
+        style="background:radial-gradient(1000px 380px at 0% 0%, rgba(251,146,60,.55), transparent 60%),linear-gradient(135deg,#7c2d12,#c2410c 55%,#be123c)">
+        <div class="jd-eyebrow">Junkit · tracer</div>
+        <h1>tracer</h1>
+        <p lang="en">Add <code>?t_debug=&lt;value&gt;</code> plus an <code>X-Internal-Secret</code> header to any URL and, instead of the normal response, get a
+          report of that one request: every SQL query with its rows, your timed spans, notes, values and errors — HTML
+          in a browser, JSON in a terminal.</p>
+        <p lang="vi">Thêm <code>?t_debug=&lt;value&gt;</code> cùng header <code>X-Internal-Secret</code> vào bất kỳ URL nào và, thay cho response bình thường, bạn
+          nhận được báo cáo của đúng request đó: mọi câu SQL kèm dữ liệu trả về, các span đo thời gian, ghi chú, giá trị
+          và lỗi — HTML trên trình duyệt, JSON trên terminal.</p>
+        <div class="jd-chips">
+          <span class="jd-chip">github.com/jun-develop/junkit/tracer</span>
+          <span class="jd-chip"><span lang="en">no Fx Module — context-based functions, switched on per request by
+              middleware.TracerDebug</span><span lang="vi">không có Fx Module — các hàm dựa trên context, bật theo từng
+              request bởi middleware.TracerDebug</span></span>
+          <span class="jd-chip"><span lang="en">depends on: gin, pgx/v5, junkit/sqlfmt</span><span lang="vi">phụ thuộc:
+              gin, pgx/v5, junkit/sqlfmt</span></span>
+        </div>
+      </header>
+
+      <!-- ============================================================ 1. WHAT -->
+      <section id="what" class="jd-section c-orange">
+        <div class="jd-section-head">
+          <span class="jd-badge">1</span>
+          <div>
+            <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
+            <p class="jd-sub" lang="en">A <code>Debugger</code> rides on the request context. Every tracer call and
+              every query through <code>PgxWrapper</code> appends an entry to it; at the end the middleware throws away
+              the real response and renders the entries.</p>
+            <p class="jd-sub" lang="vi">Đối tượng <code>Debugger</code> được gắn vào context của từng request. Mọi lệnh
+              ghi log từ tracer và câu truy vấn SQL qua <code>PgxWrapper</code> sẽ tích lũy thành các entry. Khi kết
+              thúc, middleware chặn nội dung response thông thường và xuất thẳng trang báo cáo debug trực quan.</p>
+          </div>
+        </div>
+        <div class="jd-flow" style="margin-top:22px" data-wires='[
+      {"from":"t1","to":"t2","color":"orange"},
+      {"from":"t2","to":"t3","color":"orange"},
+      {"from":"t3","to":"t4","color":"orange"}]'>
+          <div class="jd-node is-tint c-orange" data-node="t1"><span class="k">1 · activate</span><span class="t mono"
+              style="font-size:15px">?t_debug=&lt;value&gt;</span>
+            <div class="d" lang="en"><code>middleware.TracerDebug</code> sees key = value and the secret header, puts
+              <code>tracer.New()</code> on the context.</div>
+            <div class="d" lang="vi"><code>middleware.TracerDebug</code> thấy key = value và header secret, gắn <code>tracer.New()</code>
+              vào context.</div>
+          </div>
+          <div class="jd-node is-tint c-orange" data-node="t2"><span class="k">2 · your code</span><span class="t mono"
+              style="font-size:15px">Span · V · E · Stop</span>
+            <div class="d" lang="en">Handlers and services record spans, notes, values, errors.</div>
+            <div class="d" lang="vi">Handler và service ghi span, ghi chú, giá trị, lỗi.</div>
+          </div>
+          <div class="jd-node is-tint c-orange" data-node="t3"><span class="k">3 · database</span><span class="t mono"
+              style="font-size:15px">PgxWrapper</span>
+            <div class="d" lang="en">Bound SQL, duration, scanned rows / rows affected, errors with the calling code.
+            </div>
+            <div class="d" lang="vi">SQL đã gắn tham số, thời gian, các dòng đã Scan / số dòng bị ảnh hưởng, lỗi kèm vị
+              trí code gọi.</div>
+          </div>
+          <div class="jd-node is-tint c-orange" data-node="t4"><span class="k">4 · report</span><span class="t mono"
+              style="font-size:15px">RenderHTML · RenderJSON</span>
+            <div class="d" lang="en">DB summary + N+1 hints, timeline, every entry, request &amp; server info.</div>
+            <div class="d" lang="vi">Tổng kết DB + cảnh báo N+1, timeline, mọi entry, thông tin request &amp; server.
+            </div>
+          </div>
+        </div>
+
+        <div class="jd-grid-2" style="margin-top:26px">
+          <div>
+            <h3><span lang="en">What the dashboard shows (top to bottom)</span><span lang="vi">Dashboard hiển thị gì (từ
+                trên xuống)</span></h3>
+            <ul>
+              <li lang="en"><b>DB card</b> (only if there were queries): QUERIES, FAILED, DB TIME, % OF REQUEST, and one
+                line per query that ran more than once: <code>⚠️ GetRole ran 10 times (…ms total), possible N+1</code>.
+              </li>
+              <li lang="vi"><b>Thẻ DB</b> (chỉ khi có query): QUERIES, FAILED, DB TIME, % OF REQUEST, và một dòng cho
+                mỗi query chạy hơn một lần: <code>⚠️ GetRole ran 10 times (…ms total), possible N+1</code>.</li>
+              <li lang="en"><b>⏱ Timeline</b>: a waterfall of every span (green) and SQL query (blue), positioned by
+                start offset and width = duration / total.</li>
+              <li lang="vi"><b>⏱ Timeline</b>: biểu đồ thác nước của mọi span (xanh lá) và câu SQL (xanh dương), đặt
+                theo thời điểm bắt đầu, độ rộng = thời lượng / tổng.</li>
+              <li lang="en"><b>Entries</b> in recorded order: 💬 comments, ⏱ spans, and cards for variables, warnings,
+                errors (location + collapsible Stack Trace) and SQL (bound SQL, rows / result / row_count /
+                rows_affected, red border and <code>✘ error</code> + 📍 origin if it failed).</li>
+              <li lang="vi"><b>Các entry</b> theo thứ tự ghi: 💬 comment, ⏱ span, và các thẻ cho variable, warning,
+                error (vị trí + Stack Trace thu gọn được) và SQL (SQL đã gắn tham số, rows / result / row_count /
+                rows_affected, viền đỏ và <code>✘ error</code> + 📍 nơi gọi nếu lỗi).</li>
+              <li lang="en">Last entry: <code>REQUEST &amp; SERVER INFO</code> — method, URL, client IP, headers
+                (secrets masked), Go version, pid, goroutines.</li>
+              <li lang="vi">Entry cuối: <code>REQUEST &amp; SERVER INFO</code> — method, URL, IP client, header (đã che
+                bí mật), phiên bản Go, pid, số goroutine.</li>
+            </ul>
+            <p class="jd-sub" lang="en">The HTML page ships no JavaScript, so it also renders in Postman's preview.</p>
+            <p class="jd-sub" lang="vi">Trang HTML không có JavaScript, nên hiển thị được cả trong khung preview của
+              Postman.</p>
+          </div>
+          <div>
+            <h3><span lang="en">Browser → HTML, terminal → JSON</span><span lang="vi">Trình duyệt → HTML, terminal →
+                JSON</span></h3>
+            <p lang="en">The middleware looks at <code>User-Agent</code>: if it contains <code>curl</code>,
+              <code>httpie</code> or <code>wget</code> you get <code>application/json; charset=utf-8</code>, otherwise
+              <code>text/html; charset=utf-8</code>. Checked against the running Jungo app:</p>
+            <p lang="vi">Middleware xem <code>User-Agent</code>: nếu chứa <code>curl</code>, <code>httpie</code> hoặc
+              <code>wget</code> thì trả <code>application/json; charset=utf-8</code>, ngược lại trả
+              <code>text/html; charset=utf-8</code>. Đã kiểm tra trên app Jungo đang chạy:</p>
+            <div class="jd-term" data-copy="commands">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · curl (json)</span></div>
+              <pre data-hl="bash">
+$ curl -s -o /dev/null -w '%{content_type}\n' "localhost:8080/health?t_debug=$TRACER_DEBUG_VALUE" -H "X-Internal-Secret: $AUTH_INTERNAL_SECRET"
+# application/json; charset=utf-8
+</pre>
+            </div>
+            <div class="jd-term" data-copy="commands" style="margin-top:10px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · browser user-agent (html)</span></div>
+              <pre data-hl="bash">
+$ curl -s -o /dev/null -w '%{content_type}\n' -A 'Mozilla/5.0' "localhost:8080/health?t_debug=$TRACER_DEBUG_VALUE" \
+    -H "X-Internal-Secret: $AUTH_INTERNAL_SECRET"
+# text/html; charset=utf-8
+</pre>
+            </div>
+            <div class="jd-callout c-orange" style="margin-top:14px">
+              <b lang="en">Zero overhead when off.</b><b lang="vi">Không tốn gì khi tắt.</b>
+              <span lang="en">Without a Debugger on the context every function returns immediately (Span returns an
+                empty func, PgxWrapper calls the inner handle directly), so instrumentation can stay in the code.</span>
+              <span lang="vi">Khi context không có Debugger, mọi hàm trả về ngay (Span trả về func rỗng, PgxWrapper gọi
+                thẳng handle bên trong), nên có thể để code instrument lại vĩnh viễn.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 2. SETUP -->
+      <section id="setup" class="jd-section c-blue">
+        <div class="jd-section-head">
+          <span class="jd-badge">2</span>
+          <div>
+            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối vào app</span></h2>
+            <p class="jd-sub" lang="en">Two hooks: the middleware that switches the recorder on, and the DB wrapper that
+              sees the SQL. tracer has no Options struct — the only settings are the
+              <code>middleware.TracerDebugOptions</code> (query key / value, secret header / secret) passed to
+              <code>middleware.TracerDebug</code>.</p>
+            <p class="jd-sub" lang="vi">Hai điểm nối: middleware bật bộ ghi, và DB wrapper để thấy SQL. tracer không có
+              struct Options — cấu hình duy nhất là <code>middleware.TracerDebugOptions</code> (query key / value, header
+              secret / secret) truyền cho <code>middleware.TracerDebug</code>.</p>
+          </div>
+        </div>
+        <div class="jd-tabs c-blue" style="margin-top:18px">
+          <div class="jd-tablist">
+            <button class="jd-tab" type="button" aria-selected="true"><span lang="en">With Fx (as Jungo
+                does)</span><span lang="vi">Với Fx (như Jungo)</span></button>
+            <button class="jd-tab" type="button" aria-selected="false"><span lang="en">Without Fx</span><span
+                lang="vi">Không dùng Fx</span></button>
+          </div>
+          <div class="jd-tabpanel">
+            <div class="jd-term" data-copy>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/database/primary/db.go</span></div>
+              <pre data-hl="go">
+func options(cfg *config.Config) postgres.Options {
+    return postgres.Options{
+        Name: "primary",
+        DSN:  cfg.DB.DSN(cfg.Timezone),
+        // ...
+        Decorate: func(inner postgres.DBTX) postgres.DBTX {
+            return tracer.NewPgxWrapper(inner)
+        },
+    }
+}
+</pre>
+            </div>
+            <div class="jd-term" data-copy style="margin-top:12px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/router/router.go</span></div>
+              <pre data-hl="go">
+debug := middleware.TracerDebugOptions{
+    QueryKey:     cfg.TracerDebugKey,
+    QueryValue:   cfg.TracerDebugValue,
+    SecretHeader: "X-Internal-Secret",
+    Secret:       cfg.Auth.InternalSecret,
+}
+
+p.Router.Use(
+    middleware.TracerDebug(debug),
+    middleware.Security(),
+    // ... Trace, CORS, Gzip, Payload, AccessLog (SkipIf: debug.Matches), Limiter ...
+    // a panic in a debug request becomes a "PANIC RECOVERED" error entry
+    middleware.Recover(p.HTTPLogger, p.Notifier, p.Responder, middleware.RecoverOptions{Debug: debug}),
+)
+</pre>
+            </div>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
+              <pre data-hl="go">
+pool, err := pgxpool.New(ctx, dsn)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Anything with Exec / Query / QueryRow works: *pgxpool.Pool, pgx.Tx, postgres.DBTX.
+queries := sqlc.New(tracer.NewPgxWrapper(pool))
+
+r := gin.New()
+r.Use(middleware.TracerDebug(middleware.TracerDebugOptions{ // any empty field = off
+    QueryKey:     "t_debug",
+    QueryValue:   os.Getenv("TRACER_DEBUG_VALUE"),
+    SecretHeader: "X-Internal-Secret",
+    Secret:       os.Getenv("INTERNAL_SECRET"),
+}))
+r.GET("/users/:id", userHandler.Get) // handlers pass ctx down to queries
+</pre>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:22px"><span lang="en">Settings (Jungo config)</span><span lang="vi">Cấu hình (config của
+            Jungo)</span></h3>
+        <div class="jd-tablewrap">
+          <table class="jd-params c-blue">
+            <tr>
+              <th><span lang="en">field · env</span><span lang="vi">field · env</span></th>
+              <th><span lang="en">type · default</span><span lang="vi">kiểu · mặc định</span></th>
+              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+            </tr>
+            <tr>
+              <td>TracerDebugKey · TRACER_DEBUG_KEY</td>
+              <td>string · <code>"t_debug"</code></td>
+              <td><span lang="en">Query parameter name → <code>QueryKey</code>.</span><span
+                  lang="vi">Tên query param → <code>QueryKey</code>.</span></td>
+            </tr>
+            <tr>
+              <td>TracerDebugValue · TRACER_DEBUG_VALUE</td>
+              <td>string · <code>"0604"</code></td>
+              <td><span lang="en">The value the parameter must equal → <code>QueryValue</code>. <b>Empty key or value
+                    disables the dashboard completely.</b> Use a different value in each environment.</span><span lang="vi">Giá trị mà param phải bằng →
+                  <code>QueryValue</code>. <b>Key hoặc value rỗng sẽ tắt hẳn dashboard.</b> Mỗi môi trường nên đặt một giá trị khác nhau.</span></td>
+            </tr>
+            <tr>
+              <td>Auth.InternalSecret · AUTH_INTERNAL_SECRET</td>
+              <td>string · <code>""</code></td>
+              <td><span lang="en">Must be sent in the <code>X-Internal-Secret</code> header → <code>Secret</code> (the
+                  same secret as <code>/api/internal/auth/*</code>). <b>Empty disables the dashboard.</b></span><span
+                  lang="vi">Phải gửi trong header <code>X-Internal-Secret</code> → <code>Secret</code> (cùng secret với
+                  <code>/api/internal/auth/*</code>). <b>Rỗng sẽ tắt dashboard.</b></span></td>
+            </tr>
+          </table>
+        </div>
+        <div class="jd-callout c-red" style="margin-top:14px">
+          <b lang="en">Security — the secret is the lock.</b><b lang="vi">Bảo mật — secret là ổ khoá.</b>
+          <span lang="en">The report exposes SQL with real parameter values, row data, server IP, hostname, pid and
+            headers. The request still runs normally underneath (writes are committed). Only callers holding
+            <code>AUTH_INTERNAL_SECRET</code> get it, so keep that secret strong and private. To turn the dashboard
+            off, leave <code>AUTH_INTERNAL_SECRET</code> or <code>TRACER_DEBUG_VALUE</code> empty.</span>
+          <span lang="vi">Báo cáo lộ SQL với giá trị tham số thật, dữ liệu các dòng, IP server, hostname, pid và header.
+            Request vẫn chạy bình thường bên dưới (ghi DB vẫn được commit). Chỉ ai có
+            <code>AUTH_INTERNAL_SECRET</code> mới xem được, nên hãy giữ secret đó đủ mạnh và kín. Muốn tắt dashboard,
+            để <code>AUTH_INTERNAL_SECRET</code> hoặc <code>TRACER_DEBUG_VALUE</code> rỗng.</span>
+        </div>
+      </section>
+
+      <!-- ============================================================ 3. QUICK START -->
+      <section id="quick" class="jd-section c-green">
+        <div class="jd-section-head">
+          <span class="jd-badge">3</span>
+          <div>
+            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <p class="jd-sub" lang="en">Instrument a service method, then call the endpoint with the debug key. Hover an
+              explanation to light up its lines.</p>
+            <p class="jd-sub" lang="vi">Instrument một method của service, rồi gọi endpoint kèm debug key. Rê chuột vào
+              giải thích để làm sáng các dòng tương ứng.</p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <div class="jd-sticky">
+              <div class="jd-term" data-copy>
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>order_service.go</span></div>
+                <pre data-hl="go" id="code-quick">
+func (s *OrderService) Checkout(ctx context.Context, order Order) error {
+    defer tracer.Span(ctx, "Checkout")()
+
+    tracer.C(ctx, "starting checkout")
+    tracer.V(ctx, "order", order)
+
+    var err error
+    tracer.Measure(ctx, "Charge payment provider", func() {
+        err = s.payments.Charge(ctx, order.Total)
+    })
+    if err != nil {
+        tracer.E(ctx, "charge failed", err)
+        return err
+    }
+
+    if tracer.Enabled(ctx) {
+        tracer.V(ctx, "cart snapshot", s.buildSnapshot(order))
+    }
+
+    tracer.Stop(ctx, "state before save", order)
+    return s.repo.Save(ctx, order)
+}
+</pre>
+              </div>
+              <div class="jd-term" data-copy="commands" style="margin-top:14px">
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>open browser</span></div>
+                <pre data-hl="bash">
+# HTML in the browser (add X-Internal-Secret with an extension such as ModHeader)
+$ open "http://localhost:8080/health?t_debug=$TRACER_DEBUG_VALUE"
+</pre>
+              </div>
+              <div class="jd-term" data-copy="commands" style="margin-top:10px">
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · curl json</span></div>
+                <pre data-hl="bash">
+# JSON output in terminal
+$ curl -s "http://localhost:8080/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" \
+    -H 'Authorization: Bearer &lt;access_token&gt;' \
+    -H 'X-Internal-Secret: &lt;AUTH_INTERNAL_SECRET&gt;' | jq '.db'
+</pre>
+              </div>
+            </div>
+          </div>
+          <div class="jd-explain">
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="2"><span class="n">1</span><span
+                class="w">defer Span(…)()</span><span class="x" lang="en">Span starts the clock and returns a stop func;
+                the trailing <code>()</code> makes <code>defer</code> call it when the method returns.</span><span
+                class="x" lang="vi">Span bắt đầu bấm giờ và trả về hàm stop; cặp <code>()</code> ở cuối để
+                <code>defer</code> gọi nó khi method kết thúc.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="4-5"><span class="n">2</span><span class="w">C
+                · V</span><span class="x" lang="en">A note, and a value shown as indented JSON. Several values → one
+                entry each, same label.</span><span class="x" lang="vi">Một ghi chú, và một giá trị hiển thị dạng JSON
+                thụt lề. Nhiều giá trị → mỗi giá trị một entry, cùng label.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="7-10"><span class="n">3</span><span
+                class="w">Measure</span><span class="x" lang="en">Same as Span, around a closure. <code>fn</code> always
+                runs, debugging or not.</span><span class="x" lang="vi">Giống Span nhưng bọc một closure.
+                <code>fn</code> luôn chạy, dù có debug hay không.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="11-14"><span class="n">4</span><span
+                class="w">E</span><span class="x" lang="en">Error card with file, line, function and full stack.
+                <code>W</code> is the same without the stack.</span><span class="x" lang="vi">Thẻ lỗi kèm file, dòng,
+                hàm và toàn bộ stack. <code>W</code> giống vậy nhưng không có stack.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="16-18"><span class="n">5</span><span
+                class="w">Enabled</span><span class="x" lang="en">Skip work that only exists for debugging when nobody
+                is looking.</span><span class="x" lang="vi">Bỏ qua phần việc chỉ phục vụ debug khi không ai xem.</span>
+            </div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="20"><span class="n">6</span><span
+                class="w">Stop — a breakpoint</span><span class="x" lang="en">Records the values, then panics with
+                <code>BreakpointSignal</code>; <code>TracerDebug</code> recovers and shows the report —
+                <code>Save</code> never runs. Without debug it does nothing.</span><span class="x" lang="vi">Ghi lại giá
+                trị rồi panic với <code>BreakpointSignal</code>; <code>TracerDebug</code> recover và hiện báo cáo —
+                <code>Save</code> không bao giờ chạy. Khi không debug thì không làm gì.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 4. TRY IT -->
+      <section id="try" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">4</span>
+          <div>
+            <h2><span lang="en">Try it: spot an N+1</span><span lang="vi">Thử ngay: phát hiện N+1</span></h2>
+            <p class="jd-sub" lang="en">A fake request loads a user, then its roles one query at a time. Same grouping
+              and timeline maths as <code>NewReport</code> / the dashboard.</p>
+            <p class="jd-sub" lang="vi">Một request giả lập tải user, rồi tải từng role bằng từng câu query. Cách gom
+              nhóm và tính timeline giống <code>NewReport</code> / dashboard.</p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <div class="jd-calc c-purple">
+              <label><span lang="en">roles (queries)</span><span lang="vi">số role (query)</span> <input type="number"
+                  id="tr-n" value="4" min="0" max="12"></label>
+              <label><span lang="en">ms per query</span><span lang="vi">ms mỗi query</span> <input type="number"
+                  id="tr-ms" value="2" min="0" max="20"></label>
+            </div>
+            <div id="tr-timeline" style="display:grid;gap:4px;font:12px var(--mono)"></div>
+            <p class="jd-sub" style="margin-top:10px" lang="en">Green = span, blue = SQL. Queries are grouped by their
+              SQL <i>before</i> binding args, so <code>GetRoleByID</code> with different ids is one repeated query.</p>
+            <p class="jd-sub" style="margin-top:10px" lang="vi">Xanh lá = span, xanh dương = SQL. Query được gom theo
+              câu SQL <i>trước khi</i> gắn tham số, nên <code>GetRoleByID</code> với các id khác nhau vẫn là một query
+              lặp lại.</p>
+          </div>
+          <div class="jd-term">
+            <div class="jd-term-bar"><i></i><i></i><i></i><span>curl … | jq '.db'</span></div>
+            <pre id="tr-json"></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 5. API -->
+      <section id="api" class="jd-section c-orange">
+        <div class="jd-section-head">
+          <span class="jd-badge">5</span>
+          <div>
+            <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from
+              <code>junkit/tracer/*.go</code>. Every function taking a <code>ctx</code> is a no-op when <code>ctx</code>
+              has no Debugger.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/tracer/*.go</code>. Mọi hàm
+              nhận <code>ctx</code> đều không làm gì khi <code>ctx</code> không có Debugger.</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:18px"><span lang="en">Recording</span><span lang="vi">Ghi lại</span></h3>
+        <div class="jd-syms" style="margin-top:10px">
+          <div class="jd-sym c-green">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Span · Measure</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">
+func Span(ctx context.Context, label string) func()
+func Measure(ctx context.Context, label string, fn func())
+</pre>
+            </div>
+            <ul>
+              <li lang="en"><code>Span</code> notes the start offset now and appends a <code>span</code> entry with
+                <code>DurationMS</code> when you call the returned func. Nothing is recorded if you never call it.</li>
+              <li lang="vi"><code>Span</code> ghi lại thời điểm bắt đầu ngay lúc gọi và thêm entry <code>span</code> có
+                <code>DurationMS</code> khi bạn gọi hàm trả về. Không gọi thì không ghi gì.</li>
+              <li lang="en"><code>Measure</code> = <code>defer Span(ctx, label)(); fn()</code>. <code>fn</code> runs
+                even without a Debugger.</li>
+              <li lang="vi"><code>Measure</code> = <code>defer Span(ctx, label)(); fn()</code>. <code>fn</code> vẫn chạy
+                khi không có Debugger.</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-green">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">C · V</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+func C(ctx context.Context, message string)
+func V(ctx context.Context, label string, values ...any)
+</pre>
+            </div>
+            <ul>
+              <li lang="en"><code>C</code> records a <code>comment</code> (the message is the label, no data).</li>
+              <li lang="vi"><code>C</code> ghi một <code>comment</code> (message chính là label, không có data).</li>
+              <li lang="en"><code>V</code> records one <code>variable</code> entry <b>per value</b>, all with
+                <code>label</code>. An <code>error</code> value is stored as <code>err.Error()</code> (errors usually
+                marshal to <code>{}</code>).</li>
+              <li lang="vi"><code>V</code> ghi một entry <code>variable</code> <b>cho mỗi giá trị</b>, cùng
+                <code>label</code>. Giá trị kiểu <code>error</code> được lưu thành <code>err.Error()</code> (error
+                thường marshal ra <code>{}</code>).</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-red">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">W · E</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+func W(ctx context.Context, label string, err any)
+func E(ctx context.Context, label string, err any)
+</pre>
+            </div>
+            <ul>
+              <li lang="en">Record a <code>warning</code> / <code>error</code> whose data is an <code>IssueData</code>:
+                <code>fmt.Sprintf("%v", err)</code>, the file / line / function of your call site, and a timestamp.
+                <code>E</code> also stores <code>debug.Stack()</code>.</li>
+              <li lang="vi">Ghi một <code>warning</code> / <code>error</code> với data là <code>IssueData</code>:
+                <code>fmt.Sprintf("%v", err)</code>, file / dòng / hàm tại chỗ bạn gọi, và thời điểm. <code>E</code> lưu
+                thêm <code>debug.Stack()</code>.</li>
+              <li lang="en">Empty <code>label</code> → <code>"WARNING"</code> / <code>"ERROR"</code>. <code>err</code>
+                may be anything (string, error, struct).</li>
+              <li lang="vi"><code>label</code> rỗng → <code>"WARNING"</code> / <code>"ERROR"</code>. <code>err</code> có
+                thể là bất cứ gì (string, error, struct).</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-red">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Stop ·
+                BreakpointSignal</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+func Stop(ctx context.Context, label string, values ...any)
+
+// BreakpointSignal is panicked by Stop to halt request processing for debugging.
+type BreakpointSignal struct{}
+</pre>
+            </div>
+            <ul>
+              <li lang="en">With a Debugger: <code>V(ctx, label, values...)</code>, then
+                <code>panic(BreakpointSignal{})</code>. <code>middleware.TracerDebug</code> recovers it, adds
+                <code>⏸ Stopped by tracer.Stop() after …</code> and renders the report. <code>middleware.Recover</code>
+                re-panics it so it reaches <code>TracerDebug</code>.</li>
+              <li lang="vi">Có Debugger: gọi <code>V(ctx, label, values...)</code> rồi
+                <code>panic(BreakpointSignal{})</code>. <code>middleware.TracerDebug</code> recover, thêm
+                <code>⏸ Stopped by tracer.Stop() after …</code> và render báo cáo. <code>middleware.Recover</code> panic
+                lại để tín hiệu tới được <code>TracerDebug</code>.</li>
+              <li lang="en">Without a Debugger: returns, nothing happens.</li>
+              <li lang="vi">Không có Debugger: trả về, không có gì xảy ra.</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Enabled</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func Enabled(ctx context.Context) bool</pre>
+            </div>
+            <p lang="en"><code>FromContext(ctx) != nil</code>. Use it to skip expensive debug-only work.</p>
+            <p lang="vi"><code>FromContext(ctx) != nil</code>. Dùng để bỏ qua phần việc tốn kém chỉ phục vụ debug.</p>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">HTTPInfo ·
+                ServerInfo</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+func HTTPInfo(ctx context.Context, r *http.Request)
+func ServerInfo(r *http.Request) map[string]any
+</pre>
+            </div>
+            <ul>
+              <li lang="en"><code>ServerInfo</code> returns: timestamp, method, full_url, path, query_string, protocol,
+                host, host_port, server_name, server_ip, client_ip, client_port, x_forwarded_for, x_real_ip, user_agent,
+                referer, content_type, authorization, cookie, headers, go_version, pid, goroutines.</li>
+              <li lang="vi"><code>ServerInfo</code> trả về: timestamp, method, full_url, path, query_string, protocol,
+                host, host_port, server_name, server_ip, client_ip, client_port, x_forwarded_for, x_real_ip, user_agent,
+                referer, content_type, authorization, cookie, headers, go_version, pid, goroutines.</li>
+              <li lang="en">Masking: <code>Authorization: Bearer xyz</code> → <code>Bearer ****</code>; cookies →
+                <code>name=****</code>; any header whose name contains token, secret, password, api-key, apikey,
+                signature or session → <code>****</code>. <code>client_ip</code> = X-Real-IP, else first
+                X-Forwarded-For, else RemoteAddr.</li>
+              <li lang="vi">Che dữ liệu: <code>Authorization: Bearer xyz</code> → <code>Bearer ****</code>; cookie →
+                <code>name=****</code>; header có tên chứa token, secret, password, api-key, apikey, signature hoặc
+                session → <code>****</code>. <code>client_ip</code> = X-Real-IP, nếu không có thì phần đầu
+                X-Forwarded-For, nếu không thì RemoteAddr.</li>
+              <li lang="en"><code>HTTPInfo</code> records that map as a variable labelled
+                <code>"REQUEST &amp; SERVER INFO"</code>. <code>TracerDebug</code> calls it for you (not after a
+                <code>Stop</code>).</li>
+              <li lang="vi"><code>HTTPInfo</code> ghi lại map thông tin trên thành biến có nhãn
+                <code>"REQUEST &amp; SERVER INFO"</code>. Middleware <code>TracerDebug</code> tự động thực hiện thao tác
+                này (trừ khi tracer đã bị dừng bởi <code>Stop</code>).</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-muted">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">FindErrorOrigin</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">func FindErrorOrigin() (string, int, string)</pre>
+            </div>
+            <p lang="en">Returns file, line, function of the first stack frame outside the Go runtime and outside
+              <code>github.com/jun-develop/junkit/tracer.</code>, skipping one extra frame (it is meant to be called from
+              a helper). Falls back to <code>"unknown", 0, "unknown"</code>. Used by W / E and by
+              <code>middleware.Recover</code>.</p>
+            <p lang="vi">Trả về file, dòng, hàm của frame đầu tiên nằm ngoài Go runtime và ngoài
+              <code>github.com/jun-develop/junkit/tracer.</code>, bỏ qua thêm một frame (vì được thiết kế để gọi từ một
+              hàm helper). Không tìm được thì trả <code>"unknown", 0, "unknown"</code>. Được W / E và
+              <code>middleware.Recover</code> dùng.</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:24px"><span lang="en">SQL capture</span><span lang="vi">Ghi lại SQL</span></h3>
+        <div class="jd-syms" style="margin-top:10px">
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NewPgxWrapper ·
+                PgxWrapper</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+func NewPgxWrapper(inner dbtx) *PgxWrapper
+
+func (w *PgxWrapper) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+func (w *PgxWrapper) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+func (w *PgxWrapper) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+</pre>
+            </div>
+            <ul>
+              <li lang="en"><code>dbtx</code> is unexported but is just Exec / Query / QueryRow with the pgx signatures
+                — a pool, a <code>pgx.Tx</code> or <code>postgres.DBTX</code> fit.</li>
+              <li lang="vi"><code>dbtx</code> không được export nhưng chỉ là Exec / Query / QueryRow theo chữ ký của pgx
+                — pool, <code>pgx.Tx</code> hay <code>postgres.DBTX</code> đều dùng được.</li>
+              <li lang="en">Installed through <code>postgres.Options.Decorate</code>, it wraps the executor itself — the pool
+                and every transaction — not sqlc, so hand-written SQL run through <code>Executor(ctx)</code> is
+                captured too.</li>
+              <li lang="vi">Được gắn qua <code>postgres.Options.Decorate</code>, nó bọc chính executor — pool và mọi
+                transaction — chứ không bọc sqlc, nên SQL viết tay chạy qua <code>Executor(ctx)</code> cũng được ghi
+                lại.</li>
+              <li lang="en">No Debugger → the inner call is returned unchanged (not even wrapped rows).</li>
+              <li lang="vi">Nếu context không có Debugger → thực thi và trả nguyên kết quả gốc (không phát sinh overhead
+                hay bọc rows).</li>
+              <li lang="en">Each query becomes one <code>sql</code> entry. Label = sqlc name from
+                <code>-- name: GetUser :one</code>, else a guess from the first keyword (e.g. <code>Select</code>).
+                Operation = the sqlc kind upper-cased (<code>ONE</code>, <code>MANY</code>, <code>EXEC</code>…).</li>
+              <li lang="vi">Mỗi query thành một entry <code>sql</code>. Label = tên sqlc lấy từ
+                <code>-- name: GetUser :one</code>, nếu không có thì đoán từ từ khoá đầu (vd. <code>Select</code>).
+                Operation = loại của sqlc viết hoa (<code>ONE</code>, <code>MANY</code>, <code>EXEC</code>…).</li>
+              <li lang="en"><b>Exec</b> records <code>rows_affected</code>. <b>Query</b> records the scanned rows (max
+                20) and the true <code>row_count</code> — once, when <code>rows.Close()</code> is called.
+                <b>QueryRow</b> is run as a Query internally (to get column names) and records <code>result</code> at
+                <code>Scan</code>; no row → <code>pgx.ErrNoRows</code> is recorded as an error.</li>
+              <li lang="vi"><b>Exec</b> ghi <code>rows_affected</code>. <b>Query</b> ghi các dòng đã Scan (tối đa 20) và
+                <code>row_count</code> thật — một lần, khi gọi <code>rows.Close()</code>. <b>QueryRow</b> bên trong chạy
+                bằng Query (để có tên cột) và ghi <code>result</code> lúc <code>Scan</code>; không có dòng →
+                <code>pgx.ErrNoRows</code> được ghi là lỗi.</li>
+              <li lang="en"><code>[]byte</code> columns: valid JSON (e.g. jsonb) is shown as JSON, anything else as hex.
+                Failed queries also get <code>location</code> / <code>function</code> of the app code that ran them
+                (sqlc's <code>*.sql.go</code> skipped).</li>
+              <li lang="vi">Cột <code>[]byte</code>: JSON hợp lệ (vd. jsonb) hiện dạng JSON, còn lại hiện dạng hex.
+                Query lỗi có thêm <code>location</code> / <code>function</code> của code app đã chạy nó (bỏ qua file
+                <code>*.sql.go</code> của sqlc).</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">BeginQuery ·
+                Query.Finish</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+func BeginQuery(ctx context.Context, sql string, args []any, bind func(sql string, args []any) string) *Query
+func (q *Query) Finish(data SQLData, err error)
+</pre>
+            </div>
+            <ul>
+              <li lang="en">The driver-independent core <code>PgxWrapper</code> is built on. Other drivers (MySQL,
+                ClickHouse…) wrap their executor with these to get the same capture.</li>
+              <li lang="vi">Phần lõi không phụ thuộc driver mà <code>PgxWrapper</code> dựa trên. Driver khác (MySQL,
+                ClickHouse…) bọc executor của mình bằng hai hàm này để có cùng cách ghi lại.</li>
+              <li lang="en"><code>BeginQuery</code> returns <code>nil</code> when ctx has no Debugger — call the inner
+                handle directly. <code>bind</code> renders args for display and must match the driver's placeholders:
+                <code>sqlfmt.Bind</code> for <code>$1</code>, <code>sqlfmt.BindQuestion</code> for <code>?</code>.</li>
+              <li lang="vi"><code>BeginQuery</code> trả <code>nil</code> khi context không có Debugger — gọi thẳng
+                handle bên trong. <code>bind</code> gắn tham số vào SQL để hiển thị và phải khớp placeholder của
+                driver: <code>sqlfmt.Bind</code> cho <code>$1</code>, <code>sqlfmt.BindQuestion</code> cho
+                <code>?</code>.</li>
+              <li lang="en"><code>Finish</code> records the entry; pass what the driver knows in <code>SQLData</code>
+                (rows affected, rows…) — <code>sql</code>, operation, label and error location are filled in.</li>
+              <li lang="vi"><code>Finish</code> ghi entry; truyền vào <code>SQLData</code> những gì driver biết (số
+                dòng bị ảnh hưởng, các dòng…) — <code>sql</code>, operation, label và vị trí lỗi được tự điền.</li>
+              <li lang="en">Every engine package must pass the tracer contract test: every query through
+                <code>Executor</code> — Exec / Query / QueryRow, inside and outside a transaction — reaches the
+                Debugger (postgres: <code>TestExecutor_TracesEveryQuery</code>).</li>
+              <li lang="vi">Mọi package engine phải qua được contract test của tracer: mọi query qua
+                <code>Executor</code> — Exec / Query / QueryRow, trong và ngoài transaction — đều tới được Debugger
+                (postgres: <code>TestExecutor_TracesEveryQuery</code>).</li>
+            </ul>
+            <div class="jd-term">
+              <pre data-hl="go">
+q := tracer.BeginQuery(ctx, sql, args, sqlfmt.BindQuestion)
+if q == nil {
+    return inner.ExecContext(ctx, sql, args...)
+}
+res, err := inner.ExecContext(ctx, sql, args...)
+q.Finish(tracer.SQLData{}, err)
+</pre>
+            </div>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">SQLData</span></div>
+            <div class="jd-tablewrap">
+              <table class="jd-params">
+                <tr>
+                  <th>field · json</th>
+                  <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+                </tr>
+                <tr>
+                  <td>SQL · sql</td>
+                  <td lang="en">SQL with args bound in, for display.</td>
+                  <td lang="vi">SQL đã gắn giá trị tham số, để hiển thị.</td>
+                </tr>
+                <tr>
+                  <td>Operation · operation</td>
+                  <td lang="en">sqlc kind, e.g. <code>ONE</code>, <code>EXEC</code>; empty if not annotated.</td>
+                  <td lang="vi">Loại của sqlc, vd. <code>ONE</code>, <code>EXEC</code>; rỗng nếu không có chú thích.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Result · result</td>
+                  <td><code>map[string]any</code> — <span lang="en">QueryRow's scanned row.</span><span lang="vi">dòng
+                      QueryRow đã Scan.</span></td>
+                </tr>
+                <tr>
+                  <td>Rows · rows</td>
+                  <td><code>[]map[string]any</code> — <span lang="en">Query's scanned rows, up to 20.</span><span
+                      lang="vi">các dòng Query đã Scan, tối đa 20.</span></td>
+                </tr>
+                <tr>
+                  <td>RowCount · row_count</td>
+                  <td><code>*int</code> — <span lang="en">all rows Query scanned.</span><span lang="vi">tổng số dòng
+                      Query đã Scan.</span></td>
+                </tr>
+                <tr>
+                  <td>RowsAffected · rows_affected</td>
+                  <td><code>*int64</code> — <span lang="en">Exec only.</span><span lang="vi">chỉ Exec.</span></td>
+                </tr>
+                <tr>
+                  <td>Error · error</td>
+                  <td lang="en">Error message, if any.</td>
+                  <td lang="vi">Thông báo lỗi, nếu có.</td>
+                </tr>
+                <tr>
+                  <td>Location · location / Function · function</td>
+                  <td lang="en">Set for failed queries only.</td>
+                  <td lang="vi">Chỉ có với query lỗi.</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:24px"><span lang="en">Rendering &amp; reports</span><span lang="vi">Render &amp; báo
+            cáo</span></h3>
+        <div class="jd-syms" style="margin-top:10px">
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">RenderHTML ·
+                RenderJSON</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+func RenderHTML(ctx context.Context) string
+func RenderJSON(ctx context.Context) []byte
+</pre>
+            </div>
+            <ul>
+              <li lang="en"><code>RenderHTML</code>: the dashboard (embedded <code>html/template</code>, all values
+                escaped). No Debugger →
+                <code>&lt;p&gt;tracer: no debugger attached to the request context. Is middleware.TracerDebug active?&lt;/p&gt;</code>.
+              </li>
+              <li lang="vi"><code>RenderHTML</code>: trang dashboard (<code>html/template</code> nhúng sẵn, mọi giá trị
+                đều được escape). Không có Debugger →
+                <code>&lt;p&gt;tracer: no debugger attached to the request context. Is middleware.TracerDebug active?&lt;/p&gt;</code>.
+              </li>
+              <li lang="en"><code>RenderJSON</code>: the <code>Report</code> as indented JSON. No Debugger →
+                <code>{"error":"tracer: no debugger attached to the request context"}</code>.</li>
+              <li lang="vi"><code>RenderJSON</code>: <code>Report</code> dạng JSON thụt lề. Không có Debugger →
+                <code>{"error":"tracer: no debugger attached to the request context"}</code>.</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NewReport · Report ·
+                DBSummary · RepeatedQuery</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+func NewReport(ctx context.Context) *Report // nil without a Debugger
+
+type Report struct {
+    TotalMS float64    `json:"total_ms"`
+    DB      DBSummary  `json:"db"`
+    Entries []LogEntry `json:"entries"`
+}
+
+type DBSummary struct {
+    Queries  int             `json:"queries"`
+    Failed   int             `json:"failed"`
+    TotalMS  float64         `json:"total_ms"`
+    Percent  float64         `json:"percent"`            // DB time / request time × 100
+    Repeated []RepeatedQuery `json:"repeated,omitempty"` // ran more than once: possible N+1
+}
+
+type RepeatedQuery struct {
+    Name    string  `json:"name"`
+    SQL     string  `json:"sql,omitempty"` // before binding args
+    Count   int     `json:"count"`
+    TotalMS float64 `json:"total_ms"`
+}
+</pre>
+            </div>
+            <p lang="en">Queries are grouped by SQL text before binding, not by name; <code>Repeated</code> is sorted by
+              count (desc), then name.</p>
+            <p lang="vi">Query được gom theo câu SQL trước khi gắn tham số, không theo tên; <code>Repeated</code> sắp
+              theo số lần (giảm dần), rồi theo tên.</p>
+          </div>
+
+          <div class="jd-sym c-muted">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">PrettyPrint</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func PrettyPrint(v any) string</pre>
+            </div>
+            <p lang="en"><code>json.MarshalIndent</code> with two spaces; if that fails (e.g. a channel) falls back to
+              <code>fmt.Sprintf("%+v", v)</code>.</p>
+            <p lang="vi"><code>json.MarshalIndent</code> thụt hai dấu cách; nếu lỗi (vd. channel) thì dùng
+              <code>fmt.Sprintf("%+v", v)</code>.</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:24px"><span lang="en">Low-level: the Debugger</span><span lang="vi">Tầng thấp:
+            Debugger</span></h3>
+        <div class="jd-syms" style="margin-top:10px">
+          <div class="jd-sym c-muted">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Debugger · New ·
+                WithContext · FromContext</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+func New() *Debugger
+func (d *Debugger) Append(entry LogEntry)
+func (d *Debugger) Logs() []LogEntry
+func WithContext(ctx context.Context, d *Debugger) context.Context
+func FromContext(ctx context.Context) *Debugger
+</pre>
+            </div>
+            <ul>
+              <li lang="en"><code>New</code> starts the timeline clock. Methods are safe for concurrent use and on a nil
+                receiver.</li>
+              <li lang="vi"><code>New</code> bắt đầu đồng hồ của timeline. Các method an toàn khi dùng đồng thời và khi
+                receiver là nil.</li>
+              <li lang="en"><code>Logs</code> returns a copy (nil when empty); mutating it does not change the Debugger.
+              </li>
+              <li lang="vi"><code>Logs</code> trả về bản sao (nil khi rỗng); sửa bản sao không ảnh hưởng Debugger.</li>
+              <li lang="en"><code>FromContext</code> accepts a <code>*gin.Context</code> and looks in
+                <code>c.Request.Context()</code>, so passing gin's ctx from a handler works.</li>
+              <li lang="vi"><code>FromContext</code> nhận được <code>*gin.Context</code> và tìm trong
+                <code>c.Request.Context()</code>, nên truyền ctx của gin từ handler vẫn chạy.</li>
+              <li lang="en">Use these to debug outside HTTP, e.g. in a console command:
+                <code>ctx = tracer.WithContext(ctx, tracer.New())</code>, run, then print
+                <code>tracer.RenderJSON(ctx)</code>.</li>
+              <li lang="vi">Dùng chúng để debug ngoài HTTP, vd. trong console command:
+                <code>ctx = tracer.WithContext(ctx, tracer.New())</code>, chạy, rồi in
+                <code>tracer.RenderJSON(ctx)</code>.</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-muted">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">LogEntry · IssueData ·
+                Type* constants</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+const (
+    TypeComment  = "comment"
+    TypeVariable = "variable"
+    TypeWarning  = "warning"
+    TypeError    = "error"
+    TypeSpan     = "span"
+    TypeSQL      = "sql"
+)
+
+type LogEntry struct {
+    Type       string  `json:"type"`
+    Label      string  `json:"label"`
+    AtMS       float64 `json:"at_ms"`                 // offset from request start
+    DurationMS float64 `json:"duration_ms,omitempty"` // spans and SQL
+    Data       any     `json:"data,omitempty"`
+}
+
+type IssueData struct {
+    Error     string `json:"error"`
+    Location  string `json:"location"`
+    Line      int    `json:"line"`
+    Function  string `json:"function"`
+    Stack     string `json:"stack,omitempty"` // E only
+    Timestamp string `json:"timestamp"`       // "2006-01-02 15:04:05.000 -0700"
+}
+</pre>
+            </div>
+          </div>
+        </div>
+        <p class="jd-sub" style="margin-top:14px" lang="en">There is no HTTP-client tracing in this package: outgoing
+          calls are not recorded automatically — wrap them in <code>Span</code> / <code>Measure</code> as Jungo does for
+          the storage upload.</p>
+        <p class="jd-sub" style="margin-top:14px" lang="vi">Package này không tự động trace các request HTTP gửi ra
+          ngoài (outgoing HTTP): bạn hãy chủ động bọc chúng bằng <code>Span</code> / <code>Measure</code> (tương tự như
+          cách Jungo bọc các thao tác upload sang storage).</p>
+      </section>
+
+      <!-- ============================================================ 6. IN JUNGO -->
+      <section id="jungo" class="jd-section c-pink">
+        <div class="jd-section-head">
+          <span class="jd-badge">6</span>
+          <div>
+            <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+            <p class="jd-sub" lang="en">For the everyday "how do I debug a request" tip, see <a
+                href="../jungo/overview.html#flow">Jungo overview</a>.</p>
+            <p class="jd-sub" lang="vi">Mẹo "debug một request thế nào" dùng hằng ngày có ở <a
+                href="../jungo/overview.html#flow">tổng quan Jungo</a>.</p>
+          </div>
+        </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-pink">
+            <tr>
+              <th>file</th>
+              <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
+            </tr>
+            <tr>
+              <td>internal/config/config.go</td>
+              <td lang="en"><code>TracerDebugKey</code> (<code>TRACER_DEBUG_KEY</code>, default <code>t_debug</code>),
+                <code>TracerDebugValue</code> (<code>TRACER_DEBUG_VALUE</code>, default <code>0604</code>).</td>
+              <td lang="vi"><code>TracerDebugKey</code> (<code>TRACER_DEBUG_KEY</code>, mặc định <code>t_debug</code>),
+                <code>TracerDebugValue</code> (<code>TRACER_DEBUG_VALUE</code>, mặc định <code>0604</code>).</td>
+            </tr>
+            <tr>
+              <td>internal/database/primary/db.go</td>
+              <td lang="en"><code>options</code> sets <code>Decorate</code> to
+                <code>tracer.NewPgxWrapper(inner)</code> — every query through <code>Executor</code> (sqlc or raw SQL) is traced.</td>
+              <td lang="vi"><code>options</code> đặt <code>Decorate</code> là
+                <code>tracer.NewPgxWrapper(inner)</code> — mọi query qua <code>Executor</code> (sqlc hay SQL viết tay) đều được trace.</td>
+            </tr>
+            <tr>
+              <td>internal/router/router.go</td>
+              <td lang="en">Builds one <code>TracerDebugOptions</code> (key/value + <code>X-Internal-Secret</code> /
+                <code>Auth.InternalSecret</code>). <code>TracerDebug</code> is the first global middleware;
+                <code>AccessLog</code> skips debug requests (<code>SkipIf: debug.Matches</code>); <code>Recover</code>
+                gets the same options so panics land in the report.</td>
+              <td lang="vi">Tạo một <code>TracerDebugOptions</code> (key/value + <code>X-Internal-Secret</code> /
+                <code>Auth.InternalSecret</code>). <code>TracerDebug</code> là middleware global đầu tiên;
+                <code>AccessLog</code> bỏ qua request debug (<code>SkipIf: debug.Matches</code>); <code>Recover</code>
+                nhận cùng options để panic hiện trong báo cáo.</td>
+            </tr>
+            <tr>
+              <td>internal/features/auth/service/auth_service.go</td>
+              <td><code>stop := tracer.Span(ctx, "Bcrypt Compare")</code> … <code>stop()</code> <span lang="en">around
+                  the password check in login.</span><span lang="vi">quanh bước kiểm tra mật khẩu khi đăng nhập.</span>
+              </td>
+            </tr>
+            <tr>
+              <td>internal/features/user/service/user_service.go</td>
+              <td><code>"Bcrypt Hashing"</code> (CreateUser), <code>"Upload Avatar to Storage"</code> <span
+                  lang="en">(avatar upload).</span><span lang="vi">(upload avatar).</span></td>
+            </tr>
+            <tr>
+              <td>.env.example</td>
+              <td><code>TRACER_DEBUG_KEY=t_debug</code>, <code>TRACER_DEBUG_VALUE=0604</code>, <code>AUTH_INTERNAL_SECRET=</code></td>
+            </tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============================================================ 7. GOTCHAS -->
+      <section id="gotchas" class="jd-section c-red">
+        <div class="jd-section-head">
+          <span class="jd-badge">!</span>
+          <div>
+            <h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2>
+          </div>
+        </div>
+        <div class="jd-explain" style="margin-top:16px">
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">Stop only on the
+              request goroutine</span><span class="x" lang="en">It panics. In any other goroutine nothing recovers it
+              and the whole process crashes.</span><span class="x" lang="vi">Nó gây panic. Ở goroutine khác sẽ không có
+              gì recover và cả process bị sập.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">The request really
+              runs</span><span class="x" lang="en">The dashboard only replaces the body (status 200, real body
+              discarded). INSERT / UPDATE / emails still happen — use <code>Stop</code> before the side effect if you
+              only want to look.</span><span class="x" lang="vi">Dashboard chỉ thay phần body (status 200, body thật bị
+              bỏ). INSERT / UPDATE / gửi email vẫn xảy ra — đặt <code>Stop</code> trước bước có tác dụng phụ nếu chỉ
+              muốn xem.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Close your
+              rows</span><span class="x" lang="en">A <code>Query</code> is recorded in <code>rows.Close()</code>. Forget
+              it and the query never shows. Only rows read with <code>Scan</code> are captured (sqlc does
+              that).</span><span class="x" lang="vi">Một <code>Query</code> được ghi trong <code>rows.Close()</code>.
+              Quên Close thì query không bao giờ hiện. Chỉ các dòng đọc bằng <code>Scan</code> mới được ghi (sqlc làm
+              vậy).</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Keep the
+              ctx</span><span class="x" lang="en">Work started with <code>context.Background()</code> (or a fresh ctx in
+              a goroutine) has no Debugger and is invisible.</span><span class="x" lang="vi">Việc chạy với
+              <code>context.Background()</code> (hoặc ctx mới trong goroutine) không có Debugger nên sẽ không
+              hiện.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">Spans appear when they
+              end</span><span class="x" lang="en">In the entry list a nested span shows before its parent (appended at
+              stop). The timeline is sorted by start time, so it reads correctly there.</span><span class="x"
+              lang="vi">Trong danh sách entry, span lồng bên trong hiện trước span cha (vì được thêm lúc stop). Timeline
+              sắp theo thời điểm bắt đầu nên đọc ở đó sẽ đúng.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Postman =
+              HTML</span><span class="x" lang="en">Only User-Agents containing curl, httpie or wget get JSON. Other
+              tools get the HTML page (it has no JS, so previews work).</span><span class="x" lang="vi">Chỉ User-Agent
+              chứa curl, httpie hoặc wget mới nhận JSON. Công cụ khác nhận trang HTML (không có JS nên preview vẫn xem
+              được).</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">Secrets in the
+              report</span><span class="x" lang="en">Auth/cookie/secret-looking headers are masked, but SQL parameter
+              values, row data and <code>full_url</code> (including your <code>t_debug</code> value) are shown
+              as-is.</span><span class="x" lang="vi">Header auth/cookie/có vẻ bí mật được che, nhưng giá trị tham số
+              SQL, dữ liệu các dòng và <code>full_url</code> (gồm cả giá trị <code>t_debug</code> của bạn) hiện nguyên
+              văn.</span></div>
+        </div>
+      </section>
+
+      <footer class="jd-footer">
+        <span>Jundoc · Junkit · tracer</span>
+        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
+              Junkit</span></a></span>
+      </footer>
+    </article>
+  </div>
+
+  <script>
+    document.addEventListener("jd:ready", function () {
+      // Mirrors summarizeDB (group by unbound SQL) and the dashboard timeline (left/width as % of total).
+      function summarize(entries, totalMS) {
+        var s = { queries: 0, failed: 0, total_ms: 0, percent: 0 }, groups = {}, order = [];
+        entries.forEach(function (e) {
+          if (e.type !== "sql") return;
+          s.queries++; s.total_ms += e.dur;
+          if (e.error) s.failed++;
+          var key = e.query || e.label;
+          if (!groups[key]) { groups[key] = { name: e.label, sql: e.query, count: 0, total_ms: 0 }; order.push(key); }
+          groups[key].count++; groups[key].total_ms += e.dur;
+        });
+        if (totalMS > 0) s.percent = +(s.total_ms / totalMS * 100).toFixed(1);
+        var rep = order.map(function (k) { return groups[k]; }).filter(function (q) { return q.count > 1; });
+        rep.sort(function (a, b) { return b.count - a.count || (a.name < b.name ? -1 : 1); });
+        if (rep.length) s.repeated = rep;
+        return s;
+      }
+      // Two different unannotated queries share the name "Select" but are not a repeat.
+      var t = summarize([
+        { type: "sql", label: "Select", query: "SELECT * FROM users WHERE id = $1", dur: 1 },
+        { type: "sql", label: "Select", query: "SELECT * FROM orders", dur: 1 },
+        { type: "sql", label: "GetItem", query: "SELECT * FROM items WHERE id = $1", dur: 1 },
+        { type: "sql", label: "GetItem", query: "SELECT * FROM items WHERE id = $1", dur: 1, error: "boom" }], 10);
+      console.assert(t.queries === 4 && t.failed === 1 && t.repeated.length === 1 && t.repeated[0].name === "GetItem" && t.repeated[0].count === 2, "summarize groups by SQL");
+      console.assert(t.percent === 40, "percent of request");
+
+      function build(n, ms) {
+        var e = [], at = 0.2;
+        e.push({ type: "span", label: "Load user with roles", at: at, dur: 0 });
+        e.push({ type: "sql", label: "GetUserByUUID", query: "SELECT … FROM users WHERE uuid = $1", at: at + 0.1, dur: 1.5 });
+        var cur = at + 1.7;
+        for (var i = 0; i < n; i++) { e.push({ type: "sql", label: "GetRoleByID", query: "SELECT … FROM roles WHERE id = $1", at: cur, dur: ms }); cur += ms + 0.1; }
+        e[0].dur = +(cur - at).toFixed(2);
+        return { entries: e, total: +(cur + 0.4).toFixed(2) };
+      }
+      var b = build(3, 2);
+      console.assert(summarize(b.entries, b.total).repeated[0].count === 3, "N+1 detected");
+
+      function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+      function paint() {
+        var n = Math.max(0, Math.min(12, parseInt(document.getElementById("tr-n").value, 10) || 0));
+        var ms = Math.max(0, Math.min(20, parseFloat(document.getElementById("tr-ms").value) || 0));
+        var r = build(n, ms);
+        var html = r.entries.slice().sort(function (a, c) { return a.at - c.at; }).map(function (e) {
+          var left = e.at / r.total * 100, width = e.dur / r.total * 100;
+          var col = e.type === "span" ? "var(--green)" : "var(--blue)";
+          return '<div style="display:grid;grid-template-columns:minmax(90px,34%) 1fr 56px;gap:8px;align-items:center">' +
+            '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(e.label) + '</span>' +
+            '<span style="position:relative;height:12px;background:var(--line);border-radius:3px">' +
+            '<span style="position:absolute;top:0;bottom:0;min-width:2px;border-radius:3px;background:' + col + ';left:' + left.toFixed(3) + '%;width:' + width.toFixed(3) + '%"></span></span>' +
+            '<span style="text-align:right;color:var(--muted)">' + e.dur.toFixed(2) + 'ms</span></div>';
+        }).join("");
+        document.getElementById("tr-timeline").innerHTML = html;
+        var s = summarize(r.entries, r.total);
+        s.total_ms = +s.total_ms.toFixed(2);
+        if (s.repeated) s.repeated.forEach(function (q) { q.total_ms = +q.total_ms.toFixed(2); });
+        document.getElementById("tr-json").innerHTML = JD.highlight(JSON.stringify(s, null, 2), "json");
+      }
+      ["tr-n", "tr-ms"].forEach(function (id) { document.getElementById(id).addEventListener("input", paint); });
+      paint();
+    });
+  </script>
+</body>
+
+</html>

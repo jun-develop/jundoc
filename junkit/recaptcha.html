@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit recaptcha · Jundoc</title>
+  <meta name="description"
+    content="junkit/recaptcha: verify Google reCAPTCHA v3 tokens against a minimum score, with a mock verifier for development.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+
+<body>
+  <div id="jd-app" data-root="..">
+    <article class="jd-content">
+
+      <!-- ============================================================ HERO -->
+      <header class="jd-hero"
+        style="background:radial-gradient(1000px 380px at 0% 0%, rgba(192,132,252,.55), transparent 60%),linear-gradient(135deg,#3b0764,#6d28d9 55%,#be185d)">
+        <div class="jd-eyebrow">Junkit · recaptcha</div>
+        <h1>recaptcha</h1>
+        <p lang="en">Asks Google whether a reCAPTCHA v3 token came from a human: <code>Verify</code> returns
+          <code>nil</code> only when Google accepts the token and its score is at least <code>MinScore</code>.</p>
+        <p lang="vi">Hỏi Google xem một token reCAPTCHA v3 có đến từ người thật không: <code>Verify</code> chỉ trả
+          <code>nil</code> khi Google chấp nhận token và điểm của nó đạt ít nhất <code>MinScore</code>.</p>
+        <div class="jd-chips">
+          <span class="jd-chip">github.com/jun-develop/junkit/recaptcha</span>
+          <span class="jd-chip"><span lang="en">Fx Module → provides <code>recaptcha.Verifier</code> (real or
+              mock)</span><span lang="vi">Fx Module → cung cấp <code>recaptcha.Verifier</code> (thật hoặc
+              mock)</span></span>
+          <span class="jd-chip"><span lang="en">needs <code>*http.Client</code></span><span lang="vi">cần
+              <code>*http.Client</code></span></span>
+          <span class="jd-chip"><span lang="en">stdlib only</span><span lang="vi">chỉ dùng stdlib</span></span>
+        </div>
+      </header>
+
+      <!-- ============================================================ 1. WHAT -->
+      <section id="what" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">1</span>
+          <div>
+            <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
+            <p class="jd-sub" lang="en">The browser gets a token from Google, sends it with the form, your server asks
+              Google's <code>siteverify</code> what it thinks. With <code>Mock</code> the last two steps are skipped and
+              every token passes.</p>
+            <p class="jd-sub" lang="vi">Trình duyệt lấy token từ Google, gửi kèm form, server của bạn hỏi
+              <code>siteverify</code> của Google đánh giá thế nào. Với <code>Mock</code>, hai bước cuối bị bỏ qua và mọi
+              token đều qua.</p>
+          </div>
+        </div>
+        <div class="jd-flow" style="margin-top:22px" data-wires='[
+      {"from":"r1","to":"r2","color":"blue","label":"token"},
+      {"from":"r2","to":"r3","color":"purple","label":"secret"},
+      {"from":"r3","to":"r4","color":"green","label":"score"}]'>
+          <div class="jd-node is-tint c-blue" data-node="r1"><span class="k">1 · browser</span><span class="t mono"
+              style="font-size:15px">grecaptcha.execute</span>
+            <div class="d" lang="en">Google's v3 script returns a short-lived token.</div>
+            <div class="d" lang="vi">Script v3 của Google trả về một token sống ngắn.</div>
+          </div>
+          <div class="jd-node is-tint c-purple" data-node="r2"><span class="k"><span lang="en">2 · your
+                server</span><span lang="vi">2 · server của bạn</span></span><span class="t mono"
+              style="font-size:15px">Verify(ctx, token, ip)</span>
+            <div class="d" lang="en">Missing secret key → error before any call.</div>
+            <div class="d" lang="vi">Thiếu secret key → lỗi trước khi gọi gì.</div>
+          </div>
+          <div class="jd-node is-tint c-pink" data-node="r3"><span class="k">3 · Google</span><span class="t mono"
+              style="font-size:15px">siteverify</span>
+            <div class="d" lang="en"><code>POST https://www.google.com/recaptcha/api/siteverify</code></div>
+            <div class="d" lang="vi"><code>POST https://www.google.com/recaptcha/api/siteverify</code></div>
+          </div>
+          <div class="jd-node is-tint c-green" data-node="r4"><span class="k">4 · verdict</span><span class="t mono"
+              style="font-size:15px">score ≥ MinScore ?</span>
+            <div class="d" lang="en"><code>success</code> and score high enough → <code>nil</code>; otherwise an error.
+            </div>
+            <div class="d" lang="vi"><code>success</code> và điểm đủ cao → <code>nil</code>; ngược lại là error.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 2. SETUP -->
+      <section id="setup" class="jd-section c-pink">
+        <div class="jd-section-head">
+          <span class="jd-badge">2</span>
+          <div>
+            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối</span></h2>
+            <p class="jd-sub" lang="en"><code>recaptcha.Module</code> picks the implementation:
+              <code>Options.Mock</code> → <code>*MockVerifier</code>, otherwise <code>*Client</code>. Either way it is
+              provided as <code>recaptcha.Verifier</code>.</p>
+            <p class="jd-sub" lang="vi"><code>recaptcha.Module</code> tự chọn bản cài đặt: <code>Options.Mock</code> →
+              <code>*MockVerifier</code>, ngược lại <code>*Client</code>. Dù thế nào nó cũng được cung cấp dưới dạng
+              <code>recaptcha.Verifier</code>.</p>
+          </div>
+        </div>
+        <div class="jd-tabs c-pink" style="margin-top:18px">
+          <div class="jd-tablist">
+            <button type="button" class="jd-tab" aria-selected="true"><span lang="en">with Fx (as Jungo)</span><span
+                lang="vi">với Fx (như Jungo)</span></button>
+            <button type="button" class="jd-tab" aria-selected="false"><span lang="en">without Fx</span><span
+                lang="vi">Không dùng Fx</span></button>
+          </div>
+          <div class="jd-tabpanel">
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>jungo/internal/app/fx.go</span></div>
+              <pre data-hl="go">
+// inside CoreModules(cfg):
+fx.Provide(httpclient.NewDefaultClient), // *http.Client — required even in Mock mode
+
+fx.Provide(provideRecaptchaOptions),
+recaptcha.Module,
+
+// provideRecaptchaOptions builds recaptcha.Options from cfg.Recaptcha.
+func provideRecaptchaOptions(cfg *config.Config) recaptcha.Options {
+	return recaptcha.Options{
+		SecretKey: cfg.Recaptcha.SecretKey,
+		MinScore:  cfg.Recaptcha.MinScore,
+		Mock:      cfg.Recaptcha.Mock,
+	}
+}
+</pre>
+            </div>
+            <p class="jd-sub" style="margin-top:10px" lang="en">From <code>config.RecaptchaConfig</code>:
+              <code>RECAPTCHA_SECRET_KEY</code>, <code>RECAPTCHA_MIN_SCORE</code> (default <code>0.5</code>),
+              <code>RECAPTCHA_MOCK</code> (default <code>true</code> — in every environment, see gotchas).</p>
+            <p class="jd-sub" style="margin-top:10px" lang="vi">Từ <code>config.RecaptchaConfig</code>:
+              <code>RECAPTCHA_SECRET_KEY</code>, <code>RECAPTCHA_MIN_SCORE</code> (mặc định <code>0.5</code>),
+              <code>RECAPTCHA_MOCK</code> (mặc định <code>true</code> — ở mọi môi trường, xem phần lưu ý).</p>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
+              <pre data-hl="go">
+var verifier recaptcha.Verifier
+if os.Getenv("APP_ENV") == "production" {
+	// func NewClient(opts Options, httpClient *http.Client) *Client
+	verifier = recaptcha.NewClient(recaptcha.Options{
+		SecretKey: os.Getenv("RECAPTCHA_SECRET_KEY"),
+		MinScore:  0.7,
+	}, nil) // nil → http.DefaultClient (no timeout!)
+} else {
+	verifier = recaptcha.NewMockVerifier()
+}
+</pre>
+            </div>
+            <p class="jd-sub" style="margin-top:10px" lang="en">Without Fx, <code>Options.Mock</code> does nothing —
+              <code>NewClient</code> ignores it. Choose the implementation yourself, as above.</p>
+            <p class="jd-sub" style="margin-top:10px" lang="vi">Không dùng Fx thì <code>Options.Mock</code> không có tác
+              dụng — <code>NewClient</code> bỏ qua nó. Tự chọn bản cài đặt như trên.</p>
+          </div>
+        </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-pink">
+            <tr>
+              <th>Options field</th>
+              <th>type</th>
+              <th><span lang="en">zero value</span><span lang="vi">giá trị zero</span></th>
+              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+            </tr>
+            <tr>
+              <td>SecretKey</td>
+              <td>string</td>
+              <td lang="en"><code>""</code> → every <code>Client.Verify</code> returns
+                <code>recaptcha secret key not configured</code></td>
+              <td lang="vi"><code>""</code> → mọi <code>Client.Verify</code> trả
+                <code>recaptcha secret key not configured</code></td>
+              <td lang="en">The server-side secret Google gives you for your site (not the public site key).</td>
+              <td lang="vi">Secret phía server Google cấp cho site của bạn (không phải site key công khai).</td>
+            </tr>
+            <tr>
+              <td>MinScore</td>
+              <td>float64</td>
+              <td lang="en"><code>&lt;= 0</code> → <code>0.5</code></td>
+              <td lang="vi"><code>&lt;= 0</code> → <code>0.5</code></td>
+              <td lang="en">Lowest accepted v3 score (0.0 = bot … 1.0 = human). Scores below it fail. Values above 1 are
+                not clamped (everything would fail).</td>
+              <td lang="vi">Điểm v3 thấp nhất được chấp nhận (0.0 = bot … 1.0 = người). Điểm thấp hơn bị từ chối. Giá
+                trị trên 1 không bị chặn lại (mọi token sẽ bị từ chối).</td>
+            </tr>
+            <tr>
+              <td>Mock</td>
+              <td>bool</td>
+              <td lang="en"><code>false</code> → real <code>*Client</code></td>
+              <td lang="vi"><code>false</code> → <code>*Client</code> thật</td>
+              <td lang="en">Only read by <code>Module</code>: <code>true</code> provides a <code>*MockVerifier</code>
+                that accepts every token.</td>
+              <td lang="vi">Chỉ <code>Module</code> đọc: <code>true</code> cung cấp <code>*MockVerifier</code> chấp nhận
+                mọi token.</td>
+            </tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============================================================ 3. QUICK START -->
+      <section id="quick" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">3</span>
+          <div>
+            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <p class="jd-sub" lang="en">Protect a sign-up form. Hover an explanation to light up its lines.</p>
+            <p class="jd-sub" lang="vi">Bảo vệ một form đăng ký. Rê chuột vào giải thích để làm sáng các dòng tương ứng.
+            </p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <div class="jd-sticky">
+              <div class="jd-term" data-copy>
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>signup_handler.go</span></div>
+                <pre data-hl="go" id="code-quick">
+var ErrBot = response.New(response.Forbidden,
+    "recaptcha_verification_failed")
+
+type SignupRequest struct {
+    Email          string `json:"email" binding:"required"`
+    RecaptchaToken string `json:"recaptcha_token" binding:"required,max=4096"`
+}
+
+func (h *SignupHandler) Signup(c *gin.Context) {
+    var req SignupRequest
+    if err := c.ShouldBindJSON(&amp;req); err != nil {
+        h.responder.SendWithData(c, 422, "validation_error",
+            h.validator.GetValidationErrors(c, err))
+        return
+    }
+
+    err := h.verifier.Verify(c.Request.Context(), req.RecaptchaToken, c.ClientIP())
+    if err != nil {
+        h.logger.Info("recaptcha rejected", zap.Error(err))
+        h.responder.Error(c, ErrBot)
+        return
+    }
+    // … create the account
+}
+</pre>
+              </div>
+            </div>
+          </div>
+          <div class="jd-explain">
+            <div class="jd-ex c-purple" data-code="#code-quick" data-show="1-2"><span class="n">1</span><span
+                class="w">your own AppError</span><span class="x" lang="en">Verify returns plain <code>fmt</code>
+                errors. Passing those to <code>responder.Error</code> gives a generic 500 — map them to an <a
+                  href="response.html">AppError</a> (Jungo uses this exact one).</span><span class="x" lang="vi">Verify
+                trả error <code>fmt</code> thường. Đưa chúng vào <code>responder.Error</code> sẽ ra 500 chung chung —
+                hãy ánh xạ sang một <a href="response.html">AppError</a> (Jungo dùng đúng cái này).</span></div>
+            <div class="jd-ex c-purple" data-code="#code-quick" data-show="6"><span class="n">2</span><span
+                class="w">token field</span><span class="x" lang="en">v3 tokens are long; Jungo caps the field at 4096.
+                Use <code>required</code> if the form must carry one.</span><span class="x" lang="vi">Token v3 khá dài;
+                Jungo giới hạn field ở 4096. Dùng <code>required</code> nếu form bắt buộc phải có.</span></div>
+            <div class="jd-ex c-purple" data-code="#code-quick" data-show="17"><span class="n">3</span><span
+                class="w">Verify</span><span class="x" lang="en">The request context cancels the Google call if the
+                client goes away. <code>remoteIP</code> is optional — <code>""</code> leaves it out.</span><span
+                class="x" lang="vi">Truyền <code>c.Request.Context()</code> để tự động hủy request tới Google nếu client
+                đóng kết nối sớm. Tham số <code>remoteIP</code> là tùy chọn (truyền <code>""</code> nếu không
+                cần).</span></div>
+            <div class="jd-ex c-purple" data-code="#code-quick" data-show="18-21"><span class="n">4</span><span
+                class="w">log, don't leak</span><span class="x" lang="en">The error says why (score, Google error codes)
+                — useful in logs, not for the client. Every error means "reject".</span><span class="x" lang="vi">Error
+                cho biết lý do (điểm, mã lỗi của Google) — hữu ích trong log, không nên trả cho client. Mọi error đều
+                nghĩa là "từ chối".</span></div>
+          </div>
+        </div>
+        <div class="jd-term" style="margin-top:14px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>signup.js (browser, Google's v3 API)</span></div>
+          <pre data-hl="js">
+grecaptcha.ready(() =&gt; {
+  grecaptcha.execute("YOUR_SITE_KEY", { action: "signup" }).then((token) =&gt; {
+    fetch("/api/v1/signup", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, recaptcha_token: token }) });
+  });
+});
+</pre>
+        </div>
+      </section>
+
+      <!-- ============================================================ 4. TRY IT -->
+      <section id="try" class="jd-section c-pink">
+        <div class="jd-section-head">
+          <span class="jd-badge">4</span>
+          <div>
+            <h2><span lang="en">Try it: what does Verify return?</span><span lang="vi">Thử ngay: Verify trả về
+                gì?</span></h2>
+            <p class="jd-sub" lang="en">Same decision order as the Go code. "Google says" is the siteverify response.
+            </p>
+            <p class="jd-sub" lang="vi">Cùng thứ tự quyết định với code Go. "Google trả lời" là response của siteverify.
+            </p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div class="jd-calc c-pink">
+            <label>Options.Mock <select id="rc-mock">
+                <option value="0">false</option>
+                <option value="1">true</option>
+              </select></label>
+            <label>Options.SecretKey <select id="rc-secret">
+                <option value="1">"6Lc…"</option>
+                <option value="0">""</option>
+              </select></label>
+            <label>Options.MinScore <input type="number" id="rc-min" value="0" step="0.1"></label>
+            <label><span lang="en">Google says: success</span><span lang="vi">Google trả lời: success</span> <select
+                id="rc-success">
+                <option value="1">true</option>
+                <option value="0">false</option>
+              </select></label>
+            <label><span lang="en">Google says: score</span><span lang="vi">Google trả lời: score</span> <input
+                type="number" id="rc-score" value="0.3" step="0.1" min="0" max="1"></label>
+            <label><span lang="en">Google says: error-codes</span><span lang="vi">Google trả lời: error-codes</span>
+              <input type="text" id="rc-codes" value="timeout-or-duplicate"></label>
+          </div>
+          <div>
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>Verify(ctx, token, ip)</span></div>
+              <pre id="rc-out" style="white-space:pre-wrap;word-break:break-word"></pre>
+            </div>
+            <div class="jd-callout c-pink" id="rc-login" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 5. API -->
+      <section id="api" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">5</span>
+          <div>
+            <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from
+              <code>junkit/recaptcha/recaptcha.go</code>, <code>mock.go</code> and <code>module.go</code>.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ
+              <code>junkit/recaptcha/recaptcha.go</code>, <code>mock.go</code> và <code>module.go</code>.</p>
+          </div>
+        </div>
+        <div class="jd-syms" style="margin-top:18px">
+
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">interface</span><span class="jd-sym-name">Verifier</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type Verifier interface {
+	Verify(ctx context.Context, token string, remoteIP string) error
+}
+</pre>
+            </div>
+            <p lang="en"><code>nil</code> = accept. Any error = reject. Depend on this, so tests and dev can use
+              <code>MockVerifier</code>.</p>
+            <p lang="vi"><code>nil</code> = chấp nhận. Mọi error = từ chối. Hãy phụ thuộc vào interface này, để test và
+              dev dùng được <code>MockVerifier</code>.</p>
+          </div>
+
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Options</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type Options struct {
+	// SecretKey is the reCAPTCHA secret key issued by Google for your site.
+	SecretKey string
+
+	// MinScore is the minimum acceptable reCAPTCHA v3 score (0.0-1.0, defaults to 0.5 when &lt;= 0).
+	MinScore float64
+
+	// Mock, when true, enables MockVerifier for local development and tests.
+	Mock bool
+}
+</pre>
+            </div>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Client</span></div>
+            <p lang="en">The real verifier. All fields are unexported — create it with <code>NewClient</code>. It keeps
+              no per-call state, so one instance is safe to share between goroutines.</p>
+            <p lang="vi">Triển khai Verifier trong thực tế. Mọi field đều unexported — khởi tạo thông qua
+              <code>NewClient</code>. Đối tượng không lưu trạng thái (stateless), hoàn toàn an toàn khi dùng đồng thời
+              giữa nhiều goroutine (concurrent-safe).</p>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NewClient</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func NewClient(opts Options, httpClient *http.Client) *Client</pre>
+            </div>
+            <ul>
+              <li lang="en"><code>opts.MinScore &lt;= 0</code> → 0.5. <code>opts.Mock</code> is ignored.</li>
+              <li lang="vi"><code>opts.MinScore &lt;= 0</code> → 0.5. <code>opts.Mock</code> bị bỏ qua.</li>
+              <li lang="en"><code>httpClient == nil</code> → <code>http.DefaultClient</code> (which has no timeout —
+                pass a context deadline or your own client).</li>
+              <li lang="vi"><code>httpClient == nil</code> → <code>http.DefaultClient</code> (không có timeout — hãy
+                dùng context có deadline hoặc client riêng).</li>
+              <li lang="en">Never fails; an empty secret only shows up when <code>Verify</code> is called.</li>
+              <li lang="vi">Không bao giờ lỗi; secret rỗng chỉ lộ ra khi gọi <code>Verify</code>.</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">(*Client)
+                Verify</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func (c *Client) Verify(ctx context.Context, token string, remoteIP string) error</pre>
+            </div>
+            <p lang="en">Sends <code>POST https://www.google.com/recaptcha/api/siteverify</code> with
+              <code>secret</code>, <code>response</code> (= token) and, if non-empty, <code>remoteip</code> as <b>URL
+                query parameters</b> (empty body). Errors, in the order they are checked:</p>
+            <p lang="vi">Gửi <code>POST https://www.google.com/recaptcha/api/siteverify</code> với <code>secret</code>,
+              <code>response</code> (= token) và, nếu khác rỗng, <code>remoteip</code> dưới dạng <b>query parameter trên
+                URL</b> (body rỗng). Các lỗi, theo thứ tự kiểm tra:</p>
+            <div class="jd-tablewrap">
+              <table class="jd-params c-blue">
+                <tr>
+                  <th><span lang="en">error text</span><span lang="vi">nội dung lỗi</span></th>
+                  <th><span lang="en">when</span><span lang="vi">khi nào</span></th>
+                </tr>
+                <tr>
+                  <td>recaptcha secret key not configured</td>
+                  <td lang="en">empty <code>SecretKey</code> (no request is made)</td>
+                  <td lang="vi"><code>SecretKey</code> rỗng (không gửi request)</td>
+                </tr>
+                <tr>
+                  <td>create request: %w</td>
+                  <td lang="en">building the request failed (e.g. nil ctx)</td>
+                  <td lang="vi">tạo request thất bại (vd. ctx nil)</td>
+                </tr>
+                <tr>
+                  <td>send recaptcha request: %w</td>
+                  <td lang="en">network error, timeout, cancelled ctx</td>
+                  <td lang="vi">lỗi mạng, timeout, ctx bị huỷ</td>
+                </tr>
+                <tr>
+                  <td>recaptcha api returned non-200 status: %d</td>
+                  <td lang="en">Google answered something other than 200</td>
+                  <td lang="vi">Google trả status khác 200</td>
+                </tr>
+                <tr>
+                  <td>read response body: %w</td>
+                  <td lang="en">reading the body failed</td>
+                  <td lang="vi">đọc body thất bại</td>
+                </tr>
+                <tr>
+                  <td>unmarshal response: %w</td>
+                  <td lang="en">body is not the expected JSON</td>
+                  <td lang="vi">body không phải JSON như mong đợi</td>
+                </tr>
+                <tr>
+                  <td>recaptcha verification failed: %v</td>
+                  <td lang="en"><code>success: false</code>; <code>%v</code> is Google's <code>error-codes</code>, e.g.
+                    <code>[invalid-input-response]</code></td>
+                  <td lang="vi"><code>success: false</code>; <code>%v</code> là <code>error-codes</code> của Google, vd.
+                    <code>[invalid-input-response]</code></td>
+                </tr>
+                <tr>
+                  <td>recaptcha score too low: %f &lt; %f</td>
+                  <td lang="en">score below the minimum, e.g. <code>0.100000 &lt; 0.500000</code></td>
+                  <td lang="vi">điểm dưới mức tối thiểu, vd. <code>0.100000 &lt; 0.500000</code></td>
+                </tr>
+              </table>
+            </div>
+            <p lang="en">None of these are exported sentinel errors; match on <code>err != nil</code>, not on the text.
+              <code>action</code>, <code>hostname</code> and <code>challenge_ts</code> from Google are parsed but not
+              checked.</p>
+            <p lang="vi">Không lỗi nào là sentinel error được export; hãy dựa vào <code>err != nil</code>, đừng so
+              chuỗi. <code>action</code>, <code>hostname</code> và <code>challenge_ts</code> từ Google được parse nhưng
+              không được kiểm tra.</p>
+          </div>
+
+          <div class="jd-sym c-green">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">MockVerifier</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type MockVerifier struct{}
+
+func NewMockVerifier() *MockVerifier
+
+func (m *MockVerifier) Verify(context.Context, string, string) error // always nil
+</pre>
+            </div>
+            <p lang="en">Accepts every token, including <code>""</code>. No network. Use it in tests and local
+              development.</p>
+            <p lang="vi">Chấp nhận mọi token, kể cả <code>""</code>. Không gọi mạng. Dùng trong test và khi phát triển
+              local.</p>
+          </div>
+
+          <div class="jd-sym c-muted">
+            <div class="jd-sym-head"><span class="jd-kind">var</span><span class="jd-sym-name">Module</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+var Module = fx.Module("recaptcha",
+	fx.Provide(newVerifier),
+)
+
+// newVerifier returns a MockVerifier when opts.Mock is set, otherwise a Client.
+func newVerifier(opts Options, httpClient *http.Client) Verifier
+</pre>
+            </div>
+            <p lang="en">Provides <code>recaptcha.Verifier</code>. Requires <code>recaptcha.Options</code> and
+              <code>*http.Client</code> in the graph — the client is required even when <code>Mock</code> is true.</p>
+            <p lang="vi">Cung cấp <code>recaptcha.Verifier</code>. Cần <code>recaptcha.Options</code> và
+              <code>*http.Client</code> trong graph — client vẫn bắt buộc kể cả khi <code>Mock</code> là true.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 6. IN JUNGO -->
+      <section id="jungo" class="jd-section c-orange">
+        <div class="jd-section-head">
+          <span class="jd-badge">6</span>
+          <div>
+            <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+            <p class="jd-sub" lang="en">Login can require a token. Off by default
+              (<code>AUTH_RECAPTCHA_ON_LOGIN=false</code>).</p>
+            <p class="jd-sub" lang="vi">Đăng nhập có thể yêu cầu token. Mặc định tắt
+              (<code>AUTH_RECAPTCHA_ON_LOGIN=false</code>).</p>
+          </div>
+        </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-orange">
+            <tr>
+              <th>file</th>
+              <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
+            </tr>
+            <tr>
+              <td>config/config.go</td>
+              <td lang="en"><code>RecaptchaConfig</code>: <code>RECAPTCHA_SECRET_KEY</code>,
+                <code>RECAPTCHA_MIN_SCORE</code> (0.5), <code>RECAPTCHA_MOCK</code> (true).
+                <code>AuthConfig.RecaptchaOnLogin</code> ← <code>AUTH_RECAPTCHA_ON_LOGIN</code> (false).</td>
+              <td lang="vi"><code>RecaptchaConfig</code>: <code>RECAPTCHA_SECRET_KEY</code>,
+                <code>RECAPTCHA_MIN_SCORE</code> (0.5), <code>RECAPTCHA_MOCK</code> (true).
+                <code>AuthConfig.RecaptchaOnLogin</code> ← <code>AUTH_RECAPTCHA_ON_LOGIN</code> (false).</td>
+            </tr>
+            <tr>
+              <td>app/fx.go</td>
+              <td lang="en"><code>provideRecaptchaOptions</code> + <code>recaptcha.Module</code>.</td>
+              <td lang="vi"><code>provideRecaptchaOptions</code> + <code>recaptcha.Module</code>.</td>
+            </tr>
+            <tr>
+              <td>features/auth/dto/v1/auth_dto.go</td>
+              <td lang="en"><code>LoginRequest.RecaptchaToken</code> — JSON <code>recaptcha_token</code>,
+                <code>binding:"omitempty,max=4096"</code>; copied into <code>domain.Metadata.RecaptchaToken</code>.</td>
+              <td lang="vi"><code>LoginRequest.RecaptchaToken</code> — JSON <code>recaptcha_token</code>,
+                <code>binding:"omitempty,max=4096"</code>; được chép vào <code>domain.Metadata.RecaptchaToken</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>features/auth/service/auth_service.go</td>
+              <td lang="en"><code>Params.Recaptcha recaptcha.Verifier `optional:"true"`</code>. <code>Login</code> runs
+                it first: <code>if s.cfg.RecaptchaOnLogin &amp;&amp; s.recaptcha != nil</code> →
+                <code>Verify(ctx, meta.RecaptchaToken, meta.IPAddress)</code>; any error →
+                <code>domain.ErrRecaptchaFailed</code>, before the brute-force check and the password.</td>
+              <td lang="vi"><code>Params.Recaptcha recaptcha.Verifier `optional:"true"`</code>. <code>Login</code> chạy
+                nó đầu tiên: <code>if s.cfg.RecaptchaOnLogin &amp;&amp; s.recaptcha != nil</code> →
+                <code>Verify(ctx, meta.RecaptchaToken, meta.IPAddress)</code>; mọi error →
+                <code>domain.ErrRecaptchaFailed</code>, trước cả kiểm tra brute-force và mật khẩu.</td>
+            </tr>
+            <tr>
+              <td>features/auth/domain/errors.go · module.go</td>
+              <td lang="en">
+                <code>ErrRecaptchaFailed = response.New(response.Forbidden, "recaptcha_verification_failed")</code> →
+                HTTP 403, message "reCAPTCHA verification failed".</td>
+              <td lang="vi">
+                <code>ErrRecaptchaFailed = response.New(response.Forbidden, "recaptcha_verification_failed")</code> →
+                HTTP 403, message "reCAPTCHA verification failed".</td>
+            </tr>
+            <tr>
+              <td>features/auth/handler/v1/auth_handler.go</td>
+              <td lang="en">The IP passed as <code>remoteIP</code> is <code>ctx.ClientIP()</code>.</td>
+              <td lang="vi">IP truyền vào <code>remoteIP</code> là <code>ctx.ClientIP()</code>.</td>
+            </tr>
+          </table>
+        </div>
+        <div style="margin-top:14px;display:grid;gap:14px">
+          <div class="jd-term" data-copy="commands">
+            <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+            <pre data-hl="bash">
+# .env: AUTH_RECAPTCHA_ON_LOGIN=true, RECAPTCHA_MOCK=false, RECAPTCHA_SECRET_KEY=…
+$ curl -s -X POST localhost:8080/api/v1/auth/login \
+    -H 'Content-Type: application/json' \
+    -d '{"email":"admin@jungo.com","password":"Password@123","recaptcha_token":"not-a-real-token"}' | jq
+</pre>
+          </div>
+          <div class="jd-term">
+            <div class="jd-term-bar"><i></i><i></i><i></i><span>403 Forbidden</span></div>
+            <pre data-hl="json">
+{
+  "status": "error",
+  "code": "FORBIDDEN",
+  "message": "reCAPTCHA verification failed",
+  "api_info": { … }
+}
+</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 7. GOTCHAS -->
+      <section id="gotchas" class="jd-section c-red">
+        <div class="jd-section-head">
+          <span class="jd-badge">!</span>
+          <div>
+            <h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2>
+          </div>
+        </div>
+        <div class="jd-explain" style="margin-top:16px">
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w"><span lang="en">Jungo
+                mocks by default — everywhere</span><span lang="vi">Jungo mặc định mock — ở mọi nơi</span></span><span
+              class="x" lang="en"><code>RECAPTCHA_MOCK</code> has <code>envDefault:"true"</code> and is not tied to
+              <code>API_ENVIRONMENT</code>. Turning on <code>AUTH_RECAPTCHA_ON_LOGIN</code> in production without
+              <code>RECAPTCHA_MOCK=false</code> lets every token through.</span><span class="x"
+              lang="vi"><code>RECAPTCHA_MOCK</code> có <code>envDefault:"true"</code> và không gắn với
+              <code>API_ENVIRONMENT</code>. Bật <code>AUTH_RECAPTCHA_ON_LOGIN</code> ở production mà không đặt
+              <code>RECAPTCHA_MOCK=false</code> thì mọi token đều được cho qua.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">v3
+                only</span><span lang="vi">chỉ dùng v3</span></span><span class="x" lang="en">A v2 checkbox token has no
+              score, so it decodes as 0 and fails with "score too low". The <code>action</code> and
+              <code>hostname</code> Google returns are not compared — a token minted for another action on your site is
+              accepted.</span><span class="x" lang="vi">Token v2 (checkbox) không có điểm, nên bị đọc là 0 và lỗi "score
+              too low". <code>action</code> và <code>hostname</code> Google trả về không được so sánh — token tạo cho
+              action khác trên site của bạn vẫn được chấp nhận.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">secret
+                in the URL</span><span lang="vi">secret nằm trên URL</span></span><span class="x" lang="en">The secret
+              is sent as a query parameter. On a network failure the returned <code>send recaptcha request: …</code>
+              error contains the full URL, secret included — don't log it as-is. (Jungo's login discards
+              it.)</span><span class="x" lang="vi">Secret được gửi dạng query parameter. Khi lỗi mạng, error
+              <code>send recaptcha request: …</code> trả về chứa nguyên URL, kể cả secret — đừng log nguyên văn. (Login
+              của Jungo bỏ error này đi.)</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">tokens
+                are single-use</span><span lang="vi">token chỉ dùng một lần</span></span><span class="x"
+              lang="en">Google rejects a token verified twice or older than about two minutes
+              (<code>timeout-or-duplicate</code>). Get a fresh token right before each submit; never retry
+              <code>Verify</code> with the same token.</span><span class="x" lang="vi">Google từ chối token đã verify
+              một lần hoặc cũ hơn khoảng hai phút (<code>timeout-or-duplicate</code>). Lấy token mới ngay trước mỗi lần
+              submit; đừng gọi lại <code>Verify</code> với cùng token.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w"><span
+                lang="en">optional in Jungo</span><span lang="vi">tuỳ chọn trong Jungo</span></span><span class="x"
+              lang="en">The login check needs both <code>AUTH_RECAPTCHA_ON_LOGIN=true</code> and a Verifier in the
+              graph. A missing token is not a validation error (<code>omitempty</code>) — with a real client it reaches
+              Google and fails there.</span><span class="x" lang="vi">Kiểm tra khi đăng nhập cần cả
+              <code>AUTH_RECAPTCHA_ON_LOGIN=true</code> và một Verifier trong graph. Thiếu token không phải lỗi
+              validation (<code>omitempty</code>) — với client thật nó được gửi tới Google và thất bại ở đó.</span>
+          </div>
+        </div>
+      </section>
+
+      <footer class="jd-footer">
+        <span>Jundoc · Junkit · recaptcha</span>
+        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
+              Junkit</span></a></span>
+      </footer>
+    </article>
+  </div>
+
+  <script>
+    document.addEventListener("jd:ready", function () {
+      // Mirrors newVerifier (Module) + NewClient's MinScore default + Client.Verify's checks.
+      function f(x) { return x.toFixed(6); } // Go %f
+      function verify(o) {
+        if (o.mock) return null;
+        var min = o.minScore > 0 ? o.minScore : 0.5;
+        if (!o.secret) return "recaptcha secret key not configured";
+        if (!o.success) return "recaptcha verification failed: [" + o.codes.join(" ") + "]";
+        if (o.score < min) return "recaptcha score too low: " + f(o.score) + " < " + f(min);
+        return null;
+      }
+      console.assert(verify({ mock: true, secret: false }) === null, "mock accepts all");
+      console.assert(verify({ secret: false, success: true, score: 1 }) === "recaptcha secret key not configured", "no secret");
+      console.assert(verify({ secret: true, success: false, codes: ["invalid-input-response"], score: 0 }) === "recaptcha verification failed: [invalid-input-response]", "failed");
+      console.assert(verify({ secret: true, success: true, score: 0.1, minScore: 0 }) === "recaptcha score too low: 0.100000 < 0.500000", "default min 0.5");
+      console.assert(verify({ secret: true, success: true, score: 0.5, minScore: -1 }) === null, "score == min passes");
+
+      var ids = ["rc-mock", "rc-secret", "rc-min", "rc-success", "rc-score", "rc-codes"];
+      function v(id) { return document.getElementById(id).value; }
+      function paint() {
+        var codes = v("rc-codes").trim();
+        var err = verify({
+          mock: v("rc-mock") === "1", secret: v("rc-secret") === "1", minScore: parseFloat(v("rc-min")) || 0,
+          success: v("rc-success") === "1", score: parseFloat(v("rc-score")) || 0, codes: codes ? codes.split(/[\s,]+/) : []
+        });
+        document.getElementById("rc-out").innerHTML = JD.highlight(err === null ? "err == nil  // accepted" : 'err.Error() == "' + err + '"', "go");
+        document.getElementById("rc-login").innerHTML = err === null
+          ? JD.bi({ en: "<b>Jungo login:</b> continues to the brute-force check and password.", vi: "<b>Jungo login:</b> tiếp tục kiểm tra brute-force và mật khẩu." })
+          : JD.bi({ en: "<b>Jungo login:</b> 403 <code>FORBIDDEN</code> — \"reCAPTCHA verification failed\".", vi: "<b>Jungo login:</b> 403 <code>FORBIDDEN</code> — \"reCAPTCHA verification failed\"." });
+      }
+      ids.forEach(function (id) { var el = document.getElementById(id); el.addEventListener("input", paint); el.addEventListener("change", paint); });
+      paint();
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit storage · Jundoc</title>
+  <meta name="description"
+    content="junkit/storage: upload and delete files behind a small Service interface, with a local-disk implementation.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+
+<body>
+  <div id="jd-app" data-root="..">
+    <article class="jd-content">
+
+      <!-- ============================================================ HERO -->
+      <header class="jd-hero"
+        style="background:radial-gradient(1000px 380px at 0% 0%, rgba(251,191,36,.45), transparent 60%),linear-gradient(135deg,#78350f,#b45309 55%,#a16207)">
+        <div class="jd-eyebrow">Junkit · storage</div>
+        <h1>storage</h1>
+        <p lang="en">Save an uploaded file and get back a public URL; delete it later by that URL — behind a two-method
+          interface you can swap for S3 or GCS.</p>
+        <p lang="vi">Lưu file upload và nhận lại một URL công khai; sau này xoá file bằng chính URL đó — sau một
+          interface hai method mà bạn có thể thay bằng S3 hay GCS.</p>
+        <div class="jd-chips">
+          <span class="jd-chip">github.com/jun-develop/junkit/storage</span>
+          <span class="jd-chip"><span lang="en">Fx: storage.Module → provides storage.Service</span><span lang="vi">Fx:
+              storage.Module → cung cấp storage.Service</span></span>
+          <span class="jd-chip">github.com/google/uuid · go.uber.org/fx</span>
+        </div>
+      </header>
+
+      <!-- ============================================================ 1. WHAT -->
+      <section id="what" class="jd-section c-orange">
+        <div class="jd-section-head">
+          <span class="jd-badge">1</span>
+          <div>
+            <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
+            <p class="jd-sub" lang="en">The shipped <code>LocalService</code> writes into <code>BaseDir</code> under a
+              fresh unique name and returns <code>BaseURL</code> + that name. Your router serves <code>BaseDir</code> at
+              the same path.</p>
+            <p class="jd-sub" lang="vi"><code>LocalService</code> có sẵn ghi vào <code>BaseDir</code> với một tên mới
+              duy nhất và trả về <code>BaseURL</code> + tên đó. Router của bạn phục vụ <code>BaseDir</code> tại đúng
+              đường dẫn ấy.</p>
+          </div>
+        </div>
+        <div class="jd-flow" style="margin-top:22px" data-wires='[
+      {"from":"s1","to":"s2","color":"orange"},
+      {"from":"s2","to":"s3","color":"orange"},
+      {"from":"s3","to":"s4","color":"blue"}]'>
+          <div class="jd-node is-tint c-orange" data-node="s1"><span class="k">1 · handler</span><span class="t mono"
+              style="font-size:15px">ctx.FormFile(…)</span>
+            <div class="d" lang="en">Validate size and type, open the multipart file.</div>
+            <div class="d" lang="vi">Kiểm tra kích thước và loại, mở file multipart.</div>
+          </div>
+          <div class="jd-node is-tint c-orange" data-node="s2"><span class="k">2 · upload</span><span class="t mono"
+              style="font-size:15px">UploadFile(ctx, f, name)</span>
+            <div class="d" lang="en">Keeps only the extension of <code>name</code>.</div>
+            <div class="d" lang="vi">Chỉ giữ lại phần mở rộng của <code>name</code>.</div>
+          </div>
+          <div class="jd-node is-tint c-orange" data-node="s3"><span class="k">3 · disk</span><span class="t mono"
+              style="font-size:15px">&lt;uuid&gt;_&lt;unix&gt;.png</span>
+            <div class="d" lang="en">Written to <code>BaseDir</code>, created at startup if missing.</div>
+            <div class="d" lang="vi">Ghi vào <code>BaseDir</code>, thư mục được tạo lúc khởi động nếu chưa có.</div>
+          </div>
+          <div class="jd-node is-tint c-blue" data-node="s4"><span class="k">4 · serve</span><span class="t mono"
+              style="font-size:15px">GET /uploads/…</span>
+            <div class="d" lang="en">You store <code>BaseURL/&lt;name&gt;</code> in the DB;
+              <code>Static("/uploads", BaseDir)</code> serves it.</div>
+            <div class="d" lang="vi">Bạn lưu <code>BaseURL/&lt;name&gt;</code> vào DB;
+              <code>Static("/uploads", BaseDir)</code> phục vụ nó.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 2. SETUP -->
+      <section id="setup" class="jd-section c-blue">
+        <div class="jd-section-head">
+          <span class="jd-badge">2</span>
+          <div>
+            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối vào app</span></h2>
+            <p class="jd-sub" lang="en">With Fx (how Jungo does it) or with the plain constructor.</p>
+            <p class="jd-sub" lang="vi">Dùng Fx (cách Jungo làm) hoặc gọi thẳng constructor.</p>
+          </div>
+        </div>
+        <div class="jd-tabs" style="margin-top:18px">
+          <div class="jd-tablist">
+            <button class="jd-tab" aria-selected="true">Fx</button>
+            <button class="jd-tab" aria-selected="false"><span lang="en">without Fx</span><span lang="vi">Không dùng
+                Fx</span></button>
+          </div>
+          <div class="jd-tabpanel">
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go</span></div>
+              <pre data-hl="go">
+// in CoreModules(cfg):
+fx.Provide(provideStorageOptions),
+storage.Module,
+
+// provideStorageOptions builds storage.Options from cfg.Storage.
+func provideStorageOptions(cfg *config.Config) storage.Options {
+    return storage.Options{BaseDir: cfg.Storage.BaseDir, BaseURL: cfg.Storage.BaseURL}
+}
+</pre>
+            </div>
+            <div class="jd-term" style="margin-top:12px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/router/router.go</span></div>
+              <pre data-hl="go">
+p.Router.Static("/uploads", p.Config.Storage.BaseDir)
+</pre>
+            </div>
+            <p lang="en" style="margin-top:12px">Any constructor can now take a <code>storage.Service</code>. If the
+              directory cannot be created, <code>NewService</code> returns an error and Fx refuses to start.</p>
+            <p lang="vi" style="margin-top:12px">Giờ mọi constructor đều có thể nhận <code>storage.Service</code>. Nếu
+              không tạo được thư mục, <code>NewService</code> trả lỗi và Fx không khởi động.</p>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
+              <pre data-hl="go">
+svc, err := storage.NewLocalService("./uploads", "http://localhost:8080/uploads")
+if err != nil {
+    log.Fatal(err) // create storage directory "./uploads": …
+}
+
+r := gin.New()
+r.Static("/uploads", "./uploads") // must match BaseDir and the path in BaseURL
+</pre>
+            </div>
+            <p lang="en" style="margin-top:12px"><code>NewLocalService</code> returns <code>*LocalService</code>;
+              <code>storage.NewService(storage.Options{…})</code> does the same but returns the <code>Service</code>
+              interface.</p>
+            <p lang="vi" style="margin-top:12px"><code>NewLocalService</code> trả về <code>*LocalService</code>;
+              <code>storage.NewService(storage.Options{…})</code> làm y hệt nhưng trả về interface <code>Service</code>.
+            </p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:22px">Options</h3>
+        <div class="jd-tablewrap">
+          <table class="jd-params c-blue">
+            <tr>
+              <th>field</th>
+              <th>type</th>
+              <th><span lang="en">zero value</span><span lang="vi">giá trị zero</span></th>
+              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+            </tr>
+            <tr>
+              <td>BaseDir</td>
+              <td>string</td>
+              <td><span lang="en">no default; <code>""</code> fails at <code>os.MkdirAll</code></span><span
+                  lang="vi">không có mặc định; <code>""</code> lỗi ở <code>os.MkdirAll</code></span></td>
+              <td><span lang="en">Directory files are written to, e.g. <code>"./uploads"</code>. Created (with parents)
+                  if missing.</span><span lang="vi">Thư mục ghi file, vd. <code>"./uploads"</code>. Được tạo (kèm thư
+                  mục cha) nếu chưa có.</span></td>
+            </tr>
+            <tr>
+              <td>BaseURL</td>
+              <td>string</td>
+              <td><span lang="en">no default; <code>""</code> gives URLs like <code>"/&lt;name&gt;"</code></span><span
+                  lang="vi">không có mặc định; <code>""</code> cho ra URL dạng <code>"/&lt;name&gt;"</code></span></td>
+              <td><span lang="en">Public prefix where <code>BaseDir</code> is served, e.g.
+                  <code>"http://localhost:8080/uploads"</code>. No trailing slash — one is added.</span><span
+                  lang="vi">Tiền tố công khai nơi <code>BaseDir</code> được phục vụ, vd.
+                  <code>"http://localhost:8080/uploads"</code>. Không có dấu / cuối — thư viện tự thêm.</span></td>
+            </tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============================================================ 3. QUICK START -->
+      <section id="quick" class="jd-section c-green">
+        <div class="jd-section-head">
+          <span class="jd-badge">3</span>
+          <div>
+            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <p class="jd-sub" lang="en">Replace a document's attachment safely — the same pattern Jungo uses for
+              avatars. Hover an explanation to light up its lines.</p>
+            <p class="jd-sub" lang="vi">Thay file đính kèm của một tài liệu một cách an toàn — đúng mẫu Jungo dùng cho
+              avatar. Rê chuột vào giải thích để làm sáng các dòng tương ứng.</p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <div class="jd-sticky">
+              <div class="jd-term" data-copy>
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>document_service.go</span></div>
+                <pre data-hl="go" id="code-quick">
+type DocumentService struct {
+    repo    domain.DocumentRepository
+    storage storage.Service
+}
+
+func (s *DocumentService) ReplaceFile(ctx context.Context, id uuid.UUID,
+    file io.Reader, filename string) (string, error) {
+    doc, err := s.repo.Get(ctx, id)
+    if err != nil {
+        return "", err
+    }
+
+    url, err := s.storage.UploadFile(ctx, file, filename)
+    if err != nil {
+        return "", err
+    }
+
+    if err := s.repo.SetFileURL(ctx, id, url); err != nil {
+        _ = s.storage.DeleteFile(ctx, url) // undo the upload
+        return "", err
+    }
+
+    if doc.FileURL != "" {
+        _ = s.storage.DeleteFile(ctx, doc.FileURL) // drop the old file
+    }
+
+    return url, nil
+}
+</pre>
+              </div>
+            </div>
+          </div>
+          <div class="jd-explain">
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="1-4"><span class="n">1</span><span
+                class="w">depend on the interface</span><span class="x" lang="en">Take <code>storage.Service</code>, not
+                <code>*LocalService</code> — Fx injects it, tests can pass a fake.</span><span class="x" lang="vi">Nhận
+                <code>storage.Service</code>, không phải <code>*LocalService</code> — Fx inject sẵn, test có thể truyền
+                bản giả.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="13-16"><span class="n">2</span><span
+                class="w">UploadFile</span><span class="x" lang="en">Pass the open file and the client's filename (only
+                its extension is used). You get back the full public URL, e.g.
+                <code>http://localhost:8080/uploads/3f2b…_1760600000.pdf</code>.</span><span class="x" lang="vi">Truyền
+                file đã mở và tên file của client (chỉ dùng phần mở rộng). Bạn nhận lại URL công khai đầy đủ, vd.
+                <code>http://localhost:8080/uploads/3f2b…_1760600000.pdf</code>.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="18-21"><span class="n">3</span><span
+                class="w">roll back on DB failure</span><span class="x" lang="en">If saving the URL fails, delete the
+                new file so no orphan stays on disk.</span><span class="x" lang="vi">Nếu lưu URL thất bại, xoá file mới
+                để không để lại file mồ côi trên đĩa.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="23-25"><span class="n">4</span><span
+                class="w">DeleteFile(oldURL)</span><span class="x" lang="en">Delete by the URL you stored. Best-effort:
+                a file that is already gone is not an error.</span><span class="x" lang="vi">Xoá bằng URL bạn đã lưu.
+                Kiểu cố gắng hết mức: file đã mất rồi thì không tính là lỗi.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 4. API -->
+      <section id="api" class="jd-section c-orange">
+        <div class="jd-section-head">
+          <span class="jd-badge">4</span>
+          <div>
+            <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from
+              <code>junkit/storage/*.go</code>.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/storage/*.go</code>.</p>
+          </div>
+        </div>
+        <div class="jd-syms" style="margin-top:18px;grid-template-columns:minmax(0,1fr)">
+
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">interface</span><span class="jd-sym-name">Service</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type Service interface {
+    UploadFile(ctx context.Context, file io.Reader, originalFilename string) (string, error)
+    DeleteFile(ctx context.Context, fileURL string) error
+}
+</pre>
+            </div>
+            <ul>
+              <li lang="en"><code>UploadFile</code> stores <code>file</code> and returns its URL (or path).</li>
+              <li lang="vi"><code>UploadFile</code> lưu <code>file</code> và trả về URL (hoặc đường dẫn) của nó.</li>
+              <li lang="en"><code>DeleteFile</code> removes a file given the URL <code>UploadFile</code> returned.</li>
+              <li lang="vi"><code>DeleteFile</code> xoá file dựa trên URL mà <code>UploadFile</code> đã trả.</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Options</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type Options struct {
+    BaseDir string
+    BaseURL string
+}
+</pre>
+            </div>
+            <p lang="en">Fields are described in <a href="#setup">Wire it up</a>.</p>
+            <p lang="vi">Các field được mô tả ở <a href="#setup">Kết nối vào app</a>.</p>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">var</span><span class="jd-sym-name">Module</span><span
+                class="jd-kind">func</span><span class="jd-sym-name">NewService</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+var Module = fx.Module("storage",
+    fx.Provide(NewService),
+)
+
+func NewService(opts Options) (Service, error)
+</pre>
+            </div>
+            <p lang="en"><code>NewService</code> is <code>NewLocalService(opts.BaseDir, opts.BaseURL)</code> returned as
+              the interface. <code>Module</code> needs a <code>storage.Options</code> in the graph and provides
+              <code>storage.Service</code>.</p>
+            <p lang="vi"><code>NewService</code> chính là <code>NewLocalService(opts.BaseDir, opts.BaseURL)</code> trả
+              về dưới dạng interface. <code>Module</code> cần <code>storage.Options</code> trong graph và cung cấp
+              <code>storage.Service</code>.</p>
+          </div>
+
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">LocalService</span><span
+                class="jd-kind">func</span><span class="jd-sym-name">NewLocalService</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type LocalService struct { /* baseDir, baseURL — unexported */ }
+
+func NewLocalService(baseDir, baseURL string) (*LocalService, error)
+</pre>
+            </div>
+            <ul>
+              <li lang="en">Runs <code>os.MkdirAll(baseDir, os.ModePerm)</code> immediately.</li>
+              <li lang="vi">Chạy <code>os.MkdirAll(baseDir, os.ModePerm)</code> ngay lập tức.</li>
+              <li lang="en">Error: <code>create storage directory "&lt;baseDir&gt;": &lt;cause&gt;</code> (wrapped, use
+                <code>errors.Is</code> / <code>errors.As</code>).</li>
+              <li lang="vi">Lỗi: <code>create storage directory "&lt;baseDir&gt;": &lt;cause&gt;</code> (được wrap, dùng
+                <code>errors.Is</code> / <code>errors.As</code>).</li>
+              <li lang="en">Holds no lock and no open files — safe to share between goroutines.</li>
+              <li lang="vi">Không giữ lock hay file nào mở — dùng chung giữa các goroutine an toàn.</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">(*LocalService)
+                UploadFile</span></div>
+            <div class="jd-term">
+              <pre
+                data-hl="go">func (s *LocalService) UploadFile(_ context.Context, file io.Reader, originalFilename string) (string, error)</pre>
+            </div>
+            <ul>
+              <li lang="en">Stored name: <code>&lt;uuid v4&gt;_&lt;unix seconds&gt;&lt;ext&gt;</code>, where
+                <code>ext = filepath.Ext(originalFilename)</code> kept exactly (case included; no extension → no
+                suffix). Two uploads with the same name never collide.</li>
+              <li lang="vi">Tên lưu: <code>&lt;uuid v4&gt;_&lt;unix giây&gt;&lt;ext&gt;</code>, với
+                <code>ext = filepath.Ext(originalFilename)</code> giữ nguyên (kể cả hoa/thường; không có phần mở rộng →
+                không có hậu tố). Hai lần upload cùng tên không bao giờ đụng nhau.</li>
+              <li lang="en">Returns <code>baseURL + "/" + name</code>.</li>
+              <li lang="vi">Trả về <code>baseURL + "/" + name</code>.</li>
+              <li lang="en">Errors: <code>create destination file: …</code>, <code>copy file contents: …</code>.</li>
+              <li lang="vi">Lỗi: <code>create destination file: …</code>, <code>copy file contents: …</code>.</li>
+              <li lang="en"><code>ctx</code> is ignored; the copy runs until the reader is drained.</li>
+              <li lang="vi"><code>ctx</code> bị bỏ qua; việc copy chạy tới khi đọc hết reader.</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">(*LocalService)
+                DeleteFile</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func (s *LocalService) DeleteFile(_ context.Context, fileURL string) error</pre>
+            </div>
+            <ul>
+              <li lang="en">Takes <code>filepath.Base(fileURL)</code> and removes
+                <code>baseDir/&lt;that name&gt;</code>. Only the last path segment counts, so the delete can never leave
+                <code>BaseDir</code>.</li>
+              <li lang="vi">Lấy <code>filepath.Base(fileURL)</code> rồi xoá <code>baseDir/&lt;tên đó&gt;</code>. Chỉ
+                đoạn cuối của đường dẫn được dùng, nên lệnh xoá không bao giờ ra khỏi <code>BaseDir</code>.</li>
+              <li lang="en">A file that does not exist → <code>nil</code>.</li>
+              <li lang="vi">File không tồn tại → <code>nil</code>.</li>
+              <li lang="en"><code>""</code>, <code>"."</code>, <code>"/"</code> →
+                <code>invalid file URL: &lt;fileURL&gt;</code>. Any other removal failure → <code>delete file: …</code>.
+              </li>
+              <li lang="vi"><code>""</code>, <code>"."</code>, <code>"/"</code> →
+                <code>invalid file URL: &lt;fileURL&gt;</code>. Lỗi xoá khác → <code>delete file: …</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 5. IN JUNGO -->
+      <section id="jungo" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">5</span>
+          <div>
+            <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+            <p class="jd-sub" lang="en">User avatars: <code>POST</code> / <code>DELETE /api/v1/users/:uuid/avatar</code>
+              (Bearer auth required).</p>
+            <p class="jd-sub" lang="vi">Avatar người dùng: <code>POST</code> /
+              <code>DELETE /api/v1/users/:uuid/avatar</code> (cần Bearer auth).</p>
+          </div>
+        </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-purple">
+            <tr>
+              <th>file</th>
+              <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
+            </tr>
+            <tr>
+              <td>app/fx.go</td>
+              <td><span lang="en"><code>provideStorageOptions</code> + <code>storage.Module</code>.</span><span
+                  lang="vi"><code>provideStorageOptions</code> + <code>storage.Module</code>.</span></td>
+            </tr>
+            <tr>
+              <td>config/config.go</td>
+              <td><span lang="en"><code>STORAGE_BASE_DIR</code> (default <code>./storage/uploads</code>),
+                  <code>STORAGE_BASE_URL</code> (default <code>http://localhost:8080/uploads</code>).</span><span
+                  lang="vi"><code>STORAGE_BASE_DIR</code> (mặc định <code>./storage/uploads</code>),
+                  <code>STORAGE_BASE_URL</code> (mặc định <code>http://localhost:8080/uploads</code>).</span></td>
+            </tr>
+            <tr>
+              <td>router/router.go</td>
+              <td><span lang="en"><code>p.Router.Static("/uploads", p.Config.Storage.BaseDir)</code> — public, no
+                  auth.</span><span lang="vi"><code>p.Router.Static("/uploads", p.Config.Storage.BaseDir)</code> — công
+                  khai, không cần auth.</span></td>
+            </tr>
+            <tr>
+              <td>features/user/handler/v1/user_handler.go</td>
+              <td><span lang="en"><code>UploadAvatar</code> reads form field <code>avatar</code>, rejects files over
+                  <code>maxAvatarFileSize</code> (5 MB) or with an extension outside <code>.jpg .jpeg .png .webp</code>
+                  (checked lower-cased) → 400 <code>invalid_avatar_file</code>.</span><span
+                  lang="vi"><code>UploadAvatar</code> đọc field form <code>avatar</code>, từ chối file lớn hơn
+                  <code>maxAvatarFileSize</code> (5 MB) hoặc phần mở rộng ngoài <code>.jpg .jpeg .png .webp</code> (so
+                  sánh dạng chữ thường) → 400 <code>invalid_avatar_file</code>.</span></td>
+            </tr>
+            <tr>
+              <td>features/user/service/user_service.go</td>
+              <td><span lang="en"><code>UploadAvatar</code>: get user → <code>UploadFile</code> (any error →
+                  <code>domain.ErrInvalidAvatarFile</code>) → save URL, on failure <code>DeleteFile(newURL)</code> →
+                  <code>DeleteFile</code> the old avatar. <code>DeleteAvatar</code>: <code>DeleteFile</code>, then set
+                  <code>avatar_url</code> to <code>""</code>.</span><span lang="vi"><code>UploadAvatar</code>: lấy user
+                  → <code>UploadFile</code> (lỗi nào cũng thành <code>domain.ErrInvalidAvatarFile</code>) → lưu URL, lỗi
+                  thì <code>DeleteFile(newURL)</code> → <code>DeleteFile</code> avatar cũ. <code>DeleteAvatar</code>:
+                  <code>DeleteFile</code>, rồi đặt <code>avatar_url</code> thành <code>""</code>.</span></td>
+            </tr>
+            <tr>
+              <td>features/user/module.go</td>
+              <td><span lang="en">Messages: <code>"Invalid avatar file (allowed: jpg, jpeg, png, webp; max 5MB)"</code>,
+                  <code>"Avatar uploaded successfully"</code>, <code>"Avatar deleted successfully"</code>.</span><span
+                  lang="vi">Thông điệp: <code>"Invalid avatar file (allowed: jpg, jpeg, png, webp; max 5MB)"</code>,
+                  <code>"Avatar uploaded successfully"</code>, <code>"Avatar deleted successfully"</code>.</span></td>
+            </tr>
+          </table>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:14px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · upload avatar</span></div>
+          <pre data-hl="bash">
+$ curl -s -X POST 'localhost:8080/api/v1/users/&lt;uuid&gt;/avatar' \
+    -H 'Authorization: Bearer &lt;access_token&gt;' \
+    -F 'avatar=@me.png' | jq
+# → data.avatar_url = "http://localhost:8080/uploads/&lt;uuid&gt;_&lt;unix&gt;.png"
+</pre>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:10px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · download avatar</span></div>
+          <pre data-hl="bash">
+$ curl -O 'http://localhost:8080/uploads/&lt;uuid&gt;_&lt;unix&gt;.png'
+</pre>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:10px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · delete avatar</span></div>
+          <pre data-hl="bash">
+$ curl -s -X DELETE 'localhost:8080/api/v1/users/&lt;uuid&gt;/avatar' \
+    -H 'Authorization: Bearer &lt;access_token&gt;' | jq
+</pre>
+        </div>
+      </section>
+
+      <!-- ============================================================ 6. GOTCHAS -->
+      <section id="gotchas" class="jd-section c-red">
+        <div class="jd-section-head">
+          <span class="jd-badge">!</span>
+          <div>
+            <h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2>
+          </div>
+        </div>
+        <div class="jd-explain" style="margin-top:16px">
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">No content
+              checks</span><span class="x" lang="en">The package stores any bytes under any extension. Validate size,
+              extension and ideally the real content type before calling <code>UploadFile</code> — files under
+              <code>/uploads</code> are public.</span><span class="x" lang="vi">Package lưu mọi loại byte với mọi phần
+              mở rộng. Hãy kiểm tra kích thước, phần mở rộng và tốt nhất là content type thật trước khi gọi
+              <code>UploadFile</code> — file trong <code>/uploads</code> là công khai.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Body limit comes
+              first</span><span class="x" lang="en">In Jungo the <code>Payload</code> middleware caps every body at
+              <code>SECURITY_MAX_BODY_SIZE</code> (default <code>2097152</code> = 2 MiB) and answers 413
+              <code>request_body_too_large</code>, so the 5 MB avatar limit is never reached unless you raise
+              it.</span><span class="x" lang="vi">Trong Jungo, middleware <code>Payload</code> giới hạn mọi body ở
+              <code>SECURITY_MAX_BODY_SIZE</code> (mặc định <code>2097152</code> = 2 MiB) và trả 413
+              <code>request_body_too_large</code>, nên giới hạn avatar 5 MB không bao giờ chạm tới trừ khi bạn tăng giá
+              trị này.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Half-written files
+              stay</span><span class="x" lang="en">If <code>io.Copy</code> fails midway, <code>UploadFile</code> returns
+              an error but does not remove the partial file.</span><span class="x" lang="vi">Nếu <code>io.Copy</code>
+              lỗi giữa chừng, <code>UploadFile</code> trả lỗi nhưng không xoá file đang ghi dở.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Full URLs are
+              stored</span><span class="x" lang="en">The DB keeps <code>BaseURL/&lt;name&gt;</code>. Changing
+              <code>STORAGE_BASE_URL</code> later does not rewrite old rows. Deleting still works because only the file
+              name is used.</span><span class="x" lang="vi">DB lưu <code>BaseURL/&lt;name&gt;</code>. Đổi
+              <code>STORAGE_BASE_URL</code> sau này không sửa các dòng cũ. Xoá vẫn chạy vì chỉ dùng tên file.</span>
+          </div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">DeleteFile trusts the
+              name</span><span class="x" lang="en">Any string whose last segment matches a file in <code>BaseDir</code>
+              deletes it — the URL's host or prefix is not checked. Only pass URLs you stored yourself.</span><span
+              class="x" lang="vi">Bất kỳ chuỗi nào có đoạn cuối trùng tên một file trong <code>BaseDir</code> đều xoá
+              được file đó — host hay tiền tố của URL không được kiểm tra. Chỉ truyền URL do chính bạn lưu.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Trailing
+              slash</span><span class="x" lang="en"><code>BaseURL</code> ending in <code>/</code> produces
+              <code>…/uploads//&lt;name&gt;</code>.</span><span class="x" lang="vi"><code>BaseURL</code> kết thúc bằng
+              <code>/</code> sẽ cho ra <code>…/uploads//&lt;name&gt;</code>.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">Local disk
+              only</span><span class="x" lang="en">With several replicas each has its own <code>BaseDir</code> — use a
+              shared volume or write another <code>Service</code> (S3, GCS).</span><span class="x" lang="vi">Chạy nhiều
+              replica thì mỗi cái có <code>BaseDir</code> riêng — hãy dùng volume chung hoặc viết một
+              <code>Service</code> khác (S3, GCS).</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">8</span><span class="w">Errors hidden in
+              Jungo</span><span class="x" lang="en"><code>UserService.UploadAvatar</code> turns any storage error (e.g.
+              disk full) into <code>ErrInvalidAvatarFile</code>, so a server problem shows up as a 400 for the
+              client.</span><span class="x" lang="vi"><code>UserService.UploadAvatar</code> biến mọi lỗi storage (vd.
+              đầy đĩa) thành <code>ErrInvalidAvatarFile</code>, nên lỗi phía server lại hiện ra như lỗi 400 của
+              client.</span></div>
+        </div>
+      </section>
+
+      <footer class="jd-footer">
+        <span>Jundoc · Junkit · storage</span>
+        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
+              Junkit</span></a></span>
+      </footer>
+    </article>
+  </div>
+</body>
+
+</html>

@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit httpclient · Jundoc</title>
+  <meta name="description"
+    content="junkit/httpclient: an *http.Client with production timeouts, connection pooling and optional retries with exponential backoff.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+
+<body>
+  <div id="jd-app" data-root="..">
+    <article class="jd-content">
+
+      <!-- ============================================================ HERO -->
+      <header class="jd-hero"
+        style="background:radial-gradient(1000px 380px at 0% 0%, rgba(96,165,250,.5), transparent 60%),linear-gradient(135deg,#1e1b4b,#3730a3 55%,#0369a1)">
+        <div class="jd-eyebrow">Junkit · httpclient</div>
+        <h1>httpclient</h1>
+        <p lang="en">A standard <code>*http.Client</code> with sane timeouts and connection pooling, plus optional
+          automatic retries (network errors, 429, 5xx) with exponential backoff and jitter.</p>
+        <p lang="vi">Một <code>*http.Client</code> chuẩn với timeout và connection pool hợp lý, kèm tuỳ chọn tự retry
+          (lỗi mạng, 429, 5xx) với backoff luỹ thừa và jitter.</p>
+        <div class="jd-chips">
+          <span class="jd-chip">github.com/jun-develop/junkit/httpclient</span>
+          <span class="jd-chip"><span lang="en">Fx: httpclient.Module → provides *http.Client</span><span lang="vi">Fx:
+              httpclient.Module → cung cấp *http.Client</span></span>
+          <span class="jd-chip"><span lang="en">net/http only · go.uber.org/fx</span><span lang="vi">chỉ net/http ·
+              go.uber.org/fx</span></span>
+        </div>
+      </header>
+
+      <!-- ============================================================ 1. WHAT -->
+      <section id="what" class="jd-section c-blue">
+        <div class="jd-section-head">
+          <span class="jd-badge">1</span>
+          <div>
+            <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
+            <p class="jd-sub" lang="en">You get a plain <code>*http.Client</code> — use it like any other. When
+              <code>MaxRetries &gt; 0</code>, a retry layer sits between the client and the real transport.</p>
+            <p class="jd-sub" lang="vi">Bạn nhận một <code>*http.Client</code> bình thường — dùng như mọi client khác.
+              Khi <code>MaxRetries &gt; 0</code>, một lớp retry nằm giữa client và transport thật.</p>
+          </div>
+        </div>
+        <div class="jd-flow" style="margin-top:22px" data-wires='[
+      {"from":"h1","to":"h2","color":"blue"},
+      {"from":"h2","to":"h3","color":"blue"},
+      {"from":"h3","to":"h4","color":"blue"}]'>
+          <div class="jd-node is-tint c-blue" data-node="h1"><span class="k">1 · your code</span><span class="t mono"
+              style="font-size:15px">client.Do(req)</span>
+            <div class="d" lang="en"><code>Timeout</code> (15s) bounds the whole call, retries and waits included.</div>
+            <div class="d" lang="vi"><code>Timeout</code> (15s) giới hạn cả lần gọi, tính luôn retry và thời gian chờ.
+            </div>
+          </div>
+          <div class="jd-node is-tint c-purple is-opt" data-node="h2"><span class="k">2 · retry (optional)</span><span
+              class="t mono" style="font-size:15px">retryTransport</span>
+            <div class="d" lang="en">Buffers the body; on error / 429 / 5xx waits and tries again, up to
+              <code>MaxRetries</code> times.</div>
+            <div class="d" lang="vi">Đệm body; gặp lỗi / 429 / 5xx thì chờ rồi thử lại, tối đa <code>MaxRetries</code>
+              lần.</div>
+          </div>
+          <div class="jd-node is-tint c-blue" data-node="h3"><span class="k">3 · transport</span><span class="t mono"
+              style="font-size:15px">*http.Transport</span>
+            <div class="d" lang="en">Pooled keep-alive connections, dial / TLS / header timeouts, HTTP/2, proxy from
+              env.</div>
+            <div class="d" lang="vi">Kết nối keep-alive trong pool, timeout dial / TLS / header, HTTP/2, proxy từ biến
+              môi trường.</div>
+          </div>
+          <div class="jd-node is-tint c-green" data-node="h4"><span class="k">4 · server</span><span class="t mono"
+              style="font-size:15px">200 · 4xx · 429 · 5xx</span>
+            <div class="d" lang="en">Only 429 and ≥ 500 (and network errors) trigger a retry; every other status returns
+              at once.</div>
+            <div class="d" lang="vi">Chỉ 429 và ≥ 500 (cùng lỗi mạng) mới gây retry; mọi status khác trả về ngay.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 2. SETUP -->
+      <section id="setup" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">2</span>
+          <div>
+            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối vào app</span></h2>
+            <p class="jd-sub" lang="en">Jungo provides the defaults-only client directly; the Module is the way to pass
+              your own Options.</p>
+            <p class="jd-sub" lang="vi">Jungo cung cấp thẳng client dùng toàn mặc định; Module là cách để truyền Options
+              của riêng bạn.</p>
+          </div>
+        </div>
+        <div class="jd-tabs" style="margin-top:18px">
+          <div class="jd-tablist">
+            <button class="jd-tab" aria-selected="true"><span lang="en">Fx (Jungo)</span><span lang="vi">Fx
+                (Jungo)</span></button>
+            <button class="jd-tab" aria-selected="false"><span lang="en">Fx with Options</span><span lang="vi">Fx kèm
+                Options</span></button>
+            <button class="jd-tab" aria-selected="false"><span lang="en">without Fx</span><span lang="vi">Không dùng
+                Fx</span></button>
+          </div>
+          <div class="jd-tabpanel">
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go</span></div>
+              <pre data-hl="go">
+// in CoreModules(cfg):
+fx.Provide(httpclient.NewDefaultClient),
+</pre>
+            </div>
+            <p lang="en" style="margin-top:12px">Puts one shared <code>*http.Client</code> in the graph with every
+              default and <b>no retries</b> (<code>MaxRetries</code> is 0). Jungo does not use
+              <code>httpclient.Module</code>.</p>
+            <p lang="vi" style="margin-top:12px">Đưa một <code>*http.Client</code> dùng chung vào graph với toàn bộ mặc
+              định và <b>không retry</b> (<code>MaxRetries</code> bằng 0). Jungo không dùng
+              <code>httpclient.Module</code>.</p>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>fx.go</span></div>
+              <pre data-hl="go">
+fx.Supply(httpclient.Options{MaxRetries: 2}),
+httpclient.Module, // provides *http.Client
+</pre>
+            </div>
+            <p lang="en" style="margin-top:12px">Use one or the other — providing <code>*http.Client</code> twice makes
+              Fx fail at startup.</p>
+            <p lang="vi" style="margin-top:12px">Chỉ dùng một trong hai cách — cung cấp <code>*http.Client</code> hai
+              lần sẽ làm Fx lỗi khi khởi động.</p>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-term">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
+              <pre data-hl="go">
+client := httpclient.NewClient(httpclient.Options{MaxRetries: 3, Timeout: 5 * time.Second})
+
+plain := httpclient.NewDefaultClient() // same as NewClient(httpclient.Options{})
+</pre>
+            </div>
+            <p lang="en" style="margin-top:12px">Build it once and reuse it: the connection pool lives in the client's
+              transport.</p>
+            <p lang="vi" style="margin-top:12px">Tạo một lần rồi dùng lại: connection pool nằm trong transport của
+              client.</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:22px">Options</h3>
+        <p lang="en">Every field that is <code>≤ 0</code> gets its default.</p>
+        <p lang="vi">Field nào <code>≤ 0</code> sẽ nhận giá trị mặc định.</p>
+        <div class="jd-tablewrap">
+          <table class="jd-params c-purple">
+            <tr>
+              <th>field</th>
+              <th>type</th>
+              <th><span lang="en">default</span><span lang="vi">mặc định</span></th>
+              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+            </tr>
+            <tr>
+              <td>Timeout</td>
+              <td>time.Duration</td>
+              <td>15s</td>
+              <td><span lang="en"><code>http.Client.Timeout</code>: the whole request — connect, redirects, all retries
+                  and backoff waits, reading the body.</span><span lang="vi"><code>http.Client.Timeout</code>: toàn bộ
+                  request — kết nối, redirect, mọi lần retry và thời gian chờ backoff, đọc body.</span></td>
+            </tr>
+            <tr>
+              <td>MaxIdleConns</td>
+              <td>int</td>
+              <td>100</td>
+              <td><span lang="en">Idle connections kept across all hosts.</span><span lang="vi">Số kết nối rảnh giữ lại
+                  cho mọi host.</span></td>
+            </tr>
+            <tr>
+              <td>MaxIdleConnsPerHost</td>
+              <td>int</td>
+              <td>20</td>
+              <td><span lang="en">Idle connections kept per host (Go's own default is 2).</span><span lang="vi">Số kết
+                  nối rảnh giữ lại cho mỗi host (mặc định của Go là 2).</span></td>
+            </tr>
+            <tr>
+              <td>IdleConnTimeout</td>
+              <td>time.Duration</td>
+              <td>90s</td>
+              <td><span lang="en">How long an idle connection stays open.</span><span lang="vi">Kết nối rảnh được giữ mở
+                  bao lâu.</span></td>
+            </tr>
+            <tr>
+              <td>DialTimeout</td>
+              <td>time.Duration</td>
+              <td>5s</td>
+              <td><span lang="en">TCP connect timeout.</span><span lang="vi">Timeout khi mở kết nối TCP.</span></td>
+            </tr>
+            <tr>
+              <td>TLSHandshakeTimeout</td>
+              <td>time.Duration</td>
+              <td>5s</td>
+              <td><span lang="en">TLS handshake timeout.</span><span lang="vi">Timeout bắt tay TLS.</span></td>
+            </tr>
+            <tr>
+              <td>ResponseHeaderTimeout</td>
+              <td>time.Duration</td>
+              <td>10s</td>
+              <td><span lang="en">Wait for response headers after the request is sent (per attempt).</span><span
+                  lang="vi">Thời gian chờ header phản hồi sau khi gửi request (mỗi lần thử).</span></td>
+            </tr>
+            <tr>
+              <td>MaxRetries</td>
+              <td>int</td>
+              <td><span lang="en">0 = no retry layer at all</span><span lang="vi">0 = không có lớp retry</span></td>
+              <td><span lang="en">Extra attempts after the first. Total attempts =
+                  <code>MaxRetries + 1</code>.</span><span lang="vi">Số lần thử thêm sau lần đầu. Tổng số lần thử =
+                  <code>MaxRetries + 1</code>.</span></td>
+            </tr>
+            <tr>
+              <td>RetryWaitMin</td>
+              <td>time.Duration</td>
+              <td>200ms</td>
+              <td><span lang="en">Base wait before the first retry; doubles each retry.</span><span lang="vi">Thời gian
+                  chờ gốc trước lần retry đầu; nhân đôi sau mỗi lần.</span></td>
+            </tr>
+            <tr>
+              <td>RetryWaitMax</td>
+              <td>time.Duration</td>
+              <td>5s</td>
+              <td><span lang="en">Cap on the doubled wait (jitter can add up to 20% on top).</span><span lang="vi">Trần
+                  cho thời gian chờ nhân đôi (jitter có thể cộng thêm tới 20%).</span></td>
+            </tr>
+          </table>
+        </div>
+        <p lang="en" style="margin-top:14px">Fixed, not configurable: <code>Proxy: http.ProxyFromEnvironment</code>,
+          dialer <code>KeepAlive: 30s</code>, <code>ExpectContinueTimeout: 1s</code>,
+          <code>ForceAttemptHTTP2: true</code>.</p>
+        <p lang="vi" style="margin-top:14px">Cố định, không cấu hình được:
+          <code>Proxy: http.ProxyFromEnvironment</code>, dialer <code>KeepAlive: 30s</code>,
+          <code>ExpectContinueTimeout: 1s</code>, <code>ForceAttemptHTTP2: true</code>.</p>
+      </section>
+
+      <!-- ============================================================ 3. QUICK START -->
+      <section id="quick" class="jd-section c-green">
+        <div class="jd-section-head">
+          <span class="jd-badge">3</span>
+          <div>
+            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <p class="jd-sub" lang="en">An API client with a 5s budget and two retries. Hover an explanation to light up
+              its lines.</p>
+            <p class="jd-sub" lang="vi">Một API client với ngân sách 5s và hai lần retry. Rê chuột vào giải thích để làm
+              sáng các dòng tương ứng.</p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <div class="jd-sticky">
+              <div class="jd-term" data-copy>
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>geo_client.go</span></div>
+                <pre data-hl="go" id="code-quick">
+type GeoClient struct {
+    http *http.Client
+}
+
+func NewGeoClient() *GeoClient {
+    return &amp;GeoClient{http: httpclient.NewClient(httpclient.Options{
+        Timeout:    5 * time.Second,
+        MaxRetries: 2,
+    })}
+}
+
+func (c *GeoClient) Lookup(ctx context.Context, ip string) (*Geo, error) {
+    req, err := http.NewRequestWithContext(ctx, http.MethodGet,
+        "https://geo.example.com/"+ip, nil)
+    if err != nil {
+        return nil, err
+    }
+    resp, err := c.http.Do(req)
+    if err != nil {
+        return nil, err
+    }
+    defer resp.Body.Close()
+    if resp.StatusCode != http.StatusOK {
+        return nil, fmt.Errorf("geo: status %d", resp.StatusCode)
+    }
+    var g Geo
+    return &amp;g, json.NewDecoder(resp.Body).Decode(&amp;g)
+}
+</pre>
+              </div>
+            </div>
+          </div>
+          <div class="jd-explain">
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="6-9"><span class="n">1</span><span
+                class="w">NewClient(Options)</span><span class="x" lang="en">Set only what you care about; the rest gets
+                defaults. Up to 3 attempts, all inside the 5s <code>Timeout</code>.</span><span class="x" lang="vi">Chỉ
+                đặt những gì bạn cần; phần còn lại lấy mặc định. Tối đa 3 lần thử, tất cả nằm trong <code>Timeout</code>
+                5s.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="13-14"><span class="n">2</span><span
+                class="w">pass ctx</span><span class="x" lang="en">If the caller's context is cancelled during a backoff
+                wait, the retry loop stops right away.</span><span class="x" lang="vi">Nếu context của caller bị huỷ
+                trong lúc chờ backoff, vòng retry dừng ngay.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="18-21"><span class="n">3</span><span
+                class="w">Do retries for you</span><span class="x" lang="en">A non-nil <code>err</code> means the last
+                attempt failed at the network level, or the context / timeout ended it.</span><span class="x"
+                lang="vi"><code>err</code> khác nil nghĩa là lần thử cuối lỗi ở tầng mạng, hoặc context / timeout đã cắt
+                nó.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="22-25"><span class="n">4</span><span
+                class="w">still check the status</span><span class="x" lang="en">When retries run out on 429 / 5xx you
+                get the <b>last response</b> with <code>err == nil</code>. 4xx (other than 429) is never
+                retried.</span><span class="x" lang="vi">Khi hết lượt retry với 429 / 5xx, bạn nhận <b>response cuối
+                  cùng</b> với <code>err == nil</code>. 4xx (trừ 429) không bao giờ được retry.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 4. TRY IT -->
+      <section id="try" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">4</span>
+          <div>
+            <h2><span lang="en">Try it: the backoff schedule</span><span lang="vi">Thử ngay: lịch backoff</span></h2>
+            <p class="jd-sub" lang="en">Same formula as <code>retryTransport.backoff</code>:
+              <code>wait = RetryWaitMin &lt;&lt; n</code>, capped at <code>RetryWaitMax</code>, plus a random jitter of
+              0–20%.</p>
+            <p class="jd-sub" lang="vi">Công thức thời gian chờ lũy tiến (Exponential Backoff):
+              <code>wait = RetryWaitMin × 2ⁿ</code>, giới hạn tối đa tại <code>RetryWaitMax</code>, kèm độ lệch ngẫu
+              nhiên (jitter) 0–20%.</p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <div class="jd-calc c-purple">
+              <label>MaxRetries <input type="number" id="bo-n" value="4" min="0" max="40"></label>
+              <label>RetryWaitMin (ms) <input type="number" id="bo-min" value="200"></label>
+              <label>RetryWaitMax (ms) <input type="number" id="bo-max" value="5000"></label>
+              <label>Timeout (ms) <input type="number" id="bo-to" value="15000"></label>
+            </div>
+            <p class="jd-sub" lang="en">Values ≤ 0 fall back to the defaults, exactly like <code>NewClient</code>. The
+              total ignores the time the requests themselves take.</p>
+            <p class="jd-sub" lang="vi">Giá trị ≤ 0 quay về mặc định, đúng như <code>NewClient</code>. Tổng chưa tính
+              thời gian chính các request chạy.</p>
+          </div>
+          <div class="jd-term">
+            <div class="jd-term-bar"><i></i><i></i><i></i><span>schedule</span></div>
+            <pre id="bo-out"></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 5. API -->
+      <section id="api" class="jd-section c-blue">
+        <div class="jd-section-head">
+          <span class="jd-badge">5</span>
+          <div>
+            <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from
+              <code>junkit/httpclient/httpclient.go</code> — plus the retry rules from <code>retry.go</code>.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ
+              <code>junkit/httpclient/httpclient.go</code> — cùng các luật retry trong <code>retry.go</code>.</p>
+          </div>
+        </div>
+        <div class="jd-syms" style="margin-top:18px;grid-template-columns:minmax(0,1fr)">
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Options</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type Options struct {
+    Timeout time.Duration
+    MaxIdleConns int
+    MaxIdleConnsPerHost int
+    IdleConnTimeout time.Duration
+    DialTimeout time.Duration
+    TLSHandshakeTimeout time.Duration
+    ResponseHeaderTimeout time.Duration
+    MaxRetries int
+    RetryWaitMin time.Duration
+    RetryWaitMax time.Duration
+}
+</pre>
+            </div>
+            <p lang="en">Defaults and meaning in <a href="#setup">Wire it up</a>.</p>
+            <p lang="vi">Mặc định và ý nghĩa ở <a href="#setup">Kết nối vào app</a>.</p>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NewClient</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func NewClient(opts Options) *http.Client</pre>
+            </div>
+            <ul>
+              <li lang="en">Applies defaults, builds an <code>*http.Transport</code>, and sets
+                <code>Client.Timeout</code>.</li>
+              <li lang="vi">Áp giá trị mặc định, tạo một <code>*http.Transport</code>, và đặt
+                <code>Client.Timeout</code>.</li>
+              <li lang="en"><code>MaxRetries &gt; 0</code> → <code>Client.Transport</code> is the (unexported) retry
+                wrapper; otherwise it is the <code>*http.Transport</code> itself.</li>
+              <li lang="vi"><code>MaxRetries &gt; 0</code> → <code>Client.Transport</code> là lớp bọc retry (không
+                export); ngược lại chính là <code>*http.Transport</code>.</li>
+              <li lang="en">Never fails, never panics. Safe for concurrent use, like any <code>*http.Client</code>.</li>
+              <li lang="vi">Không bao giờ lỗi hay panic. Dùng đồng thời an toàn, như mọi <code>*http.Client</code>.</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NewDefaultClient</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">func NewDefaultClient() *http.Client</pre>
+            </div>
+            <p lang="en"><code>NewClient(Options{})</code>: 15s timeout, 100 / 20 idle connections, 90s idle timeout, 5s
+              dial, 5s TLS, 10s response headers — and <b>no retries</b>.</p>
+            <p lang="vi"><code>NewClient(Options{})</code>: timeout 15s, 100 / 20 kết nối rảnh, idle timeout 90s, dial
+              5s, TLS 5s, header phản hồi 10s — và <b>không retry</b>.</p>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">var</span><span class="jd-sym-name">Module</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+var Module = fx.Module("httpclient",
+    fx.Provide(NewClient),
+)
+</pre>
+            </div>
+            <p lang="en">Needs an <code>httpclient.Options</code> in the graph; provides <code>*http.Client</code>.</p>
+            <p lang="vi">Cần <code>httpclient.Options</code> trong graph; cung cấp <code>*http.Client</code>.</p>
+          </div>
+
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-sym-name"><span lang="en">Retry rules (when MaxRetries &gt;
+                  0)</span><span lang="vi">Luật retry (khi MaxRetries &gt; 0)</span></span></div>
+            <div class="jd-tablewrap">
+              <table class="jd-params">
+                <tr>
+                  <th><span lang="en">rule</span><span lang="vi">luật</span></th>
+                  <th><span lang="en">behaviour</span><span lang="vi">hành vi</span></th>
+                </tr>
+                <tr>
+                  <td><span lang="en">retried</span><span lang="vi">được retry</span></td>
+                  <td><span lang="en">any transport error (connection refused, reset, timeout…), status
+                      <code>429</code>, any status <code>≥ 500</code> (501 included).</span><span lang="vi">mọi lỗi
+                      transport (connection refused, reset, timeout…), status <code>429</code>, mọi status
+                      <code>≥ 500</code> (kể cả 501).</span></td>
+                </tr>
+                <tr>
+                  <td><span lang="en">not retried</span><span lang="vi">không retry</span></td>
+                  <td><span lang="en">every other status (1xx–4xx except 429) — returned on the first
+                      attempt.</span><span lang="vi">mọi status khác (1xx–4xx trừ 429) — trả về ngay ở lần đầu.</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span lang="en">methods</span><span lang="vi">method</span></td>
+                  <td><span lang="en">all methods, including <code>POST</code> / <code>PATCH</code>.</span><span
+                      lang="vi">mọi method, kể cả <code>POST</code> / <code>PATCH</code>.</span></td>
+                </tr>
+                <tr>
+                  <td><span lang="en">attempts</span><span lang="vi">số lần thử</span></td>
+                  <td><code>MaxRetries + 1</code></td>
+                </tr>
+                <tr>
+                  <td>backoff</td>
+                  <td><span lang="en">before retry <code>n</code> (0-based):
+                      <code>wait = RetryWaitMin &lt;&lt; n</code>; if it overflows or exceeds <code>RetryWaitMax</code>
+                      → <code>RetryWaitMax</code>; then <code>+ rand[0, wait/5]</code>.</span><span lang="vi">trước lần
+                      retry <code>n</code> (tính từ 0): <code>wait = RetryWaitMin &lt;&lt; n</code>; tràn số hoặc vượt
+                      <code>RetryWaitMax</code> → <code>RetryWaitMax</code>; rồi <code>+ rand[0, wait/5]</code>.</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span lang="en">giving up</span><span lang="vi">bỏ cuộc</span></td>
+                  <td><span lang="en">returns the last attempt's result as-is: a <code>429</code>/<code>5xx</code>
+                      response with <code>err == nil</code>, or the last network error.</span><span lang="vi">trả nguyên
+                      kết quả của lần thử cuối: response <code>429</code>/<code>5xx</code> với <code>err == nil</code>,
+                      hoặc lỗi mạng cuối cùng.</span></td>
+                </tr>
+                <tr>
+                  <td><span lang="en">between attempts</span><span lang="vi">giữa các lần thử</span></td>
+                  <td><span lang="en">the failed response body is closed; the wait aborts with <code>ctx.Err()</code>
+                      when the request context is done.</span><span lang="vi">body của response lỗi được đóng; việc chờ
+                      dừng với <code>ctx.Err()</code> khi context của request kết thúc.</span></td>
+                </tr>
+                <tr>
+                  <td>body</td>
+                  <td><span lang="en">read fully into memory before the first attempt and replayed on each retry
+                      (<code>GetBody</code> is set too). A read error is returned without sending anything.</span><span
+                      lang="vi">được đọc hết vào bộ nhớ trước lần thử đầu và phát lại ở mỗi lần retry
+                      (<code>GetBody</code> cũng được đặt). Lỗi đọc body được trả về mà không gửi gì.</span></td>
+                </tr>
+                <tr>
+                  <td>Retry-After</td>
+                  <td><span lang="en">ignored.</span><span lang="vi">bị bỏ qua.</span></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 6. IN JUNGO -->
+      <section id="jungo" class="jd-section c-orange">
+        <div class="jd-section-head">
+          <span class="jd-badge">6</span>
+          <div>
+            <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+            <p class="jd-sub" lang="en">One client, no retries, shared by the outbound integrations.</p>
+            <p class="jd-sub" lang="vi">Một client, không retry, dùng chung cho các tích hợp gọi ra ngoài.</p>
+          </div>
+        </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-orange">
+            <tr>
+              <th>file</th>
+              <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
+            </tr>
+            <tr>
+              <td>app/fx.go</td>
+              <td><span lang="en"><code>fx.Provide(httpclient.NewDefaultClient)</code> puts the
+                  <code>*http.Client</code> in the graph, right before <code>telegram.Module</code> and
+                  <code>recaptcha.Module</code>.</span><span
+                  lang="vi"><code>fx.Provide(httpclient.NewDefaultClient)</code> đưa <code>*http.Client</code> vào
+                  graph, ngay trước <code>telegram.Module</code> và <code>recaptcha.Module</code>.</span></td>
+            </tr>
+            <tr>
+              <td>junkit/telegram</td>
+              <td><span
+                  lang="en"><code>telegram.NewClient(opts Options, httpClient *http.Client, logger *zap.Logger)</code>
+                  receives it. Used by <code>features/auth/infrastructure/login_guard.go</code> for brute-force
+                  alerts.</span><span
+                  lang="vi"><code>telegram.NewClient(opts Options, httpClient *http.Client, logger *zap.Logger)</code>
+                  nhận nó. Được <code>features/auth/infrastructure/login_guard.go</code> dùng để gửi cảnh báo
+                  brute-force.</span></td>
+            </tr>
+            <tr>
+              <td>junkit/recaptcha</td>
+              <td><span lang="en">The module's verifier receives it (unless <code>Mock</code> is on). Used by
+                  <code>features/auth/service/auth_service.go</code> on login.</span><span lang="vi">Verifier của module
+                  nhận nó (trừ khi bật <code>Mock</code>). Được <code>features/auth/service/auth_service.go</code> dùng
+                  khi đăng nhập.</span></td>
+            </tr>
+          </table>
+        </div>
+        <p lang="en" style="margin-top:12px">To turn on retries app-wide, replace the provider with
+          <code>fx.Supply(httpclient.Options{MaxRetries: 2})</code> + <code>httpclient.Module</code> — but read gotcha 1
+          first.</p>
+        <p lang="vi" style="margin-top:12px">Muốn bật retry cho cả app, thay provider bằng
+          <code>fx.Supply(httpclient.Options{MaxRetries: 2})</code> + <code>httpclient.Module</code> — nhưng hãy đọc lưu
+          ý 1 trước.</p>
+      </section>
+
+      <!-- ============================================================ 7. GOTCHAS -->
+      <section id="gotchas" class="jd-section c-red">
+        <div class="jd-section-head">
+          <span class="jd-badge">!</span>
+          <div>
+            <h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2>
+          </div>
+        </div>
+        <div class="jd-explain" style="margin-top:16px">
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">POST is retried
+              too</span><span class="x" lang="en">A request that reached the server and then hit a 5xx or a dropped
+              connection is sent again. For non-idempotent calls (payments, sending a message) use an idempotency key,
+              or a client with <code>MaxRetries: 0</code>.</span><span class="x" lang="vi">Request đã tới server rồi gặp
+              lỗi 5xx hoặc rớt kết nối sẽ bị gửi lại. Với các request non-idempotent (thanh toán, gửi tin nhắn, tạo mới
+              đơn hàng), hãy gửi kèm Idempotency-Key hoặc dùng client có <code>MaxRetries: 0</code> để tránh thực hiện
+              trùng lặp.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Default = no
+              retries</span><span class="x" lang="en"><code>NewDefaultClient()</code> and <code>Options{}</code> never
+              retry. Retries only exist when you set <code>MaxRetries</code>.</span><span class="x"
+              lang="vi"><code>NewDefaultClient()</code> và <code>Options{}</code> không bao giờ retry. Chỉ có retry khi
+              bạn đặt <code>MaxRetries</code>.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Timeout covers
+              everything</span><span class="x" lang="en"><code>Timeout</code> includes every attempt and every wait.
+              With defaults, 4 retries already wait 3–3.6s; a slow server can use up the 15s before the retries
+              do.</span><span class="x" lang="vi"><code>Timeout</code> tính cả mọi lần thử và mọi lần chờ. Với mặc định,
+              4 lần retry đã chờ 3–3,6s; server chậm có thể ăn hết 15s trước khi kịp retry.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Bodies are
+              buffered</span><span class="x" lang="en">With retries on, the whole request body is read into memory
+              first. Avoid it for large uploads or streaming bodies.</span><span class="x" lang="vi">Khi bật retry, toàn
+              bộ body request được đọc vào bộ nhớ trước. Tránh dùng cho upload lớn hoặc body dạng stream.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">err == nil ≠
+              success</span><span class="x" lang="en">As with any <code>*http.Client</code>, a 4xx/5xx is not an error.
+              Always check <code>resp.StatusCode</code> and always close <code>resp.Body</code>.</span><span class="x"
+              lang="vi">Như mọi <code>*http.Client</code>, 4xx/5xx không phải error. Luôn kiểm tra
+              <code>resp.StatusCode</code> và luôn đóng <code>resp.Body</code>.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Retry-After is
+              ignored</span><span class="x" lang="en">A 429 is retried on the normal backoff schedule, which may be
+              sooner than the server asked.</span><span class="x" lang="vi">429 được retry theo lịch backoff thông
+              thường, có thể sớm hơn mức server yêu cầu.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">Proxy from
+              environment</span><span class="x" lang="en"><code>HTTP_PROXY</code> / <code>HTTPS_PROXY</code> /
+              <code>NO_PROXY</code> are honoured.</span><span class="x" lang="vi"><code>HTTP_PROXY</code> /
+              <code>HTTPS_PROXY</code> / <code>NO_PROXY</code> được áp dụng.</span></div>
+        </div>
+      </section>
+
+      <footer class="jd-footer">
+        <span>Jundoc · Junkit · httpclient</span>
+        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
+              Junkit</span></a></span>
+      </footer>
+    </article>
+  </div>
+
+  <script>
+    document.addEventListener("jd:ready", function () {
+      // Mirrors withDefaults + retryTransport.backoff, in int64 nanoseconds (BigInt keeps Go's shift overflow).
+      var MS = 1000000n;
+      function base(minNs, maxNs, attempt) {
+        var w = BigInt.asIntN(64, minNs << BigInt(attempt));
+        if (w <= 0n || w > maxNs) w = maxNs;
+        return w; // jitter adds rand.Int63n(w/5+1) → [0, w/5]
+      }
+      function schedule(retries, minMs, maxMs) {
+        var minNs = (minMs > 0 ? BigInt(minMs) : 200n) * MS, maxNs = (maxMs > 0 ? BigInt(maxMs) : 5000n) * MS;
+        var out = [];
+        for (var n = 0; n < retries; n++) { var w = base(minNs, maxNs, n); out.push([w, w + w / 5n]); }
+        return out;
+      }
+      var ms = function (ns) { return Number(ns) / 1e6; };
+      console.assert(JSON.stringify(schedule(6, 0, 0).map(function (r) { return ms(r[0]); })) === "[200,400,800,1600,3200,5000]", "default bases");
+      console.assert(ms(schedule(1, 200, 5000)[0][1]) === 240, "jitter up to 20%");
+      console.assert(JSON.stringify(schedule(4, 1, 5).map(function (r) { return ms(r[0]); })) === "[1,2,4,5]", "test-suite values");
+      console.assert(base(200n * MS, 5000n * MS, 64) === 5000n * MS, "overflow falls back to max");
+
+      var ids = ["bo-n", "bo-min", "bo-max", "bo-to"];
+      function fmt(x) { return x >= 1000 ? (x / 1000).toFixed(2).replace(/\.?0+$/, "") + "s" : (Math.round(x * 100) / 100) + "ms"; }
+      function paint() {
+        var v = ids.map(function (id) { return parseInt(document.getElementById(id).value, 10) || 0; });
+        var retries = Math.min(Math.max(v[0], 0), 40), timeout = v[3] > 0 ? v[3] : 15000;
+        var lines = [];
+        if (retries === 0) {
+          lines.push("// MaxRetries = 0 → plain *http.Transport, 1 attempt, no waits");
+        } else {
+          var lo = 0, hi = 0;
+          schedule(retries, v[1], v[2]).forEach(function (r, n) {
+            lo += ms(r[0]); hi += ms(r[1]);
+            lines.push("attempt " + (n + 1) + " fails → wait " + fmt(ms(r[0])) + " … " + fmt(ms(r[1])) + " → attempt " + (n + 2));
+          });
+          lines.push("", "// total waiting: " + fmt(lo) + " … " + fmt(hi) + " of Timeout " + fmt(timeout));
+          if (lo >= timeout) lines.push("// Timeout ends the call before the last retry");
+        }
+        document.getElementById("bo-out").innerHTML = JD.highlight(lines.join("\n"), "go");
+      }
+      ids.forEach(function (id) { document.getElementById(id).addEventListener("input", paint); });
+      paint();
+    });
+  </script>
+</body>
+
+</html>

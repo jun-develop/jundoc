@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit logger · Jundoc</title>
+  <meta name="description"
+    content="junkit/logger: build a *zap.Logger that prints to the console in development and writes rotating JSON files elsewhere, with named channels and trace IDs.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+
+<body>
+  <div id="jd-app" data-root="..">
+    <article class="jd-content">
+
+      <!-- ============================================================ HERO -->
+      <header class="jd-hero"
+        style="background:radial-gradient(1000px 380px at 0% 0%, rgba(96,165,250,.5), transparent 60%),linear-gradient(135deg,#1e3a8a,#1d4ed8 55%,#4338ca)">
+        <div class="jd-eyebrow">Junkit · logger</div>
+        <h1>logger</h1>
+        <p lang="en">Builds a <code>*zap.Logger</code> from a plain <code>Options</code> struct: coloured console output
+          in development, rotating JSON files everywhere else — plus named channels and a trace ID carried in
+          <code>context.Context</code>.</p>
+        <p lang="vi">Tạo một <code>*zap.Logger</code> từ struct <code>Options</code> đơn giản: in màu ra console khi
+          development, ghi file JSON có xoay vòng (rotate) ở mọi môi trường khác — kèm các kênh log có tên và trace ID
+          mang theo trong <code>context.Context</code>.</p>
+        <div class="jd-chips">
+          <span class="jd-chip">github.com/jun-develop/junkit/logger</span>
+          <span class="jd-chip"><span lang="en">Fx: <code>logger.Module</code> provides <code>*zap.Logger</code> (needs
+              <code>logger.Options</code>)</span><span lang="vi">Fx: <code>logger.Module</code> cung cấp
+              <code>*zap.Logger</code> (cần <code>logger.Options</code>)</span></span>
+          <span class="jd-chip"><span lang="en"><code>ProvideNamed</code> → <code>*zap.Logger</code> tagged
+              <code>name:"…"</code></span><span lang="vi"><code>ProvideNamed</code> → <code>*zap.Logger</code> gắn tag
+              <code>name:"…"</code></span></span>
+          <span class="jd-chip">go.uber.org/zap · lumberjack.v2 · go.uber.org/fx</span>
+        </div>
+      </header>
+
+      <!-- ============================================================ 1. WHAT -->
+      <section id="what" class="jd-section c-blue">
+        <div class="jd-section-head">
+          <span class="jd-badge">1</span>
+          <div>
+            <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
+            <p class="jd-sub" lang="en">You describe the logger with data; <code>New</code> picks the encoder and the
+              destination. A second, independent path carries the request's trace ID so every log line can be tied to
+              one request.</p>
+            <p class="jd-sub" lang="vi">Bạn mô tả logger bằng dữ liệu; <code>New</code> chọn encoder và nơi ghi. Một
+              luồng thứ hai, độc lập, mang trace ID của request để mỗi dòng log đều gắn được với đúng một request.</p>
+          </div>
+        </div>
+        <div class="jd-flow" style="margin-top:22px" data-wires='[
+      {"from":"l1","to":"l2","color":"blue"},
+      {"from":"l2","to":"l3","color":"blue"},
+      {"from":"l3","to":"l4","color":"blue"}]'>
+          <div class="jd-node is-tint c-blue" data-node="l1"><span class="k">1 · config</span><span class="t mono"
+              style="font-size:15px">Options / Definition</span>
+            <div class="d" lang="en">Environment, Level, Filename and the rotation settings.</div>
+            <div class="d" lang="vi">Environment, Level, Filename và các thiết lập xoay vòng file.</div>
+          </div>
+          <div class="jd-node is-tint c-blue" data-node="l2"><span class="k">2 · build</span><span class="t mono"
+              style="font-size:15px">New(lc, opts)</span>
+            <div class="d" lang="en">Parses <code>Level</code> (invalid → info), adds caller info and stack traces from
+              error level up.</div>
+            <div class="d" lang="vi">Đọc <code>Level</code> (sai → info), thêm vị trí gọi (caller) và stack trace từ mức
+              error trở lên.</div>
+          </div>
+          <div class="jd-node is-tint c-purple" data-node="l3"><span class="k">3 · output</span><span class="t mono"
+              style="font-size:15px">stdout | file</span>
+            <div class="d" lang="en"><code>"development"</code> → coloured console on stdout. Anything else → JSON lines
+              in <code>Filename</code>, rotated by lumberjack. <code>Output</code> overrides this choice.</div>
+            <div class="d" lang="vi"><code>"development"</code> → console có màu ra stdout. Giá trị khác → từng dòng
+              JSON vào <code>Filename</code>, xoay vòng bởi lumberjack. <code>Output</code> ghi đè lựa chọn này.</div>
+          </div>
+          <div class="jd-node is-tint c-green" data-node="l4"><span class="k">4 · lifecycle</span><span class="t mono"
+              style="font-size:15px">OnStop → Sync()</span>
+            <div class="d" lang="en">The logger is injected by Fx and flushed when the app stops.</div>
+            <div class="d" lang="vi">Logger được Fx inject và được flush khi app dừng.</div>
+          </div>
+        </div>
+        <div class="jd-flow" style="margin-top:34px" data-wires='[
+      {"from":"t1","to":"t2","color":"orange","label":"X-Trace-Id"},
+      {"from":"t2","to":"t3","color":"orange","label":"ctx"},
+      {"from":"t3","to":"t4","color":"orange","label":"trace_id"}]'>
+          <div class="jd-node is-tint c-orange" data-node="t1"><span class="k">a · request</span><span class="t mono"
+              style="font-size:15px">middleware.Trace</span>
+            <div class="d" lang="en">Reads the <code>X-Trace-Id</code> header or generates a UUID.</div>
+            <div class="d" lang="vi">Đọc header <code>X-Trace-Id</code> hoặc sinh một UUID.</div>
+          </div>
+          <div class="jd-node is-tint c-orange" data-node="t2"><span class="k">b · store</span><span class="t mono"
+              style="font-size:15px">WithTraceID</span>
+            <div class="d" lang="en">Puts it into the request <code>context.Context</code> under
+              <code>TraceIDKey</code>.</div>
+            <div class="d" lang="vi">Đặt nó vào <code>context.Context</code> của request với khoá
+              <code>TraceIDKey</code>.</div>
+          </div>
+          <div class="jd-node is-tint c-orange" data-node="t3"><span class="k">c · read</span><span class="t mono"
+              style="font-size:15px">GetTraceID(ctx)</span>
+            <div class="d" lang="en">Anywhere below — service, repository, SQL tracer. Returns <code>""</code> if
+              missing.</div>
+            <div class="d" lang="vi">Ở bất kỳ tầng nào bên dưới — service, repository, SQL tracer. Trả <code>""</code>
+              nếu không có.</div>
+          </div>
+          <div class="jd-node is-tint c-orange" data-node="t4"><span class="k">d · log</span><span class="t mono"
+              style="font-size:15px">zap.String("trace_id", …)</span>
+            <div class="d" lang="en">You attach it as a field yourself — the logger does not do it automatically.</div>
+            <div class="d" lang="vi">Bạn tự gắn nó vào làm field — logger không tự làm việc này.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 2. SETUP -->
+      <section id="setup" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">2</span>
+          <div>
+            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối vào app</span></h2>
+            <p class="jd-sub" lang="en">Three ways, from the one Jungo uses to no Fx at all.</p>
+            <p class="jd-sub" lang="vi">Ba cách, từ cách Jungo đang dùng tới hoàn toàn Không dùng Fx.</p>
+          </div>
+        </div>
+        <div class="jd-tabs c-purple" style="margin-top:18px">
+          <div class="jd-tablist">
+            <button class="jd-tab" type="button" aria-selected="true"><span lang="en">Fx · named channels
+                (Jungo)</span><span lang="vi">Fx · nhiều kênh (Jungo)</span></button>
+            <button class="jd-tab" type="button" aria-selected="false"><span lang="en">Fx · one logger</span><span
+                lang="vi">Fx · một logger</span></button>
+            <button class="jd-tab" type="button" aria-selected="false"><span lang="en">without Fx</span><span
+                lang="vi">Không dùng Fx</span></button>
+          </div>
+          <div class="jd-tabpanel">
+            <p lang="en">Jungo builds four channels — <code>app</code>, <code>http</code>, <code>sql</code>,
+              <code>limiter</code> — each with its own level and file, sharing the environment and rotation settings.
+              Quoted from <code>internal/app/fx.go</code>:</p>
+            <p lang="vi">Jungo tạo bốn kênh — <code>app</code>, <code>http</code>, <code>sql</code>,
+              <code>limiter</code> — mỗi kênh có level và file riêng, dùng chung environment và thiết lập xoay vòng.
+              Trích từ <code>internal/app/fx.go</code>:</p>
+            <div class="jd-term" data-copy>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go</span></div>
+              <pre data-hl="go">
+// CoreModules(cfg) …
+fx.Options(provideLoggers(cfg)...),
+
+fx.Module("database",
+    fx.Decorate(fx.Annotate(
+        func(sqlLogger *zap.Logger) *zap.Logger { return sqlLogger },
+        fx.ParamTags(`name:"sql"`),
+    )),
+    primary.Module,
+),
+
+// provideLoggers builds the app/http/sql/limiter named logging channels.
+func provideLoggers(cfg *config.Config) []fx.Option {
+    shared := logger.Options{
+        Environment: cfg.Environment,
+        Output:      cfg.Logger.Output,
+        MaxSize:     cfg.Logger.MaxSize,
+        MaxBackups:  cfg.Logger.MaxBackups,
+        MaxAge:      cfg.Logger.MaxAge,
+        Compress:    cfg.Logger.Compress,
+    }
+
+    defs := []logger.Definition{
+        {Name: "app", Level: cfg.Logger.AppLevel, Filename: cfg.Logger.AppFilename},
+        {Name: "http", Level: cfg.Logger.HTTPLevel, Filename: cfg.Logger.HTTPFilename},
+        {Name: "sql", Level: cfg.Logger.SQLLevel, Filename: cfg.Logger.SQLFilename},
+        {Name: "limiter", Level: cfg.Logger.LimiterLevel, Filename: cfg.Logger.LimiterFilename},
+    }
+
+    return logger.ProvideNamed(defs, shared)
+}
+</pre>
+            </div>
+            <p class="jd-sub" lang="en">The <code>fx.Decorate</code> swaps the default logger for the <code>sql</code>
+              one inside the database module only — so SQL logs land in their own file.</p>
+            <p class="jd-sub" lang="vi"><code>fx.Decorate</code> thay logger mặc định bằng kênh <code>sql</code> chỉ bên
+              trong module database — nhờ vậy log SQL nằm ở file riêng.</p>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <p lang="en">One logger, untagged. <code>logger.Module</code> needs a <code>logger.Options</code> value in
+              the container — supply it or provide it from your config.</p>
+            <p lang="vi">Một logger, không gắn tag. <code>logger.Module</code> cần có một giá trị
+              <code>logger.Options</code> trong container — dùng <code>fx.Supply</code> hoặc provide nó từ config.</p>
+            <div class="jd-term" data-copy>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
+              <pre data-hl="go">
+fx.New(
+    fx.Supply(logger.Options{
+        Environment: "production",
+        Level:       "info",
+        Filename:    "logs/app.log",
+        MaxSize:     10, // MB
+        MaxBackups:  5,
+        MaxAge:      7, // days
+        Compress:    true,
+    }),
+    logger.Module, // provides *zap.Logger
+    fx.Invoke(func(log *zap.Logger) { log.Info("ready") }),
+).Run()
+</pre>
+            </div>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <p lang="en"><code>New</code> takes an <code>fx.Lifecycle</code> only to register its flush hook. Outside
+              Fx, pass anything with an <code>Append(fx.Hook)</code> method (the package tests do exactly this) and call
+              <code>Sync</code> yourself.</p>
+            <p lang="vi"><code>New</code> nhận <code>fx.Lifecycle</code> chỉ để đăng ký hook flush. Không dùng Fx thì
+              truyền bất kỳ thứ gì có method <code>Append(fx.Hook)</code> (test của package làm đúng như vậy) và tự gọi
+              <code>Sync</code>.</p>
+            <div class="jd-term" data-copy>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
+              <pre data-hl="go">
+type noLifecycle struct{}
+
+func (noLifecycle) Append(fx.Hook) {} // hooks ignored; we flush below
+
+func main() {
+    log, err := logger.New(noLifecycle{}, logger.Options{
+        Environment: "development",
+        Level:       "debug",
+    })
+    if err != nil {
+        panic(err)
+    }
+    defer log.Sync()
+
+    log.Debug("hello", zap.String("who", "junkit"))
+}
+</pre>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:22px"><code>logger.Options</code></h3>
+        <div class="jd-tablewrap">
+          <table class="jd-params c-purple">
+            <tr>
+              <th>field</th>
+              <th>type</th>
+              <th><span lang="en">zero value</span><span lang="vi">giá trị rỗng</span></th>
+              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+            </tr>
+            <tr>
+              <td>Environment</td>
+              <td>string</td>
+              <td lang="en"><code>""</code> → file mode</td>
+              <td lang="vi"><code>""</code> → chế độ file</td>
+              <td lang="en">Exactly <code>"development"</code> → console on stdout. Every other value (including
+                <code>"dev"</code>, <code>"Development"</code>, <code>""</code>) → JSON to <code>Filename</code>.</td>
+              <td lang="vi">Đúng chuỗi <code>"development"</code> → console ra stdout. Mọi giá trị khác (kể cả
+                <code>"dev"</code>, <code>"Development"</code>, <code>""</code>) → JSON vào <code>Filename</code>.</td>
+            </tr>
+            <tr>
+              <td>Output</td>
+              <td>string</td>
+              <td lang="en"><code>""</code> → decided by Environment</td>
+              <td lang="vi"><code>""</code> → do Environment quyết định</td>
+              <td lang="en"><code>logger.OutputConsole</code> → console on stdout, <code>logger.OutputFile</code> → JSON
+                to <code>Filename</code>, whatever <code>Environment</code> says. jungo's console uses it to keep the
+                terminal clean unless <code>--verbose</code> / <code>--debug</code> is passed.</td>
+              <td lang="vi"><code>logger.OutputConsole</code> → console ra stdout, <code>logger.OutputFile</code> → JSON
+                vào <code>Filename</code>, bất kể <code>Environment</code>. Console của jungo dùng nó để màn hình sạch
+                trừ khi truyền <code>--verbose</code> / <code>--debug</code>.</td>
+            </tr>
+            <tr>
+              <td>Level</td>
+              <td>string</td>
+              <td><code>""</code> → info</td>
+              <td lang="en">Minimum level: <code>debug</code>, <code>info</code>, <code>warn</code> (or
+                <code>warning</code>), <code>error</code>, <code>dpanic</code>, <code>panic</code>, <code>fatal</code>;
+                case-insensitive (zap parsing). Anything else → info.</td>
+              <td lang="vi">Mức tối thiểu: <code>debug</code>, <code>info</code>, <code>warn</code> (hoặc
+                <code>warning</code>), <code>error</code>, <code>dpanic</code>, <code>panic</code>, <code>fatal</code>;
+                không phân biệt hoa thường (cách zap đọc). Giá trị khác → info.</td>
+            </tr>
+            <tr>
+              <td>Filename</td>
+              <td>string</td>
+              <td lang="en"><code>""</code> → lumberjack's default <code>&lt;processname&gt;-lumberjack.log</code> in
+                <code>os.TempDir()</code></td>
+              <td lang="vi"><code>""</code> → mặc định của lumberjack: <code>&lt;processname&gt;-lumberjack.log</code>
+                trong <code>os.TempDir()</code></td>
+              <td lang="en">Log file path. Ignored in development. Rotated files are kept in the same folder.</td>
+              <td lang="vi">Đường dẫn file log. Bị bỏ qua khi development. File đã xoay vòng nằm cùng thư mục.</td>
+            </tr>
+            <tr>
+              <td>MaxSize</td>
+              <td>int</td>
+              <td lang="en"><code>0</code> → 100 MB (lumberjack)</td>
+              <td lang="vi"><code>0</code> → 100 MB (lumberjack)</td>
+              <td lang="en">Size in MB before the file is rotated.</td>
+              <td lang="vi">Dung lượng (MB) trước khi file được xoay vòng.</td>
+            </tr>
+            <tr>
+              <td>MaxBackups</td>
+              <td>int</td>
+              <td lang="en"><code>0</code> → keep all</td>
+              <td lang="vi"><code>0</code> → giữ tất cả</td>
+              <td lang="en">How many rotated files to keep (<code>MaxAge</code> may still delete them).</td>
+              <td lang="vi">Số file đã xoay vòng được giữ lại (<code>MaxAge</code> vẫn có thể xoá chúng).</td>
+            </tr>
+            <tr>
+              <td>MaxAge</td>
+              <td>int</td>
+              <td lang="en"><code>0</code> → never delete by age</td>
+              <td lang="vi"><code>0</code> → không xoá theo tuổi</td>
+              <td lang="en">Days to keep rotated files.</td>
+              <td lang="vi">Số ngày giữ file đã xoay vòng.</td>
+            </tr>
+            <tr>
+              <td>Compress</td>
+              <td>bool</td>
+              <td><code>false</code></td>
+              <td lang="en">gzip rotated files.</td>
+              <td lang="vi">Nén gzip các file đã xoay vòng.</td>
+            </tr>
+          </table>
+        </div>
+        <p class="jd-sub" lang="en">With <code>ProvideNamed</code>, <code>Level</code> and <code>Filename</code> come
+          from each <code>Definition</code>; the shared <code>Options.Level</code> / <code>Options.Filename</code> are
+          ignored.</p>
+        <p class="jd-sub" lang="vi">Với <code>ProvideNamed</code>, <code>Level</code> và <code>Filename</code> lấy từ
+          từng <code>Definition</code>; <code>Options.Level</code> / <code>Options.Filename</code> dùng chung bị bỏ qua.
+        </p>
+      </section>
+
+      <!-- ============================================================ 3. QUICK START -->
+      <section id="quick" class="jd-section c-blue">
+        <div class="jd-section-head">
+          <span class="jd-badge">3</span>
+          <div>
+            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <p class="jd-sub" lang="en">A service that logs with the request's trace ID. Hover an explanation to light
+              up its lines.</p>
+            <p class="jd-sub" lang="vi">Một service ghi log kèm trace ID của request. Rê chuột vào giải thích để làm
+              sáng các dòng tương ứng.</p>
+          </div>
+        </div>
+        <div class="jd-grid-2" style="margin-top:18px">
+          <div>
+            <div class="jd-sticky">
+              <div class="jd-term" data-copy>
+                <div class="jd-term-bar"><i></i><i></i><i></i><span>user_service.go</span></div>
+                <pre data-hl="go" id="code-quick">
+type UserService struct {
+    log  *zap.Logger // untagged = "app" channel
+    repo UserRepository
+}
+
+func NewUserService(log *zap.Logger,
+    repo UserRepository) *UserService {
+    return &amp;UserService{log: log, repo: repo}
+}
+
+func (s *UserService) Create(ctx context.Context,
+    email string) error {
+    // set by middleware.Trace for HTTP requests
+    traceID := logger.GetTraceID(ctx)
+    s.log.Debug("creating user",
+        zap.String("trace_id", traceID))
+
+    if err := s.repo.Insert(ctx, email); err != nil {
+        s.log.Error("insert user failed",
+            zap.String("trace_id", traceID),
+            zap.Error(err))
+        return err
+    }
+    return nil
+}
+
+// Another channel? Ask for it by its name tag.
+type AuditParams struct {
+    fx.In
+    HTTPLog *zap.Logger `name:"http"`
+}
+</pre>
+              </div>
+            </div>
+          </div>
+          <div class="jd-explain">
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="1-9"><span class="n">1</span><span
+                class="w">inject *zap.Logger</span><span class="x" lang="en">Just ask for <code>*zap.Logger</code> in a
+                constructor. With <code>ProvideNamed</code> the untagged logger is the <code>"app"</code>
+                channel.</span><span class="x" lang="vi">Chỉ cần nhận <code>*zap.Logger</code> trong constructor. Với
+                <code>ProvideNamed</code>, logger không tag chính là kênh <code>"app"</code>.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="13-14"><span class="n">2</span><span
+                class="w">GetTraceID(ctx)</span><span class="x" lang="en">Reads the ID that
+                <code>middleware.Trace</code> stored. <code>""</code> outside a request (CLI, background jobs) or for a
+                <code>nil</code> context.</span><span class="x" lang="vi">Đọc ID mà <code>middleware.Trace</code> đã
+                lưu. Trả <code>""</code> khi không nằm trong request (CLI, job nền) hoặc context là
+                <code>nil</code>.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="15-16"><span class="n">3</span><span
+                class="w">levels filter</span><span class="x" lang="en"><code>Debug</code> is dropped unless the
+                channel's <code>Level</code> is <code>debug</code>.</span><span class="x" lang="vi"><code>Debug</code>
+                bị bỏ qua trừ khi <code>Level</code> của kênh là <code>debug</code>.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="19-21"><span class="n">4</span><span
+                class="w">Error adds a stack trace</span><span class="x" lang="en">From error level up every entry gets
+                a <code>stacktrace</code>, and every entry has a <code>caller</code> (file:line).</span><span class="x"
+                lang="vi">Từ mức error trở lên mỗi dòng có thêm <code>stacktrace</code>, và dòng nào cũng có
+                <code>caller</code> (file:dòng).</span></div>
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="27-31"><span class="n">5</span><span
+                class="w">name:"http"</span><span class="x" lang="en">Named channels are plain Fx name tags: use an
+                <code>fx.In</code> struct or <code>fx.ParamTags(`name:"http"`)</code>.</span><span class="x"
+                lang="vi">Kênh có tên chỉ là name tag của Fx: dùng struct <code>fx.In</code> hoặc
+                <code>fx.ParamTags(`name:"http"`)</code>.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 4. TRY IT -->
+      <section id="try" class="jd-section c-purple">
+        <div class="jd-section-head">
+          <span class="jd-badge">4</span>
+          <div>
+            <h2><span lang="en">Try it</span><span lang="vi">Thử ngay</span></h2>
+            <p class="jd-sub" lang="en">Mirrors how <code>New</code> picks the output and parses <code>Level</code>.
+              Four calls are made: Debug, Info, Warn, Error. The lines are illustrative (time, caller and fields are
+              made up).</p>
+            <p class="jd-sub" lang="vi">Mô phỏng cách <code>New</code> chọn đầu ra và đọc <code>Level</code>. Gọi bốn
+              lần: Debug, Info, Warn, Error. Các dòng chỉ để minh hoạ (thời gian, caller và field là giả).</p>
+          </div>
+        </div>
+        <div class="jd-calc c-purple" style="margin-top:18px">
+          <label>Environment <input type="text" id="lg-env" value="development"></label>
+          <label>Level <input type="text" id="lg-level" value="info"></label>
+          <label>Filename <input type="text" id="lg-file" value="storage/logs/app.log"></label>
+        </div>
+        <div class="jd-callout c-purple" id="lg-summary"></div>
+        <div class="jd-term" style="margin-top:14px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span id="lg-dest">stdout</span></div>
+          <pre id="lg-out"></pre>
+        </div>
+      </section>
+
+      <!-- ============================================================ 5. API -->
+      <section id="api" class="jd-section c-blue">
+        <div class="jd-section-head">
+          <span class="jd-badge">5</span>
+          <div>
+            <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from
+              <code>junkit/logger/logger.go</code>.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/logger/logger.go</code>.
+            </p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:18px"><span lang="en">Building loggers</span><span lang="vi">Tạo logger</span></h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Options</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+const (
+    OutputConsole = "console"
+    OutputFile    = "file"
+)
+
+type Options struct {
+    Environment string
+    Output      string // OutputConsole | OutputFile; "" → by Environment
+    Level       string
+    Filename    string
+    MaxSize     int
+    MaxBackups  int
+    MaxAge      int
+    Compress    bool
+}
+</pre>
+            </div>
+            <p lang="en">Configuration for <code>New</code> / <code>Module</code>. Every field is explained in the <a
+                href="#setup">Options table</a>.</p>
+            <p lang="vi">Cấu hình cho <code>New</code> / <code>Module</code>. Từng field được giải thích trong <a
+                href="#setup">bảng Options</a>.</p>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">New</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func New(lc fx.Lifecycle, opts Options) (*zap.Logger, error)</pre>
+            </div>
+            <ul>
+              <li lang="en">The output is console when <code>Output</code> is <code>OutputConsole</code>, file when
+                it is <code>OutputFile</code>; when empty, <code>Environment</code> decides as below.</li>
+              <li lang="vi">Output là console khi <code>Output</code> là <code>OutputConsole</code>, file khi là
+                <code>OutputFile</code>; khi rỗng thì <code>Environment</code> quyết định như dưới.</li>
+              <li lang="en"><b>development</b>: console encoder, time as <code>2006-01-02 15:04:05</code>, coloured
+                capital levels (<code>INFO</code>), written to <code>os.Stdout</code>.</li>
+              <li lang="vi"><b>development</b>: console encoder, thời gian dạng <code>2006-01-02 15:04:05</code>, level
+                viết hoa có màu (<code>INFO</code>), ghi ra <code>os.Stdout</code>.</li>
+              <li lang="en"><b>otherwise</b>: zap's production JSON encoder (keys <code>level</code>, <code>ts</code>,
+                <code>caller</code>, <code>msg</code>, <code>stacktrace</code>), time as RFC 3339, written to a
+                lumberjack rotating file built from <code>Filename</code> / <code>MaxSize</code> /
+                <code>MaxBackups</code> / <code>MaxAge</code> / <code>Compress</code>. Nothing is printed to stdout.
+              </li>
+              <li lang="vi"><b>còn lại</b>: JSON encoder production của zap (khoá <code>level</code>, <code>ts</code>,
+                <code>caller</code>, <code>msg</code>, <code>stacktrace</code>), thời gian dạng RFC 3339, ghi vào file
+                xoay vòng của lumberjack tạo từ <code>Filename</code> / <code>MaxSize</code> / <code>MaxBackups</code> /
+                <code>MaxAge</code> / <code>Compress</code>. Không in gì ra stdout.</li>
+              <li lang="en">Both: <code>zap.AddCaller()</code> and <code>zap.AddStacktrace(zapcore.ErrorLevel)</code>.
+                An invalid <code>Level</code> silently becomes info.</li>
+              <li lang="vi">Cả hai: <code>zap.AddCaller()</code> và <code>zap.AddStacktrace(zapcore.ErrorLevel)</code>.
+                <code>Level</code> không hợp lệ âm thầm trở thành info.</li>
+              <li lang="en">Appends one <code>OnStop</code> hook to <code>lc</code> that calls <code>Sync()</code> (its
+                error is ignored).</li>
+              <li lang="vi">Thêm một hook <code>OnStop</code> vào <code>lc</code> để gọi <code>Sync()</code> (lỗi của nó
+                bị bỏ qua).</li>
+              <li lang="en"><b>Errors:</b> the current code always returns <code>nil</code>. The log file is opened
+                lazily on the first write, so a bad path is not reported here.</li>
+              <li lang="vi"><b>Lỗi:</b> code hiện tại luôn trả <code>nil</code>. File log chỉ được mở ở lần ghi đầu
+                tiên, nên đường dẫn sai không bị báo ở đây.</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">var</span><span class="jd-sym-name">Module</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+var Module = fx.Module("logger",
+    fx.Provide(New),
+)
+</pre>
+            </div>
+            <p lang="en">Provides an untagged <code>*zap.Logger</code>. Requires a <code>logger.Options</code> in the
+              container (e.g. <code>fx.Supply(logger.Options{…})</code>); <code>fx.Lifecycle</code> is supplied by Fx.
+            </p>
+            <p lang="vi">Cung cấp một <code>*zap.Logger</code> không tag. Cần có <code>logger.Options</code> trong
+              container (vd. <code>fx.Supply(logger.Options{…})</code>); <code>fx.Lifecycle</code> do Fx cung cấp.</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:18px"><span lang="en">Named channels</span><span lang="vi">Kênh có tên</span></h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Definition</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type Definition struct {
+    Name     string
+    Level    string
+    Filename string
+}
+</pre>
+            </div>
+            <div class="jd-tablewrap">
+              <table class="jd-params c-purple">
+                <tr>
+                  <th>field</th>
+                  <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+                </tr>
+                <tr>
+                  <td>Name</td>
+                  <td lang="en">Fx name tag: the logger is provided as <code>name:"&lt;Name&gt;"</code>. Empty →
+                    <code>"app"</code>.</td>
+                  <td lang="vi">Name tag của Fx: logger được cung cấp với <code>name:"&lt;Name&gt;"</code>. Rỗng →
+                    <code>"app"</code>.</td>
+                </tr>
+                <tr>
+                  <td>Level</td>
+                  <td lang="en">Minimum level for this channel (same rules as <code>Options.Level</code>).</td>
+                  <td lang="vi">Mức tối thiểu cho kênh này (cùng luật với <code>Options.Level</code>).</td>
+                </tr>
+                <tr>
+                  <td>Filename</td>
+                  <td lang="en">Log file for this channel (outside development).</td>
+                  <td lang="vi">File log của kênh này (ngoài development).</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">ProvideNamed</span>
+            </div>
+            <div class="jd-term">
+              <pre data-hl="go">func ProvideNamed(defs []Definition, shared Options) []fx.Option</pre>
+            </div>
+            <ul>
+              <li lang="en">For each definition, provides a <code>*zap.Logger</code> tagged
+                <code>name:"&lt;Name&gt;"</code>, built by <code>New</code> with <code>shared.Environment</code>,
+                <code>MaxSize</code>, <code>MaxBackups</code>, <code>MaxAge</code>, <code>Compress</code> and the
+                definition's own <code>Level</code> / <code>Filename</code>.</li>
+              <li lang="vi">Với mỗi definition, cung cấp một <code>*zap.Logger</code> gắn tag
+                <code>name:"&lt;Name&gt;"</code>, tạo bằng <code>New</code> với <code>shared.Environment</code>,
+                <code>MaxSize</code>, <code>MaxBackups</code>, <code>MaxAge</code>, <code>Compress</code> và
+                <code>Level</code> / <code>Filename</code> riêng của definition.</li>
+              <li lang="en">The <code>"app"</code> channel is <b>also</b> provided untagged — the same instance — so
+                plain <code>*zap.Logger</code> parameters get it. No <code>"app"</code> definition → no untagged logger.
+              </li>
+              <li lang="vi">Kênh <code>"app"</code> <b>đồng thời</b> được cung cấp không tag — cùng một instance — nên
+                tham số <code>*zap.Logger</code> thường sẽ nhận nó. Không có definition <code>"app"</code> → không có
+                logger không tag.</li>
+              <li lang="en">Returns a slice: spread it with
+                <code>fx.Options(logger.ProvideNamed(defs, shared)...)</code>. Each channel registers its own flush
+                hook.</li>
+              <li lang="vi">Trả về một slice: trải ra bằng
+                <code>fx.Options(logger.ProvideNamed(defs, shared)...)</code>. Mỗi kênh đăng ký hook flush riêng.</li>
+            </ul>
+          </div>
+        </div>
+
+        <h3 style="margin-top:18px"><span lang="en">Trace ID in context</span><span lang="vi">Trace ID trong
+            context</span></h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">const</span><span class="jd-sym-name">TraceIDKey</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">const TraceIDKey contextKey = "trace_id"</pre>
+            </div>
+            <p lang="en">The context key. Its type <code>contextKey</code> is unexported, so it cannot collide with a
+              plain string <code>"trace_id"</code> key from another package. You normally use <code>WithTraceID</code> /
+              <code>GetTraceID</code> instead of the key.</p>
+            <p lang="vi">Khoá trong context. Kiểu <code>contextKey</code> không export, nên không đụng với khoá chuỗi
+              <code>"trace_id"</code> của package khác. Thường bạn dùng <code>WithTraceID</code> /
+              <code>GetTraceID</code> thay vì dùng khoá trực tiếp.</p>
+          </div>
+
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">WithTraceID</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func WithTraceID(ctx context.Context, traceID string) context.Context</pre>
+            </div>
+            <p lang="en">Returns a copy of <code>ctx</code> carrying <code>traceID</code> (via
+              <code>context.WithValue</code>). <code>middleware.Trace</code> already does this for every HTTP request;
+              call it yourself for CLI commands or jobs.</p>
+            <p lang="vi">Trả về bản sao của <code>ctx</code> mang <code>traceID</code> (qua
+              <code>context.WithValue</code>). <code>middleware.Trace</code> đã làm việc này cho mọi HTTP request; tự
+              gọi nó cho lệnh CLI hoặc job.</p>
+          </div>
+
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">GetTraceID</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func GetTraceID(ctx context.Context) string</pre>
+            </div>
+            <ul>
+              <li lang="en"><code>nil</code> context → <code>""</code> (no panic).</li>
+              <li lang="vi">Context <code>nil</code> → <code>""</code> (không panic).</li>
+              <li lang="en">Looks up <code>TraceIDKey</code> first, then falls back to the raw string key
+                <code>"trace_id"</code> (for middlewares that store it that way). Non-string values are ignored.</li>
+              <li lang="vi">Tìm <code>TraceIDKey</code> trước, rồi thử khoá chuỗi thô <code>"trace_id"</code> (cho
+                middleware lưu theo kiểu đó). Giá trị không phải string bị bỏ qua.</li>
+              <li lang="en">Nothing found → <code>""</code>.</li>
+              <li lang="vi">Không tìm thấy → <code>""</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 6. IN JUNGO -->
+      <section id="jungo" class="jd-section c-orange">
+        <div class="jd-section-head">
+          <span class="jd-badge">6</span>
+          <div>
+            <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+            <p class="jd-sub" lang="en">Four channels, configured from <code>LOG_*</code> environment variables.</p>
+            <p class="jd-sub" lang="vi">Bốn kênh, cấu hình từ các biến môi trường <code>LOG_*</code>.</p>
+          </div>
+        </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-orange">
+            <tr>
+              <th>file</th>
+              <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
+            </tr>
+            <tr>
+              <td>app/fx.go</td>
+              <td lang="en"><code>provideLoggers</code> → <code>logger.ProvideNamed</code> with <code>app</code>,
+                <code>http</code>, <code>sql</code>, <code>limiter</code>. The untagged (<code>app</code>) logger also
+                receives Fx's own events at Debug (<code>fx.WithLogger</code>) and is used by
+                <code>provideSecurityOptions</code> for its warning. The database module is decorated with the
+                <code>sql</code> channel.</td>
+              <td lang="vi"><code>provideLoggers</code> → <code>logger.ProvideNamed</code> với <code>app</code>,
+                <code>http</code>, <code>sql</code>, <code>limiter</code>. Logger không tag (<code>app</code>) còn nhận
+                các sự kiện của Fx ở mức Debug (<code>fx.WithLogger</code>) và được <code>provideSecurityOptions</code>
+                dùng để ghi cảnh báo. Module database được decorate bằng kênh <code>sql</code>.</td>
+            </tr>
+            <tr>
+              <td>config/config.go</td>
+              <td lang="en"><code>LoggerConfig</code>: <code>LOG_MAX_SIZE</code>=10, <code>LOG_MAX_BACKUPS</code>=5,
+                <code>LOG_MAX_AGE</code>=7, <code>LOG_COMPRESS</code>=true,
+                <code>LOG_&lt;APP|HTTP|SQL|LIMITER&gt;_LEVEL</code>=info,
+                <code>LOG_…_FILENAME</code>=<code>storage/logs/&lt;app|http|sql|limiter&gt;.log</code>.
+                <code>API_ENVIRONMENT</code> defaults to <code>development</code>.</td>
+              <td lang="vi"><code>LoggerConfig</code>: <code>LOG_MAX_SIZE</code>=10, <code>LOG_MAX_BACKUPS</code>=5,
+                <code>LOG_MAX_AGE</code>=7, <code>LOG_COMPRESS</code>=true,
+                <code>LOG_&lt;APP|HTTP|SQL|LIMITER&gt;_LEVEL</code>=info,
+                <code>LOG_…_FILENAME</code>=<code>storage/logs/&lt;app|http|sql|limiter&gt;.log</code>.
+                <code>API_ENVIRONMENT</code> mặc định là <code>development</code>.</td>
+            </tr>
+            <tr>
+              <td>router/router.go</td>
+              <td lang="en"><code>Params</code> takes <code>HTTPLogger *zap.Logger `name:"http"`</code> and
+                <code>LimiterLogger *zap.Logger `name:"limiter"`</code>, passed to <code>middleware.AccessLog</code>,
+                <code>middleware.Recover</code> and <code>middleware.Limiter</code>. <code>middleware.Trace</code> is
+                registered globally and calls <code>logger.WithTraceID</code>.</td>
+              <td lang="vi"><code>Params</code> nhận <code>HTTPLogger *zap.Logger `name:"http"`</code> và
+                <code>LimiterLogger *zap.Logger `name:"limiter"`</code>, truyền vào <code>middleware.AccessLog</code>,
+                <code>middleware.Recover</code> và <code>middleware.Limiter</code>. <code>middleware.Trace</code> được
+                đăng ký toàn cục và gọi <code>logger.WithTraceID</code>.</td>
+            </tr>
+          </table>
+        </div>
+        <p class="jd-sub" lang="en">Inside Junkit, <code>database</code>'s query tracer logs <code>trace_id</code> via
+          <code>logger.GetTraceID(ctx)</code>, so an SQL line can be matched with its <code>HTTP_ACCESS_LOG</code> line.
+          Send your own trace ID and grep for it:</p>
+        <p class="jd-sub" lang="vi">Bên trong Junkit, query tracer của <code>database</code> ghi <code>trace_id</code>
+          qua <code>logger.GetTraceID(ctx)</code>, nên một dòng SQL có thể ghép với dòng <code>HTTP_ACCESS_LOG</code>
+          của nó. Tự gửi trace ID và grep theo nó:</p>
+        <!-- English commands -->
+        <div class="jd-term" data-copy="commands" style="margin-top:10px" lang="en">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · send trace id</span></div>
+          <pre data-hl="bash">
+# the response echoes "X-Trace-Id: demo-123"
+$ curl -i localhost:8080/health -H 'X-Trace-Id: demo-123'
+</pre>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:10px" lang="en">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · grep log file</span></div>
+          <pre data-hl="bash">
+# API_ENVIRONMENT=development → the log lines are on stdout; otherwise look in files:
+$ grep demo-123 storage/logs/http.log
+</pre>
+        </div>
+
+        <!-- Vietnamese commands -->
+        <div class="jd-term" data-copy="commands" style="margin-top:10px" lang="vi">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · gửi trace id</span></div>
+          <pre data-hl="bash">
+# response trả về kèm header "X-Trace-Id: demo-123"
+$ curl -i localhost:8080/health -H 'X-Trace-Id: demo-123'
+</pre>
+        </div>
+        <div class="jd-term" data-copy="commands" style="margin-top:10px" lang="vi">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · tìm trong log file</span></div>
+          <pre data-hl="bash">
+# API_ENVIRONMENT=development → log ra stdout; các môi trường khác xem trong file:
+$ grep demo-123 storage/logs/http.log
+</pre>
+        </div>
+      </section>
+
+      <!-- ============================================================ 7. GOTCHAS -->
+      <section id="gotchas" class="jd-section c-red">
+        <div class="jd-section-head">
+          <span class="jd-badge">!</span>
+          <div>
+            <h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2>
+          </div>
+        </div>
+        <div class="jd-explain" style="margin-top:16px">
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">Production prints
+              nothing to stdout</span><span class="x" lang="en">Outside <code>"development"</code> logs go <b>only</b>
+              to files. <code>docker logs</code> / <code>kubectl logs</code> will be empty — mount or ship the log
+              folder.</span><span class="x" lang="vi">Ngoài <code>"development"</code>, log <b>chỉ</b> ghi vào file.
+              <code>docker logs</code> / <code>kubectl logs</code> sẽ trống — hãy mount hoặc thu gom thư mục log.</span>
+          </div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">"development" is an
+              exact match</span><span class="x" lang="en"><code>"dev"</code>, <code>"local"</code> or
+              <code>"Development"</code> switch to file mode — and with an empty <code>Filename</code> the logs end up
+              in the temp dir.</span><span class="x" lang="vi"><code>"dev"</code>, <code>"local"</code> hay
+              <code>"Development"</code> đều chuyển sang chế độ file — và nếu <code>Filename</code> rỗng thì log nằm
+              trong thư mục tạm.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Typos in Level are
+              silent</span><span class="x" lang="en"><code>"inof"</code> becomes info without any error or
+              warning.</span><span class="x" lang="vi"><code>"inof"</code> thành info mà không có lỗi hay cảnh báo
+              nào.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Trace ID is not
+              automatic</span><span class="x" lang="en">The logger does not read the context. Add
+              <code>zap.String("trace_id", logger.GetTraceID(ctx))</code> yourself, or create a child logger with
+              <code>log.With(...)</code> per request.</span><span class="x" lang="vi">Logger không đọc context. Tự thêm
+              <code>zap.String("trace_id", logger.GetTraceID(ctx))</code>, hoặc tạo logger con bằng
+              <code>log.With(...)</code> cho mỗi request.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">One file per
+              channel</span><span class="x" lang="en">Each <code>Definition</code> gets its own lumberjack writer. Two
+              channels pointing at the same <code>Filename</code> would rotate the same file independently — give each
+              its own path.</span><span class="x" lang="vi">Mỗi <code>Definition</code> có writer lumberjack riêng. Hai
+              kênh cùng trỏ vào một <code>Filename</code> sẽ xoay vòng cùng một file một cách độc lập — hãy cho mỗi kênh
+              một đường dẫn riêng.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Keep an "app"
+              channel</span><span class="x" lang="en">Without a definition named <code>"app"</code> (or with an empty
+              name) nothing provides an untagged <code>*zap.Logger</code>, and every constructor asking for one fails at
+              Fx start.</span><span class="x" lang="vi">Không có definition tên <code>"app"</code> (hoặc tên rỗng) thì
+              không có <code>*zap.Logger</code> không tag nào, và mọi constructor cần nó sẽ lỗi khi Fx khởi động.</span>
+          </div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">Fatal / Panic skip the
+              flush hook</span><span class="x" lang="en"><code>log.Fatal</code> exits the process, so the
+              <code>OnStop</code> <code>Sync()</code> never runs. Prefer returning errors.</span><span class="x"
+              lang="vi"><code>log.Fatal</code> thoát process, nên <code>Sync()</code> trong <code>OnStop</code> không
+              bao giờ chạy. Nên trả lỗi về thay vì dùng nó.</span></div>
+        </div>
+      </section>
+
+      <footer class="jd-footer">
+        <span>Jundoc · Junkit · logger</span>
+        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
+              Junkit</span></a></span>
+      </footer>
+    </article>
+  </div>
+
+  <script>
+    document.addEventListener("jd:ready", function () {
+      // Mirrors zapcore.Level.Set (exact, then lower-cased) + New's fallback to info.
+      var LEVELS = { debug: -1, info: 0, "": 0, warn: 1, warning: 1, error: 2, dpanic: 3, panic: 4, fatal: 5 };
+      var has = function (k) { return Object.prototype.hasOwnProperty.call(LEVELS, k); };
+      function parseLevel(s) {
+        if (has(s)) return { lvl: LEVELS[s], ok: true };
+        if (has(s.toLowerCase())) return { lvl: LEVELS[s.toLowerCase()], ok: true };
+        return { lvl: 0, ok: false };
+      }
+      console.assert(parseLevel("not-a-real-level").lvl === 0 && !parseLevel("not-a-real-level").ok, "invalid → info");
+      console.assert(parseLevel("DEBUG").lvl === -1, "case-insensitive");
+      console.assert(parseLevel("").lvl === 0 && parseLevel("warning").lvl === 1, "empty → info, warning → warn");
+      console.assert(parseLevel("constructor").ok === false, "no prototype keys");
+
+      var NAMES = ["debug", "info", "warn", "error"];
+      var MSG = ["creating user", "user created", "slow avatar upload", "insert user failed"];
+      function paint() {
+        var env = document.getElementById("lg-env").value;
+        var lvlIn = document.getElementById("lg-level").value;
+        var file = document.getElementById("lg-file").value;
+        var dev = env === "development";
+        var p = parseLevel(lvlIn);
+        var lines = [];
+        NAMES.forEach(function (n, i) {
+          var lvl = i - 1;
+          if (lvl < p.lvl) return;
+          if (dev) {
+            lines.push("2026-10-16 09:30:0" + i + "\t" + n.toUpperCase() + "\tuser/service.go:1" + (2 + i) + "\t" + MSG[i] + "\t{\"trace_id\": \"demo-123\"}" + (lvl >= 2 ? "\n<stacktrace…>" : ""));
+          } else {
+            lines.push(JSON.stringify({ level: n, ts: "2026-10-16T09:30:0" + i + "+07:00", caller: "user/service.go:1" + (2 + i), msg: MSG[i], trace_id: "demo-123" }).replace(/}$/, lvl >= 2 ? ",\"stacktrace\":\"…\"}" : "}"));
+          }
+        });
+        var levelName = ["debug", "info", "warn", "error", "dpanic", "panic", "fatal"][p.lvl + 1];
+        var dest = dev ? "stdout" : (file || "<processname>-lumberjack.log (os.TempDir)");
+        document.getElementById("lg-dest").textContent = dest;
+        document.getElementById("lg-out").innerHTML = lines.length ? JD.highlight(lines.join("\n"), dev ? "" : "json") : JD.highlight("(nothing at or above " + levelName + ")", "");
+        var en = "<b>" + (dev ? "console → stdout" : "JSON → " + dest.replace(/</g, "&lt;")) + "</b> · level <b>" + levelName + "</b>" + (p.ok ? "" : " (\"" + lvlIn.replace(/</g, "&lt;") + "\" is invalid → info)");
+        var vi = "<b>" + (dev ? "console → stdout" : "JSON → " + dest.replace(/</g, "&lt;")) + "</b> · level <b>" + levelName + "</b>" + (p.ok ? "" : " (\"" + lvlIn.replace(/</g, "&lt;") + "\" không hợp lệ → info)");
+        document.getElementById("lg-summary").innerHTML = '<span lang="en">' + en + '</span><span lang="vi">' + vi + '</span>';
+      }
+      ["lg-env", "lg-level", "lg-file"].forEach(function (id) { document.getElementById(id).addEventListener("input", paint); });
+      paint();
+    });
+  </script>
+</body>
+
+</html>
