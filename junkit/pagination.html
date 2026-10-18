@@ -227,7 +227,7 @@ type PaginatedResponse[T any] struct {
     </table></div>
     <div class="jd-term" data-copy="commands" style="margin-top:14px"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
 <pre data-hl="bash">
-$ curl -s 'localhost:8080/api/v1/users?page=1&amp;page_size=2&amp;search=jungo' \
+$ curl -s 'localhost:$API_SERVER_PORT/api/v1/users?page=1&amp;page_size=2&amp;search=jungo' \
     -H 'Authorization: Bearer &lt;access_token&gt;' | jq
 </pre></div>
   </section>

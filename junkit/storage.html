@@ -126,7 +126,7 @@ p.Router.Static("/uploads", p.Config.Storage.BaseDir)
             <div class="jd-term">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
               <pre data-hl="go">
-svc, err := storage.NewLocalService("./uploads", "http://localhost:8080/uploads")
+svc, err := storage.NewLocalService("./uploads", "http://localhost:$API_SERVER_PORT/uploads")
 if err != nil {
     log.Fatal(err) // create storage directory "./uploads": …
 }
@@ -168,9 +168,9 @@ r.Static("/uploads", "./uploads") // must match BaseDir and the path in BaseURL
               <td><span lang="en">no default; <code>""</code> gives URLs like <code>"/&lt;name&gt;"</code></span><span
                   lang="vi">không có mặc định; <code>""</code> cho ra URL dạng <code>"/&lt;name&gt;"</code></span></td>
               <td><span lang="en">Public prefix where <code>BaseDir</code> is served, e.g.
-                  <code>"http://localhost:8080/uploads"</code>. No trailing slash — one is added.</span><span
+                  <code>"http://localhost:$API_SERVER_PORT/uploads"</code>. No trailing slash — one is added.</span><span
                   lang="vi">Tiền tố công khai nơi <code>BaseDir</code> được phục vụ, vd.
-                  <code>"http://localhost:8080/uploads"</code>. Không có dấu / cuối — thư viện tự thêm.</span></td>
+                  <code>"http://localhost:$API_SERVER_PORT/uploads"</code>. Không có dấu / cuối — thư viện tự thêm.</span></td>
             </tr>
           </table>
         </div>
@@ -235,9 +235,9 @@ func (s *DocumentService) ReplaceFile(ctx context.Context, id uuid.UUID,
             <div class="jd-ex c-green" data-code="#code-quick" data-show="13-16"><span class="n">2</span><span
                 class="w">UploadFile</span><span class="x" lang="en">Pass the open file and the client's filename (only
                 its extension is used). You get back the full public URL, e.g.
-                <code>http://localhost:8080/uploads/3f2b…_1760600000.pdf</code>.</span><span class="x" lang="vi">Truyền
+                <code>http://localhost:$API_SERVER_PORT/uploads/3f2b…_1760600000.pdf</code>.</span><span class="x" lang="vi">Truyền
                 file đã mở và tên file của client (chỉ dùng phần mở rộng). Bạn nhận lại URL công khai đầy đủ, vd.
-                <code>http://localhost:8080/uploads/3f2b…_1760600000.pdf</code>.</span></div>
+                <code>http://localhost:$API_SERVER_PORT/uploads/3f2b…_1760600000.pdf</code>.</span></div>
             <div class="jd-ex c-green" data-code="#code-quick" data-show="18-21"><span class="n">3</span><span
                 class="w">roll back on DB failure</span><span class="x" lang="en">If saving the URL fails, delete the
                 new file so no orphan stays on disk.</span><span class="x" lang="vi">Nếu lưu URL thất bại, xoá file mới
@@ -411,9 +411,9 @@ func NewLocalService(baseDir, baseURL string) (*LocalService, error)
             <tr>
               <td>config/config.go</td>
               <td><span lang="en"><code>STORAGE_BASE_DIR</code> (default <code>./storage/uploads</code>),
-                  <code>STORAGE_BASE_URL</code> (default <code>http://localhost:8080/uploads</code>).</span><span
+                  <code>STORAGE_BASE_URL</code> (default <code>http://localhost:$API_SERVER_PORT/uploads</code>).</span><span
                   lang="vi"><code>STORAGE_BASE_DIR</code> (mặc định <code>./storage/uploads</code>),
-                  <code>STORAGE_BASE_URL</code> (mặc định <code>http://localhost:8080/uploads</code>).</span></td>
+                  <code>STORAGE_BASE_URL</code> (mặc định <code>http://localhost:$API_SERVER_PORT/uploads</code>).</span></td>
             </tr>
             <tr>
               <td>router/router.go</td>
@@ -452,22 +452,22 @@ func NewLocalService(baseDir, baseURL string) (*LocalService, error)
         <div class="jd-term" data-copy="commands" style="margin-top:14px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · upload avatar</span></div>
           <pre data-hl="bash">
-$ curl -s -X POST 'localhost:8080/api/v1/users/&lt;uuid&gt;/avatar' \
+$ curl -s -X POST 'localhost:$API_SERVER_PORT/api/v1/users/&lt;uuid&gt;/avatar' \
     -H 'Authorization: Bearer &lt;access_token&gt;' \
     -F 'avatar=@me.png' | jq
-# → data.avatar_url = "http://localhost:8080/uploads/&lt;uuid&gt;_&lt;unix&gt;.png"
+# → data.avatar_url = "http://localhost:$API_SERVER_PORT/uploads/&lt;uuid&gt;_&lt;unix&gt;.png"
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · download avatar</span></div>
           <pre data-hl="bash">
-$ curl -O 'http://localhost:8080/uploads/&lt;uuid&gt;_&lt;unix&gt;.png'
+$ curl -O 'http://localhost:$API_SERVER_PORT/uploads/&lt;uuid&gt;_&lt;unix&gt;.png'
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · delete avatar</span></div>
           <pre data-hl="bash">
-$ curl -s -X DELETE 'localhost:8080/api/v1/users/&lt;uuid&gt;/avatar' \
+$ curl -s -X DELETE 'localhost:$API_SERVER_PORT/api/v1/users/&lt;uuid&gt;/avatar' \
     -H 'Authorization: Bearer &lt;access_token&gt;' | jq
 </pre>
         </div>

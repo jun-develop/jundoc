@@ -1047,7 +1047,7 @@ func NewNode(name string) *Node
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 422 error map</span></div>
           <pre data-hl="bash">
 # 422 — SendWithData puts the field map into "error"
-$ curl -s -X POST localhost:8080/api/v1/auth/login \
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
     -H 'Content-Type: application/json' -d '{"email":"nope"}' | jq
 </pre>
         </div>
@@ -1055,7 +1055,7 @@ $ curl -s -X POST localhost:8080/api/v1/auth/login \
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 404 not found</span></div>
           <pre data-hl="bash">
 # 404 — NoRoute → Send(ctx, 404, "api_not_found")
-$ curl -s localhost:8080/api/v1/nothing-here | jq
+$ curl -s localhost:$API_SERVER_PORT/api/v1/nothing-here | jq
 </pre>
         </div>
 
@@ -1064,7 +1064,7 @@ $ curl -s localhost:8080/api/v1/nothing-here | jq
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 422 map lỗi</span></div>
           <pre data-hl="bash">
 # 422 — SendWithData đặt map các trường lỗi vào "error"
-$ curl -s -X POST localhost:8080/api/v1/auth/login \
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
     -H 'Content-Type: application/json' -d '{"email":"nope"}' | jq
 </pre>
         </div>
@@ -1072,7 +1072,7 @@ $ curl -s -X POST localhost:8080/api/v1/auth/login \
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 404 không tìm thấy</span></div>
           <pre data-hl="bash">
 # 404 — NoRoute → Send(ctx, 404, "api_not_found")
-$ curl -s localhost:8080/api/v1/nothing-here | jq
+$ curl -s localhost:$API_SERVER_PORT/api/v1/nothing-here | jq
 </pre>
         </div>
       </section>

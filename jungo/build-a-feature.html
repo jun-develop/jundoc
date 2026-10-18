@@ -669,7 +669,7 @@ $ make vet
         <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>1 · log in &amp; get token</span></div>
 <pre data-hl="bash">
 # 1. log in, keep the access token (valid 15 minutes)
-$ TOKEN=$(curl -s -X POST localhost:8080/api/v1/auth/login \
+$ TOKEN=$(curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
     -H 'Content-Type: application/json' \
     -d '{"email":"admin@jungo.com","password":"Password@123"}' \
     | jq -r .data.access_token)
@@ -677,14 +677,14 @@ $ TOKEN=$(curl -s -X POST localhost:8080/api/v1/auth/login \
         <div class="jd-term" data-copy="commands" style="margin-top:10px"><div class="jd-term-bar"><i></i><i></i><i></i><span>2 · create product</span></div>
 <pre data-hl="bash">
 # 2. create a product, keep its uuid
-$ UUID=$(curl -s -X POST localhost:8080/api/v1/products \
+$ UUID=$(curl -s -X POST localhost:$API_SERVER_PORT/api/v1/products \
     -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
     -d '{"name":"Coffee"}' | jq -r .data.uuid)
 </pre></div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px"><div class="jd-term-bar"><i></i><i></i><i></i><span>3 · edit name</span></div>
 <pre data-hl="bash">
 # 3. edit its name
-$ curl -s -X PATCH localhost:8080/api/v1/products/$UUID \
+$ curl -s -X PATCH localhost:$API_SERVER_PORT/api/v1/products/$UUID \
     -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
     -d '{"name":"Iced coffee"}' | jq
 </pre></div>
@@ -884,7 +884,7 @@ ERROR  HTTP_ACCESS_LOG {"trace_id": "51c05e85-…", "status": 500, "method": "PA
       <div>
         <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
 <pre data-hl="bash">
-$ curl -s -X PATCH "localhost:8080/api/v1/products/$UUID?t_debug=$TRACER_DEBUG_VALUE" \
+$ curl -s -X PATCH "localhost:$API_SERVER_PORT/api/v1/products/$UUID?t_debug=$TRACER_DEBUG_VALUE" \
     -H "Authorization: Bearer $TOKEN" -H "X-Internal-Secret: $AUTH_INTERNAL_SECRET" \
     -H 'Content-Type: application/json' \
     -d '{"name":"Iced coffee"}' | jq

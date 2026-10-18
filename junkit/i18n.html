@@ -821,14 +821,14 @@ type Translator struct {
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · health check</span></div>
           <pre data-hl="bash">
-$ curl -s localhost:8080/health | jq
+$ curl -s localhost:$API_SERVER_PORT/health | jq
 # "message": "The API is running"       ← key "app_running"
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 404 not found</span></div>
           <pre data-hl="bash">
-$ curl -s localhost:8080/nope | jq
+$ curl -s localhost:$API_SERVER_PORT/nope | jq
 # "message": "API is not found"         ← key "api_not_found"
 </pre>
         </div>

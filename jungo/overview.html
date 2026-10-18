@@ -270,8 +270,8 @@ $ cd jungo
       <div class="jd-node is-tint c-blue" data-node="s4">
         <span class="k"><span lang="en">Step 4</span><span lang="vi">Bước 4</span></span>
         <span class="t mono">make migrate-up</span>
-        <div class="d" lang="en">Creates tables, SQL functions and demo users (admin, manager, member). API ready on <code>localhost:8080</code>.</div>
-        <div class="d" lang="vi">Tạo bảng, SQL function và nạp user demo (admin, manager, member). API sẵn sàng tại <code>localhost:8080</code>.</div>
+        <div class="d" lang="en">Creates tables, SQL functions and demo users (admin, manager, member). API ready on <code>localhost:$API_SERVER_PORT</code> — the port you chose in <code>app-init</code> (<code>API_SERVER_PORT</code> in <code>.env</code>, default 8080); every example in these docs uses it.</div>
+        <div class="d" lang="vi">Tạo bảng, SQL function và nạp user demo (admin, manager, member). API sẵn sàng tại <code>localhost:$API_SERVER_PORT</code> — chính là port bạn chọn ở <code>app-init</code> (<code>API_SERVER_PORT</code> trong <code>.env</code>, mặc định 8080); mọi ví dụ trong tài liệu đều dùng biến này.</div>
       </div>
     </div>
     <div class="jd-callout c-orange" style="margin-top:18px">
@@ -289,7 +289,7 @@ $ cd jungo
           {"from":"app","to":"mail","color":"muted","dashed":true,"delay":1200}]'>
           <div class="jd-node is-tint c-blue" data-node="app">
             <span class="t mono">app</span>
-            <div class="d"><span lang="en">Go API on :8080 — hot reload with Air: save a .go file, it restarts by itself.</span><span lang="vi">Go API ở :8080 — hot reload bằng Air: lưu file .go là app tự khởi động lại.</span></div>
+            <div class="d"><span lang="en">Go API on :$API_SERVER_PORT — hot reload with Air: save a .go file, it restarts by itself.</span><span lang="vi">Go API ở :$API_SERVER_PORT — hot reload bằng Air: lưu file .go là app tự khởi động lại.</span></div>
           </div>
           <div class="jd-node is-tint c-blue" data-node="pg">
             <span class="t mono">postgresql</span>
@@ -314,14 +314,14 @@ $ cd jungo
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 1 · health</span></div>
           <pre data-hl="bash">
 # 1. is it alive?
-$ curl -s localhost:8080/health | jq
+$ curl -s localhost:$API_SERVER_PORT/health | jq
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px" lang="en">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 2 · login</span></div>
           <pre data-hl="bash">
 # 2. log in with a seeded demo account
-$ curl -s -X POST localhost:8080/api/v1/auth/login \
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
     -H 'Content-Type: application/json' \
     -d '{"email":"admin@jungo.com","password":"Password@123"}' | jq
 </pre>
@@ -330,7 +330,7 @@ $ curl -s -X POST localhost:8080/api/v1/auth/login \
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 3 · users</span></div>
           <pre data-hl="bash">
 # 3. reuse "access_token" from the response
-$ curl -s localhost:8080/api/v1/users \
+$ curl -s localhost:$API_SERVER_PORT/api/v1/users \
     -H 'Authorization: Bearer &lt;access_token&gt;' | jq
 </pre>
         </div>
@@ -340,14 +340,14 @@ $ curl -s localhost:8080/api/v1/users \
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 1 · kiểm tra</span></div>
           <pre data-hl="bash">
 # 1. kiểm tra server có đang hoạt động?
-$ curl -s localhost:8080/health | jq
+$ curl -s localhost:$API_SERVER_PORT/health | jq
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px" lang="vi">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 2 · đăng nhập</span></div>
           <pre data-hl="bash">
 # 2. đăng nhập bằng tài khoản demo có sẵn
-$ curl -s -X POST localhost:8080/api/v1/auth/login \
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
     -H 'Content-Type: application/json' \
     -d '{"email":"admin@jungo.com","password":"Password@123"}' | jq
 </pre>
@@ -356,7 +356,7 @@ $ curl -s -X POST localhost:8080/api/v1/auth/login \
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 3 · lấy danh sách user</span></div>
           <pre data-hl="bash">
 # 3. dùng lại "access_token" từ kết quả trả về
-$ curl -s localhost:8080/api/v1/users \
+$ curl -s localhost:$API_SERVER_PORT/api/v1/users \
     -H 'Authorization: Bearer &lt;access_token&gt;' | jq
 </pre>
         </div>

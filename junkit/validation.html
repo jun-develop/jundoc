@@ -869,7 +869,7 @@ var Module = fx.Module("validation",
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · field map</span></div>
           <pre data-hl="bash">
 # field map → {"email":"email must be a valid email format","password":"password is required"}
-$ curl -s -X POST localhost:8080/api/v1/auth/login \
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
     -H 'Content-Type: application/json' -d '{"email":"nope"}' | jq
 </pre>
         </div>
@@ -877,7 +877,7 @@ $ curl -s -X POST localhost:8080/api/v1/auth/login \
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · single string</span></div>
           <pre data-hl="bash">
 # single string → "Invalid JSON syntax"
-$ curl -s -X POST localhost:8080/api/v1/auth/login \
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
     -H 'Content-Type: application/json' -d '{"email":' | jq
 </pre>
         </div>
@@ -885,7 +885,7 @@ $ curl -s -X POST localhost:8080/api/v1/auth/login \
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · query param error</span></div>
           <pre data-hl="bash">
 # query errors → {"page_size":"page_size must be less than 100"}
-$ curl -s 'localhost:8080/api/v1/users?page_size=500' -H 'Authorization: Bearer &lt;access_token&gt;' | jq
+$ curl -s 'localhost:$API_SERVER_PORT/api/v1/users?page_size=500' -H 'Authorization: Bearer &lt;access_token&gt;' | jq
 </pre>
         </div>
 
@@ -894,7 +894,7 @@ $ curl -s 'localhost:8080/api/v1/users?page_size=500' -H 'Authorization: Bearer 
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · map danh sách lỗi</span></div>
           <pre data-hl="bash">
 # map danh sách lỗi theo trường → {"email":"email must be a valid email format","password":"password is required"}
-$ curl -s -X POST localhost:8080/api/v1/auth/login \
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
     -H 'Content-Type: application/json' -d '{"email":"nope"}' | jq
 </pre>
         </div>
@@ -902,7 +902,7 @@ $ curl -s -X POST localhost:8080/api/v1/auth/login \
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · chuỗi lỗi đơn lẻ</span></div>
           <pre data-hl="bash">
 # chuỗi lỗi đơn lẻ → "Invalid JSON syntax"
-$ curl -s -X POST localhost:8080/api/v1/auth/login \
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
     -H 'Content-Type: application/json' -d '{"email":' | jq
 </pre>
         </div>
@@ -910,7 +910,7 @@ $ curl -s -X POST localhost:8080/api/v1/auth/login \
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · lỗi query param</span></div>
           <pre data-hl="bash">
 # lỗi query param → {"page_size":"page_size must be less than 100"}
-$ curl -s 'localhost:8080/api/v1/users?page_size=500' -H 'Authorization: Bearer &lt;access_token&gt;' | jq
+$ curl -s 'localhost:$API_SERVER_PORT/api/v1/users?page_size=500' -H 'Authorization: Bearer &lt;access_token&gt;' | jq
 </pre>
         </div>
       </section>

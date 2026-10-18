@@ -128,14 +128,14 @@
             <div class="jd-term" data-copy="commands">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · curl (json)</span></div>
               <pre data-hl="bash">
-$ curl -s -o /dev/null -w '%{content_type}\n' "localhost:8080/health?t_debug=$TRACER_DEBUG_VALUE" -H "X-Internal-Secret: $AUTH_INTERNAL_SECRET"
+$ curl -s -o /dev/null -w '%{content_type}\n' "localhost:$API_SERVER_PORT/health?t_debug=$TRACER_DEBUG_VALUE" -H "X-Internal-Secret: $AUTH_INTERNAL_SECRET"
 # application/json; charset=utf-8
 </pre>
             </div>
             <div class="jd-term" data-copy="commands" style="margin-top:10px">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · browser user-agent (html)</span></div>
               <pre data-hl="bash">
-$ curl -s -o /dev/null -w '%{content_type}\n' -A 'Mozilla/5.0' "localhost:8080/health?t_debug=$TRACER_DEBUG_VALUE" \
+$ curl -s -o /dev/null -w '%{content_type}\n' -A 'Mozilla/5.0' "localhost:$API_SERVER_PORT/health?t_debug=$TRACER_DEBUG_VALUE" \
     -H "X-Internal-Secret: $AUTH_INTERNAL_SECRET"
 # text/html; charset=utf-8
 </pre>
@@ -325,14 +325,14 @@ func (s *OrderService) Checkout(ctx context.Context, order Order) error {
                 <div class="jd-term-bar"><i></i><i></i><i></i><span>open browser</span></div>
                 <pre data-hl="bash">
 # HTML in the browser (add X-Internal-Secret with an extension such as ModHeader)
-$ open "http://localhost:8080/health?t_debug=$TRACER_DEBUG_VALUE"
+$ open "http://localhost:$API_SERVER_PORT/health?t_debug=$TRACER_DEBUG_VALUE"
 </pre>
               </div>
               <div class="jd-term" data-copy="commands" style="margin-top:10px">
                 <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · curl json</span></div>
                 <pre data-hl="bash">
 # JSON output in terminal
-$ curl -s "http://localhost:8080/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" \
+$ curl -s "http://localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" \
     -H 'Authorization: Bearer &lt;access_token&gt;' \
     -H 'X-Internal-Secret: &lt;AUTH_INTERNAL_SECRET&gt;' | jq '.db'
 </pre>

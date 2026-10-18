@@ -720,7 +720,7 @@ type Definition struct {
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · send trace id</span></div>
           <pre data-hl="bash">
 # the response echoes "X-Trace-Id: demo-123"
-$ curl -i localhost:8080/health -H 'X-Trace-Id: demo-123'
+$ curl -i localhost:$API_SERVER_PORT/health -H 'X-Trace-Id: demo-123'
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px" lang="en">
@@ -736,7 +736,7 @@ $ grep demo-123 storage/logs/http.log
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · gửi trace id</span></div>
           <pre data-hl="bash">
 # response trả về kèm header "X-Trace-Id: demo-123"
-$ curl -i localhost:8080/health -H 'X-Trace-Id: demo-123'
+$ curl -i localhost:$API_SERVER_PORT/health -H 'X-Trace-Id: demo-123'
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px" lang="vi">

@@ -191,7 +191,7 @@
             <h3>Request</h3>
             <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
 <pre data-hl="bash">
-$ curl -s -X POST localhost:8080/api/v1/auth/login \
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
     -H 'Content-Type: application/json' \
     -H 'X-Device-ID: iphone-7f3a' \
     -d '{"email":"admin@jungo.com","password":"Password@123"}' | jq
@@ -292,7 +292,7 @@ $ curl -s -X POST localhost:8080/api/v1/auth/login \
             <h3>Request</h3>
             <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
 <pre data-hl="bash">
-$ curl -s -X POST localhost:8080/api/v1/auth/refresh \
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/refresh \
     -H 'Content-Type: application/json' \
     -d '{"refresh_token":"v1.Zk3pLw8…"}' | jq
 </pre></div>
@@ -360,7 +360,7 @@ $ curl -s -X POST localhost:8080/api/v1/auth/refresh \
             <h3>Request</h3>
             <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
 <pre data-hl="bash">
-$ curl -s localhost:8080/api/v1/auth/me \
+$ curl -s localhost:$API_SERVER_PORT/api/v1/auth/me \
     -H 'Authorization: Bearer v1.kX9f2Qm…' | jq
 </pre></div>
             <h3>Headers</h3>
@@ -449,7 +449,7 @@ $ curl -s localhost:8080/api/v1/auth/me \
             <h3>Request</h3>
             <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
 <pre data-hl="bash">
-$ curl -s localhost:8080/api/v1/auth/sessions \
+$ curl -s localhost:$API_SERVER_PORT/api/v1/auth/sessions \
     -H 'Authorization: Bearer v1.kX9f2Qm…' | jq
 </pre></div>
             <h3><span lang="en">Response fields (one per session)</span><span lang="vi">Các field trả về (mỗi session một phần tử)</span></h3>
@@ -506,7 +506,7 @@ $ curl -s localhost:8080/api/v1/auth/sessions \
         <div class="jd-grid-2">
           <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
 <pre data-hl="bash">
-$ curl -s -X POST localhost:8080/api/v1/auth/logout \
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/logout \
     -H 'Authorization: Bearer v1.kX9f2Qm…' | jq
 </pre></div>
           <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>200 OK</span></div>
@@ -530,7 +530,7 @@ $ curl -s -X POST localhost:8080/api/v1/auth/logout \
         <div class="jd-grid-2">
           <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
 <pre data-hl="bash">
-$ curl -s -X POST localhost:8080/api/v1/auth/logout-all \
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/logout-all \
     -H 'Authorization: Bearer v1.kX9f2Qm…' | jq
 </pre></div>
           <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>200 OK</span></div>
@@ -554,7 +554,7 @@ $ curl -s -X POST localhost:8080/api/v1/auth/logout-all \
             <h3>Request</h3>
             <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
 <pre data-hl="bash">
-$ curl -s -X POST localhost:8080/api/internal/auth/token-details \
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/token-details \
     -H 'Content-Type: application/json' \
     -H 'X-Internal-Secret: &lt;AUTH_INTERNAL_SECRET&gt;' \
     -d '{"token":"v1.kX9f2Qm…"}' | jq
@@ -610,7 +610,7 @@ $ curl -s -X POST localhost:8080/api/internal/auth/token-details \
         <div class="jd-grid-2">
           <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
 <pre data-hl="bash">
-$ curl -s -X POST localhost:8080/api/internal/auth/revoke \
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/revoke \
     -H 'Content-Type: application/json' \
     -H 'X-Internal-Secret: &lt;AUTH_INTERNAL_SECRET&gt;' \
     -d '{"token":"v1.kX9f2Qm…"}' | jq
@@ -634,7 +634,7 @@ $ curl -s -X POST localhost:8080/api/internal/auth/revoke \
         <div class="jd-grid-2">
           <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
 <pre data-hl="bash">
-$ curl -s -X POST localhost:8080/api/internal/auth/revoke-all \
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/revoke-all \
     -H 'Content-Type: application/json' \
     -H 'X-Internal-Secret: &lt;AUTH_INTERNAL_SECRET&gt;' \
     -d '{"token":"v1.kX9f2Qm…"}' | jq
@@ -800,7 +800,7 @@ $ curl -s -X POST localhost:8080/api/internal/auth/revoke-all \
         <h3><span lang="en">Client: a fetch wrapper with auto-refresh</span><span lang="vi">Client: hàm fetch mẫu tự động xử lý refresh</span></h3>
         <div class="jd-term" data-copy lang="en"><div class="jd-term-bar"><i></i><i></i><i></i><span>api.js</span></div>
 <pre data-hl="js" data-lines="2,24">
-const API = "http://localhost:8080/api/v1";
+const API = "http://localhost:$API_SERVER_PORT/api/v1";
 let refreshing = null; // one refresh at a time — two in parallel look like token theft
 
 async function refresh() {
@@ -833,7 +833,7 @@ export async function api(path, init = {}) {
 </pre></div>
         <div class="jd-term" data-copy lang="vi"><div class="jd-term-bar"><i></i><i></i><i></i><span>api.js</span></div>
 <pre data-hl="js" data-lines="2,24">
-const API = "http://localhost:8080/api/v1";
+const API = "http://localhost:$API_SERVER_PORT/api/v1";
 let refreshing = null; // mỗi lúc chỉ 1 lần refresh — chạy song song sẽ bị nghi lộ token
 
 async function refresh() {

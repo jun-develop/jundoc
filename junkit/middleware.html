@@ -476,7 +476,7 @@ func main() {
         responder.SendWithData(c, http.StatusOK, "operation_successful", security.MustGetIdentity[*Identity](c))
     })
 
-    _ = r.Run(":8080")
+    _ = r.Run(":" + os.Getenv("API_SERVER_PORT"))
 }
 </pre>
               </div>
@@ -534,25 +534,25 @@ func main() {
         <div class="jd-term" data-copy="commands" style="margin-top:16px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 401 no token</span></div>
           <pre data-hl="bash">
-$ curl -i localhost:8080/me
+$ curl -i localhost:$API_SERVER_PORT/me
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 200 identity</span></div>
           <pre data-hl="bash">
-$ curl -i localhost:8080/me -H 'Authorization: Bearer demo'
+$ curl -i localhost:$API_SERVER_PORT/me -H 'Authorization: Bearer demo'
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · post echo</span></div>
           <pre data-hl="bash">
-$ curl -i -X POST localhost:8080/echo -H 'Content-Type: application/json' -d '{"a":1}'
+$ curl -i -X POST localhost:$API_SERVER_PORT/echo -H 'Content-Type: application/json' -d '{"a":1}'
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · json debug report</span></div>
           <pre data-hl="bash">
-$ curl -s 'localhost:8080/me?t_debug=change-me' -H 'X-Internal-Secret: change-me-secret' | jq
+$ curl -s 'localhost:$API_SERVER_PORT/me?t_debug=change-me' -H 'X-Internal-Secret: change-me-secret' | jq
 </pre>
         </div>
       </section>
@@ -651,7 +651,7 @@ func TracerDebug(opts TracerDebugOptions) gin.HandlerFunc</pre>
             <div class="jd-term" data-copy="commands">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · Jungo</span></div>
               <pre data-hl="bash">
-$ curl -s "localhost:8080/api/v1/auth/me?t_debug=$TRACER_DEBUG_VALUE" -H "Authorization: Bearer $TOKEN" \
+$ curl -s "localhost:$API_SERVER_PORT/api/v1/auth/me?t_debug=$TRACER_DEBUG_VALUE" -H "Authorization: Bearer $TOKEN" \
     -H "X-Internal-Secret: $AUTH_INTERNAL_SECRET" | jq
 # curl User-Agent → JSON report; in a browser (header added with an extension like ModHeader) → HTML dashboard
 </pre>
@@ -791,13 +791,13 @@ $ curl -s "localhost:8080/api/v1/auth/me?t_debug=$TRACER_DEBUG_VALUE" -H "Author
             <div class="jd-term" data-copy="commands">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · trace id tự sinh</span></div>
               <pre data-hl="bash">
-$ curl -si localhost:8080/api/v1/auth/me | grep -i x-trace-id
+$ curl -si localhost:$API_SERVER_PORT/api/v1/auth/me | grep -i x-trace-id
 </pre>
             </div>
             <div class="jd-term" data-copy="commands" style="margin-top:10px">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · echo trace id</span></div>
               <pre data-hl="bash">
-$ curl -si localhost:8080/api/v1/auth/me -H 'X-Trace-Id: my-trace-123' | grep -i x-trace-id
+$ curl -si localhost:$API_SERVER_PORT/api/v1/auth/me -H 'X-Trace-Id: my-trace-123' | grep -i x-trace-id
 </pre>
             </div>
           </div>
@@ -905,7 +905,7 @@ $ curl -si localhost:8080/api/v1/auth/me -H 'X-Trace-Id: my-trace-123' | grep -i
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · preflight request</span></div>
               <pre data-hl="bash">
 # preflight → 204 + Access-Control-Allow-*
-$ curl -i -X OPTIONS localhost:8080/api/v1/users \
+$ curl -i -X OPTIONS localhost:$API_SERVER_PORT/api/v1/users \
     -H 'Origin: https://app.example.com' \
     -H 'Access-Control-Request-Method: POST' \
     -H 'Access-Control-Request-Headers: Content-Type, Authorization'
@@ -915,7 +915,7 @@ $ curl -i -X OPTIONS localhost:8080/api/v1/users \
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · normal request</span></div>
               <pre data-hl="bash">
 # normal request → response carries Access-Control-Allow-Origin
-$ curl -si localhost:8080/api/v1/auth/me -H 'Origin: https://app.example.com' | grep -i access-control
+$ curl -si localhost:$API_SERVER_PORT/api/v1/auth/me -H 'Origin: https://app.example.com' | grep -i access-control
 </pre>
             </div>
           </div>
@@ -1009,7 +1009,7 @@ const (
             <div class="jd-term" data-copy="commands">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · login payload</span></div>
               <pre data-hl="bash">
-$ curl -i -X POST localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' \
+$ curl -i -X POST localhost:$API_SERVER_PORT/api/v1/auth/login -H 'Content-Type: application/json' \
     -d '{"email":"admin@example.com","password":"secret"}'
 </pre>
             </div>
@@ -1017,7 +1017,7 @@ $ curl -i -X POST localhost:8080/api/v1/auth/login -H 'Content-Type: application
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · body vượt giới hạn</span></div>
               <pre data-hl="bash">
 # body over SECURITY_MAX_BODY_SIZE (2 MiB) → 413 request_body_too_large
-$ head -c 3000000 /dev/zero | curl -i -X POST localhost:8080/api/v1/auth/login \
+$ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
     -H 'Content-Type: application/json' --data-binary @-
 </pre>
             </div>
@@ -1347,7 +1347,7 @@ func IsSlug(v string) bool</pre>
             <div class="jd-term" data-copy="commands">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · Jungo</span></div>
               <pre data-hl="bash">
-$ curl -i localhost:8080/api/v1/users/abc
+$ curl -i localhost:$API_SERVER_PORT/api/v1/users/abc
 # 404 "API is not found"
 </pre>
             </div>
@@ -1506,26 +1506,26 @@ func (f AuthenticatorFunc[T]) Authenticate(ctx context.Context, token string) (T
             <div class="jd-term" data-copy="commands">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 1 · lấy token</span></div>
               <pre data-hl="bash">
-$ TOKEN=$(curl -s -X POST localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' \
+$ TOKEN=$(curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login -H 'Content-Type: application/json' \
     -d '{"email":"admin@example.com","password":"secret"}' | jq -r .data.access_token)
 </pre>
             </div>
             <div class="jd-term" data-copy="commands" style="margin-top:10px">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 2 · 401 no token</span></div>
               <pre data-hl="bash">
-$ curl -i localhost:8080/api/v1/auth/me
+$ curl -i localhost:$API_SERVER_PORT/api/v1/auth/me
 </pre>
             </div>
             <div class="jd-term" data-copy="commands" style="margin-top:10px">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 3 · 401 token sai</span></div>
               <pre data-hl="bash">
-$ curl -i localhost:8080/api/v1/auth/me -H 'Authorization: Bearer nope'
+$ curl -i localhost:$API_SERVER_PORT/api/v1/auth/me -H 'Authorization: Bearer nope'
 </pre>
             </div>
             <div class="jd-term" data-copy="commands" style="margin-top:10px">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 4 · 200 token hợp lệ</span></div>
               <pre data-hl="bash">
-$ curl -i localhost:8080/api/v1/auth/me -H "Authorization: Bearer $TOKEN"
+$ curl -i localhost:$API_SERVER_PORT/api/v1/auth/me -H "Authorization: Bearer $TOKEN"
 </pre>
             </div>
           </div>
@@ -1561,14 +1561,14 @@ $ curl -i localhost:8080/api/v1/auth/me -H "Authorization: Bearer $TOKEN"
             <div class="jd-term" data-copy="commands">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 403 thiếu secret</span></div>
               <pre data-hl="bash">
-$ curl -i -X POST localhost:8080/api/internal/auth/token-details \
+$ curl -i -X POST localhost:$API_SERVER_PORT/api/internal/auth/token-details \
     -H 'Content-Type: application/json' -d "{\"token\":\"$TOKEN\"}"
 </pre>
             </div>
             <div class="jd-term" data-copy="commands" style="margin-top:10px">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 200 có secret</span></div>
               <pre data-hl="bash">
-$ curl -i -X POST localhost:8080/api/internal/auth/token-details \
+$ curl -i -X POST localhost:$API_SERVER_PORT/api/internal/auth/token-details \
     -H "X-Internal-Secret: $AUTH_INTERNAL_SECRET" \
     -H 'Content-Type: application/json' -d "{\"token\":\"$TOKEN\"}"
 </pre>
@@ -1638,7 +1638,7 @@ $ curl -i -X POST localhost:8080/api/internal/auth/token-details \
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · kiểm tra header nén</span></div>
               <pre data-hl="bash">
 # headers only: look for Content-Encoding: gzip and Vary: Accept-Encoding
-$ curl -s -D - -o /dev/null localhost:8080/api/v1/users -H "Authorization: Bearer $TOKEN" \
+$ curl -s -D - -o /dev/null localhost:$API_SERVER_PORT/api/v1/users -H "Authorization: Bearer $TOKEN" \
     -H 'Accept-Encoding: gzip'
 </pre>
             </div>
@@ -1646,14 +1646,14 @@ $ curl -s -D - -o /dev/null localhost:8080/api/v1/users -H "Authorization: Beare
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · uncompressed bytes</span></div>
               <pre data-hl="bash">
 # compare bytes on the wire (uncompressed)
-$ curl -s -o /dev/null -w 'uncompressed: %{size_download} bytes\n' localhost:8080/api/v1/users -H "Authorization: Bearer $TOKEN"
+$ curl -s -o /dev/null -w 'uncompressed: %{size_download} bytes\n' localhost:$API_SERVER_PORT/api/v1/users -H "Authorization: Bearer $TOKEN"
 </pre>
             </div>
             <div class="jd-term" data-copy="commands" style="margin-top:10px">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · gzip compressed bytes</span></div>
               <pre data-hl="bash">
 # compare bytes on the wire (gzip)
-$ curl -s -o /dev/null -w 'gzip: %{size_download} bytes\n' localhost:8080/api/v1/users -H "Authorization: Bearer $TOKEN" \
+$ curl -s -o /dev/null -w 'gzip: %{size_download} bytes\n' localhost:$API_SERVER_PORT/api/v1/users -H "Authorization: Bearer $TOKEN" \
     -H 'Accept-Encoding: gzip'
 </pre>
             </div>
@@ -1661,7 +1661,7 @@ $ curl -s -o /dev/null -w 'gzip: %{size_download} bytes\n' localhost:8080/api/v1
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · tải và giải nén</span></div>
               <pre data-hl="bash">
 # --compressed sends the header and decompresses for you
-$ curl -s --compressed localhost:8080/api/v1/users -H "Authorization: Bearer $TOKEN" | jq
+$ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization: Bearer $TOKEN" | jq
 </pre>
             </div>
           </div>
@@ -1893,28 +1893,28 @@ $ curl -s --compressed localhost:8080/api/v1/users -H "Authorization: Bearer $TO
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · security headers &amp; trace id</span></div>
           <pre data-hl="bash">
 # security headers + X-Trace-Id on every response
-$ curl -i localhost:8080/health
+$ curl -i localhost:$API_SERVER_PORT/health
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 401 authentication token</span></div>
           <pre data-hl="bash">
 # 401 "Authentication token is invalid or expired" (no "code" field)
-$ curl -i localhost:8080/api/v1/users
+$ curl -i localhost:$API_SERVER_PORT/api/v1/users
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 403 secret sai</span></div>
           <pre data-hl="bash">
 # 403 "Forbidden internal system access"
-$ curl -i -X POST localhost:8080/api/internal/auth/revoke -H 'X-Internal-Secret: wrong'
+$ curl -i -X POST localhost:$API_SERVER_PORT/api/internal/auth/revoke -H 'X-Internal-Secret: wrong'
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · debug report json</span></div>
           <pre data-hl="bash">
 # debug report: JSON from curl, HTML dashboard in a browser (add the header with ModHeader or similar)
-$ curl -s "localhost:8080/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" -H 'Authorization: Bearer &lt;access_token&gt;' \
+$ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" -H 'Authorization: Bearer &lt;access_token&gt;' \
     -H 'X-Internal-Secret: &lt;AUTH_INTERNAL_SECRET&gt;' | jq
 </pre>
         </div>
