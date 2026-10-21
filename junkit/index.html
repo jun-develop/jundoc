@@ -41,8 +41,8 @@
     <div class="jd-rules" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
       <div class="jd-rule"><span class="n" style="background:var(--green)">1</span>
         <h4><span lang="en">Configured by a plain Options struct</span><span lang="vi">Cấu hình tường minh qua struct Options độc lập</span></h4>
-        <p lang="en">No package reads env vars or files directly. Your application builds each <code>Options</code> (Jungo builds them from <code>.env</code> in <code>internal/app/fx.go</code>).</p>
-        <p lang="vi">Không package nào tự tiện đọc biến môi trường (.env) hay file cấu hình. Ứng dụng của bạn tự khởi tạo Options (trong Jungo, các Options được map từ .env tại <code>internal/app/fx.go</code>).</p></div>
+        <p lang="en">No package reads env vars or config files directly (one exception: <a href="validation.html">validation</a> reads, and creates if missing, <code>storage/bootstrap/email_blocklist.conf</code>). Your application builds each <code>Options</code> (Jungo builds them from <code>.env</code> in <code>internal/app/fx.go</code>).</p>
+        <p lang="vi">Không package nào tự tiện đọc biến môi trường (.env) hay file cấu hình (ngoại lệ duy nhất: <a href="validation.html">validation</a> đọc, và tạo nếu chưa có, <code>storage/bootstrap/email_blocklist.conf</code>). Ứng dụng của bạn tự khởi tạo Options (trong Jungo, các Options được map từ .env tại <code>internal/app/fx.go</code>).</p></div>
       <div class="jd-rule"><span class="n" style="background:var(--blue)">2</span>
         <h4><span lang="en">One line to register: Module</span><span lang="vi">Đăng ký một dòng duy nhất: Module</span></h4>
         <p lang="en">Supply the Options, then add <code>pkg.Module</code>. Every constructor is also exported, so Fx is never mandatory.</p>

@@ -469,8 +469,11 @@ sqlfmt.BindQuestion("SELECT * FROM users WHERE email = ? AND note = '?'", []any{
                 <tr>
                   <td>[]int{1, 2, 3} <span lang="en">(any slice / array)</span><span lang="vi">(mọi slice /
                       array)</span></td>
-                  <td>'{1,2,3}' — <span lang="en">empty → NULL (like pgx sends it)</span><span lang="vi">rỗng → NULL
-                      (giống cách pgx gửi)</span></td>
+                  <td>'{1,2,3}' — <span lang="en">nil → NULL, empty → '{}' (like pgx sends them); strings are
+                      double-quoted and escaped: '{"a","say \"hi\""}'; nested → '{{1,2},{3,4}}'; nil element →
+                      bare NULL</span><span lang="vi">nil → NULL, rỗng → '{}' (giống cách pgx gửi); chuỗi được bọc nháy
+                      kép và escape: '{"a","say \"hi\""}'; lồng nhau → '{{1,2},{3,4}}'; phần tử nil → NULL không
+                      nháy</span></td>
                 </tr>
                 <tr>
                   <td>pgtype.UUID · Text · Int8 · Int4 · Int2 · Bool</td>
@@ -581,6 +584,7 @@ sqlfmt.BindQuestion("SELECT * FROM users WHERE email = ? AND note = '?'", []any{
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
           <pre data-hl="bash">
 # every query of a request, formatted by sqlfmt (DB_QUERY_LOGGING=true, LOG_SQL_LEVEL=info)
+# API_ENVIRONMENT=development → the lines are on stdout; otherwise in the file:
 $ tail -f storage/logs/sql.log
 </pre>
         </div>
@@ -677,8 +681,17 @@ $ tail -f storage/logs/sql.log
         if (typeof v === "string") return quote(v);
         if (typeof v === "boolean") return String(v);
         if (typeof v === "number") return Number.isSafeInteger(v) ? String(v) : g15(v);
-        if (Array.isArray(v)) return v.length === 0 ? "NULL" : "'{" + v.map(formatValue).join(",") + "}'";
+        if (Array.isArray(v)) return quote(arrayLiteral(v)); // JSON has no nil slice; null is a NULL value
         return "<not mirrored>";
+      }
+      // Mirrors arrayLiteral: bare NULL/numbers/booleans, nested arrays inline, other elements "double-quoted".
+      function arrayLiteral(arr) {
+        return "{" + arr.map(function (e) {
+          var lit = formatValue(e);
+          if (lit[0] !== "'") return lit;
+          var body = lit.slice(1, -1).replace(/''/g, "'");
+          return Array.isArray(e) ? body : '"' + body.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
+        }).join(",") + "}";
       }
       function bind(sql, args) {
         if (args.length === 0) return sql;
@@ -704,7 +717,7 @@ $ tail -f storage/logs/sql.log
       console.assert(bind("SELECT $10, $1", ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth"]) === "SELECT 'tenth', 'first'", "bind $10");
       console.assert(bind("SELECT $0", ["x"]) === "SELECT $0" && bind("SELECT $1, $5", ["only one arg"]) === "SELECT 'only one arg', $5", "bind out of range");
       console.assert(bind("SELECT price_tag FROM t WHERE note = 'costs $ a lot'", ["x"]) === "SELECT price_tag FROM t WHERE note = 'costs $ a lot'", "bind bare $");
-      console.assert(formatValue("O'Brien") === "'O''Brien'" && formatValue(3.5) === "3.5" && formatValue(-7) === "-7" && formatValue([]) === "NULL" && formatValue([1, 2, 3]) === "'{1,2,3}'" && formatValue(null) === "NULL", "formatValue");
+      console.assert(formatValue("O'Brien") === "'O''Brien'" && formatValue(3.5) === "3.5" && formatValue(-7) === "-7" && formatValue([]) === "'{}'" && formatValue([1, 2, 3]) === "'{1,2,3}'" && formatValue(["a", 'say "hi"', "back\\slash", "it's"]) === "'{\"a\",\"say \\\"hi\\\"\",\"back\\\\slash\",\"it''s\"}'" && formatValue([null]) === "'{NULL}'" && formatValue([[1, 2], [3, 4]]) === "'{{1,2},{3,4}}'" && formatValue(null) === "NULL", "formatValue");
       console.assert(g15(0.1) === "0.1" && g15(1e20) === "1e+20" && g15(1e-5) === "1e-05" && g15(123456.75) === "123456.75", "%.15g");
 
       function paint() {

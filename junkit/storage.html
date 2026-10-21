@@ -354,8 +354,10 @@ func NewLocalService(baseDir, baseURL string) (*LocalService, error)
                 không có hậu tố). Hai lần upload cùng tên không bao giờ đụng nhau.</li>
               <li lang="en">Returns <code>baseURL + "/" + name</code>.</li>
               <li lang="vi">Trả về <code>baseURL + "/" + name</code>.</li>
-              <li lang="en">Errors: <code>create destination file: …</code>, <code>copy file contents: …</code>.</li>
-              <li lang="vi">Lỗi: <code>create destination file: …</code>, <code>copy file contents: …</code>.</li>
+              <li lang="en">Errors: <code>create destination file: …</code>, <code>copy file contents: …</code>,
+                <code>close destination file: …</code>. On a copy or close error the partial file is removed.</li>
+              <li lang="vi">Lỗi: <code>create destination file: …</code>, <code>copy file contents: …</code>,
+                <code>close destination file: …</code>. Khi copy hoặc close lỗi, file ghi dở được xoá.</li>
               <li lang="en"><code>ctx</code> is ignored; the copy runs until the reader is drained.</li>
               <li lang="vi"><code>ctx</code> bị bỏ qua; việc copy chạy tới khi đọc hết reader.</li>
             </ul>
@@ -368,17 +370,20 @@ func NewLocalService(baseDir, baseURL string) (*LocalService, error)
               <pre data-hl="go">func (s *LocalService) DeleteFile(_ context.Context, fileURL string) error</pre>
             </div>
             <ul>
-              <li lang="en">Takes <code>filepath.Base(fileURL)</code> and removes
-                <code>baseDir/&lt;that name&gt;</code>. Only the last path segment counts, so the delete can never leave
-                <code>BaseDir</code>.</li>
-              <li lang="vi">Lấy <code>filepath.Base(fileURL)</code> rồi xoá <code>baseDir/&lt;tên đó&gt;</code>. Chỉ
-                đoạn cuối của đường dẫn được dùng, nên lệnh xoá không bao giờ ra khỏi <code>BaseDir</code>.</li>
+              <li lang="en">Takes the text after the last <code>/</code> of <code>fileURL</code> and removes
+                <code>baseDir/&lt;that name&gt;</code>. Only a plain file name directly inside <code>BaseDir</code> is
+                accepted, so the delete can never leave <code>BaseDir</code>.</li>
+              <li lang="vi">Lấy phần chữ sau dấu <code>/</code> cuối cùng của <code>fileURL</code> rồi xoá
+                <code>baseDir/&lt;tên đó&gt;</code>. Chỉ chấp nhận một tên file thuần nằm ngay trong <code>BaseDir</code>,
+                nên lệnh xoá không bao giờ ra khỏi <code>BaseDir</code>.</li>
               <li lang="en">A file that does not exist → <code>nil</code>.</li>
               <li lang="vi">File không tồn tại → <code>nil</code>.</li>
-              <li lang="en"><code>""</code>, <code>"."</code>, <code>"/"</code> →
+              <li lang="en">A name that is <code>""</code> (e.g. a URL ending in <code>/</code>), <code>"."</code>,
+                <code>".."</code> or still contains the OS path separator (e.g. <code>\</code> on Windows) →
                 <code>invalid file URL: &lt;fileURL&gt;</code>. Any other removal failure → <code>delete file: …</code>.
               </li>
-              <li lang="vi"><code>""</code>, <code>"."</code>, <code>"/"</code> →
+              <li lang="vi">Tên là <code>""</code> (vd. URL kết thúc bằng <code>/</code>), <code>"."</code>,
+                <code>".."</code> hoặc vẫn chứa ký tự phân cách đường dẫn của OS (vd. <code>\</code> trên Windows) →
                 <code>invalid file URL: &lt;fileURL&gt;</code>. Lỗi xoá khác → <code>delete file: …</code>.</li>
             </ul>
           </div>
@@ -411,9 +416,11 @@ func NewLocalService(baseDir, baseURL string) (*LocalService, error)
             <tr>
               <td>config/config.go</td>
               <td><span lang="en"><code>STORAGE_BASE_DIR</code> (default <code>./storage/uploads</code>),
-                  <code>STORAGE_BASE_URL</code> (default <code>http://localhost:$API_SERVER_PORT/uploads</code>).</span><span
+                  <code>STORAGE_BASE_URL</code> (empty = <code>http://localhost:&lt;API_SERVER_PORT&gt;/uploads</code>,
+                  so it follows the port).</span><span
                   lang="vi"><code>STORAGE_BASE_DIR</code> (mặc định <code>./storage/uploads</code>),
-                  <code>STORAGE_BASE_URL</code> (mặc định <code>http://localhost:$API_SERVER_PORT/uploads</code>).</span></td>
+                  <code>STORAGE_BASE_URL</code> (để trống = <code>http://localhost:&lt;API_SERVER_PORT&gt;/uploads</code>,
+                  nên đi theo port).</span></td>
             </tr>
             <tr>
               <td>router/router.go</td>
@@ -485,21 +492,30 @@ $ curl -s -X DELETE 'localhost:$API_SERVER_PORT/api/v1/users/&lt;uuid&gt;/avatar
           <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">No content
               checks</span><span class="x" lang="en">The package stores any bytes under any extension. Validate size,
               extension and ideally the real content type before calling <code>UploadFile</code> — files under
-              <code>/uploads</code> are public.</span><span class="x" lang="vi">Package lưu mọi loại byte với mọi phần
+              <code>/uploads</code> are public. Stored XSS: the extension is kept and <code>/uploads</code> is served on
+              the API origin, so an uploaded <code>.html</code> or <code>.svg</code> runs script there. Allow-list
+              extensions (Jungo's avatar handler does).</span><span class="x" lang="vi">Package lưu mọi loại byte với mọi phần
               mở rộng. Hãy kiểm tra kích thước, phần mở rộng và tốt nhất là content type thật trước khi gọi
-              <code>UploadFile</code> — file trong <code>/uploads</code> là công khai.</span></div>
+              <code>UploadFile</code> — file trong <code>/uploads</code> là công khai. Stored XSS: phần mở rộng được giữ
+              nguyên và <code>/uploads</code> được phục vụ trên chính origin của API, nên file <code>.html</code> hay
+              <code>.svg</code> tải lên sẽ chạy script ở đó. Hãy giới hạn phần mở rộng theo danh sách cho phép (handler
+              avatar của Jungo làm vậy).</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Body limit comes
-              first</span><span class="x" lang="en">In Jungo the <code>Payload</code> middleware caps every body at
-              <code>SECURITY_MAX_BODY_SIZE</code> (default <code>2097152</code> = 2 MiB) and answers 413
-              <code>request_body_too_large</code>, so the 5 MB avatar limit is never reached unless you raise
-              it.</span><span class="x" lang="vi">Trong Jungo, middleware <code>Payload</code> giới hạn mọi body ở
+              first</span><span class="x" lang="en">In Jungo the global <code>Payload</code> middleware caps every
+              body at <code>SECURITY_MAX_BODY_SIZE</code> (default <code>2097152</code> = 2 MiB) and answers 413
+              <code>request_body_too_large</code> — before your handler's file-size check runs. An upload route that
+              needs more declares it through <code>router.BodyLimited</code>, as the avatar route does: 5 MB file + 64
+              KiB for multipart boundaries and headers. Keep the two numbers in step.</span><span class="x"
+              lang="vi">Trong Jungo, middleware <code>Payload</code> global giới hạn mọi body ở
               <code>SECURITY_MAX_BODY_SIZE</code> (mặc định <code>2097152</code> = 2 MiB) và trả 413
-              <code>request_body_too_large</code>, nên giới hạn avatar 5 MB không bao giờ chạm tới trừ khi bạn tăng giá
-              trị này.</span></div>
+              <code>request_body_too_large</code> — trước khi đoạn kiểm tra kích thước file trong handler kịp chạy.
+              Route upload cần lớn hơn thì khai báo qua <code>router.BodyLimited</code>, như route avatar: file 5 MB +
+              64 KiB cho boundary và header của multipart. Giữ hai con số này khớp nhau.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Half-written files
-              stay</span><span class="x" lang="en">If <code>io.Copy</code> fails midway, <code>UploadFile</code> returns
-              an error but does not remove the partial file.</span><span class="x" lang="vi">Nếu <code>io.Copy</code>
-              lỗi giữa chừng, <code>UploadFile</code> trả lỗi nhưng không xoá file đang ghi dở.</span></div>
+              are removed</span><span class="x" lang="en">If <code>io.Copy</code> fails midway or the final
+              <code>Close</code> fails, <code>UploadFile</code> removes the partial file and returns the error.</span><span
+              class="x" lang="vi">Nếu <code>io.Copy</code> lỗi giữa chừng hoặc lần <code>Close</code> cuối lỗi,
+              <code>UploadFile</code> xoá file ghi dở và trả lỗi.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Full URLs are
               stored</span><span class="x" lang="en">The DB keeps <code>BaseURL/&lt;name&gt;</code>. Changing
               <code>STORAGE_BASE_URL</code> later does not rewrite old rows. Deleting still works because only the file

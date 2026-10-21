@@ -170,8 +170,8 @@ func main() {
 </pre></div>
       </div></div>
       <div class="jd-explain">
-        <div class="jd-ex c-green" data-code="#code-quick" data-show="11-19"><span class="n">1</span><span class="w">templates are yours</span><span class="x" lang="en">Plain <code>text/template</code> strings. The dot is a <code>FeatureData</code>: <code>.Name .Pascal .Camel .Table .Module</code>.</span><span class="x" lang="vi">Chuỗi <code>text/template</code> bình thường. Dấu chấm là một <code>FeatureData</code>: <code>.Name .Pascal .Camel .Table .Module</code>.</span></div>
-        <div class="jd-ex c-green" data-code="#code-quick" data-show="25"><span class="n">2</span><span class="w">NewFeatureData</span><span class="x" lang="en">Third argument overrides the table name; <code>""</code> → name + "s". Validate the name yourself (Jungo uses <code>^[a-z][a-z0-9_]*$</code>).</span><span class="x" lang="vi">Tham số thứ ba ghi đè tên bảng; <code>""</code> → tên + "s". Tự kiểm tra tên (Jungo dùng <code>^[a-z][a-z0-9_]*$</code>).</span></div>
+        <div class="jd-ex c-green" data-code="#code-quick" data-show="11-19"><span class="n">1</span><span class="w">templates are yours</span><span class="x" lang="en">Plain <code>text/template</code> strings. The dot is a <code>FeatureData</code>: <code>.Name .Pascal .Camel .Plural .Table .Model .Module</code>.</span><span class="x" lang="vi">Chuỗi <code>text/template</code> bình thường. Dấu chấm là một <code>FeatureData</code>: <code>.Name .Pascal .Camel .Plural .Table .Model .Module</code>.</span></div>
+        <div class="jd-ex c-green" data-code="#code-quick" data-show="25"><span class="n">2</span><span class="w">NewFeatureData</span><span class="x" lang="en">Third argument overrides the table name; <code>""</code> → the pluralized name (<code>category</code> → <code>categories</code>). Validate the name yourself (Jungo uses <code>^[a-z][a-z0-9_]*$</code>).</span><span class="x" lang="vi">Tham số thứ ba ghi đè tên bảng; <code>""</code> → tên ở dạng số nhiều (<code>category</code> → <code>categories</code>). Tự kiểm tra tên (Jungo dùng <code>^[a-z][a-z0-9_]*$</code>).</span></div>
         <div class="jd-ex c-green" data-code="#code-quick" data-show="27-30"><span class="n">3</span><span class="w">NextMigrationSeq</span><span class="x" lang="en">Highest <code>NNNNNN_*.up.sql</code> + 1, as 6 digits. Missing dir → <code>"000001"</code>.</span><span class="x" lang="vi">Số lớn nhất của <code>NNNNNN_*.up.sql</code> + 1, dạng 6 chữ số. Thư mục không tồn tại → <code>"000001"</code>.</span></div>
         <div class="jd-ex c-green" data-code="#code-quick" data-show="32-37"><span class="n">4</span><span class="w">Files</span><span class="x" lang="en">If <b>any</b> path already exists, nothing is written. Parent directories are created.</span><span class="x" lang="vi">Nếu <b>bất kỳ</b> đường dẫn nào đã tồn tại thì không ghi gì cả. Thư mục cha được tự tạo.</span></div>
         <div class="jd-ex c-green" data-code="#code-quick" data-show="38-41"><span class="n">5</span><span class="w">register in fx.go</span><span class="x" lang="en">Your fx.go needs at least one import containing <code>github.com/acme/api/</code> and a <code>// FEATURES</code> comment inside the option list.</span><span class="x" lang="vi">fx.go của bạn cần ít nhất một import chứa <code>github.com/acme/api/</code> và một comment <code>// FEATURES</code> bên trong danh sách option.</span></div>
@@ -194,7 +194,7 @@ func main() {
       <div>
         <div class="jd-calc c-pink">
           <label>name <input type="text" id="sc-name" value="order_item"></label>
-          <label>table <input type="text" id="sc-table" value="" placeholder="(name + s)"></label>
+          <label>table <input type="text" id="sc-table" value="" placeholder="(plural of name)"></label>
         </div>
         <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>FeatureData</span></div><pre id="sc-data"></pre></div>
       </div>
@@ -223,15 +223,19 @@ type FeatureData struct {
     Name   string // as given, snake_case: "order_item"
     Pascal string // "OrderItem"
     Camel  string // "orderItem"
-    Table  string // table arg, or Name + "s": "order_items"
+    Plural string // Name pluralized: "order_items" (URL path segment)
+    Table  string // table arg, or Plural: "order_items"
+    Model  string // sqlc struct for Table, singularized: "OrderItem"
     Module string // your Go module path
 }
 </pre></div>
         <ul>
           <li lang="en">Pascal: split on <code>_</code>, upper-case each part's first byte, drop empty parts. Camel: Pascal with the first byte lower-cased.</li>
           <li lang="vi">Pascal: tách theo <code>_</code>, viết hoa byte đầu của mỗi phần, bỏ phần rỗng. Camel: Pascal với byte đầu viết thường.</li>
-          <li lang="en">No validation and no real pluralisation: <code>category</code> → <code>categorys</code> — pass <code>table</code> to fix it.</li>
-          <li lang="vi">Không kiểm tra tên và không chia số nhiều thật: <code>category</code> → <code>categorys</code> — truyền <code>table</code> để sửa.</li>
+          <li lang="en">Plural: regular English rules only — consonant + <code>y</code> → <code>ies</code> (<code>category</code> → <code>categories</code>), <code>s x z ch sh</code> → <code>+es</code> (<code>box</code> → <code>boxes</code>), else <code>+s</code>. Irregular nouns (<code>person</code> → <code>persons</code>) are not handled — pass <code>table</code> for those.</li>
+          <li lang="vi">Plural: chỉ theo quy tắc tiếng Anh thông thường — phụ âm + <code>y</code> → <code>ies</code> (<code>category</code> → <code>categories</code>), <code>s x z ch sh</code> → <code>+es</code> (<code>box</code> → <code>boxes</code>), còn lại <code>+s</code>. Danh từ bất quy tắc (<code>person</code> → <code>persons</code>) không được xử lý — hãy truyền <code>table</code> cho chúng.</li>
+          <li lang="en">Model: <code>Table</code> singularized the way sqlc names its structs, then Pascal (<code>items</code> → <code>Item</code>, <code>categories</code> → <code>Category</code>). Irregular plurals (<code>people</code>, <code>children</code>) are not covered. No validation of the name.</li>
+          <li lang="vi">Model: <code>Table</code> chuyển về số ít theo cách sqlc đặt tên struct, rồi sang Pascal (<code>items</code> → <code>Item</code>, <code>categories</code> → <code>Category</code>). Số nhiều bất quy tắc (<code>people</code>, <code>children</code>) không được hỗ trợ. Không kiểm tra tên.</li>
         </ul>
       </div>
 
@@ -261,8 +265,10 @@ type File struct {
         <ol>
           <li lang="en">If any <code>File.Path</code> exists → <code>&lt;path&gt; already exists — refusing to overwrite</code>, nothing written.</li>
           <li lang="vi">Nếu có <code>File.Path</code> nào đã tồn tại → <code>&lt;path&gt; already exists — refusing to overwrite</code>, không ghi gì.</li>
-          <li lang="en">For each file: parse template, <code>MkdirAll</code> the parent (0755), create, execute with <code>Data</code>; prints <code>Created &lt;path&gt;</code>. Errors: <code>parse template for …</code>, <code>create directory for …</code>, <code>create …</code>, <code>render …</code>.</li>
-          <li lang="vi">Với mỗi file: parse template, <code>MkdirAll</code> thư mục cha (0755), tạo file, execute với <code>Data</code>; in <code>Created &lt;path&gt;</code>. Lỗi: <code>parse template for …</code>, <code>create directory for …</code>, <code>create …</code>, <code>render …</code>.</li>
+          <li lang="en">Render every template with <code>Data</code> in memory first. Errors: <code>parse template for …</code>, <code>render …</code> — nothing written.</li>
+          <li lang="vi">Render mọi template với <code>Data</code> trong bộ nhớ trước. Lỗi: <code>parse template for …</code>, <code>render …</code> — không ghi gì.</li>
+          <li lang="en">Then for each file: <code>MkdirAll</code> the parent (0755), write it; prints <code>Created &lt;path&gt;</code>. Errors: <code>create directory for …</code>, <code>create …</code> — the files already written are removed (the file that failed may remain, partially written).</li>
+          <li lang="vi">Sau đó với mỗi file: <code>MkdirAll</code> thư mục cha (0755), ghi file; in <code>Created &lt;path&gt;</code>. Lỗi: <code>create directory for …</code>, <code>create …</code> — các file đã ghi trước đó bị xoá (file bị lỗi có thể vẫn còn, ghi dở).</li>
           <li lang="en"><code>gofmt -w</code> on the <code>.go</code> outputs (failure → warning only).</li>
           <li lang="vi"><code>gofmt -w</code> các file <code>.go</code> đầu ra (lỗi → chỉ cảnh báo).</li>
           <li lang="en">Add the import to <code>FxFile</code> → error <code>add import: …</code> (e.g. <code>no existing "&lt;module&gt;" import found in … to anchor the new import next to</code>).</li>
@@ -316,7 +322,7 @@ type File struct {
       <div><h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2></div>
     </div>
     <div class="jd-explain" style="margin-top:16px">
-      <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">Files first, fx.go second</span><span class="x" lang="en">If the fx.go step fails (no marker, no anchor import, wrong FxFile) the files are already on disk. Fix fx.go by hand or delete them before retrying — a rerun will refuse to overwrite.</span><span class="x" lang="vi">Nếu bước fx.go lỗi (không có marker, không có import làm mốc, sai FxFile) thì các file đã nằm trên đĩa. Sửa fx.go bằng tay hoặc xoá chúng trước khi chạy lại — chạy lại sẽ bị từ chối vì không ghi đè.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">Files first, fx.go second</span><span class="x" lang="en">Writing the files is all-or-nothing: a template error writes nothing, a write error removes the files already written (the file that failed and directories it created may stay). But if the later fx.go step fails (no marker, no anchor import, wrong FxFile) all files are already on disk and stay there. Fix fx.go by hand or delete them before retrying — a rerun will refuse to overwrite.</span><span class="x" lang="vi">Việc ghi file là tất cả hoặc không gì cả: lỗi template thì không ghi gì, lỗi ghi thì xoá các file đã ghi (file bị lỗi và thư mục đã tạo có thể vẫn còn). Nhưng nếu bước fx.go sau đó lỗi (không có marker, không có import làm mốc, sai FxFile) thì mọi file đã nằm trên đĩa và vẫn ở đó. Sửa fx.go bằng tay hoặc xoá chúng trước khi chạy lại — chạy lại sẽ bị từ chối vì không ghi đè.</span></div>
       <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Module must be set</span><span class="x" lang="en">The import goes after the <b>last line anywhere in the file</b> containing <code>Module + "/"</code>. With an empty Module that is any line with a <code>/</code> — such as the <code>// FEATURES</code> comment.</span><span class="x" lang="vi">Import được chèn sau <b>dòng cuối cùng trong cả file</b> chứa <code>Module + "/"</code>. Nếu Module rỗng thì đó là bất kỳ dòng nào có <code>/</code> — kể cả comment <code>// FEATURES</code>.</span></div>
       <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Markers are substrings</span><span class="x" lang="en">The first line <i>containing</i> the marker wins. Pick a unique marker: <code>// USER</code> would also match a line <code>// USERS</code> above it.</span><span class="x" lang="vi">Dòng đầu tiên <i>chứa</i> marker sẽ được chọn. Hãy chọn marker duy nhất: <code>// USER</code> cũng sẽ khớp với dòng <code>// USERS</code> nằm phía trên.</span></div>
       <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Remove matches substrings too</span><span class="x" lang="en">Removing <code>product</code> deletes every line containing <code>product.Module,</code> — which also matches <code>order_product.Module,</code>. Check <code>git diff</code> after removing.</span><span class="x" lang="vi">Gỡ <code>product</code> sẽ xoá mọi dòng chứa <code>product.Module,</code> — khớp luôn cả <code>order_product.Module,</code>. Kiểm tra <code>git diff</code> sau khi gỡ.</span></div>
@@ -334,10 +340,23 @@ type File struct {
 
 <script>
 document.addEventListener("jd:ready", function () {
-  // Mirrors NewFeatureData (toPascalCase / toCamelCase) and addImportLine + addModuleLine.
+  // Mirrors NewFeatureData (toPascalCase / toCamelCase / pluralize / singularize) and addImportLine + addModuleLine.
   function pascal(s) { return s.split("_").filter(Boolean).map(function (p) { return p[0].toUpperCase() + p.slice(1); }).join(""); }
   function camel(s) { var p = pascal(s); return p ? p[0].toLowerCase() + p.slice(1) : p; }
-  function featureData(name, module, table) { return { Name: name, Pascal: pascal(name), Camel: camel(name), Table: table || name + "s", Module: module }; }
+  function pluralize(s) {
+    if (s.length > 1 && /y$/.test(s) && "aeiou".indexOf(s[s.length - 2]) < 0) return s.slice(0, -1) + "ies";
+    return /(s|x|z|ch|sh)$/.test(s) ? s + "es" : s + "s";
+  }
+  function singularize(s) {
+    if (/(buses|aliases|statuses|xes|ches|sses|shes)$/.test(s)) return s.slice(0, -2);
+    if (s.length > 3 && /ies$/.test(s) && "aeiouy".indexOf(s[s.length - 4]) < 0) return s.slice(0, -3) + "y";
+    if (/ss$/.test(s)) return s;
+    return /s$/.test(s) ? s.slice(0, -1) : s;
+  }
+  function featureData(name, module, table) {
+    var plural = pluralize(name); table = table || plural;
+    return { Name: name, Pascal: pascal(name), Camel: camel(name), Plural: plural, Table: table, Model: pascal(singularize(table)), Module: module };
+  }
   function addImport(lines, module, importPath) {
     var anchor = -1;
     lines.forEach(function (l, i) { if (l.indexOf(module + "/") !== -1) anchor = i; });
@@ -355,6 +374,7 @@ document.addEventListener("jd:ready", function () {
   var d = featureData("order_item", "jungo", "");
   console.assert(d.Pascal === "OrderItem" && d.Camel === "orderItem" && d.Table === "order_items", "NewFeatureData");
   console.assert(featureData("category", "jungo", "product_categories").Table === "product_categories", "table override");
+  console.assert(d.Model === "OrderItem" && featureData("category", "jungo", "").Plural === "categories" && featureData("category", "jungo", "").Model === "Category" && featureData("box", "jungo", "").Table === "boxes" && featureData("box", "jungo", "").Model === "Box" && featureData("key", "jungo", "").Plural === "keys", "plural / model");
 
   var FX = [
     "import (",

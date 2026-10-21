@@ -125,12 +125,14 @@ router.RegisterAll(engine, userRoutes, productRoutes, …)
             <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/features/user/module.go (User Feature Module)</span></div>
 <pre data-hl="go">
 var Module = fx.Module("user",
-    fx.Provide(
-        repository.NewUserRepository, // Fx automatically injects DB
-        service.NewUserService,        // Fx automatically injects Repo
-        v1handler.NewUserHandler,      // Fx automatically injects Svc
-        v1route.NewUserRoutes,         // Fx automatically injects Handler
-    ),
+    fx.Provide(fx.Annotate(repository.NewUserRepository, // Fx injects DB
+        fx.As(new(domain.UserRepository)))),
+    fx.Provide(fx.Annotate(service.NewUserService,       // Fx injects Repo
+        fx.As(new(domain.UserService)))),
+    fx.Provide(v1handler.NewUserHandler),                // Fx injects Svc
+    fx.Provide(fx.Annotate(v1route.NewUserRoutes,        // Fx injects Handler
+        fx.As(new(router.Routes)), fx.ResultTags(`group:"routes"`))),
+    // … console commands + fx.Invoke(registerTranslations)
 )
 </pre>
           </div>
@@ -140,12 +142,17 @@ var Module = fx.Module("user",
             <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/features/product/module.go (Product Feature Module)</span></div>
 <pre data-hl="go">
 var Module = fx.Module("product",
-    fx.Provide(
-        repository.NewProductRepository, // Fx automatically injects DB
-        service.NewProductService,        // Fx automatically injects ProductRepo & UserSvc
-        v1handler.NewProductHandler,      // Fx automatically injects ProductSvc
-        v1route.NewProductRoutes,         // Fx automatically injects ProductHandler
-    ),
+    fx.Provide(fx.Annotate(repository.NewProductRepository, // Fx injects DB
+        fx.As(new(domain.ProductRepository)))),
+    fx.Provide(func(opts cache.Options) cache.Cache[*domain.Product] {
+        return cache.New[*domain.Product](opts)
+    }),
+    fx.Provide(fx.Annotate(service.NewProductService,       // Fx injects ProductRepo & cache
+        fx.As(new(domain.ProductService)))),
+    fx.Provide(v1handler.NewProductHandler),                // Fx injects ProductSvc
+    fx.Provide(fx.Annotate(v1route.NewProductRoutes,        // Fx injects ProductHandler
+        fx.As(new(router.Routes)), fx.ResultTags(`group:"routes"`))),
+    fx.Invoke(registerTranslations),
 )
 </pre>
           </div>
@@ -172,12 +179,14 @@ fx.New(
             <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/features/user/module.go (Gói riêng Feature User)</span></div>
 <pre data-hl="go">
 var Module = fx.Module("user",
-    fx.Provide(
-        repository.NewUserRepository, // Fx tự tìm DB đưa vào
-        service.NewUserService,        // Fx tự tìm Repo đưa vào
-        v1handler.NewUserHandler,      // Fx tự tìm Svc đưa vào
-        v1route.NewUserRoutes,         // Fx tự tìm Handler đưa vào
-    ),
+    fx.Provide(fx.Annotate(repository.NewUserRepository, // Fx tự tìm DB đưa vào
+        fx.As(new(domain.UserRepository)))),
+    fx.Provide(fx.Annotate(service.NewUserService,       // Fx tự tìm Repo đưa vào
+        fx.As(new(domain.UserService)))),
+    fx.Provide(v1handler.NewUserHandler),                // Fx tự tìm Svc đưa vào
+    fx.Provide(fx.Annotate(v1route.NewUserRoutes,        // Fx tự tìm Handler đưa vào
+        fx.As(new(router.Routes)), fx.ResultTags(`group:"routes"`))),
+    // … các console command + fx.Invoke(registerTranslations)
 )
 </pre>
           </div>
@@ -187,12 +196,17 @@ var Module = fx.Module("user",
             <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/features/product/module.go (Gói riêng Feature Product)</span></div>
 <pre data-hl="go">
 var Module = fx.Module("product",
-    fx.Provide(
-        repository.NewProductRepository, // Fx tự tìm DB đưa vào
-        service.NewProductService,        // Fx tự tìm ProductRepo & UserSvc
-        v1handler.NewProductHandler,      // Fx tự tìm ProductSvc đưa vào
-        v1route.NewProductRoutes,         // Fx tự tìm ProductHandler đưa vào
-    ),
+    fx.Provide(fx.Annotate(repository.NewProductRepository, // Fx tự tìm DB đưa vào
+        fx.As(new(domain.ProductRepository)))),
+    fx.Provide(func(opts cache.Options) cache.Cache[*domain.Product] {
+        return cache.New[*domain.Product](opts)
+    }),
+    fx.Provide(fx.Annotate(service.NewProductService,       // Fx tự tìm ProductRepo & cache
+        fx.As(new(domain.ProductService)))),
+    fx.Provide(v1handler.NewProductHandler),                // Fx tự tìm ProductSvc đưa vào
+    fx.Provide(fx.Annotate(v1route.NewProductRoutes,        // Fx tự tìm ProductHandler đưa vào
+        fx.As(new(router.Routes)), fx.ResultTags(`group:"routes"`))),
+    fx.Invoke(registerTranslations),
 )
 </pre>
           </div>
@@ -559,7 +573,7 @@ func NewUserService(db *primary.DB) *UserService {
           <span class="fxsim-tier-badge" lang="en">Tier 3 · Server Boot &amp; Lazy Demo</span>
           <span class="fxsim-tier-badge" lang="vi">Tầng 3 · Khởi chạy Server &amp; Ví dụ Lazy</span>
           <span class="fxsim-tier-desc" lang="en">RegisterAll mounts all routes onto Gin engine · ReportService is never built (Lazy)</span>
-          <span class="fxsim-tier-desc" lang="vi">RegisterAll gắn toàn bộ route lên Gin và bật Server · ReportService không ai cần nên không tạo (Lazy)</span>
+          <span class="fxsim-tier-desc" lang="vi">RegisterAll gắn toàn bộ route lên Gin · ReportService không ai cần nên không tạo (Lazy)</span>
         </div>
 
         <div class="jd-recipe c-muted" data-node="rpt">
@@ -588,7 +602,7 @@ func NewUserService(db *primary.DB) *UserService {
           </div>
           <div class="row row-provides">
             <b lang="en">provides</b><b lang="vi">cung cấp</b>
-            <span class="jd-pill ghost"><span lang="en">none — launches HTTP server</span><span lang="vi">không có — gắn route &amp; bật Gin server</span></span>
+            <span class="jd-pill ghost"><span lang="en">none — mounts routes (the server starts in <code>(*App).Run</code>)</span><span lang="vi">không có — chỉ gắn route (server bật trong <code>(*App).Run</code>)</span></span>
           </div>
         </div>
       </div>
@@ -627,13 +641,19 @@ func NewUserService(db *primary.DB) *UserService {
     <p class="jd-hint" style="margin-top:16px"><span lang="en">👉 Hover or tap an explanation — the matching lines light up. Tap again to unpin.</span><span lang="vi">👉 Rê chuột hoặc chạm vào một giải thích — các dòng tương ứng sẽ sáng lên. Chạm lần nữa để bỏ ghim.</span></p>
     <div class="jd-grid-2">
       <div><div class="jd-sticky">
-        <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>internal/features/user/module.go</span></div>
+        <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>internal/features/user/module.go (shortened)</span></div>
 <pre data-hl="go" id="code-module">
 var Module = fx.Module("user",
     fx.Provide(
         fx.Annotate(
             repository.NewUserRepository,
             fx.As(new(domain.UserRepository)),
+        ),
+    ),
+    fx.Provide(
+        fx.Annotate(
+            service.NewUserService,
+            fx.As(new(domain.UserService)),
         ),
     ),
     fx.Provide(v1handler.NewUserHandler),
@@ -644,28 +664,29 @@ var Module = fx.Module("user",
             fx.ResultTags(`group:"routes"`),
         ),
     ),
+    // … COMMANDS: 2 console.Command providers, group:"commands"
     fx.Invoke(registerTranslations),
 )
 </pre></div>
       </div></div>
       <div class="jd-explain">
-        <div class="jd-ex c-blue" data-code="#code-module" data-show="1,17"><span class="n">1</span>
+        <div class="jd-ex c-blue" data-code="#code-module" data-show="1,24"><span class="n">1</span>
           <span class="w">fx.Module("user", …)</span>
           <span class="x"><span lang="en">An isolated package unit bundling all providers, routes, and hooks for this feature. The module name appears in startup logs. Registered in <code>internal/app/fx.go</code>.</span><span lang="vi">Chiếc hộp đóng gói riêng của tính năng: Gom toàn bộ Provider, Route và Hook của feature <code>user</code> lại với nhau. Tên module xuất hiện trong log khi khởi động. Sau này chỉ cần nạp 1 dòng <code>user.Module</code> tại <code>internal/app/fx.go</code>.</span></span></div>
-        <div class="jd-ex c-blue" data-code="#code-module" data-show="8"><span class="n">2</span>
+        <div class="jd-ex c-blue" data-code="#code-module" data-show="14"><span class="n">2</span>
           <span class="w">fx.Provide(NewUserHandler)</span>
           <span class="x"><span lang="en">Basic provider declaration: tells Fx how to construct <code>*UserHandler</code>. Fx only invokes it if another component requests it (such as routes), and guarantees a single instance (Singleton).</span><span lang="vi">Đăng ký hàm tạo cơ bản: Báo cho Fx biết hàm nào tạo ra <code>*UserHandler</code>. Fx chỉ gọi hàm này khi có nơi khác yêu cầu (như route cần handler), và đảm bảo chỉ tạo duy nhất 1 lần (Singleton).</span></span></div>
-        <div class="jd-ex c-blue" data-code="#code-module" data-show="3-6,10-14"><span class="n">3</span>
+        <div class="jd-ex c-blue" data-code="#code-module" data-show="3-6,9-12,16-20"><span class="n">3</span>
           <span class="w">fx.Annotate(fn, …)</span>
           <span class="x"><span lang="en">Attaches DI metadata to a constructor without touching its Go signature (e.g. casting struct to interface via <code>fx.As</code>, or routing into a slice via <code>fx.ResultTags</code>).</span><span lang="vi">Dán "tem phụ" (Metadata) cho hàm tạo: Giống như dán tem hướng dẫn lên một món hàng. Giúp bạn dặn Fx: <em>"Hãy coi kết quả của hàm này là Interface X"</em> hoặc <em>"Hãy ném kết quả này vào thùng nhóm Y"</em> — mà hoàn toàn không cần vào sửa đổi bất kỳ dòng code nào trong file hàm Go gốc.</span></span></div>
-        <div class="jd-ex c-blue" data-code="#code-module" data-show="5,12"><span class="n">4</span>
+        <div class="jd-ex c-blue" data-code="#code-module" data-show="5,11,18"><span class="n">4</span>
           <span class="w">fx.As(new(domain.UserRepository))</span>
           <span class="x"><span lang="en">Registers the returned instance as an interface type. Other components request <code>domain.UserRepository</code> rather than the concrete struct — isolating layers and making unit testing/mocking effortless.</span><span lang="vi">Coi đối tượng trả về là một Interface: Báo cho Fx cấp phát struct này dưới danh nghĩa interface <code>domain.UserRepository</code>. Nhờ đó, các tầng Service khác chỉ phụ thuộc vào interface, cực kỳ dễ thay thế và viết Unit Test với Mock sau này.</span>
             <span class="eg" lang="en"><code>new(X)</code> is standard Go syntax to reference the interface type — no memory allocation occurs.</span><span class="eg" lang="vi"><code>new(X)</code> ở đây chỉ là cú pháp chuẩn của Go để lấy kiểu interface — không cấp phát bộ nhớ thật.</span></span></div>
-        <div class="jd-ex c-blue" data-code="#code-module" data-show="13"><span class="n">5</span>
+        <div class="jd-ex c-blue" data-code="#code-module" data-show="19"><span class="n">5</span>
           <span class="w">fx.ResultTags(`group:"routes"`)</span>
           <span class="x"><span lang="en">Tags the result into the shared <code>"routes"</code> group. Every feature contributes its routes to this group automatically, so the central router never needs to import individual features.</span><span lang="vi">Bỏ kết quả vào chiếc thùng chung <code>group:"routes"</code>: Mỗi khi bạn tạo thêm feature mới, routes của nó sẽ tự động được ném vào chiếc thùng này. Router trung tâm chỉ việc lấy cả thùng ra dùng mà không cần quan tâm có bao nhiêu feature.</span></span></div>
-        <div class="jd-ex c-blue" data-code="#code-module" data-show="16"><span class="n">6</span>
+        <div class="jd-ex c-blue" data-code="#code-module" data-show="23"><span class="n">6</span>
           <span class="w">fx.Invoke(registerTranslations)</span>
           <span class="x"><span lang="en">Executes eagerly once at application startup. Parameters are injected automatically just like a constructor — here receiving <code>*i18n.Translator</code> to load feature translation catalogs.</span><span lang="vi">Lệnh chạy ngay khi app bật lên: Fx sẽ tự tìm và truyền các tham số cần thiết (ở đây là bộ dịch ngôn ngữ <code>*i18n.Translator</code>) để nạp các file từ điển đa ngôn ngữ riêng của feature này.</span></span></div>
       </div>
@@ -745,16 +766,16 @@ func NewConsoleFx() *fx.App {
           <span class="x"><span lang="en">Standard Junkit integration pattern: Jungo transforms app config into the package's <code>Options</code>, and the Junkit Module automatically instantiates the client using those Options. The database does the same inside its own package: <code>primary.Module</code> provides <code>*primary.DB</code>, built by <code>primary.New</code>, which turns <code>cfg.DB</code> into <code>postgres.Options</code> and calls <code>postgres.NewDatabase</code>. Each database gets its own Go type instead of a <code>name:</code> tag on a shared <code>*postgres.DB</code>: a repository that asks for <code>*primary.DB</code> can only ever receive that database — the compiler and Fx guarantee it, and a forgotten tag cannot silently hand it the wrong one.</span><span lang="vi">Mô hình tích hợp thư viện Junkit: Jungo lấy các giá trị cấu hình tương ứng chuyển thành <code>Options</code> của thư viện, sau đó Junkit Module sẽ tự động tạo kết nối Database, Redis, Cache... từ Options đó. Database cũng làm y như vậy nhưng nằm trong package riêng: <code>primary.Module</code> cung cấp <code>*primary.DB</code>, được tạo bởi <code>primary.New</code> — hàm này chuyển <code>cfg.DB</code> thành <code>postgres.Options</code> rồi gọi <code>postgres.NewDatabase</code>. Mỗi database có một kiểu Go riêng thay vì dán tag <code>name:</code> lên một <code>*postgres.DB</code> dùng chung: repository nào khai báo <code>*primary.DB</code> thì chắc chắn chỉ nhận đúng database đó — compiler và Fx đảm bảo điều này, không có chuyện quên ghi tag rồi bị truyền nhầm database.</span></span></div>
         <div class="jd-ex c-blue" data-code="#code-fx" data-show="6-9"><span class="n">5</span>
           <span class="w">fx.Decorate + `name:"sql"`</span>
-          <span class="x"><span lang="en">Local override (Module scope): By default, the entire app shares a global logger. Inside the database module only, <code>fx.Decorate</code> swaps that default with the specialized <code>"sql"</code> logger. This automatically routes all database query logs to a dedicated file (<code>storage/logs/sql.log</code>) without cluttering the main application log.</span><span lang="vi">Thay thế linh kiện cục bộ (Chỉ riêng module này): Bình thường toàn bộ app dùng chung Logger mặc định. Nhưng riêng bên trong module Database, <code>fx.Decorate</code> sẽ "tráo" Logger mặc định bằng Logger chuyên biệt (<code>name:"sql"</code>). Nhờ đó, mọi câu lệnh truy vấn SQL tự động được chuyển ra file log riêng (<code>storage/logs/sql.log</code>) mà không làm ngập rác file log chính của ứng dụng.</span></span></div>
+          <span class="x"><span lang="en">Local override (Module scope): By default, the entire app shares a global logger. Inside the database module only, <code>fx.Decorate</code> swaps that default with the specialized <code>"sql"</code> logger. Outside development this routes all database query logs to a dedicated file (<code>storage/logs/sql.log</code>) without cluttering the main application log; in development every channel, <code>sql</code> included, prints to the console.</span><span lang="vi">Thay thế linh kiện cục bộ (Chỉ riêng module này): Bình thường toàn bộ app dùng chung Logger mặc định. Nhưng riêng bên trong module Database, <code>fx.Decorate</code> sẽ "tráo" Logger mặc định bằng Logger chuyên biệt (<code>name:"sql"</code>). Nhờ đó, ngoài môi trường development, mọi câu lệnh truy vấn SQL được ghi ra file log riêng (<code>storage/logs/sql.log</code>) mà không làm ngập rác file log chính của ứng dụng; còn ở development, mọi kênh log (kể cả <code>sql</code>) đều in ra console.</span></span></div>
         <div class="jd-ex c-blue" data-code="#code-fx" data-show="14-16"><span class="n">6</span>
           <span class="w">auth.Module, user.Module</span>
           <span class="x"><span lang="en">Feature enablement. Add a module to activate a feature, or comment it out to disable. <code>make feature NAME=...</code> registers your new module here automatically.</span><span lang="vi">Công tắc bật/tắt tính năng: Muốn dùng tính năng nào chỉ việc thêm một dòng Module ở đây, muốn tạm tắt thì chú thích (comment) lại. Lệnh <code>make feature NAME=...</code> sẽ tự động đăng ký dòng này cho bạn.</span></span></div>
         <div class="jd-ex c-blue" data-code="#code-fx" data-show="24,26"><span class="n">7</span>
           <span class="w">fx.Invoke(router.RegisterAll)</span>
-          <span class="x"><span lang="en">Startup triggers: mounts all registered routes onto Gin and starts the HTTP server. Without these Invokes, lazy providers would never be instantiated.</span><span lang="vi">Nút bấm kích hoạt khởi động: Gắn toàn bộ Route lên Gin engine và bật HTTP server lắng nghe. Không có các lệnh Invoke này, cơ chế Lazy sẽ khiến Fx không bao giờ khởi tạo các linh kiện bên trên.</span></span></div>
+          <span class="x"><span lang="en">Startup triggers: <code>router.RegisterAll</code> mounts all registered routes onto Gin; <code>(*App).Run</code> adds the OnStart hook that starts the HTTP server. Without these Invokes, lazy providers would never be instantiated.</span><span lang="vi">Nút bấm kích hoạt khởi động: <code>router.RegisterAll</code> gắn toàn bộ Route lên Gin engine; <code>(*App).Run</code> đăng ký hook OnStart để bật HTTP server lắng nghe. Không có các lệnh Invoke này, cơ chế Lazy sẽ khiến Fx không bao giờ khởi tạo các linh kiện bên trên.</span></span></div>
         <div class="jd-ex c-blue" data-code="#code-fx" data-show="30-33"><span class="n">8</span>
           <span class="w">fx.New(…)  →  .Run()</span>
-          <span class="x"><span lang="en">Assembles the dependency graph, validates that every required type is satisfied, triggers OnStart lifecycle hooks, and blocks until a termination signal is received.</span><span lang="vi">Khởi động cỗ máy: Lắp ráp các linh kiện, kiểm tra nếu thiếu thứ gì thì báo lỗi dừng ngay lập tức (Fail Fast), kích hoạt các dịch vụ (OnStart) và giữ ứng dụng luôn chạy cho đến khi nhận lệnh tắt.</span></span></div>
+          <span class="x"><span lang="en">Assembles the dependency graph, checks that everything the Invokes need (directly or indirectly) can be built, triggers OnStart lifecycle hooks, and blocks until a termination signal is received.</span><span lang="vi">Khởi động cỗ máy: Lắp ráp các linh kiện mà các Invoke cần (trực tiếp hoặc gián tiếp), kiểm tra nếu thiếu thứ gì thì báo lỗi dừng ngay lập tức (Fail Fast), kích hoạt các dịch vụ (OnStart) và giữ ứng dụng luôn chạy cho đến khi nhận lệnh tắt.</span></span></div>
         <div class="jd-ex c-blue" data-code="#code-fx" data-show="35-41"><span class="n">9</span>
           <span class="w">NewConsoleFx</span>
           <span class="x"><span lang="en">Shares identical CoreModules (DB, cache, services) but replaces the HTTP server with console command dispatching. Used by <code>make console</code>. Logs go to files only, whatever the environment; add <code>--verbose</code> (app logs + SQL) or <code>--debug</code> (everything, Fx events included) inside <code>CMD</code> to print them.</span><span lang="vi">Bản chạy cho dòng lệnh (CLI): Dùng chung 100% CoreModules (Database, Cache, Service...) y hệt API, nhưng không bật HTTP Server mà chỉ chạy lệnh console được chọn (thông qua lệnh <code>make console</code>). Log chỉ ghi vào file, dù môi trường là gì; thêm <code>--verbose</code> (log app + SQL) hoặc <code>--debug</code> (in hết, kể cả event Fx) vào trong <code>CMD</code> để in ra màn hình.</span></span></div>
@@ -958,7 +979,7 @@ fx.Provide(service.NewProductService),</pre>
     fx.As(new(router.Routes)),
     fx.ResultTags(`group:"routes"`),
 )),</pre>
-        <div class="why" lang="en">Mounted automatically under <code>/api/v1</code> via the routes group.</div><div class="why" lang="vi">Route của bạn sẽ tự động được bỏ vào chiếc thùng chung <code>group:"routes"</code> và gắn lên Gin engine mà không cần phải chạm vào file router chính.</div></div>
+        <div class="why" lang="en">Mounted automatically via the routes group: under <code>/api/&lt;Version()&gt;</code> (e.g. <code>/api/v1</code>), or under <code>/api</code> when <code>Version()</code> is empty or not implemented.</div><div class="why" lang="vi">Route của bạn sẽ tự động được bỏ vào chiếc thùng chung <code>group:"routes"</code> và gắn lên Gin engine mà không cần phải chạm vào file router chính: nằm dưới <code>/api/&lt;Version()&gt;</code> (vd. <code>/api/v1</code>), hoặc dưới <code>/api</code> nếu <code>Version()</code> rỗng hoặc không được cài đặt.</div></div>
       <div class="jd-rc"><div class="q" lang="en">New CLI command</div><div class="q" lang="vi">Đăng ký Lệnh CLI (Console Command) mới</div>
 <pre data-hl="go">fx.Provide(fx.Annotate(
     command.NewSyncProductsCommand,
@@ -991,8 +1012,8 @@ product.Module,</pre>
       <span class="jd-badge">9</span>
       <div>
         <h2><span lang="en">When Fx reports an error</span><span lang="vi">Khi Fx báo lỗi lúc khởi động — Cách đọc &amp; Sửa nhanh</span></h2>
-        <p class="jd-sub" lang="en">Fx validates the entire dependency graph before running. If something is missing or misconfigured, it halts immediately with clear diagnostics.</p>
-        <p class="jd-sub" lang="vi">Fx kiểm tra toàn bộ các linh kiện ngay khi vừa bật ứng dụng. Nếu phát hiện thiếu linh kiện hoặc lắp ngược, nó sẽ dừng ngay lập tức kèm thông báo lỗi rất rõ ràng:</p>
+        <p class="jd-sub" lang="en">Fx validates every dependency its Invokes reach (directly or indirectly) before running — an unused provider with a missing dependency goes unnoticed. If something is missing or misconfigured, it halts immediately with clear diagnostics.</p>
+        <p class="jd-sub" lang="vi">Fx kiểm tra mọi linh kiện mà các Invoke cần tới (trực tiếp hoặc gián tiếp) ngay khi vừa bật ứng dụng — provider không ai dùng mà thiếu dependency thì sẽ không bị phát hiện. Nếu phát hiện thiếu linh kiện hoặc lắp ngược, nó sẽ dừng ngay lập tức kèm thông báo lỗi rất rõ ràng:</p>
       </div>
     </div>
     <div class="jd-grid-3" style="margin-top:20px">
@@ -1111,8 +1132,8 @@ document.addEventListener("jd:ready", function () {
       text: { en: "<code>NewUserRoutes(hdl)</code> receives *UserHandler from NewUserHandler ➔ <b>provides router.Routes into the routes group for Tier 3</b>.",
               vi: "<code>NewUserRoutes(hdl)</code> nhận *UserHandler từ NewUserHandler ➔ <b>Cung cấp router.Routes</b> gom vào thùng routes cho Tầng 3." } },
     { node: "inv", token: "[]Routes", color: build, set: { inv: "built" }, ms: 2600,
-      text: { en: "Finally, <code>RegisterAll</code> receives the combined routes and mounts them onto Gin. <b>The app is live and serving requests!</b>",
-              vi: "Cuối cùng, <code>RegisterAll</code> nhận toàn bộ các Route trong thùng gom chung và gắn lên Gin engine. <b>Ứng dụng chính thức khởi động và lắng nghe request!</b>" } },
+      text: { en: "Finally, <code>RegisterAll</code> receives the combined routes and mounts them onto Gin. Then the OnStart hook from <code>(*App).Run</code> starts the HTTP server. <b>The app is live and serving requests!</b>",
+              vi: "Cuối cùng, <code>RegisterAll</code> nhận toàn bộ các Route trong thùng gom chung và gắn lên Gin engine. Sau đó hook OnStart của <code>(*App).Run</code> bật HTTP server. <b>Ứng dụng chính thức khởi động và lắng nghe request!</b>" } },
     { node: "rpt", token: "—", color: "muted", set: { rpt: "skipped" }, ms: 3000,
       text: { en: "<code>NewReportService</code> was declared in Provide, but <b>nobody in the chain requested it</b> → Fx never built it (Lazy saves memory and boot time).",
               vi: "<code>NewReportService</code> có đăng ký công thức trong Provide, nhưng <b>không ai cần dùng đến nó</b> → Fx không thèm khởi tạo (Cơ chế Lazy giúp tiết kiệm RAM và khởi động cực nhanh)." } },

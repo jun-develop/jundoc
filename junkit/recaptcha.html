@@ -115,22 +115,30 @@ fx.Provide(httpclient.NewDefaultClient), // *http.Client — required even in Mo
 fx.Provide(provideRecaptchaOptions),
 recaptcha.Module,
 
-// provideRecaptchaOptions builds recaptcha.Options from cfg.Recaptcha.
-func provideRecaptchaOptions(cfg *config.Config) recaptcha.Options {
+// provideRecaptchaOptions builds recaptcha.Options from cfg.Recaptcha; the mock is never used
+// in production.
+func provideRecaptchaOptions(cfg *config.Config) (recaptcha.Options, error) {
+	production := cfg.Environment == "production"
+	if production &amp;&amp; cfg.Auth.RecaptchaOnLogin &amp;&amp; cfg.Recaptcha.SecretKey == "" {
+		return recaptcha.Options{}, errors.New("RECAPTCHA_SECRET_KEY: required in production when AUTH_RECAPTCHA_ON_LOGIN=true")
+	}
+
 	return recaptcha.Options{
 		SecretKey: cfg.Recaptcha.SecretKey,
 		MinScore:  cfg.Recaptcha.MinScore,
-		Mock:      cfg.Recaptcha.Mock,
-	}
+		Mock:      cfg.Recaptcha.Mock &amp;&amp; !production,
+	}, nil
 }
 </pre>
             </div>
             <p class="jd-sub" style="margin-top:10px" lang="en">From <code>config.RecaptchaConfig</code>:
               <code>RECAPTCHA_SECRET_KEY</code>, <code>RECAPTCHA_MIN_SCORE</code> (default <code>0.5</code>),
-              <code>RECAPTCHA_MOCK</code> (default <code>true</code> — in every environment, see gotchas).</p>
+              <code>RECAPTCHA_MOCK</code> (default <code>true</code>, ignored when <code>API_ENVIRONMENT=production</code>,
+              see gotchas).</p>
             <p class="jd-sub" style="margin-top:10px" lang="vi">Từ <code>config.RecaptchaConfig</code>:
               <code>RECAPTCHA_SECRET_KEY</code>, <code>RECAPTCHA_MIN_SCORE</code> (mặc định <code>0.5</code>),
-              <code>RECAPTCHA_MOCK</code> (mặc định <code>true</code> — ở mọi môi trường, xem phần lưu ý).</p>
+              <code>RECAPTCHA_MOCK</code> (mặc định <code>true</code>, bị bỏ qua khi <code>API_ENVIRONMENT=production</code>,
+              xem phần lưu ý).</p>
           </div>
           <div class="jd-tabpanel" hidden>
             <div class="jd-term">
@@ -231,6 +239,10 @@ func (h *SignupHandler) Signup(c *gin.Context) {
 
     err := h.verifier.Verify(c.Request.Context(), req.RecaptchaToken, c.ClientIP())
     if err != nil {
+        var uerr *url.Error
+        if errors.As(err, &amp;uerr) {
+            err = uerr.Err // drop the URL: it carries the secret
+        }
         h.logger.Info("recaptcha rejected", zap.Error(err))
         h.responder.Error(c, ErrBot)
         return
@@ -258,11 +270,14 @@ func (h *SignupHandler) Signup(c *gin.Context) {
                 class="x" lang="vi">Truyền <code>c.Request.Context()</code> để tự động hủy request tới Google nếu client
                 đóng kết nối sớm. Tham số <code>remoteIP</code> là tùy chọn (truyền <code>""</code> nếu không
                 cần).</span></div>
-            <div class="jd-ex c-purple" data-code="#code-quick" data-show="18-21"><span class="n">4</span><span
+            <div class="jd-ex c-purple" data-code="#code-quick" data-show="18-25"><span class="n">4</span><span
                 class="w">log, don't leak</span><span class="x" lang="en">The error says why (score, Google error codes)
-                — useful in logs, not for the client. Every error means "reject".</span><span class="x" lang="vi">Error
+                — useful in logs, not for the client. Every error means "reject". A network error wraps a
+                <code>*url.Error</code> whose URL holds the secret, so unwrap it before logging (gotcha 3).</span><span
+                class="x" lang="vi">Error
                 cho biết lý do (điểm, mã lỗi của Google) — hữu ích trong log, không nên trả cho client. Mọi error đều
-                nghĩa là "từ chối".</span></div>
+                nghĩa là "từ chối". Lỗi mạng bọc một <code>*url.Error</code> có URL chứa secret, nên hãy gỡ nó ra trước
+                khi log (lưu ý 3).</span></div>
           </div>
         </div>
         <div class="jd-term" style="margin-top:14px">
@@ -533,8 +548,12 @@ func newVerifier(opts Options, httpClient *http.Client) Verifier
             </tr>
             <tr>
               <td>app/fx.go</td>
-              <td lang="en"><code>provideRecaptchaOptions</code> + <code>recaptcha.Module</code>.</td>
-              <td lang="vi"><code>provideRecaptchaOptions</code> + <code>recaptcha.Module</code>.</td>
+              <td lang="en"><code>provideRecaptchaOptions</code> + <code>recaptcha.Module</code>. In production it
+                forces <code>Mock</code> off and fails startup if <code>AUTH_RECAPTCHA_ON_LOGIN=true</code> with an
+                empty <code>RECAPTCHA_SECRET_KEY</code>.</td>
+              <td lang="vi"><code>provideRecaptchaOptions</code> + <code>recaptcha.Module</code>. Ở production nó luôn
+                tắt <code>Mock</code> và báo lỗi khi khởi động nếu <code>AUTH_RECAPTCHA_ON_LOGIN=true</code> mà
+                <code>RECAPTCHA_SECRET_KEY</code> trống.</td>
             </tr>
             <tr>
               <td>features/auth/dto/v1/auth_dto.go</td>
@@ -605,13 +624,14 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
         </div>
         <div class="jd-explain" style="margin-top:16px">
           <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w"><span lang="en">Jungo
-                mocks by default — everywhere</span><span lang="vi">Jungo mặc định mock — ở mọi nơi</span></span><span
-              class="x" lang="en"><code>RECAPTCHA_MOCK</code> has <code>envDefault:"true"</code> and is not tied to
-              <code>API_ENVIRONMENT</code>. Turning on <code>AUTH_RECAPTCHA_ON_LOGIN</code> in production without
-              <code>RECAPTCHA_MOCK=false</code> lets every token through.</span><span class="x"
-              lang="vi"><code>RECAPTCHA_MOCK</code> có <code>envDefault:"true"</code> và không gắn với
-              <code>API_ENVIRONMENT</code>. Bật <code>AUTH_RECAPTCHA_ON_LOGIN</code> ở production mà không đặt
-              <code>RECAPTCHA_MOCK=false</code> thì mọi token đều được cho qua.</span></div>
+                mocks by default — outside production</span><span lang="vi">Jungo mặc định mock — trừ
+                production</span></span><span
+              class="x" lang="en"><code>RECAPTCHA_MOCK</code> has <code>envDefault:"true"</code>, so in development,
+              staging and any other non-production <code>API_ENVIRONMENT</code> every token passes. With
+              <code>API_ENVIRONMENT=production</code> Jungo ignores it and always uses the real client.</span><span class="x"
+              lang="vi"><code>RECAPTCHA_MOCK</code> có <code>envDefault:"true"</code>, nên ở development, staging và
+              mọi <code>API_ENVIRONMENT</code> khác production thì mọi token đều được cho qua. Với
+              <code>API_ENVIRONMENT=production</code> Jungo bỏ qua nó và luôn dùng client thật.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">v3
                 only</span><span lang="vi">chỉ dùng v3</span></span><span class="x" lang="en">A v2 checkbox token has no
               score, so it decodes as 0 and fails with "score too low". The <code>action</code> and
@@ -622,10 +642,10 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
           <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">secret
                 in the URL</span><span lang="vi">secret nằm trên URL</span></span><span class="x" lang="en">The secret
               is sent as a query parameter. On a network failure the returned <code>send recaptcha request: …</code>
-              error contains the full URL, secret included — don't log it as-is. (Jungo's login discards
-              it.)</span><span class="x" lang="vi">Secret được gửi dạng query parameter. Khi lỗi mạng, error
-              <code>send recaptcha request: …</code> trả về chứa nguyên URL, kể cả secret — đừng log nguyên văn. (Login
-              của Jungo bỏ error này đi.)</span></div>
+              error contains the full URL, secret included — don't log it as-is; unwrap the <code>*url.Error</code>
+              as in the quick start. (Jungo's login discards it.)</span><span class="x" lang="vi">Secret được gửi dạng query parameter. Khi lỗi mạng, error
+              <code>send recaptcha request: …</code> trả về chứa nguyên URL, kể cả secret — đừng log nguyên văn; hãy gỡ
+              <code>*url.Error</code> ra như ở phần quick start. (Login của Jungo bỏ error này đi.)</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">tokens
                 are single-use</span><span lang="vi">token chỉ dùng một lần</span></span><span class="x"
               lang="en">Google rejects a token verified twice or older than about two minutes

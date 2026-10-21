@@ -19,8 +19,10 @@ jundoc/
 │   └── js/
 │       ├── nav.js          the menu — add every new page here
 │       └── jundoc.js       shell, language/theme toggle, wires, step player, code highlight
-└── jungo/
-    └── overview.html       first page
+├── jungo/                  the starter app: overview, build-a-feature, uber-fx, auth, multi-database
+│   └── *.html
+└── junkit/                 the library: index.html + one page per package (cache, logger, middleware, …)
+    └── *.html
 ```
 
 ## Adding a page

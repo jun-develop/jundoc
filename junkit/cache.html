@@ -152,11 +152,13 @@ rc := cache.NewRedisCache[int64](cache.RedisOptions{Addr: "localhost:6379"})
 </pre>
             </div>
             <p lang="en" style="margin-top:12px">The concrete constructors return the struct type, so you can reach
-              driver-only methods such as <code>RedisCache.SetNX</code>. Creating a Redis cache does not connect — call
-              <code>Ping</code> if you want to fail fast.</p>
+              driver-only methods such as <code>RedisCache.SetNX</code>. Creating a Redis cache does not wait for a
+              connection: it starts dialing <code>MinIdleConns</code> connections in the background and never reports
+              their errors — call <code>Ping</code> if you want to fail fast.</p>
             <p lang="vi" style="margin-top:12px">Các constructor cụ thể trả về kiểu struct, nên bạn dùng được method
-              riêng của driver như <code>RedisCache.SetNX</code>. Tạo Redis cache không mở kết nối ngay — gọi
-              <code>Ping</code> nếu muốn phát hiện lỗi sớm.</p>
+              riêng của driver như <code>RedisCache.SetNX</code>. Tạo Redis cache không chờ kết nối: nó bắt đầu mở
+              <code>MinIdleConns</code> kết nối ở nền và không bao giờ báo lỗi của chúng — gọi <code>Ping</code> nếu
+              muốn phát hiện lỗi sớm.</p>
           </div>
         </div>
 
@@ -317,9 +319,12 @@ func (s *ProductService) AllowExport(ctx context.Context, userID string) (bool, 
           <div class="jd-explain">
             <div class="jd-ex c-green" data-code="#code-quick" data-show="7-13"><span class="n">1</span><span
                 class="w">cache.New[T](opts)</span><span class="x" lang="en">One cache per value type, all sharing the
-                app's <code>cache.Options</code> (Fx injects them). Counters must be
-                <code>Cache[int64]</code>.</span><span class="x" lang="vi">Mỗi kiểu giá trị một cache, cùng dùng
-                <code>cache.Options</code> của app (Fx inject sẵn). Bộ đếm phải là <code>Cache[int64]</code>.</span>
+                app's <code>cache.Options</code> (Fx injects them). Counters use <code>Cache[int64]</code> here: it works
+                on every driver (memory also accepts <code>Cache[any]</code>; Redis <code>Incr</code> works for any
+                <code>T</code>).</span><span class="x" lang="vi">Mỗi kiểu giá trị một cache, cùng dùng
+                <code>cache.Options</code> của app (Fx inject sẵn). Bộ đếm ở đây dùng <code>Cache[int64]</code>: chạy
+                được trên mọi driver (memory cũng nhận <code>Cache[any]</code>; <code>Incr</code> của Redis chạy với mọi
+                <code>T</code>).</span>
             </div>
             <div class="jd-ex c-green" data-code="#code-quick" data-show="15-18"><span class="n">2</span><span
                 class="w">GetOrSet</span><span class="x" lang="en">Hit → cached value, loader not called. Miss → loader
@@ -433,11 +438,13 @@ type Cache[T any] interface {
                 <tr>
                   <td>Incr</td>
                   <td><span lang="en">Atomically adds 1 and returns the new value (first call → 1). <code>ttl</code> is
-                      applied only when the call creates the key — a <b>fixed window</b>: later increments never push
-                      the expiry back. After expiry the next call starts again at 1.</span><span lang="vi">Cộng 1 một
-                      cách nguyên tử và trả giá trị mới (lần đầu → 1). <code>ttl</code> chỉ được áp khi lần gọi tạo ra
-                      key — <b>cửa sổ cố định</b>: các lần tăng sau không lùi thời điểm hết hạn. Hết hạn rồi thì lần gọi
-                      kế bắt đầu lại từ 1.</span></td>
+                      never refreshed — a <b>fixed window</b>: later increments never push the expiry back. Memory sets
+                      it only when the call creates the key; Redis sets it whenever the key has no TTL yet. After expiry
+                      the next call starts again at 1.</span><span lang="vi">Cộng 1 một
+                      cách nguyên tử và trả giá trị mới (lần đầu → 1). <code>ttl</code> không bao giờ được làm mới —
+                      <b>cửa sổ cố định</b>: các lần tăng sau không lùi thời điểm hết hạn. Memory chỉ đặt nó khi lần gọi
+                      tạo ra key; Redis đặt nó bất cứ khi nào key chưa có TTL. Hết hạn rồi thì lần gọi kế bắt đầu lại từ
+                      1.</span></td>
                 </tr>
                 <tr>
                   <td>GetOrSet</td>
@@ -572,10 +579,10 @@ type Options struct {
               <pre data-hl="go">func New[T any](opts Options) Cache[T]</pre>
             </div>
             <ul>
-              <li lang="en"><code>DriverRedis</code> → <code>*RedisCache[T]</code> (no connection made yet),
+              <li lang="en"><code>DriverRedis</code> → <code>*RedisCache[T]</code> (returns without waiting for a connection),
                 <code>DriverMemory</code> → <code>*MemoryCache[T]</code>, anything else (including <code>""</code>) →
                 <code>*NoopCache[T]</code>.</li>
-              <li lang="vi"><code>DriverRedis</code> → <code>*RedisCache[T]</code> (chưa kết nối),
+              <li lang="vi"><code>DriverRedis</code> → <code>*RedisCache[T]</code> (trả về ngay, không chờ kết nối),
                 <code>DriverMemory</code> → <code>*MemoryCache[T]</code>, mọi giá trị khác (kể cả <code>""</code>) →
                 <code>*NoopCache[T]</code>.</li>
               <li lang="en">Never returns an error. Each call with <code>DriverRedis</code> creates a new connection
@@ -808,9 +815,11 @@ func (c *MemoryCache[T]) Close() error
             </div>
             <ul>
               <li lang="en">A Go map behind a <code>sync.RWMutex</code> — safe for concurrent use, local to one process.
-              </li>
+                A <code>Get</code> that finds an expired entry re-checks it under the write lock before deleting, so a
+                concurrent <code>Set</code> / <code>Incr</code> is never lost.</li>
               <li lang="vi">Một map Go sau <code>sync.RWMutex</code> — an toàn khi dùng đồng thời, chỉ trong một
-                process.</li>
+                process. <code>Get</code> gặp entry hết hạn sẽ kiểm tra lại dưới write lock trước khi xoá, nên một
+                <code>Set</code> / <code>Incr</code> chạy đồng thời không bao giờ bị mất.</li>
               <li lang="en">Expired entries are removed lazily by <code>Get</code>, and by a sweep that runs on
                 <code>Set</code> / <code>Incr</code> at most once per minute.</li>
               <li lang="vi">Entry hết hạn bị xoá lười bởi <code>Get</code>, và bởi một lượt quét chạy trong

@@ -162,6 +162,7 @@
               <pre data-hl="json">
 {
   "status": "error",
+  "code": "UNPROCESSABLE_ENTITY",
   "message": "Validation error",
   "error": {
     "email": "email must be a valid email format",
@@ -172,9 +173,11 @@
 </pre>
             </div>
             <p class="jd-sub" lang="en">Same <code>SendWithData</code> call, but status ≥ 400 → the value goes to
-              <code>"error"</code>, not <code>"data"</code>. No <code>"code"</code> here.</p>
+              <code>"error"</code>, not <code>"data"</code>. <code>"code"</code> comes from the status (422 →
+              <code>UNPROCESSABLE_ENTITY</code>).</p>
             <p class="jd-sub" lang="vi">Vẫn là <code>SendWithData</code>, nhưng status ≥ 400 → giá trị nằm ở
-              <code>"error"</code>, không phải <code>"data"</code>. Không có <code>"code"</code>.</p>
+              <code>"error"</code>, không phải <code>"data"</code>. <code>"code"</code> suy ra từ status (422 →
+              <code>UNPROCESSABLE_ENTITY</code>).</p>
           </div>
           <div class="jd-tabpanel" hidden>
             <div class="jd-term">
@@ -188,10 +191,10 @@
 }
 </pre>
             </div>
-            <p class="jd-sub" lang="en"><code>"code"</code> appears <b>only</b> in responses written by
-              <code>Error</code> with an <code>*AppError</code>.</p>
-            <p class="jd-sub" lang="vi"><code>"code"</code> <b>chỉ</b> xuất hiện trong response do <code>Error</code>
-              ghi với một <code>*AppError</code>.</p>
+            <p class="jd-sub" lang="en">Every error response (status ≥ 400) has a <code>"code"</code>: <code>Error</code> takes it from
+              the <code>*AppError</code>, <code>Send</code> / <code>SendWithData</code> derive it from the status.</p>
+            <p class="jd-sub" lang="vi">Mọi response lỗi (status ≥ 400) đều có <code>"code"</code>: <code>Error</code> lấy từ
+              <code>*AppError</code>, <code>Send</code> / <code>SendWithData</code> suy ra từ status.</p>
           </div>
           <div class="jd-tabpanel" hidden>
             <div class="jd-term">
@@ -200,6 +203,7 @@
               <pre data-hl="json">
 {
   "status": "error",
+  "code": "INTERNAL_SERVER_ERROR",
   "message": "Internal Server Error",
   "api_info": { "trace_id": "…", "timestamp": "…", "latency": "3.004ms", "version": "v0.1.0", "env": "development" }
 }
@@ -238,10 +242,12 @@
             </tr>
             <tr>
               <td>code</td>
-              <td lang="en">Only from <code>Error(ctx, *AppError)</code> — the <code>ErrorCode</code>, e.g.
-                <code>"NOT_FOUND"</code>.</td>
-              <td lang="vi">Chỉ từ <code>Error(ctx, *AppError)</code> — giá trị <code>ErrorCode</code>, ví dụ
-                <code>"NOT_FOUND"</code>.</td>
+              <td lang="en">On every status ≥ 400 — the <code>AppError</code>'s <code>ErrorCode</code>, or derived from
+                the status for <code>Send</code> / <code>SendWithData</code> (unmapped 4xx → <code>"BAD_REQUEST"</code>,
+                5xx → <code>"INTERNAL_SERVER_ERROR"</code>). Absent on success.</td>
+              <td lang="vi">Có ở mọi status ≥ 400 — <code>ErrorCode</code> của <code>AppError</code>, hoặc suy ra từ
+                status với <code>Send</code> / <code>SendWithData</code> (4xx không có trong bảng →
+                <code>"BAD_REQUEST"</code>, 5xx → <code>"INTERNAL_SERVER_ERROR"</code>). Không có khi thành công.</td>
             </tr>
             <tr>
               <td>message</td>
@@ -460,9 +466,11 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
                   <option>UNAUTHORIZED</option>
                   <option selected>NOT_FOUND</option>
                   <option>FORBIDDEN</option>
+                  <option>METHOD_NOT_ALLOWED</option>
                   <option>CONFLICT</option>
                   <option>UNPROCESSABLE_ENTITY</option>
                   <option>UNSUPPORTED_MEDIA_TYPE</option>
+                  <option>PAYLOAD_TOO_LARGE</option>
                   <option>TOO_MANY_REQUESTS</option>
                   <option>INTERNAL_SERVER_ERROR</option>
                   <option>SOMETHING_ELSE</option>
@@ -567,10 +575,12 @@ type Responder interface {
             <div class="jd-term">
               <pre data-hl="go">Send(ctx *gin.Context, statusCode int, key string, args ...any)</pre>
             </div>
-            <p lang="en">Message-only response: <code>status</code>, <code>message</code>, <code>api_info</code>. Never
+            <p lang="en">Message-only response: <code>status</code>, <code>message</code>, <code>api_info</code>, plus
+              <code>code</code> derived from the status when it is ≥ 400. Never
               filtered. Used by Jungo for 404 <code>"api_not_found"</code>, <code>"user_deleted"</code>,
               <code>"invalid_uuid"</code>…</p>
-            <p lang="vi">Response chỉ có message: <code>status</code>, <code>message</code>, <code>api_info</code>.
+            <p lang="vi">Response chỉ có message: <code>status</code>, <code>message</code>, <code>api_info</code>, kèm
+              <code>code</code> suy ra từ status khi ≥ 400.
               Không bao giờ bị filter. Jungo dùng cho 404 <code>"api_not_found"</code>, <code>"user_deleted"</code>,
               <code>"invalid_uuid"</code>…</p>
           </div>
@@ -585,14 +595,18 @@ type Responder interface {
                 <code>?fields</code>/<code>?omit</code> filtering applies.</li>
               <li lang="vi"><code>statusCode &lt; 400</code> → <code>data</code> vào <code>"data"</code>, và áp dụng
                 filter <code>?fields</code>/<code>?omit</code>.</li>
-              <li lang="en"><code>statusCode &gt;= 400</code> → <code>data</code> goes into <code>"error"</code>, no
-                filtering. This is how 422 validation errors are sent.</li>
-              <li lang="vi"><code>statusCode &gt;= 400</code> → <code>data</code> vào <code>"error"</code>, không
-                filter. Đây là cách gửi lỗi validation 422.</li>
-              <li lang="en">A <code>nil</code> data (or empty slice/map/string) is dropped by <code>omitempty</code>.
-              </li>
-              <li lang="vi"><code>data</code> là <code>nil</code> (hoặc slice/map/chuỗi rỗng) bị <code>omitempty</code>
-                bỏ đi.</li>
+              <li lang="en"><code>statusCode &gt;= 400</code> → <code>data</code> goes into <code>"error"</code>, <code>code</code> is
+                derived from the status, no filtering. This is how 422 validation errors are sent.</li>
+              <li lang="vi"><code>statusCode &gt;= 400</code> → <code>data</code> vào <code>"error"</code>, <code>code</code> suy
+                ra từ status, không filter. Đây là cách gửi lỗi validation 422.</li>
+              <li lang="en"><code>omitempty</code> on <code>Data any</code> drops only a <code>nil</code> interface.
+                Empty values are still sent: <code>[]</code> → <code>"data":[]</code>, <code>{}</code> →
+                <code>"data":{}</code>, <code>""</code> → <code>"data":""</code>, a typed nil pointer →
+                <code>"data":null</code>.</li>
+              <li lang="vi"><code>omitempty</code> trên <code>Data any</code> chỉ bỏ interface <code>nil</code>. Giá
+                trị rỗng vẫn được gửi: <code>[]</code> → <code>"data":[]</code>, <code>{}</code> →
+                <code>"data":{}</code>, <code>""</code> → <code>"data":""</code>, con trỏ nil có kiểu →
+                <code>"data":null</code>.</li>
             </ul>
           </div>
           <div class="jd-sym c-blue">
@@ -637,6 +651,10 @@ type Responder interface {
                 <code>Send(ctx, 500, "internal_server_error")</code>.</li>
               <li lang="vi">Ngược lại → <code>ctx.Error(err)</code> (ghi lại để log) và
                 <code>Send(ctx, 500, "internal_server_error")</code>.</li>
+              <li lang="en"><code>err == nil</code> → the same generic 500, without <code>ctx.Error</code> (gin panics
+                on a nil error). No panic.</li>
+              <li lang="vi"><code>err == nil</code> → cũng trả 500 chung như trên, nhưng không gọi
+                <code>ctx.Error</code> (gin panic khi nhận error nil). Không panic.</li>
               <li lang="en">Never filtered. The <code>Cause</code> is never sent to the client.</li>
               <li lang="vi">Không bao giờ bị filter. <code>Cause</code> không bao giờ gửi cho client.</li>
             </ul>
@@ -678,6 +696,11 @@ type Responder interface {
                   <td>404</td>
                 </tr>
                 <tr>
+                  <td>MethodNotAllowed</td>
+                  <td>"METHOD_NOT_ALLOWED"</td>
+                  <td>405</td>
+                </tr>
+                <tr>
                   <td>Conflict</td>
                   <td>"CONFLICT"</td>
                   <td>409</td>
@@ -691,6 +714,11 @@ type Responder interface {
                   <td>UnprocessableEntity</td>
                   <td>"UNPROCESSABLE_ENTITY"</td>
                   <td>422</td>
+                </tr>
+                <tr>
+                  <td>PayloadTooLarge</td>
+                  <td>"PAYLOAD_TOO_LARGE"</td>
+                  <td>413</td>
                 </tr>
                 <tr>
                   <td>TooManyRequests</td>
@@ -1025,12 +1053,12 @@ func NewNode(name string) *Node
             </tr>
             <tr>
               <td>router/router.go</td>
-              <td lang="en"><code>NoRoute</code> → 404 <code>"api_not_found"</code>, <code>NoMethod</code> → 404
-                <code>"method_not_found"</code>, <code>GET /health</code> → <code>"app_running"</code>; passes the
+              <td lang="en"><code>NoRoute</code> → 404 <code>"api_not_found"</code>, <code>NoMethod</code> → 405
+                <code>"method_not_allowed"</code>, <code>GET /health</code> → <code>"app_running"</code>; passes the
                 Responder to <code>Payload</code>, <code>Limiter</code>, <code>Recover</code> middlewares and
                 <code>BearerAuth</code>.</td>
-              <td lang="vi"><code>NoRoute</code> → 404 <code>"api_not_found"</code>, <code>NoMethod</code> → 404
-                <code>"method_not_found"</code>, <code>GET /health</code> → <code>"app_running"</code>; truyền Responder
+              <td lang="vi"><code>NoRoute</code> → 404 <code>"api_not_found"</code>, <code>NoMethod</code> → 405
+                <code>"method_not_allowed"</code>, <code>GET /health</code> → <code>"app_running"</code>; truyền Responder
                 cho middleware <code>Payload</code>, <code>Limiter</code>, <code>Recover</code> và
                 <code>BearerAuth</code>.</td>
             </tr>
@@ -1146,7 +1174,7 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/nothing-here | jq
 
   <script>
     document.addEventListener("jd:ready", function () {
-      // Mirrors responder.go: statusText, SendWithData routing, Error + errorCodeToHTTPStatus,
+      // Mirrors responder.go: statusText, SendWithData routing, Error + errorCodeToHTTPStatus, httpStatusToErrorCode,
       // and i18n GetMessage's "unknown key → key" fallback (subset of the built-in EN catalog).
       var EN = {
         operation_successful: "Operation successful", validation_error: "Validation error",
@@ -1155,11 +1183,16 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/nothing-here | jq
         too_many_requests: "Too many requests. Please try again later."
       };
       var STATUS = {
-        BAD_REQUEST: 400, UNAUTHORIZED: 401, NOT_FOUND: 404, FORBIDDEN: 403, CONFLICT: 409,
-        UNSUPPORTED_MEDIA_TYPE: 415, TOO_MANY_REQUESTS: 429, UNPROCESSABLE_ENTITY: 422, INTERNAL_SERVER_ERROR: 500
+        BAD_REQUEST: 400, UNAUTHORIZED: 401, NOT_FOUND: 404, FORBIDDEN: 403, METHOD_NOT_ALLOWED: 405, CONFLICT: 409,
+        UNSUPPORTED_MEDIA_TYPE: 415, PAYLOAD_TOO_LARGE: 413, TOO_MANY_REQUESTS: 429, UNPROCESSABLE_ENTITY: 422, INTERNAL_SERVER_ERROR: 500
       };
       function msg(k) { return Object.prototype.hasOwnProperty.call(EN, k) ? EN[k] : k; }
       function statusText(s) { return s >= 400 ? "error" : "success"; }
+      function codeFor(s) {
+        if (s < 400) return "";
+        for (var k in STATUS) if (STATUS[k] === s) return k;
+        return s < 500 ? "BAD_REQUEST" : "INTERNAL_SERVER_ERROR";
+      }
       function respond(call, status, key, code, data) {
         var info = { trace_id: "…", timestamp: "…", latency: "…", version: "v0.1.0", env: "development" };
         if (call === "apperr") {
@@ -1168,6 +1201,7 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/nothing-here | jq
         }
         if (call === "plain") { call = "send"; status = 500; key = "internal_server_error"; }
         var body = { status: statusText(status) };
+        if (codeFor(status)) body.code = codeFor(status);
         var m = msg(key); if (m) body.message = m;
         if (call === "data") { if (status >= 400) body.error = data; else body.data = data; }
         body.api_info = info;
@@ -1180,7 +1214,10 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/nothing-here | jq
       console.assert(respond("apperr", 0, "k", "UNSUPPORTED_MEDIA_TYPE").http === 415, "415 mapping");
       console.assert(respond("apperr", 0, "k", "SOMETHING_ELSE").http === 500, "unknown code → 500");
       var p = respond("plain", 200, "x", "NOT_FOUND");
-      console.assert(p.http === 500 && p.body.message === "Internal Server Error" && !("code" in p.body), "plain error → generic 500");
+      console.assert(p.http === 500 && p.body.message === "Internal Server Error" && p.body.code === "INTERNAL_SERVER_ERROR", "plain error → generic 500");
+      console.assert(respond("data", 422, "validation_error", "", d).body.code === "UNPROCESSABLE_ENTITY", "422 → code");
+      console.assert(respond("send", 418, "x").body.code === "BAD_REQUEST", "unmapped 4xx → BAD_REQUEST");
+      console.assert(!("code" in respond("send", 200, "x").body), "success has no code");
 
       var ids = ["rs-call", "rs-status", "rs-key", "rs-code"];
       function paint() {

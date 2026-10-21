@@ -678,7 +678,7 @@ type Translator struct {
                   <td><code>API is not found</code></td>
                 </tr>
                 <tr>
-                  <td>method_not_found</td>
+                  <td>method_not_allowed</td>
                   <td><code>HTTP method is not allowed for this endpoint</code></td>
                 </tr>
                 <tr>
@@ -799,9 +799,9 @@ type Translator struct {
             <tr>
               <td>router/router.go</td>
               <td lang="en">Uses built-in keys through the responder: <code>"api_not_found"</code>,
-                <code>"method_not_found"</code>, <code>"app_running"</code>.</td>
+                <code>"method_not_allowed"</code>, <code>"app_running"</code>.</td>
               <td lang="vi">Dùng key có sẵn qua responder: <code>"api_not_found"</code>,
-                <code>"method_not_found"</code>, <code>"app_running"</code>.</td>
+                <code>"method_not_allowed"</code>, <code>"app_running"</code>.</td>
             </tr>
             <tr>
               <td>cmd/scaffold/templates.go</td>

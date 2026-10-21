@@ -79,7 +79,7 @@ func (h *ProductHandler) List(ctx *gin.Context) {
     }
     req.SetDefaults("created_at", "desc")
 
-    items, total, err := h.service.List(ctx, req.GetLimit(), req.GetOffset())
+    items, total, err := h.service.List(ctx.Request.Context(), req.GetLimit(), req.GetOffset())
     if err != nil {
         h.responder.Error(ctx, err)
         return
@@ -92,7 +92,7 @@ func (h *ProductHandler) List(ctx *gin.Context) {
       </div></div>
       <div class="jd-explain">
         <div class="jd-ex c-blue" data-code="#code-quick-dto" data-show="1-3"><span class="n">1</span><span class="w">embed pagination.Request</span><span class="x" lang="en">Your request struct gets the five query params and their validation rules for free. Add your own filters next to it.</span><span class="x" lang="vi">Struct request của bạn có sẵn năm query param cùng luật kiểm tra. Thêm bộ lọc riêng ngay bên cạnh.</span></div>
-        <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="3-7"><span class="n">2</span><span class="w">ShouldBindQuery</span><span class="x" lang="en">Rejects <code>page&lt;1</code>, <code>page_size</code> outside 1–100 and a <code>sort_order</code> other than asc / desc → answer 422.</span><span class="x" lang="vi">Từ chối <code>page&lt;1</code>, <code>page_size</code> ngoài khoảng 1–100 và <code>sort_order</code> khác asc / desc → trả 422.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="3-7"><span class="n">2</span><span class="w">ShouldBindQuery</span><span class="x" lang="en">Rejects a negative <code>page</code>, a negative <code>page_size</code> or one above 100, and a <code>sort_order</code> other than asc / desc → answer 422. <code>0</code> passes (<code>omitempty</code>) and becomes the default in the next step.</span><span class="x" lang="vi">Từ chối <code>page</code> âm, <code>page_size</code> âm hoặc lớn hơn 100, và <code>sort_order</code> khác asc / desc → trả 422. Giá trị <code>0</code> vẫn qua (<code>omitempty</code>) và thành giá trị mặc định ở bước sau.</span></div>
         <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="8"><span class="n">3</span><span class="w">SetDefaults</span><span class="x" lang="en">Missing page → 1, missing page_size → 10, empty sort → the values you pass.</span><span class="x" lang="vi">Thiếu page → 1, thiếu page_size → 10, sort trống → giá trị bạn truyền vào.</span></div>
         <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="10"><span class="n">4</span><span class="w">GetLimit / GetOffset</span><span class="x" lang="en">Both return <code>int32</code> — the type sqlc generates for LIMIT / OFFSET params. Also count the total rows.</span><span class="x" lang="vi">Cả hai trả <code>int32</code> — đúng kiểu sqlc sinh ra cho tham số LIMIT / OFFSET. Nhớ đếm luôn tổng số dòng.</span></div>
         <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="16-17"><span class="n">5</span><span class="w">NewPagination + responder.Pagination</span><span class="x" lang="en">Builds the metadata and sends <code>data: { items, pagination }</code> (see <a href="response.html">response</a>).</span><span class="x" lang="vi">Tạo metadata và gửi <code>data: { items, pagination }</code> (xem <a href="response.html">response</a>).</span></div>
@@ -118,8 +118,8 @@ func (h *ProductHandler) List(ctx *gin.Context) {
           <label>total_items <input type="number" id="pg-total" value="35" min="0"></label>
         </div>
         <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>SQL</span></div><pre id="pg-sql"></pre></div>
-        <p class="jd-sub" style="margin-top:10px" lang="en">Values below 1 are clamped by <code>SetDefaults</code> / <code>NewPagination</code>, but a real request with them is rejected first by validation (422).</p>
-        <p class="jd-sub" style="margin-top:10px" lang="vi">Giá trị nhỏ hơn 1 được <code>SetDefaults</code> / <code>NewPagination</code> chỉnh lại, nhưng request thật mang giá trị đó sẽ bị validation từ chối trước (422).</p>
+        <p class="jd-sub" style="margin-top:10px" lang="en">Values below 1 are clamped by <code>SetDefaults</code> / <code>NewPagination</code>. In a real request, <code>0</code> passes validation (<code>omitempty</code>) and <code>SetDefaults</code> turns it into 1 / 10; only negatives (and <code>page_size</code> &gt; 100) are rejected (422).</p>
+        <p class="jd-sub" style="margin-top:10px" lang="vi">Giá trị nhỏ hơn 1 được <code>SetDefaults</code> / <code>NewPagination</code> chỉnh lại. Với request thật, <code>0</code> qua được validation (<code>omitempty</code>) và <code>SetDefaults</code> đổi thành 1 / 10; chỉ giá trị âm (và <code>page_size</code> &gt; 100) bị từ chối (422).</p>
       </div>
       <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>"pagination": …</span></div><pre id="pg-json"></pre></div>
     </div>

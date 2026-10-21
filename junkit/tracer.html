@@ -202,9 +202,10 @@ debug := middleware.TracerDebugOptions{
 p.Router.Use(
     middleware.TracerDebug(debug),
     middleware.Security(),
-    // ... Trace, CORS, Gzip, Payload, AccessLog (SkipIf: debug.Matches), Limiter ...
+    // ... Trace, CORS, Gzip, AccessLog (SkipIf: debug.Matches) ...
     // a panic in a debug request becomes a "PANIC RECOVERED" error entry
     middleware.Recover(p.HTTPLogger, p.Notifier, p.Responder, middleware.RecoverOptions{Debug: debug}),
+    // ... Payload, Limiter, RoutePatterns ...
 )
 </pre>
             </div>
@@ -245,16 +246,20 @@ r.GET("/users/:id", userHandler.Get) // handlers pass ctx down to queries
             </tr>
             <tr>
               <td>TracerDebugKey · TRACER_DEBUG_KEY</td>
-              <td>string · <code>"t_debug"</code></td>
+              <td>string · <code>""</code></td>
               <td><span lang="en">Query parameter name → <code>QueryKey</code>.</span><span
                   lang="vi">Tên query param → <code>QueryKey</code>.</span></td>
             </tr>
             <tr>
               <td>TracerDebugValue · TRACER_DEBUG_VALUE</td>
-              <td>string · <code>"0604"</code></td>
+              <td>string · <code>""</code></td>
               <td><span lang="en">The value the parameter must equal → <code>QueryValue</code>. <b>Empty key or value
-                    disables the dashboard completely.</b> Use a different value in each environment.</span><span lang="vi">Giá trị mà param phải bằng →
-                  <code>QueryValue</code>. <b>Key hoặc value rỗng sẽ tắt hẳn dashboard.</b> Mỗi môi trường nên đặt một giá trị khác nhau.</span></td>
+                    disables the dashboard completely</b> — neither has a built-in default; <code>.env.example</code>
+                    ships <code>t_debug</code> with an empty value and <code>deploy/app-init.sh</code> writes a random
+                    4-digit value. Use a different value in each environment.</span><span lang="vi">Giá trị mà param phải bằng →
+                  <code>QueryValue</code>. <b>Key hoặc value rỗng sẽ tắt hẳn dashboard</b> — cả hai đều không có giá
+                  trị mặc định sẵn; <code>.env.example</code> đặt sẵn <code>t_debug</code> với value để trống và
+                  <code>deploy/app-init.sh</code> ghi một giá trị ngẫu nhiên 4 chữ số. Mỗi môi trường nên đặt một giá trị khác nhau.</span></td>
             </tr>
             <tr>
               <td>Auth.InternalSecret · AUTH_INTERNAL_SECRET</td>
@@ -269,13 +274,18 @@ r.GET("/users/:id", userHandler.Get) // handlers pass ctx down to queries
         <div class="jd-callout c-red" style="margin-top:14px">
           <b lang="en">Security — the secret is the lock.</b><b lang="vi">Bảo mật — secret là ổ khoá.</b>
           <span lang="en">The report exposes SQL with real parameter values, row data, server IP, hostname, pid and
-            headers. The request still runs normally underneath (writes are committed). Only callers holding
+            headers — including credential material such as <code>password_hash</code> and session hash columns in
+            returned rows, and the bound arguments of <code>INSERT</code>s. The request still runs normally underneath (writes are committed). Only callers holding
             <code>AUTH_INTERNAL_SECRET</code> get it, so keep that secret strong and private. To turn the dashboard
-            off, leave <code>AUTH_INTERNAL_SECRET</code> or <code>TRACER_DEBUG_VALUE</code> empty.</span>
-          <span lang="vi">Báo cáo lộ SQL với giá trị tham số thật, dữ liệu các dòng, IP server, hostname, pid và header.
+            off, leave <code>AUTH_INTERNAL_SECRET</code>, <code>TRACER_DEBUG_KEY</code> or
+            <code>TRACER_DEBUG_VALUE</code> empty.</span>
+          <span lang="vi">Báo cáo lộ SQL với giá trị tham số thật, dữ liệu các dòng, IP server, hostname, pid và header
+            — kể cả dữ liệu nhạy cảm như <code>password_hash</code> và các cột hash session trong dòng trả về, cùng
+            tham số bind của các câu <code>INSERT</code>.
             Request vẫn chạy bình thường bên dưới (ghi DB vẫn được commit). Chỉ ai có
             <code>AUTH_INTERNAL_SECRET</code> mới xem được, nên hãy giữ secret đó đủ mạnh và kín. Muốn tắt dashboard,
-            để <code>AUTH_INTERNAL_SECRET</code> hoặc <code>TRACER_DEBUG_VALUE</code> rỗng.</span>
+            để <code>AUTH_INTERNAL_SECRET</code>, <code>TRACER_DEBUG_KEY</code> hoặc <code>TRACER_DEBUG_VALUE</code>
+            rỗng.</span>
         </div>
       </section>
 
@@ -536,18 +546,22 @@ func ServerInfo(r *http.Request) map[string]any
                 referer, content_type, authorization, cookie, headers, go_version, pid, goroutines.</li>
               <li lang="en">Masking: <code>Authorization: Bearer xyz</code> → <code>Bearer ****</code>; cookies →
                 <code>name=****</code>; any header whose name contains token, secret, password, api-key, apikey,
-                signature or session → <code>****</code>. <code>client_ip</code> = X-Real-IP, else first
-                X-Forwarded-For, else RemoteAddr.</li>
+                signature or session → <code>****</code>. <code>client_ip</code> = the RemoteAddr host
+                (proxy headers are not trusted; <code>x_forwarded_for</code> / <code>x_real_ip</code> are shown raw).
+                <code>HTTPInfo</code> with a <code>*gin.Context</code> as ctx overrides it with
+                <code>c.ClientIP()</code>, which honours Gin's trusted proxies.</li>
               <li lang="vi">Che dữ liệu: <code>Authorization: Bearer xyz</code> → <code>Bearer ****</code>; cookie →
                 <code>name=****</code>; header có tên chứa token, secret, password, api-key, apikey, signature hoặc
-                session → <code>****</code>. <code>client_ip</code> = X-Real-IP, nếu không có thì phần đầu
-                X-Forwarded-For, nếu không thì RemoteAddr.</li>
+                session → <code>****</code>. <code>client_ip</code> = host trong RemoteAddr
+                (không tin header proxy; <code>x_forwarded_for</code> / <code>x_real_ip</code> hiện nguyên văn).
+                <code>HTTPInfo</code> nhận ctx là <code>*gin.Context</code> thì thay nó bằng <code>c.ClientIP()</code>,
+                tôn trọng cấu hình trusted proxy của Gin.</li>
               <li lang="en"><code>HTTPInfo</code> records that map as a variable labelled
-                <code>"REQUEST &amp; SERVER INFO"</code>. <code>TracerDebug</code> calls it for you (not after a
-                <code>Stop</code>).</li>
+                <code>"REQUEST &amp; SERVER INFO"</code>. <code>TracerDebug</code> calls it for you with the
+                <code>*gin.Context</code> (not after a <code>Stop</code>).</li>
               <li lang="vi"><code>HTTPInfo</code> ghi lại map thông tin trên thành biến có nhãn
                 <code>"REQUEST &amp; SERVER INFO"</code>. Middleware <code>TracerDebug</code> tự động thực hiện thao tác
-                này (trừ khi tracer đã bị dừng bởi <code>Stop</code>).</li>
+                này với <code>*gin.Context</code> (trừ khi tracer đã bị dừng bởi <code>Stop</code>).</li>
             </ul>
           </div>
 
@@ -559,12 +573,16 @@ func ServerInfo(r *http.Request) map[string]any
             </div>
             <p lang="en">Returns file, line, function of the first stack frame outside the Go runtime and outside
               <code>github.com/jun-develop/junkit/tracer.</code>, skipping one extra frame (it is meant to be called from
-              a helper). Falls back to <code>"unknown", 0, "unknown"</code>. Used by W / E and by
-              <code>middleware.Recover</code>.</p>
+              a helper). Called while panicking (from a deferred handler such as
+              <code>middleware.Recover</code>, or <code>W</code> / <code>E</code> inside a deferred func), it skips past
+              <code>runtime.gopanic</code> and reports the frame that panicked. Falls back to
+              <code>"unknown", 0, "unknown"</code>. Used by W / E and by <code>middleware.Recover</code>.</p>
             <p lang="vi">Trả về file, dòng, hàm của frame đầu tiên nằm ngoài Go runtime và ngoài
               <code>github.com/jun-develop/junkit/tracer.</code>, bỏ qua thêm một frame (vì được thiết kế để gọi từ một
-              hàm helper). Không tìm được thì trả <code>"unknown", 0, "unknown"</code>. Được W / E và
-              <code>middleware.Recover</code> dùng.</p>
+              hàm helper). Khi được gọi lúc đang panic (từ hàm defer như
+              <code>middleware.Recover</code>, hoặc <code>W</code> / <code>E</code> trong một hàm defer), nó bỏ qua phần
+              trên <code>runtime.gopanic</code> và trả về frame đã gây panic. Không tìm được thì trả
+              <code>"unknown", 0, "unknown"</code>. Được W / E và <code>middleware.Recover</code> dùng.</p>
           </div>
         </div>
 
@@ -889,10 +907,12 @@ type IssueData struct {
             </tr>
             <tr>
               <td>internal/config/config.go</td>
-              <td lang="en"><code>TracerDebugKey</code> (<code>TRACER_DEBUG_KEY</code>, default <code>t_debug</code>),
-                <code>TracerDebugValue</code> (<code>TRACER_DEBUG_VALUE</code>, default <code>0604</code>).</td>
-              <td lang="vi"><code>TracerDebugKey</code> (<code>TRACER_DEBUG_KEY</code>, mặc định <code>t_debug</code>),
-                <code>TracerDebugValue</code> (<code>TRACER_DEBUG_VALUE</code>, mặc định <code>0604</code>).</td>
+              <td lang="en"><code>TracerDebugKey</code> (<code>TRACER_DEBUG_KEY</code>),
+                <code>TracerDebugValue</code> (<code>TRACER_DEBUG_VALUE</code>) — no defaults; empty disables the
+                dashboard.</td>
+              <td lang="vi"><code>TracerDebugKey</code> (<code>TRACER_DEBUG_KEY</code>),
+                <code>TracerDebugValue</code> (<code>TRACER_DEBUG_VALUE</code>) — không có mặc định; để rỗng là tắt
+                dashboard.</td>
             </tr>
             <tr>
               <td>internal/database/primary/db.go</td>
@@ -925,7 +945,7 @@ type IssueData struct {
             </tr>
             <tr>
               <td>.env.example</td>
-              <td><code>TRACER_DEBUG_KEY=t_debug</code>, <code>TRACER_DEBUG_VALUE=0604</code>, <code>AUTH_INTERNAL_SECRET=</code></td>
+              <td><code>TRACER_DEBUG_KEY=t_debug</code>, <code>TRACER_DEBUG_VALUE=</code>, <code>AUTH_INTERNAL_SECRET=</code></td>
             </tr>
           </table>
         </div>
@@ -974,9 +994,11 @@ type IssueData struct {
           <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">Secrets in the
               report</span><span class="x" lang="en">Auth/cookie/secret-looking headers are masked, but SQL parameter
               values, row data and <code>full_url</code> (including your <code>t_debug</code> value) are shown
-              as-is.</span><span class="x" lang="vi">Header auth/cookie/có vẻ bí mật được che, nhưng giá trị tham số
+              as-is — that includes credential material such as <code>password_hash</code>, session hash columns and
+              the bound arguments of <code>INSERT</code>s.</span><span class="x" lang="vi">Header auth/cookie/có vẻ bí mật được che, nhưng giá trị tham số
               SQL, dữ liệu các dòng và <code>full_url</code> (gồm cả giá trị <code>t_debug</code> của bạn) hiện nguyên
-              văn.</span></div>
+              văn — kể cả dữ liệu nhạy cảm như <code>password_hash</code>, các cột hash session và tham số bind của các
+              câu <code>INSERT</code>.</span></div>
         </div>
       </section>
 

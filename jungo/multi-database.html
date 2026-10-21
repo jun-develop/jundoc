@@ -45,7 +45,10 @@
       <span lang="en">One transaction, one DB</span><span lang="vi">Một transaction, một DB</span></a>
     <a class="jd-quick c-pink" href="#add-postgres"><span class="num">5</span>
       <b lang="en">Add a database</b><b lang="vi">Thêm database</b>
-      <span lang="en">Postgres or a new engine</span><span lang="vi">Postgres hoặc engine mới</span></a>
+      <span lang="en">A second Postgres</span><span lang="vi">Thêm một Postgres</span></a>
+    <a class="jd-quick c-red" href="#add-engine"><span class="num">6</span>
+      <b lang="en">Add an engine</b><b lang="vi">Thêm engine</b>
+      <span lang="en">MySQL, SQLite, ClickHouse…</span><span lang="vi">MySQL, SQLite, ClickHouse…</span></a>
   </nav>
 
   <!-- ============================================================ 1. LAYOUT -->
@@ -54,8 +57,8 @@
       <span class="jd-badge">1</span>
       <div>
         <h2><span lang="en">Layout</span><span lang="vi">Cấu trúc thư mục</span></h2>
-        <p class="jd-sub" lang="en">Databases are named by <b>role</b> in jungo (<code>primary</code>, <code>analytics</code>). Engines are named by <b>engine</b> in junkit (<code>postgres</code>, <code>mysql</code>).</p>
-        <p class="jd-sub" lang="vi">Trong jungo, database được đặt tên theo <b>vai trò</b> (<code>primary</code>, <code>analytics</code>). Trong junkit, package được đặt tên theo <b>engine</b> (<code>postgres</code>, <code>mysql</code>).</p>
+        <p class="jd-sub" lang="en">Databases are named by <b>role</b> in jungo (<code>primary</code>, <code>analytics</code>). Engines are named by <b>engine</b> in junkit (<code>postgres</code> today; e.g. <code>mysql</code> later).</p>
+        <p class="jd-sub" lang="vi">Trong jungo, database được đặt tên theo <b>vai trò</b> (<code>primary</code>, <code>analytics</code>). Trong junkit, package được đặt tên theo <b>engine</b> (hiện có <code>postgres</code>; sau này vd. <code>mysql</code>).</p>
       </div>
     </div>
 
@@ -72,8 +75,8 @@
       <div class="jd-node is-tint c-green" data-node="l-pg">
         <span class="k">junkit</span>
         <span class="t mono">database/postgres</span>
-        <div class="d" lang="en">pgx engine: pool, <code>Executor(ctx)</code>, <code>WithTransaction</code>, <code>Ping</code>, query logging, Postgres error classifier. Another engine is a sibling package (<code>database/mysql</code>, …).</div>
-        <div class="d" lang="vi">Engine pgx: pool, <code>Executor(ctx)</code>, <code>WithTransaction</code>, <code>Ping</code>, log query, bộ phân loại lỗi Postgres. Engine khác là package ngang hàng (<code>database/mysql</code>, …).</div>
+        <div class="d" lang="en">pgx engine: pool, <code>Executor(ctx)</code>, <code>WithTransaction</code>, <code>Ping</code>, query logging, Postgres error classifier. Another engine would be a sibling package (e.g. a future <code>database/mysql</code> — only <code>postgres</code> exists today).</div>
+        <div class="d" lang="vi">Engine pgx: pool, <code>Executor(ctx)</code>, <code>WithTransaction</code>, <code>Ping</code>, log query, bộ phân loại lỗi Postgres. Engine khác sẽ là package ngang hàng (vd. <code>database/mysql</code> trong tương lai — hiện chỉ có <code>postgres</code>).</div>
       </div>
       <div class="jd-node is-tint c-green" data-node="l-db">
         <span class="k">junkit · shared</span>
@@ -100,8 +103,8 @@
         <p lang="en"><b>A distinct type per database.</b> <code>primary.DB</code> embeds <code>*postgres.DB</code>. A repository that declares <code>db *primary.DB</code> can only be given the primary database — Fx and the compiler refuse anything else.</p>
         <p lang="vi"><b>Mỗi database một kiểu riêng.</b> <code>primary.DB</code> nhúng <code>*postgres.DB</code>. Repository khai báo <code>db *primary.DB</code> thì chỉ nhận được database chính — Fx và compiler từ chối mọi thứ khác.</p></div>
       <div class="jd-rule"><span class="n" style="background:var(--blue)">2</span>
-        <p lang="en"><b><code>Queries(ctx)</code> is bound to that database's sqlc package.</b> <code>primary.DB.Queries</code> returns <code>*primary/sqlc.Queries</code>, so you can't call another database's queries on it.</p>
-        <p lang="vi"><b><code>Queries(ctx)</code> gắn với package sqlc của chính database đó.</b> <code>primary.DB.Queries</code> trả về <code>*primary/sqlc.Queries</code>, nên không thể gọi query của database khác trên nó.</p></div>
+        <p lang="en"><b><code>Queries(ctx)</code> is bound to that database's sqlc package.</b> <code>primary.DB.Queries</code> returns <code>*primary/sqlc.Queries</code>, so going through it keeps you on the right queries. This is a convention, not compiler-enforced: <code>sqlc.New</code> accepts any <code>DBTX</code>, so code that calls another package's <code>sqlc.New(r.db.Executor(ctx))</code> still compiles.</p>
+        <p lang="vi"><b><code>Queries(ctx)</code> gắn với package sqlc của chính database đó.</b> <code>primary.DB.Queries</code> trả về <code>*primary/sqlc.Queries</code>, nên đi qua nó thì luôn dùng đúng bộ query. Đây là quy ước, compiler không ép: <code>sqlc.New</code> nhận bất kỳ <code>DBTX</code> nào, nên code gọi <code>sqlc.New(r.db.Executor(ctx))</code> của package khác vẫn biên dịch được.</p></div>
       <div class="jd-rule"><span class="n" style="background:var(--purple)">3</span>
         <p lang="en"><b>The transaction key is per DB instance.</b> A transaction begun on one database is never picked up by another database's <code>Executor(ctx)</code>.</p>
         <p lang="vi"><b>Key transaction riêng cho từng DB instance.</b> Transaction mở trên database này không bao giờ bị <code>Executor(ctx)</code> của database khác dùng nhầm.</p></div>
@@ -132,7 +135,7 @@
       <div class="jd-node is-tint c-purple" data-node="p-tracer">
         <span class="k">Decorate</span>
         <span class="t mono">tracer.PgxWrapper</span>
-        <div class="d"><span lang="en">Records the query for <code>t_debug</code>.</span><span lang="vi">Ghi lại query cho <code>t_debug</code>.</span></div>
+        <div class="d"><span lang="en">Records the query only on a <code>t_debug</code> request carrying the secret; otherwise <code>BeginQuery</code> returns nil and nothing is recorded.</span><span lang="vi">Chỉ ghi lại query khi request có <code>t_debug</code> kèm secret; ngược lại <code>BeginQuery</code> trả về nil và không ghi gì.</span></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:18px">
         <div class="jd-node is-tint c-orange" data-node="p-tx">
@@ -166,8 +169,8 @@ func (d *DB) Queries(ctx context.Context) *sqlc.Queries {
       <span class="jd-badge">3</span>
       <div>
         <h2><span lang="en">sqlc or hand-written SQL</span><span lang="vi">sqlc hay SQL viết tay</span></h2>
-        <p class="jd-sub" lang="en">Both go through <code>Executor(ctx)</code>, so both are traced and both join the active transaction. Tracing lives at the executor layer, not in sqlc.</p>
-        <p class="jd-sub" lang="vi">Cả hai đều đi qua <code>Executor(ctx)</code>, nên đều được trace và đều tham gia transaction đang mở. Tracing nằm ở tầng executor, không nằm trong sqlc.</p>
+        <p class="jd-sub" lang="en">Both go through <code>Executor(ctx)</code>, so both are traced (on <code>t_debug</code> requests with the secret) and both join the active transaction. Tracing lives at the executor layer, not in sqlc.</p>
+        <p class="jd-sub" lang="vi">Cả hai đều đi qua <code>Executor(ctx)</code>, nên đều được trace (với request <code>t_debug</code> kèm secret) và đều tham gia transaction đang mở. Tracing nằm ở tầng executor, không nằm trong sqlc.</p>
       </div>
     </div>
 
@@ -195,8 +198,8 @@ rows, err := r.db.Executor(ctx).Query(ctx,
 
     <div class="jd-callout c-purple" style="margin-top:18px">
       <b lang="en">Engines sqlc doesn't support</b><b lang="vi">Engine mà sqlc không hỗ trợ</b>
-      <span lang="en">— ClickHouse, for example — use hand-written SQL only. Nothing else changes: it still runs through that engine's <code>Executor(ctx)</code> and is still traced.</span>
-      <span lang="vi">— ví dụ ClickHouse — chỉ dùng SQL viết tay. Ngoài ra không có gì khác: vẫn chạy qua <code>Executor(ctx)</code> của engine đó và vẫn được trace.</span>
+      <span lang="en">— ClickHouse, for example — use hand-written SQL only. Nothing else changes: it still runs through that engine's <code>Executor(ctx)</code> and is still traced on <code>t_debug</code> requests.</span>
+      <span lang="vi">— ví dụ ClickHouse — chỉ dùng SQL viết tay. Ngoài ra không có gì khác: vẫn chạy qua <code>Executor(ctx)</code> của engine đó và vẫn được trace với request <code>t_debug</code>.</span>
     </div>
   </section>
 
@@ -206,8 +209,8 @@ rows, err := r.db.Executor(ctx).Query(ctx,
       <span class="jd-badge">4</span>
       <div>
         <h2><span lang="en">Transactions across databases</span><span lang="vi">Transaction giữa nhiều database</span></h2>
-        <p class="jd-sub" lang="en">One <code>WithTransaction</code> covers one database. Writes to two databases are <b>never atomic</b>.</p>
-        <p class="jd-sub" lang="vi">Một <code>WithTransaction</code> chỉ bao một database. Ghi vào hai database thì <b>không bao giờ atomic</b>.</p>
+        <p class="jd-sub" lang="en">One <code>WithTransaction</code> covers one database. Writes to two databases are <b>never atomic</b>. A nested <code>WithTransaction</code> on the <b>same</b> database joins the outer transaction (no second begin/commit — the outer one alone commits or rolls back); on a different database it starts its own, independent transaction.</p>
+        <p class="jd-sub" lang="vi">Một <code>WithTransaction</code> chỉ bao một database. Ghi vào hai database thì <b>không bao giờ atomic</b>. <code>WithTransaction</code> lồng nhau trên <b>cùng</b> database sẽ nhập vào transaction bên ngoài (không begin/commit lần hai — chỉ transaction ngoài commit hoặc rollback); trên database khác thì mở transaction riêng, độc lập.</p>
       </div>
     </div>
 
@@ -263,8 +266,8 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
 
     <div class="jd-rules">
       <div class="jd-rule"><span class="n" style="background:var(--pink)">1</span>
-        <p lang="en">Copy <code>internal/database/primary/</code> to <code>internal/database/analytics/</code>, empty its migrations and queries, rename the package and set <code>Name: "analytics"</code>.</p>
-        <p lang="vi">Copy <code>internal/database/primary/</code> thành <code>internal/database/analytics/</code>, xóa trống migrations và queries, đổi tên package và đặt <code>Name: "analytics"</code>.</p></div>
+        <p lang="en">Copy <code>internal/database/primary/</code> to <code>internal/database/analytics/</code>, empty its migrations and queries, remove the copied <code>functions/f_auth_login_session.sql</code>, <code>seeders/001_users.sql</code> and <code>sqlc/</code>, rename the package and set <code>Name: "analytics"</code>. Regenerate <code>sqlc/</code> with <code>make sqlc</code> once its queries exist.</p>
+        <p lang="vi">Copy <code>internal/database/primary/</code> thành <code>internal/database/analytics/</code>, xóa trống migrations và queries, xóa các file copy theo <code>functions/f_auth_login_session.sql</code>, <code>seeders/001_users.sql</code> và <code>sqlc/</code>, đổi tên package và đặt <code>Name: "analytics"</code>. Sinh lại <code>sqlc/</code> bằng <code>make sqlc</code> khi đã có query.</p></div>
       <div class="jd-rule"><span class="n" style="background:var(--pink)">2</span>
         <p lang="en"><code>internal/config/config.go</code>: add <code>Analytics DatabaseConfig `envPrefix:"ANALYTICS_"`</code> and read it in <code>analytics.New</code> (env vars become <code>ANALYTICS_DB_HOST</code>, …).</p>
         <p lang="vi"><code>internal/config/config.go</code>: thêm <code>Analytics DatabaseConfig `envPrefix:"ANALYTICS_"`</code> và đọc nó trong <code>analytics.New</code> (biến môi trường thành <code>ANALYTICS_DB_HOST</code>, …).</p></div>
@@ -316,7 +319,7 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
     </div>
 
     <div class="jd-term" style="margin-top:22px">
-      <div class="jd-term-bar"><i></i><i></i><i></i><span>junkit/database/mysql · tracer wrapper (database/sql)</span></div>
+      <div class="jd-term-bar"><i></i><i></i><i></i><span>example · planned junkit/database/mysql tracer wrapper (database/sql)</span></div>
 <pre data-hl="go">
 func (w *tracedDB) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	q := tracer.BeginQuery(ctx, query, args, sqlfmt.BindQuestion)

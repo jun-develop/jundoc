@@ -36,6 +36,7 @@
     <a class="jd-quick c-green" href="#endpoints"><span class="num">3</span><b lang="en">Endpoints</b><b lang="vi">Endpoint</b><span lang="en">Params, responses, errors</span><span lang="vi">Tham số, response, lỗi</span></a>
     <a class="jd-quick c-purple" href="#inside"><span class="num">4</span><b lang="en">Under the hood</b><b lang="vi">Bên trong</b><span lang="en">Login, checks, reuse, brute force</span><span lang="vi">Login, kiểm tra, dùng lại, brute force</span></a>
     <a class="jd-quick c-pink" href="#client"><span class="num">5</span><b lang="en">Integrate</b><b lang="vi">Tích hợp</b><span lang="en">Client code &amp; your routes</span><span lang="vi">Code client &amp; route của bạn</span></a>
+    <a class="jd-quick c-muted" href="#config"><span class="num">6</span><b lang="en">Config &amp; ops</b><b lang="vi">Cấu hình &amp; vận hành</b><span lang="en">.env, cleanup, security</span><span lang="vi">.env, dọn dẹp, bảo mật</span></a>
   </nav>
 
   <!-- ============================================================ 1. CONCEPTS -->
@@ -206,9 +207,9 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
             <h3>Body</h3>
             <div class="jd-tablewrap"><table class="jd-params">
               <tr><th>field</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
-              <tr><td>email<span class="req">require</span><span class="rule">string · email · ≤150</span></td><td lang="en">The account email. Spaces around it are trimmed.</td><td lang="vi">Email của tài khoản. Khoảng trắng hai đầu được cắt bỏ.</td></tr>
+              <tr><td>email<span class="req">require</span><span class="rule">string · email · ≤150</span></td><td lang="en">The account email. Case-insensitive (lowercased before lookup), but validation does not trim it: spaces around it → 422.</td><td lang="vi">Email của tài khoản. Không phân biệt hoa thường (được chuyển về chữ thường trước khi tra cứu), nhưng validation không cắt khoảng trắng: có khoảng trắng hai đầu → 422.</td></tr>
               <tr><td>password<span class="req">require</span><span class="rule">string · ≤72</span></td><td lang="en">Plain password (always over HTTPS). Validation allows up to 72 characters, but the hasher works in <b>bytes</b>: a password over 72 bytes (e.g. many accented / emoji characters) never matches, and could not have been set in the first place.</td><td lang="vi">Mật khẩu dạng thường (luôn qua HTTPS). Validation cho tối đa 72 ký tự, nhưng bộ băm tính theo <b>byte</b>: mật khẩu dài hơn 72 byte (vd. nhiều ký tự có dấu / emoji) không bao giờ khớp, và vốn dĩ cũng không thể đặt được.</td></tr>
-              <tr><td>recaptcha_token<span class="opt">optional</span><span class="rule">string · ≤4096</span></td><td lang="en">Only checked when <code>AUTH_RECAPTCHA_ON_LOGIN=true</code>.</td><td lang="vi">Chỉ được kiểm tra khi <code>AUTH_RECAPTCHA_ON_LOGIN=true</code>.</td></tr>
+              <tr><td>recaptcha_token<span class="opt">optional</span><span class="rule">string · ≤4096</span></td><td lang="en">Only checked when <code>AUTH_RECAPTCHA_ON_LOGIN=true</code>. Outside production <code>RECAPTCHA_MOCK=true</code> (default) accepts any token; in production it is always verified with Google (see <a href="#config">config</a>).</td><td lang="vi">Chỉ được kiểm tra khi <code>AUTH_RECAPTCHA_ON_LOGIN=true</code>. Ngoài production, <code>RECAPTCHA_MOCK=true</code> (mặc định) chấp nhận mọi token; ở production luôn được xác minh với Google (xem <a href="#config">cấu hình</a>).</td></tr>
             </table></div>
           </div>
           <div>
@@ -246,11 +247,11 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
               <div class="jd-tabpanel" hidden>
                 <div class="jd-errlist">
                   <div class="jd-errrow"><span class="code">401</span><div><b>Invalid email or password</b><span class="do" lang="en">Wrong email or wrong password — same message for both on purpose.</span><span class="do" lang="vi">Sai email hoặc sai mật khẩu — cố ý dùng chung một thông báo.</span></div></div>
-                  <div class="jd-errrow"><span class="code w">401</span><div><b>Invalid email or password. Further failed attempts will temporarily block logins from your IP</b><span class="do" lang="en">Same, but ≤ 2 attempts are left before this IP is blocked (seen live on the 3rd failure).</span><span class="do" lang="vi">Như trên, nhưng chỉ còn ≤ 2 lần thử trước khi IP bị chặn (thấy ở lần sai thứ 3).</span></div></div>
+                  <div class="jd-errrow"><span class="code w">401</span><div><b>Invalid email or password. Further failed attempts will temporarily block logins from your IP</b><span class="do" lang="en">Same, but ≤ 2 attempts are left before this IP is blocked (seen live on the 3rd failure). "IP" is <code>ctx.ClientIP()</code> — see <code>SECURITY_TRUSTED_PROXIES</code> in <a href="#config">config</a>.</span><span class="do" lang="vi">Như trên, nhưng chỉ còn ≤ 2 lần thử trước khi IP bị chặn (thấy ở lần sai thứ 3). "IP" là <code>ctx.ClientIP()</code> — xem <code>SECURITY_TRUSTED_PROXIES</code> ở <a href="#config">cấu hình</a>.</span></div></div>
                   <div class="jd-errrow"><span class="code">403</span><div><b>Your account is not active</b><span class="do" lang="en">Correct password, but the account is disabled.</span><span class="do" lang="vi">Đúng mật khẩu, nhưng tài khoản đã bị vô hiệu hóa.</span></div></div>
-                  <div class="jd-errrow"><span class="code">403</span><div><b>reCAPTCHA verification failed</b><span class="do" lang="en">Only when reCAPTCHA on login is enabled.</span><span class="do" lang="vi">Chỉ khi bật reCAPTCHA cho login.</span></div></div>
+                  <div class="jd-errrow"><span class="code">403</span><div><b>reCAPTCHA verification failed</b><span class="do" lang="en">Only when reCAPTCHA on login is enabled and the real verifier is used (production, or <code>RECAPTCHA_MOCK=false</code>): missing / invalid token, score below <code>RECAPTCHA_MIN_SCORE</code>, or the check itself failed (Google unreachable, empty <code>RECAPTCHA_SECRET_KEY</code>).</span><span class="do" lang="vi">Chỉ khi bật reCAPTCHA cho login và dùng bộ xác minh thật (production, hoặc <code>RECAPTCHA_MOCK=false</code>): thiếu / sai token, điểm thấp hơn <code>RECAPTCHA_MIN_SCORE</code>, hoặc bản thân bước kiểm tra lỗi (không gọi được Google, <code>RECAPTCHA_SECRET_KEY</code> rỗng).</span></div></div>
                   <div class="jd-errrow"><span class="code">422</span><div><b>Validation error</b><span class="do" lang="en">Missing/invalid field — <code>error</code> is an object with one message per field (see below). Broken JSON → <code>error</code> is the string <code>"Invalid JSON syntax"</code>.</span><span class="do" lang="vi">Thiếu/sai field — <code>error</code> là object, mỗi field một thông báo (xem bên dưới). JSON hỏng → <code>error</code> là chuỗi <code>"Invalid JSON syntax"</code>.</span></div></div>
-                  <div class="jd-errrow"><span class="code">429</span><div><b>Too many failed login attempts, please try again later</b><span class="do" lang="en">5 failures from this IP, or 10 for this email, within 15 min.</span><span class="do" lang="vi">5 lần sai từ IP này, hoặc 10 lần cho email này, trong 15 phút.</span></div></div>
+                  <div class="jd-errrow"><span class="code">429</span><div><b>Too many failed login attempts, please try again later</b><span class="do" lang="en">5 failures from this IP, or 10 for this email (from any IP), within 15 min. The email lock is checked before the password, so anyone who knows an email can lock that user out for 15 min — the trade-off for stopping distributed guessing.</span><span class="do" lang="vi">5 lần sai từ IP này, hoặc 10 lần cho email này (từ mọi IP), trong 15 phút. Khóa theo email được kiểm tra trước mật khẩu, nên ai biết email cũng có thể khóa user đó 15 phút — đánh đổi để chặn dò mật khẩu phân tán.</span></div></div>
                   <div class="jd-errrow"><span class="code">429</span><div><b>Your IP has been temporarily blocked due to repeated failed logins</b><span class="do" lang="en">8 failures from this IP within 24 h → blocked until that 24 h window ends.</span><span class="do" lang="vi">8 lần sai từ IP này trong 24 giờ → bị chặn tới khi hết khung 24 giờ đó.</span></div></div>
                 </div>
                 <div class="jd-grid-2" style="margin-top:12px;gap:12px">
@@ -267,6 +268,7 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
 <pre data-hl="json">
 {
   "status": "error",
+  "code": "UNPROCESSABLE_ENTITY",
   "message": "Validation error",
   "error": {
     "email": "email must be a valid email format",
@@ -339,7 +341,7 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/refresh \
                   <div class="jd-errrow"><span class="code">401</span><div><b>Invalid token</b><span class="do" lang="en">Not a Jungo token, edited, or signed with other keys (e.g. after a key rotation) → log in.</span><span class="do" lang="vi">Không phải token của Jungo, bị sửa, hoặc ký bằng key khác (vd. sau khi đổi key) → đăng nhập lại.</span></div></div>
                   <div class="jd-errrow"><span class="code">401</span><div><b>Invalid token type</b><span class="do" lang="en">You sent the access token. Send the refresh token.</span><span class="do" lang="vi">Bạn đã gửi access token. Hãy gửi refresh token.</span></div></div>
                   <div class="jd-errrow"><span class="code">401</span><div><b>Token has expired</b><span class="do" lang="en">Refresh token older than 30 days → log in.</span><span class="do" lang="vi">Refresh token quá 30 ngày → đăng nhập lại.</span></div></div>
-                  <div class="jd-errrow"><span class="code">401</span><div><b>Token has been revoked</b><span class="do" lang="en">Session ended (logout, logout-all, admin, user disabled) → log in.</span><span class="do" lang="vi">Session đã kết thúc (logout, logout-all, admin, user bị khóa) → đăng nhập lại.</span></div></div>
+                  <div class="jd-errrow"><span class="code">401</span><div><b>Token has been revoked</b><span class="do" lang="en">Session ended (logout, logout-all, admin) → log in. A disabled user gets the 403 below; a deleted user gets "Invalid token".</span><span class="do" lang="vi">Session đã kết thúc (logout, logout-all, admin) → đăng nhập lại. User bị khóa nhận lỗi 403 bên dưới; user bị xóa nhận "Invalid token".</span></div></div>
                   <div class="jd-errrow"><span class="code">401</span><div><b>Refresh token was already used; the session has been revoked, please log in again</b><span class="do" lang="en">Reuse detected — see "Refresh rotation" below. Usually a client that refreshed twice in parallel.</span><span class="do" lang="vi">Phát hiện dùng lại — xem "Xoay vòng refresh" bên dưới. Thường do client refresh hai lần song song.</span></div></div>
                   <div class="jd-errrow"><span class="code">403</span><div><b>Your account is not active</b><span class="do" lang="en">The account was disabled after login.</span><span class="do" lang="vi">Tài khoản bị vô hiệu hóa sau khi đăng nhập.</span></div></div>
                   <div class="jd-errrow"><span class="code">422</span><div><b>Validation error</b><span class="do" lang="en"><code>refresh_token</code> missing.</span><span class="do" lang="vi">Thiếu <code>refresh_token</code>.</span></div></div>
@@ -426,11 +428,11 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/auth/me \
                 <p class="jd-sub" lang="en">These errors apply to <b>every</b> endpoint that needs a Bearer token — including your own routes.</p>
                 <p class="jd-sub" lang="vi">Các lỗi này áp dụng cho <b>mọi</b> endpoint cần Bearer token — kể cả route của bạn.</p>
                 <div class="jd-errlist" style="margin-top:10px">
-                  <div class="jd-errrow"><span class="code">401</span><div><b>Authentication token is invalid or expired</b><span class="do" lang="en">No <code>Authorization: Bearer …</code> header at all (this one has no <code>code</code> field).</span><span class="do" lang="vi">Không có header <code>Authorization: Bearer …</code> (lỗi này không có field <code>code</code>).</span></div></div>
+                  <div class="jd-errrow"><span class="code">401</span><div><b>Authentication token is invalid or expired</b><span class="do" lang="en">No <code>Authorization: Bearer …</code> header at all (<code>"code": "UNAUTHORIZED"</code>, like the others).</span><span class="do" lang="vi">Không có header <code>Authorization: Bearer …</code> (<code>"code": "UNAUTHORIZED"</code>, giống các lỗi khác).</span></div></div>
                   <div class="jd-errrow"><span class="code">401</span><div><b>Invalid token</b><span class="do" lang="en">Garbage, edited or foreign token — or an older token of a device that has since logged in again (its tokens are replaced in place) → log in.</span><span class="do" lang="vi">Token rác, bị sửa hoặc của nơi khác — hoặc token cũ của một thiết bị đã login lại sau đó (token được thay tại chỗ) → đăng nhập lại.</span></div></div>
                   <div class="jd-errrow"><span class="code">401</span><div><b>Invalid token type</b><span class="do" lang="en">A refresh token was sent as Bearer. Use the access token.</span><span class="do" lang="vi">Gửi refresh token làm Bearer. Hãy dùng access token.</span></div></div>
                   <div class="jd-errrow"><span class="code w">401</span><div><b>Token has expired</b><span class="do" lang="en">Normal after 15 min → call <code>/auth/refresh</code>, then retry.</span><span class="do" lang="vi">Bình thường sau 15 phút → gọi <code>/auth/refresh</code>, rồi gọi lại.</span></div></div>
-                  <div class="jd-errrow"><span class="code">401</span><div><b>Token has been revoked</b><span class="do" lang="en">Logged out, replaced by a refresh, ended by an admin or a reuse detection → log in (or use the newest token you have).</span><span class="do" lang="vi">Đã logout, bị thay bởi một lần refresh, bị admin hoặc cơ chế phát hiện dùng lại kết thúc → đăng nhập lại (hoặc dùng token mới nhất bạn có).</span></div></div>
+                  <div class="jd-errrow"><span class="code">401</span><div><b>Token has been revoked</b><span class="do" lang="en">Logged out, replaced by a refresh, ended by an admin or a reuse detection. If your app refreshed meanwhile (a request still in flight with the old token), retry once with the newest token; otherwise → log in.</span><span class="do" lang="vi">Đã logout, bị thay bởi một lần refresh, bị admin hoặc cơ chế phát hiện dùng lại kết thúc. Nếu app vừa refresh trong lúc đó (request còn đang chạy với token cũ), gọi lại một lần với token mới nhất; nếu không → đăng nhập lại.</span></div></div>
                   <div class="jd-errrow"><span class="code">403</span><div><b>Your account is not active</b><span class="do" lang="en">Account disabled → show a message, then log out.</span><span class="do" lang="vi">Tài khoản bị khóa → hiện thông báo, rồi logout.</span></div></div>
                 </div>
               </div>
@@ -457,7 +459,7 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/auth/sessions \
               <tr><th>field</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
               <tr><td>family_uuid</td><td lang="en">Session ID.</td><td lang="vi">ID của session.</td></tr>
               <tr><td>ip_address, user_agent, device_id</td><td lang="en">Last known client of that session — show them as "iPhone · Hanoi".</td><td lang="vi">Client gần nhất của session đó — hiển thị kiểu "iPhone · Hà Nội".</td></tr>
-              <tr><td>created_at</td><td lang="en">When the current tokens of that session were issued (last login or refresh).</td><td lang="vi">Thời điểm cặp token hiện tại của session được cấp (lần login hoặc refresh gần nhất).</td></tr>
+              <tr><td>created_at</td><td lang="en">When the session's current refresh-token row was created: the first login or the last refresh. A re-login on the same device updates the row in place, so it does not change <code>created_at</code> (see <code>updated_at</code>).</td><td lang="vi">Thời điểm dòng refresh token hiện tại của session được tạo: lần login đầu tiên hoặc lần refresh gần nhất. Login lại trên cùng thiết bị cập nhật dòng đó tại chỗ, nên không đổi <code>created_at</code> (xem <code>updated_at</code>).</td></tr>
               <tr><td>updated_at</td><td lang="en">Set when a re-login on that device rotated the tokens; omitted otherwise.</td><td lang="vi">Có khi một lần login lại trên thiết bị đó xoay vòng token; nếu không thì bỏ qua.</td></tr>
               <tr><td>expires_at</td><td lang="en">When the session ends if it is never refreshed.</td><td lang="vi">Thời điểm session kết thúc nếu không bao giờ được refresh.</td></tr>
               <tr><td>current</td><td lang="en"><code>true</code> for the session making this request.</td><td lang="vi"><code>true</code> với session đang gọi request này.</td></tr>
@@ -562,7 +564,7 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/token-details \
             <h3>Headers &amp; body</h3>
             <div class="jd-tablewrap"><table class="jd-params">
               <tr><th><span lang="en">name</span><span lang="vi">tên</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
-              <tr><td>X-Internal-Secret<span class="req">require</span></td><td lang="en">Must equal <code>AUTH_INTERNAL_SECRET</code>. While that variable is empty, every internal endpoint answers 403.</td><td lang="vi">Phải bằng <code>AUTH_INTERNAL_SECRET</code>. Khi biến này để trống, mọi endpoint internal đều trả 403.</td></tr>
+              <tr><td>X-Internal-Secret<span class="req">require</span></td><td lang="en">Must equal <code>AUTH_INTERNAL_SECRET</code>. While that variable is empty, every internal endpoint answers 403. These routes sit on the public router under <code>/api/internal</code> — the secret is their <b>only</b> protection, so keep it long and private (or block <code>/api/internal</code> at your proxy).</td><td lang="vi">Phải bằng <code>AUTH_INTERNAL_SECRET</code>. Khi biến này để trống, mọi endpoint internal đều trả 403. Các route này nằm trên router công khai dưới <code>/api/internal</code> — secret là lớp bảo vệ <b>duy nhất</b>, nên hãy đặt dài và giữ kín (hoặc chặn <code>/api/internal</code> ở proxy).</td></tr>
               <tr><td>token<span class="req">require</span><span class="rule">body · string · ≤512</span></td><td lang="en">Any access or refresh token.</td><td lang="vi">Bất kỳ access hoặc refresh token nào.</td></tr>
             </table></div>
             <h3><span lang="en">Extra response fields</span><span lang="vi">Các field bổ sung</span></h3>
@@ -595,7 +597,7 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/token-details \
             <div class="jd-errlist">
               <div class="jd-errrow"><span class="code">403</span><div><b>Forbidden internal system access</b><span class="do" lang="en">Missing / wrong <code>X-Internal-Secret</code>, or <code>AUTH_INTERNAL_SECRET</code> unset.</span><span class="do" lang="vi">Thiếu / sai <code>X-Internal-Secret</code>, hoặc chưa đặt <code>AUTH_INTERNAL_SECRET</code>.</span></div></div>
               <div class="jd-errrow"><span class="code">401</span><div><b>Invalid token</b><span class="do" lang="en">Not a valid Jungo token.</span><span class="do" lang="vi">Không phải token Jungo hợp lệ.</span></div></div>
-              <div class="jd-errrow"><span class="code">404</span><div><b>Token not found</b><span class="do" lang="en">Valid format but unknown — e.g. already deleted by the cleanup command.</span><span class="do" lang="vi">Đúng định dạng nhưng không tồn tại — vd. đã bị lệnh cleanup xóa.</span></div></div>
+              <div class="jd-errrow"><span class="code">404</span><div><b>Token not found</b><span class="do" lang="en">Valid format but unknown — e.g. already deleted by the cleanup command, replaced in place by a re-login on the same device, or owned by a deleted (soft-deleted) user.</span><span class="do" lang="vi">Đúng định dạng nhưng không tồn tại — vd. đã bị lệnh cleanup xóa, bị thay tại chỗ bởi một lần login lại trên cùng thiết bị, hoặc thuộc về user đã bị xóa (xóa mềm).</span></div></div>
               <div class="jd-errrow"><span class="code">422</span><div><b>Validation error</b><span class="do" lang="en"><code>token</code> missing.</span><span class="do" lang="vi">Thiếu <code>token</code>.</span></div></div>
             </div>
           </div>
@@ -653,8 +655,8 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/revoke-all \
 
     <div class="jd-callout c-orange" style="margin-top:22px">
       <b lang="en">Telling 401s apart:</b><b lang="vi">Phân biệt các lỗi 401:</b>
-      <span lang="en">every token error has <code>"code": "UNAUTHORIZED"</code>; the <code>message</code> says which one. Only <b>"Token has expired"</b> means "refresh and retry" — every other 401 means "log in again".</span>
-      <span lang="vi">mọi lỗi token đều có <code>"code": "UNAUTHORIZED"</code>; <code>message</code> cho biết là lỗi nào. Chỉ <b>"Token has expired"</b> nghĩa là "refresh rồi gọi lại" — mọi lỗi 401 khác nghĩa là "đăng nhập lại".</span>
+      <span lang="en">every token error has <code>"code": "UNAUTHORIZED"</code>; the <code>message</code> says which one. <b>"Token has expired"</b> means "refresh and retry". <b>"Token has been revoked"</b> on a request that was sent with an access token your app has since replaced (a refresh finished while it was in flight) means "retry once with the newest token". Every other 401 means "log in again".</span>
+      <span lang="vi">mọi lỗi token đều có <code>"code": "UNAUTHORIZED"</code>; <code>message</code> cho biết là lỗi nào. <b>"Token has expired"</b> nghĩa là "refresh rồi gọi lại". <b>"Token has been revoked"</b> cho một request gửi bằng access token mà app đã thay sau đó (một lần refresh xong trong lúc request đang chạy) nghĩa là "gọi lại một lần với token mới nhất". Mọi lỗi 401 khác nghĩa là "đăng nhập lại".</span>
     </div>
   </section>
 
@@ -673,7 +675,7 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/revoke-all \
     <div class="jd-player c-purple" id="login-player">
       <div class="jd-stage jd-flow is-col" style="max-width:760px;margin:0 auto">
         <div class="jd-node c-purple" data-node="l1"><span class="k">1 · request</span><span class="t mono" style="font-size:15px">email, password, IP, User-Agent, X-Device-ID</span></div>
-        <div class="jd-node c-purple" data-node="l2"><span class="k">2 · reCAPTCHA</span><span class="t"><span lang="en">Only if AUTH_RECAPTCHA_ON_LOGIN=true</span><span lang="vi">Chỉ khi AUTH_RECAPTCHA_ON_LOGIN=true</span></span><div class="d" style="color:var(--red)">✗ 403 reCAPTCHA verification failed</div></div>
+        <div class="jd-node c-purple" data-node="l2"><span class="k">2 · reCAPTCHA</span><span class="t"><span lang="en">Only if AUTH_RECAPTCHA_ON_LOGIN=true (mocked outside production by default)</span><span lang="vi">Chỉ khi AUTH_RECAPTCHA_ON_LOGIN=true (ngoài production mặc định là mock)</span></span><div class="d" style="color:var(--red)">✗ 403 reCAPTCHA verification failed</div></div>
         <div class="jd-node c-purple" data-node="l3"><span class="k">3 · login guard</span><span class="t"><span lang="en">Blocked IP or email?</span><span lang="vi">IP hoặc email đang bị chặn?</span></span><div class="d" style="color:var(--red)">✗ 429 — <span lang="en">before the password is even checked</span><span lang="vi">trước cả khi kiểm tra mật khẩu</span></div></div>
         <div class="jd-node c-purple" data-node="l4"><span class="k">4 · bcrypt</span><span class="t"><span lang="en">Find user by email, compare password</span><span lang="vi">Tìm user theo email, so mật khẩu</span></span><div class="d" style="color:var(--red)">✗ 401 — <span lang="en">failure counted for IP + email</span><span lang="vi">ghi nhận một lần sai cho IP + email</span></div></div>
         <div class="jd-node c-purple" data-node="l5"><span class="k">5 · status</span><span class="t"><span lang="en">Is the account active?</span><span lang="vi">Tài khoản còn hoạt động?</span></span><div class="d" style="color:var(--red)">✗ 403 Your account is not active</div></div>
@@ -698,7 +700,7 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/revoke-all \
       {"from":"a4","to":"a5","color":"green","label":"Identity"}]'>
       <div class="jd-node is-tint c-purple" data-node="a1"><span class="k">middleware.BearerAuth</span><span class="t"><span lang="en">Read the header</span><span lang="vi">Đọc header</span></span><div class="d" lang="en">None → 401 "Authentication token is invalid or expired".</div><div class="d" lang="vi">Không có → 401 "Authentication token is invalid or expired".</div></div>
       <div class="jd-node is-tint c-purple" data-node="a2"><span class="k">TokenSealer.Open</span><span class="t"><span lang="en">Verify + decrypt</span><span lang="vi">Kiểm chữ ký + giải mã</span></span><div class="d" lang="en">Bad signature → 401 Invalid token. Then hash it.</div><div class="d" lang="vi">Sai chữ ký → 401 Invalid token. Rồi băm nó.</div></div>
-      <div class="jd-node is-tint c-purple" data-node="a3"><span class="k">SessionCache → DB</span><span class="t"><span lang="en">Find the session</span><span lang="vi">Tìm session</span></span><div class="d" lang="en">Cached in Redis for 3 min (when enabled) so most requests skip the DB.</div><div class="d" lang="vi">Được cache trong Redis 3 phút (khi bật) nên đa số request không cần chạm DB.</div></div>
+      <div class="jd-node is-tint c-purple" data-node="a3"><span class="k">SessionCache → DB</span><span class="t"><span lang="en">Find the session</span><span lang="vi">Tìm session</span></span><div class="d" lang="en">Cached in Redis for 3 min (when enabled) so most requests skip the DB. Revocation clears it best-effort: if that fails (logged), a cached session can live up to the cache TTL.</div><div class="d" lang="vi">Được cache trong Redis 3 phút (khi bật) nên đa số request không cần chạm DB. Thu hồi sẽ xóa cache theo kiểu best-effort: nếu xóa lỗi (có ghi log), session trong cache có thể còn sống tới hết TTL của cache.</div></div>
       <div class="jd-node is-tint c-purple" data-node="a4" style="flex:2.2"><span class="k">AuthenticateAccess</span><span class="t"><span lang="en">Checks, in order</span><span lang="vi">Kiểm tra, theo thứ tự</span></span>
         <div class="d" lang="en">① refresh token? → invalid type ② user inactive? → 403 ③ not the session's current access token? → revoked ④ revoked / expired?</div>
         <div class="d" lang="vi">① là refresh token? → sai loại ② user bị khóa? → 403 ③ không phải access token hiện tại của session? → revoked ④ bị thu hồi / hết hạn?</div></div>
@@ -741,9 +743,9 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/revoke-all \
         </div>
         <div class="jd-meter c-orange" id="m-short"><div class="lbl"><span><b>IP · 15 min</b> — <span lang="en">5 → 429 until 15 min after the first failure</span><span lang="vi">5 → 429 tới hết 15 phút tính từ lần sai đầu</span></span><span class="v">0 / 5</span></div><div class="bar"><i></i></div></div>
         <div class="jd-meter c-red" id="m-long"><div class="lbl"><span><b>IP · 24 h</b> — <span lang="en">8 → IP blocked until 24 h after the first failure + Telegram alert</span><span lang="vi">8 → chặn IP tới hết 24 giờ tính từ lần sai đầu + cảnh báo Telegram</span></span><span class="v">0 / 8</span></div><div class="bar"><i></i></div></div>
-        <div class="jd-meter c-purple" id="m-email"><div class="lbl"><span><b>email · 15 min</b> — <span lang="en">10 from any IP → 429</span><span lang="vi">10 lần từ mọi IP → 429</span></span><span class="v">0 / 10</span></div><div class="bar"><i></i></div></div>
-        <p class="jd-sub" lang="en">A correct login clears the IP-15-min and email counters, but <b>not</b> the 24 h one — logging into an attacker-owned account can't reset it.</p>
-        <p class="jd-sub" lang="vi">Login đúng sẽ xóa bộ đếm IP-15-phút và email, nhưng <b>không</b> xóa bộ đếm 24 giờ — đăng nhập vào tài khoản của chính kẻ tấn công cũng không reset được nó.</p>
+        <div class="jd-meter c-purple" id="m-email"><div class="lbl"><span><b>email · 15 min</b> — <span lang="en">10 from any IP → 429 (checked before the password: anyone can lock a known email for 15 min)</span><span lang="vi">10 lần từ mọi IP → 429 (kiểm tra trước mật khẩu: ai cũng có thể khóa một email đã biết trong 15 phút)</span></span><span class="v">0 / 10</span></div><div class="bar"><i></i></div></div>
+        <p class="jd-sub" lang="en">A correct login clears the IP-15-min and email counters, but <b>not</b> the 24 h one — logging into an attacker-owned account can't reset it. The IP counters key on <code>ctx.ClientIP()</code>: behind a load balancer, set <code>SECURITY_TRUSTED_PROXIES</code> (see <a href="#config">config</a>).</p>
+        <p class="jd-sub" lang="vi">Login đúng sẽ xóa bộ đếm IP-15-phút và email, nhưng <b>không</b> xóa bộ đếm 24 giờ — đăng nhập vào tài khoản của chính kẻ tấn công cũng không reset được nó. Các bộ đếm IP dùng <code>ctx.ClientIP()</code>: nếu chạy sau load balancer, hãy đặt <code>SECURITY_TRUSTED_PROXIES</code> (xem <a href="#config">cấu hình</a>).</p>
       </div>
       <div>
         <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span lang="en">API answer</span><span lang="vi">API trả lời</span></div><pre data-hl="json" id="bf-out">{ }</pre></div>
@@ -799,7 +801,7 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/revoke-all \
       <div>
         <h3><span lang="en">Client: a fetch wrapper with auto-refresh</span><span lang="vi">Client: hàm fetch mẫu tự động xử lý refresh</span></h3>
         <div class="jd-term" data-copy lang="en"><div class="jd-term-bar"><i></i><i></i><i></i><span>api.js</span></div>
-<pre data-hl="js" data-lines="2,24">
+<pre data-hl="js" data-lines="2,25">
 const API = "http://localhost:$API_SERVER_PORT/api/v1";
 let refreshing = null; // one refresh at a time — two in parallel look like token theft
 
@@ -815,24 +817,27 @@ async function refresh() {
 }
 
 export async function api(path, init = {}) {
-  const call = () => fetch(API + path, {
+  const call = (token) => fetch(API + path, {
     ...init,
-    headers: { ...init.headers, Authorization: `Bearer ${store.access}` },
+    headers: { ...init.headers, Authorization: `Bearer ${token}` },
   });
-  let res = await call();
+  const sent = store.access;
+  let res = await call(sent);
   if (res.status === 401) {
-    const body = await res.clone().json();
-    if (body.message === "Token has expired") {
+    const { message } = await res.clone().json();
+    if (message === "Token has expired" && store.access === sent) {
       refreshing ??= refresh().finally(() => (refreshing = null));
-      await refreshing;
-      res = await call(); // retry once with the new token
+    }
+    if (message === "Token has expired" || message === "Token has been revoked") {
+      await refreshing; // wait for a refresh already running, if any
+      if (store.access !== sent) res = await call(store.access); // retry once with the newest token
     }
   }
   return res;
 }
 </pre></div>
         <div class="jd-term" data-copy lang="vi"><div class="jd-term-bar"><i></i><i></i><i></i><span>api.js</span></div>
-<pre data-hl="js" data-lines="2,24">
+<pre data-hl="js" data-lines="2,25">
 const API = "http://localhost:$API_SERVER_PORT/api/v1";
 let refreshing = null; // mỗi lúc chỉ 1 lần refresh — chạy song song sẽ bị nghi lộ token
 
@@ -848,17 +853,20 @@ async function refresh() {
 }
 
 export async function api(path, init = {}) {
-  const call = () => fetch(API + path, {
+  const call = (token) => fetch(API + path, {
     ...init,
-    headers: { ...init.headers, Authorization: `Bearer ${store.access}` },
+    headers: { ...init.headers, Authorization: `Bearer ${token}` },
   });
-  let res = await call();
+  const sent = store.access;
+  let res = await call(sent);
   if (res.status === 401) {
-    const body = await res.clone().json();
-    if (body.message === "Token has expired") {
+    const { message } = await res.clone().json();
+    if (message === "Token has expired" && store.access === sent) {
       refreshing ??= refresh().finally(() => (refreshing = null));
-      await refreshing;
-      res = await call(); // thử lại 1 lần với token mới nhận
+    }
+    if (message === "Token has expired" || message === "Token has been revoked") {
+      await refreshing; // chờ lần refresh đang chạy (nếu có)
+      if (store.access !== sent) res = await call(store.access); // thử lại 1 lần với token mới nhất
     }
   }
   return res;
@@ -872,7 +880,7 @@ export async function api(path, init = {}) {
           <div class="jd-ex c-pink" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">Send X-Device-ID</span><span lang="vi">Gửi X-Device-ID</span></span><span class="x" lang="en">Generate a UUID once per install, send it on login and refresh.</span><span class="x" lang="vi">Tạo một UUID mỗi lần cài app, gửi khi login và refresh.</span></div>
           <div class="jd-ex c-pink" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">Replace both tokens</span><span lang="vi">Thay cả hai token</span></span><span class="x" lang="en">After every refresh. The old refresh token is dead.</span><span class="x" lang="vi">Sau mỗi lần refresh, refresh token cũ bị vô hiệu hóa ngay — client bắt buộc phải lưu đè cả hai token mới.</span></div>
           <div class="jd-ex c-pink" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">One refresh at a time (Queue / Mutex)</span><span lang="vi">Mỗi lúc chỉ một lần refresh (Hàng đợi / Mutex)</span></span><span class="x" lang="en">When multiple requests fail with 401 simultaneously, they must share a single refresh call (<code>refreshing ??=</code>). Firing two parallel refreshes with the same token triggers reuse detection and revokes the whole session.</span><span class="x" lang="vi">Khi nhiều request cùng lỗi 401 do token hết hạn, client phải xếp hàng và dùng chung một lần refresh duy nhất (kỹ thuật Mutex / Promise sharing). Nếu gửi 2 request refresh song song với cùng một token, server sẽ hiểu nhầm là token bị đánh cắp (Reuse Detection) và hủy luôn session khiến người dùng bị logout.</span></div>
-          <div class="jd-ex c-pink" style="cursor:default"><span class="n">5</span><span class="w"><span lang="en">Only "Token has expired" refreshes</span><span lang="vi">Chỉ "Token has expired" mới refresh</span></span><span class="x" lang="en">Any other 401 → clear tokens and show login. 403 inactive → explain, then log out.</span><span class="x" lang="vi">Mọi 401 khác → xóa token và hiện màn hình login. 403 bị khóa → giải thích, rồi logout.</span></div>
+          <div class="jd-ex c-pink" style="cursor:default"><span class="n">5</span><span class="w"><span lang="en">Only "Token has expired" refreshes</span><span lang="vi">Chỉ "Token has expired" mới refresh</span></span><span class="x" lang="en">A refresh revokes the old access token, so requests still in flight with it get "Token has been revoked" — retry those once with the newest token (the <code>store.access !== sent</code> check). Any other 401 → clear tokens and show login. 403 inactive → explain, then log out.</span><span class="x" lang="vi">Refresh thu hồi access token cũ, nên các request còn đang chạy với nó nhận "Token has been revoked" — gọi lại các request đó một lần với token mới nhất (phép kiểm <code>store.access !== sent</code>). Mọi 401 khác → xóa token và hiện màn hình login. 403 bị khóa → giải thích, rồi logout.</span></div>
           <div class="jd-ex c-pink" style="cursor:default"><span class="n">6</span><span class="w"><span lang="en">Log out properly</span><span lang="vi">Logout đúng cách</span></span><span class="x" lang="en">Call /auth/logout, then delete tokens — even if the call fails.</span><span class="x" lang="vi">Gọi <code>POST /auth/logout</code> lên server, rồi xóa sạch token ở client — kể cả khi request gặp lỗi mạng.</span></div>
         </div>
       </div>
@@ -888,6 +896,9 @@ func NewProductRoutes(
     authenticator middleware.Authenticator[*authdomain.Identity],
     responder response.Responder,
 ) *ProductRoutes { … }
+
+// Version nests the group under /api/v1 (without it: /api/products).
+func (r *ProductRoutes) Version() string { return "v1" }
 
 func (r *ProductRoutes) Register(group *gin.RouterGroup) {
     items := group.Group("/products")
@@ -908,6 +919,9 @@ func NewProductRoutes(
     responder response.Responder,
 ) *ProductRoutes { … }
 
+// Version gắn group vào /api/v1 (thiếu nó: /api/products).
+func (r *ProductRoutes) Version() string { return "v1" }
+
 func (r *ProductRoutes) Register(group *gin.RouterGroup) {
     items := group.Group("/products")
     items.Use(middleware.BearerAuth(r.authenticator, r.responder, middleware.BearerAuthOptions{}))
@@ -922,7 +936,7 @@ identity := security.MustGetIdentity[*authdomain.Identity](ctx)
       </div>
       <div class="jd-explain">
         <div class="jd-ex c-pink" data-code=".code-protect-router" data-show="3"><span class="n">1</span><span class="w">Authenticator</span><span class="x" lang="en">Ask for it in the constructor — the auth module provides it (Fx injects it).</span><span class="x" lang="vi">Xin nó trong constructor — module auth cung cấp sẵn (Fx inject vào).</span></div>
-        <div class="jd-ex c-pink" data-code=".code-protect-router" data-show="9"><span class="n">2</span><span class="w">BearerAuth</span><span class="x" lang="en">Every route in the group now needs a valid access token; errors are the ones in the <code>/auth/me</code> tab.</span><span class="x" lang="vi">Mọi route trong group giờ cần access token hợp lệ; lỗi chính là các lỗi trong tab <code>/auth/me</code>.</span></div>
+        <div class="jd-ex c-pink" data-code=".code-protect-router" data-show="12"><span class="n">2</span><span class="w">BearerAuth</span><span class="x" lang="en">Every route in the group now needs a valid access token; errors are the ones in the <code>/auth/me</code> tab.</span><span class="x" lang="vi">Mọi route trong group giờ cần access token hợp lệ; lỗi chính là các lỗi trong tab <code>/auth/me</code>.</span></div>
         <div class="jd-ex c-pink" data-code=".code-protect-hdl" data-show="2"><span class="n">3</span><span class="w">MustGetIdentity</span><span class="x" lang="en">Gives <code>UserID</code>, <code>UserUUID</code>, <code>Email</code>, <code>FamilyUUID</code> (session), <code>TokenUUID</code>, <code>ExpiresAt</code>.</span><span class="x" lang="vi">Trả về <code>UserID</code>, <code>UserUUID</code>, <code>Email</code>, <code>FamilyUUID</code> (session), <code>TokenUUID</code>, <code>ExpiresAt</code>.</span></div>
       </div>
     </div>
@@ -940,18 +954,23 @@ identity := security.MustGetIdentity[*authdomain.Identity](ctx)
     </div>
     <div class="jd-tablewrap" style="margin-top:18px"><table class="jd-params c-blue">
       <tr><th><span lang="en">variable</span><span lang="vi">biến</span></th><th><span lang="en">default</span><span lang="vi">mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
-      <tr><td>AUTH_TOKEN_HMAC_SECRET</td><td>—</td><td lang="en">Signs tokens. Base64, 32 bytes. Required outside development (dev uses a random key → tokens die on restart).</td><td lang="vi">Ký token. Base64, 32 byte. Bắt buộc ngoài development (dev dùng key ngẫu nhiên → token mất khi khởi động lại).</td></tr>
-      <tr><td>AUTH_TOKEN_ENCRYPTION_KEY</td><td>—</td><td lang="en">Encrypts tokens (AES-256). Base64, 32 bytes. Same rule.</td><td lang="vi">Mã hóa token (AES-256). Base64, 32 byte. Cùng quy tắc.</td></tr>
-      <tr><td>AUTH_INTERNAL_SECRET</td><td>—</td><td lang="en">Value of <code>X-Internal-Secret</code>. Empty = internal endpoints disabled.</td><td lang="vi">Giá trị của <code>X-Internal-Secret</code>. Trống = tắt endpoint internal.</td></tr>
+      <tr><td>AUTH_TOKEN_HMAC_SECRET</td><td>—</td><td lang="en">Signs tokens. Base64, at least 32 bytes. Required outside development. In development, random keys are used only when <b>both</b> <code>AUTH_TOKEN_*</code> keys are empty (tokens die on restart); one set and one empty fails startup.</td><td lang="vi">Ký token. Base64, tối thiểu 32 byte. Bắt buộc ngoài development. Ở development, key ngẫu nhiên chỉ được dùng khi <b>cả hai</b> key <code>AUTH_TOKEN_*</code> đều trống (token mất khi khởi động lại); đặt một key mà để trống key kia thì khởi động lỗi.</td></tr>
+      <tr><td>AUTH_TOKEN_ENCRYPTION_KEY</td><td>—</td><td lang="en">Encrypts tokens (AES-256). Base64, exactly 32 bytes. Same rule.</td><td lang="vi">Mã hóa token (AES-256). Base64, đúng 32 byte. Cùng quy tắc.</td></tr>
+      <tr><td>AUTH_INTERNAL_SECRET</td><td>—</td><td lang="en">Value of <code>X-Internal-Secret</code>. Empty = internal endpoints disabled. It is the <b>only</b> protection of <code>/api/internal/*</code> (on the public router), and it also unlocks the tracer debug dashboard on any route (<code>?TRACER_DEBUG_KEY=TRACER_DEBUG_VALUE</code> + this header).</td><td lang="vi">Giá trị của <code>X-Internal-Secret</code>. Trống = tắt endpoint internal. Đây là lớp bảo vệ <b>duy nhất</b> của <code>/api/internal/*</code> (nằm trên router công khai), và nó cũng mở tracer debug dashboard trên mọi route (<code>?TRACER_DEBUG_KEY=TRACER_DEBUG_VALUE</code> + header này).</td></tr>
+      <tr><td>TRACER_DEBUG_KEY / _VALUE</td><td>—</td><td lang="en">Query parameter name / value that opens the tracer dashboard. No default: leave either empty to disable it (<code>.env.example</code> sets the key to <code>t_debug</code>, <code>make app-init</code> writes a random value).</td><td lang="vi">Tên / giá trị query parameter để mở tracer dashboard. Không có mặc định: để trống một trong hai là tắt dashboard (<code>.env.example</code> đặt key là <code>t_debug</code>, <code>make app-init</code> ghi một value ngẫu nhiên).</td></tr>
       <tr><td>AUTH_ACCESS_TOKEN_TTL</td><td>15m</td><td lang="en">Access token lifetime.</td><td lang="vi">Thời gian sống của access token.</td></tr>
       <tr><td>AUTH_REFRESH_TOKEN_TTL</td><td>720h</td><td lang="en">Refresh token lifetime — how long a user stays logged in without opening the app.</td><td lang="vi">Thời gian sống của refresh token — user giữ đăng nhập bao lâu nếu không mở app.</td></tr>
-      <tr><td>AUTH_SESSION_CACHE_TTL</td><td>3m</td><td lang="en">How long a session is cached (Redis only). <code>0</code> disables the cache.</td><td lang="vi">Session được cache bao lâu (chỉ với Redis). <code>0</code> là tắt cache.</td></tr>
+      <tr><td>AUTH_SESSION_CACHE_TTL</td><td>3m</td><td lang="en">How long a session is cached (Redis only). <code>0</code> disables the cache. Also the worst-case delay of a revocation if the cache invalidation fails (it is best-effort and only logged).</td><td lang="vi">Session được cache bao lâu (chỉ với Redis). <code>0</code> là tắt cache. Đây cũng là độ trễ tối đa của việc thu hồi nếu xóa cache bị lỗi (best-effort, chỉ ghi log).</td></tr>
       <tr><td>AUTH_REVOKED_RETENTION</td><td>168h</td><td lang="en">How long expired / revoked tokens are kept before cleanup (needed to detect reuse).</td><td lang="vi">Token hết hạn / bị thu hồi được giữ bao lâu trước khi dọn (cần để phát hiện dùng lại).</td></tr>
       <tr><td>AUTH_PASSWORD_COST</td><td>12</td><td lang="en">bcrypt cost. +1 doubles hashing time (12 ≈ 180 ms).</td><td lang="vi">Độ khó bcrypt. +1 là gấp đôi thời gian băm (12 ≈ 180 ms).</td></tr>
-      <tr><td>AUTH_RECAPTCHA_ON_LOGIN</td><td>false</td><td lang="en">Require <code>recaptcha_token</code> on login.</td><td lang="vi">Bắt buộc <code>recaptcha_token</code> khi login.</td></tr>
+      <tr><td>AUTH_RECAPTCHA_ON_LOGIN</td><td>false</td><td lang="en">Require <code>recaptcha_token</code> on login. In production it needs <code>RECAPTCHA_SECRET_KEY</code>, otherwise startup fails.</td><td lang="vi">Bắt buộc <code>recaptcha_token</code> khi login. Ở production cần có <code>RECAPTCHA_SECRET_KEY</code>, nếu không sẽ khởi động lỗi.</td></tr>
+      <tr><td>RECAPTCHA_SECRET_KEY</td><td>—</td><td lang="en">Google reCAPTCHA secret used to verify tokens.</td><td lang="vi">Secret Google reCAPTCHA dùng để xác minh token.</td></tr>
+      <tr><td>RECAPTCHA_MIN_SCORE</td><td>0.5</td><td lang="en">Lowest accepted reCAPTCHA v3 score (0.0–1.0).</td><td lang="vi">Điểm reCAPTCHA v3 thấp nhất được chấp nhận (0.0–1.0).</td></tr>
+      <tr><td>RECAPTCHA_MOCK</td><td>true</td><td lang="en">Accept every token without calling Google — for local development. Ignored in production (the real verifier is always used).</td><td lang="vi">Chấp nhận mọi token mà không gọi Google — dùng cho môi trường local. Bị bỏ qua ở production (luôn dùng bộ xác minh thật).</td></tr>
       <tr><td>AUTH_LOGIN_MAX_ATTEMPTS / _BLOCK_WINDOW</td><td>5 / 15m</td><td lang="en">Failures per IP before a short block.</td><td lang="vi">Số lần sai mỗi IP trước khi bị chặn ngắn.</td></tr>
+      <tr><td>SECURITY_TRUSTED_PROXIES</td><td>—</td><td lang="en">Proxies whose <code>X-Forwarded-For</code> is trusted for <code>ctx.ClientIP()</code>, which every IP limit uses. Empty = the TCP peer address: behind a load balancer all users then share its IP and one attacker can lock everyone out. List only your own proxies — trusting more lets clients spoof their IP and dodge the limits.</td><td lang="vi">Các proxy có <code>X-Forwarded-For</code> được tin cho <code>ctx.ClientIP()</code>, thứ mà mọi giới hạn theo IP đều dùng. Trống = địa chỉ TCP kết nối trực tiếp: sau load balancer, mọi user dùng chung IP của nó và một kẻ tấn công có thể khóa tất cả. Chỉ liệt kê proxy của bạn — tin rộng hơn sẽ cho client giả mạo IP để né giới hạn.</td></tr>
       <tr><td>AUTH_LOGIN_BLACKLIST_ATTEMPTS / _WINDOW</td><td>8 / 24h</td><td lang="en">Failures per IP before a long block (+ Telegram alert if configured).</td><td lang="vi">Số lần sai mỗi IP trước khi bị chặn dài (+ cảnh báo Telegram nếu có cấu hình).</td></tr>
-      <tr><td>AUTH_LOGIN_EMAIL_MAX_ATTEMPTS</td><td>10</td><td lang="en">Failures per email (from any IP) within the block window.</td><td lang="vi">Số lần sai mỗi email (từ mọi IP) trong khung thời gian chặn.</td></tr>
+      <tr><td>AUTH_LOGIN_EMAIL_MAX_ATTEMPTS</td><td>10</td><td lang="en">Failures per email (from any IP) within the block window. Checked before the password, so anyone can lock a known email for the window.</td><td lang="vi">Số lần sai mỗi email (từ mọi IP) trong khung thời gian chặn. Kiểm tra trước mật khẩu, nên ai cũng có thể khóa một email đã biết trong khung thời gian đó.</td></tr>
     </table></div>
 
     <h3 style="--c:var(--ink)"><span lang="en">Operations</span><span lang="vi">Vận hành</span></h3>
@@ -981,7 +1000,7 @@ $ make console CMD="user:create" ARGS="-email=ops@jungo.com -first-name=Ops -las
       <div class="jd-explain">
         <div class="jd-ex c-muted" style="cursor:default"><span class="n">!</span><span class="w"><span lang="en">A key leaked?</span><span lang="vi">Lộ key?</span></span><span class="x" lang="en">Replace both <code>AUTH_TOKEN_*</code> keys and restart. Every token becomes "Invalid token" — everyone logs in again.</span><span class="x" lang="vi">Thay cả hai key <code>AUTH_TOKEN_*</code> và khởi động lại. Mọi token thành "Invalid token" — mọi người đăng nhập lại.</span></div>
         <div class="jd-ex c-muted" style="cursor:default"><span class="n">⇆</span><span class="w"><span lang="en">Several app instances?</span><span lang="vi">Chạy nhiều instance?</span></span><span class="x" lang="en">Enable Redis (<code>CACHE_ENABLED=true</code>): login limits are then shared (otherwise each instance counts in its own memory), and the session cache turns on with invalidation shared across instances.</span><span class="x" lang="vi">Bật Redis (<code>CACHE_ENABLED=true</code>): giới hạn login khi đó được chia sẻ (nếu không mỗi instance đếm trong bộ nhớ riêng), và session cache được bật với việc vô hiệu hóa đồng bộ giữa các instance.</span></div>
-        <div class="jd-ex c-muted" style="cursor:default"><span class="n">⊘</span><span class="w"><span lang="en">Disable or delete a user</span><span lang="vi">Khóa hoặc xóa user</span></span><span class="x" lang="en">Logs them out of every device immediately (<code>revoked_reason = user_disabled</code>).</span><span class="x" lang="vi">Đăng xuất họ khỏi mọi thiết bị ngay lập tức (<code>revoked_reason = user_disabled</code>).</span></div>
+        <div class="jd-ex c-muted" style="cursor:default"><span class="n">⊘</span><span class="w"><span lang="en">Disable or delete a user</span><span lang="vi">Khóa hoặc xóa user</span></span><span class="x" lang="en">Revokes all their sessions (<code>revoked_reason = user_disabled</code>); if that revocation fails, the update / delete returns an error, but the change itself is already saved — retry to revoke. Cache invalidation is best-effort (failures are logged), so a cached session may last up to <code>AUTH_SESSION_CACHE_TTL</code> (3 min).</span><span class="x" lang="vi">Thu hồi mọi session của họ (<code>revoked_reason = user_disabled</code>); nếu thu hồi lỗi, thao tác cập nhật / xóa trả về lỗi, nhưng thay đổi đã được lưu — cần thử lại để thu hồi. Việc xóa cache là best-effort (lỗi được ghi log), nên session trong cache có thể còn tối đa <code>AUTH_SESSION_CACHE_TTL</code> (3 phút).</span></div>
       </div>
     </div>
   </section>
@@ -1028,7 +1047,7 @@ document.addEventListener("jd:ready", function () {
     { node: "l1", token: "POST /auth/login", color: "purple",
       text: { en: "The request arrives with email, password and client info (IP, User-Agent, X-Device-ID).", vi: "Request tới với email, mật khẩu và thông tin client (IP, User-Agent, X-Device-ID)." } },
     { node: "l2", token: "recaptcha_token", color: "purple",
-      text: { en: "If <code>AUTH_RECAPTCHA_ON_LOGIN=true</code>, Google reCAPTCHA is verified first. Off by default.", vi: "Nếu <code>AUTH_RECAPTCHA_ON_LOGIN=true</code>, Google reCAPTCHA được kiểm tra trước. Mặc định tắt." } },
+      text: { en: "If <code>AUTH_RECAPTCHA_ON_LOGIN=true</code>, Google reCAPTCHA is verified first (score ≥ <code>RECAPTCHA_MIN_SCORE</code>). Off by default. Outside production <code>RECAPTCHA_MOCK=true</code> (default) accepts any token; production always calls Google.", vi: "Nếu <code>AUTH_RECAPTCHA_ON_LOGIN=true</code>, Google reCAPTCHA được kiểm tra trước (điểm ≥ <code>RECAPTCHA_MIN_SCORE</code>). Mặc định tắt. Ngoài production, <code>RECAPTCHA_MOCK=true</code> (mặc định) chấp nhận mọi token; production luôn gọi Google." } },
     { node: "l3", token: "IP + email", color: "purple",
       text: { en: "The login guard checks the failure counters (see 4.4). Blocked → <code>429</code> right away, without touching the password.", vi: "Login guard kiểm tra các bộ đếm lần sai (xem 4.4). Đang bị chặn → <code>429</code> ngay, không đụng tới mật khẩu." } },
     { node: "l4", token: "bcrypt", color: "purple", ms: 2600,

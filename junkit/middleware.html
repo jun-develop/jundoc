@@ -26,11 +26,11 @@
         style="background:radial-gradient(1000px 380px at 0% 0%, rgba(251,146,60,.5), transparent 60%),linear-gradient(135deg,#7c2d12,#c2410c 55%,#be123c)">
         <div class="jd-eyebrow">Junkit · middleware</div>
         <h1>middleware</h1>
-        <p lang="en">Eleven ready-made Gin middleware: a debug dashboard, security headers, trace IDs, CORS, body
-          limits, access logs, per-IP rate limiting, panic recovery, bearer-token auth, a shared-secret guard and gzip
+        <p lang="en">Twelve ready-made Gin middleware: a debug dashboard, security headers, trace IDs, CORS, body
+          limits, access logs, per-IP rate limiting, path-parameter checks, panic recovery, bearer-token auth, a shared-secret guard and gzip
           response compression.</p>
-        <p lang="vi">Mười một middleware Gin dùng ngay: dashboard debug, header bảo mật, trace ID, CORS, giới hạn body,
-          access log, rate limit theo IP, bắt panic, xác thực bearer token, chốt chặn bằng shared secret và nén gzip cho
+        <p lang="vi">Mười hai middleware Gin dùng ngay: dashboard debug, header bảo mật, trace ID, CORS, giới hạn body,
+          access log, rate limit theo IP, kiểm tra path param, bắt panic, xác thực bearer token, chốt chặn bằng shared secret và nén gzip cho
           response.</p>
         <div class="jd-chips">
           <span class="jd-chip">github.com/jun-develop/junkit/middleware</span>
@@ -79,11 +79,11 @@
                 <div class="jd-node c-green" data-node="mw3"><span class="t"><small>3</small>Trace</span></div>
                 <div class="jd-node c-green" data-node="mw4"><span class="t"><small>4</small>CORS</span></div>
                 <div class="jd-node c-green" data-node="mw5"><span class="t"><small>5</small>Gzip</span></div>
-                <div class="jd-node c-green" data-node="mw6"><span class="t"><small>6</small>Payload</span></div>
-                <div class="jd-node c-green" data-node="mw7"><span class="t"><small>7</small>AccessLog</span></div>
-                <div class="jd-node c-green" data-node="mw8"><span class="t"><small>8</small>Limiter</span></div>
-                <div class="jd-node c-green" data-node="mwrp"><span class="t"><small>9</small>RoutePatterns</span></div>
-                <div class="jd-node c-green" data-node="mw9"><span class="t"><small>10</small>Recover</span></div>
+                <div class="jd-node c-green" data-node="mw7"><span class="t"><small>6</small>AccessLog</span></div>
+                <div class="jd-node c-green" data-node="mw9"><span class="t"><small>7</small>Recover</span></div>
+                <div class="jd-node c-green" data-node="mw6"><span class="t"><small>8</small>Payload</span></div>
+                <div class="jd-node c-green" data-node="mw8"><span class="t"><small>9</small>Limiter</span></div>
+                <div class="jd-node c-green" data-node="mwrp"><span class="t"><small>10</small>RoutePatterns</span></div>
               </div>
             </div>
             <div class="jd-node is-tint c-purple" data-node="group" style="grid-column:2 / 4">
@@ -219,7 +219,7 @@
               <div class="jd-term" data-copy>
                 <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/router/router.go</span></div>
                 <pre data-hl="go" id="code-router">
-func registerGlobalMiddlewares(p Params) {
+func registerGlobalMiddlewares(p Params, bodyLimits map[string]int64) {
     cfg := p.Config
     debug := middleware.TracerDebugOptions{
         QueryKey:     cfg.TracerDebugKey,
@@ -244,12 +244,14 @@ func registerGlobalMiddlewares(p Params) {
             MaxAge:           cfg.CORS.MaxAge,
         }),
         middleware.Gzip(middleware.GzipOptions{Level: gzip.BestSpeed}),
-        middleware.Payload(middleware.PayloadOptions{
-            MaxBodySize: cfg.Security.MaxRequestBodySize,
-        }, p.Responder),
         middleware.AccessLog(p.HTTPLogger, middleware.AccessLogOptions{
             SkipIf: debug.Matches,
         }),
+        middleware.Recover(p.HTTPLogger, p.Notifier, p.Responder, middleware.RecoverOptions{Debug: debug}),
+        middleware.Payload(middleware.PayloadOptions{
+            MaxBodySize: cfg.Security.MaxRequestBodySize,
+            RouteLimits: bodyLimits,
+        }, p.Responder),
         middleware.Limiter(middleware.LimiterOptions{
             RequestsPerSecond: cfg.Limiter.RequestsPerSecond,
             Burst:             cfg.Limiter.Burst,
@@ -264,7 +266,6 @@ func registerGlobalMiddlewares(p Params) {
             "id":   middleware.IsID,
             "slug": middleware.IsSlug,
         }, p.Responder),
-        middleware.Recover(p.HTTPLogger, p.Notifier, p.Responder, middleware.RecoverOptions{Debug: debug}),
     )
 }
 </pre>
@@ -272,10 +273,10 @@ func registerGlobalMiddlewares(p Params) {
             </div>
           </div>
           <div class="jd-explain">
-            <p class="jd-hint" lang="en">Why each position matters (reasoned from the code — router.go itself has no
-              comments on the order):</p>
-            <p class="jd-hint" lang="vi">Vì sao mỗi vị trí quan trọng (suy ra từ code — bản thân router.go không có
-              comment về thứ tự):</p>
+            <p class="jd-hint" lang="en">Why each position matters (router.go only comments on where Recover
+              sits; the rest is reasoned from the code):</p>
+            <p class="jd-hint" lang="vi">Vì sao mỗi vị trí quan trọng (router.go chỉ comment về vị trí của Recover;
+              phần còn lại suy ra từ code):</p>
             <div class="jd-ex c-blue" data-code="#code-router" data-show="3-8,11"><span class="n">1</span><span
                 class="w">TracerDebug — outermost</span><span class="x" lang="en">It swaps the response writer and
                 request context before anything else runs, so every layer below records into the tracer, and its
@@ -315,34 +316,43 @@ func registerGlobalMiddlewares(p Params) {
                 <code>Accept-Encoding: gzip</code>. AccessLog nằm bên trong nó nên vẫn log body gốc.
                 <code>BestSpeed</code>: JSON nén tốt ngay cả ở mức rẻ nhất.</span></div>
             <div class="jd-ex c-blue" data-code="#code-router" data-show="26-28"><span class="n">6</span><span
-                class="w">Payload — before AccessLog and handlers</span><span class="x" lang="en">Oversized bodies are
-                cut off with 413 before any further work. It caches the parsed body so AccessLog can log
-                <code>request_payload</code> and handlers can still bind it.</span><span class="x" lang="vi">Body quá
-                lớn bị chặn với 413 trước khi làm gì thêm. Nó cache body đã parse để AccessLog ghi được
-                <code>request_payload</code> và handler vẫn bind được.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="29-31"><span class="n">7</span><span
-                class="w">AccessLog — wraps Limiter, Recover, handler</span><span class="x" lang="en">It logs after
-                <code>c.Next()</code> returns, so it sees the final status — including 429 from Limiter and 500 from
-                Recover. <code>SkipIf</code> keeps debug-dashboard requests out of the log.</span><span class="x"
-                lang="vi">Nó ghi log sau khi <code>c.Next()</code> trả về, nên thấy status cuối cùng — kể cả 429 từ
-                Limiter và 500 từ Recover. <code>SkipIf</code> loại các request dashboard debug khỏi log.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="32-40"><span class="n">8</span><span
+                class="w">AccessLog — wraps Recover, Payload, Limiter, handler</span><span class="x" lang="en">It logs
+                after <code>c.Next()</code> returns (not in a <code>defer</code>), so it sees the final status —
+                including 413 from Payload, 429 from Limiter and 500 from Recover. <code>SkipIf</code> keeps
+                debug-dashboard requests out of the log.</span><span class="x" lang="vi">Nó ghi log sau khi
+                <code>c.Next()</code> trả về (không dùng <code>defer</code>), nên thấy status cuối cùng — kể cả 413 từ
+                Payload, 429 từ Limiter và 500 từ Recover. <code>SkipIf</code> loại các request dashboard debug khỏi
+                log.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="29"><span class="n">7</span><span
+                class="w">Recover — right inside AccessLog</span><span class="x" lang="en">It catches panics from
+                everything after it: Payload, Limiter, RoutePatterns, BearerAuth and handlers. It must sit
+                <b>inside</b> AccessLog — a panic unwinding through AccessLog would skip its logging — and its 500
+                still flows out through Gzip, CORS, Trace and Security. On a debug request it hands the panic to the
+                tracer instead, so TracerDebug can show it.</span><span class="x" lang="vi">Nó bắt panic từ mọi thứ
+                sau nó: Payload, Limiter, RoutePatterns, BearerAuth và handler. Nó phải nằm <b>bên trong</b>
+                AccessLog — panic đi xuyên qua AccessLog sẽ làm mất dòng log — và response 500 của nó vẫn đi ra qua
+                Gzip, CORS, Trace và Security. Với request debug, nó chuyển panic cho tracer để TracerDebug hiển
+                thị.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="30-33"><span class="n">8</span><span
+                class="w">Payload — before Limiter and handlers</span><span class="x" lang="en">Oversized bodies are
+                cut off with 413 before any further work. The limit is <code>MaxBodySize</code>, or the route's own
+                one from <code>RouteLimits</code> (filled from <code>router.BodyLimited</code> routes, e.g. the 5 MB
+                avatar upload). It caches the parsed body so AccessLog can log <code>request_payload</code> and
+                handlers can still bind it.</span><span class="x" lang="vi">Body quá lớn bị chặn với 413 trước khi
+                làm gì thêm. Giới hạn là <code>MaxBodySize</code>, hoặc giới hạn riêng của route trong
+                <code>RouteLimits</code> (lấy từ các route implement <code>router.BodyLimited</code>, ví dụ upload
+                avatar 5 MB). Nó cache body đã parse để AccessLog ghi được <code>request_payload</code> và handler vẫn
+                bind được.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="34-42"><span class="n">9</span><span
                 class="w">Limiter — before the expensive part</span><span class="x" lang="en">A rejected request gets
                 429 without touching handlers or the database, and the rejection is still access-logged.</span><span
                 class="x" lang="vi">Request bị từ chối nhận 429 mà không chạm tới handler hay database, và việc từ chối
                 vẫn được ghi access log.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="41-45"><span class="n">9</span><span
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="43-47"><span class="n">10</span><span
                 class="w">RoutePatterns — after Limiter, before auth</span><span class="x" lang="en">Junk URLs such as
                 <code>/users/abc</code> still spend a rate-limit token, then get 404 before BearerAuth or the handler
                 runs.</span><span class="x" lang="vi">URL rác như <code>/users/abc</code> vẫn tốn token rate limit, rồi
                 nhận 404 trước khi BearerAuth hay handler chạy.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="46"><span class="n">10</span><span
-                class="w">Recover — innermost</span><span class="x" lang="en">It only catches panics from what runs
-                after it (handlers, BearerAuth). Being innermost, its 500 still flows out through AccessLog, CORS, Trace
-                and Security. On a debug request it hands the panic to the tracer instead, so TracerDebug can show
-                it.</span><span class="x" lang="vi">Nó chỉ bắt panic từ những gì chạy sau nó (handler, BearerAuth). Vì
-                nằm trong cùng, response 500 của nó vẫn đi ra qua AccessLog, CORS, Trace và Security. Với request
-                debug, nó chuyển panic cho tracer để TracerDebug hiển thị.</span></div>
           </div>
         </div>
 
@@ -552,7 +562,7 @@ $ curl -i -X POST localhost:$API_SERVER_PORT/echo -H 'Content-Type: application/
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · json debug report</span></div>
           <pre data-hl="bash">
-$ curl -s 'localhost:$API_SERVER_PORT/me?t_debug=change-me' -H 'X-Internal-Secret: change-me-secret' | jq
+$ curl -s "localhost:$API_SERVER_PORT/me?t_debug=change-me" -H 'X-Internal-Secret: change-me-secret' | jq
 </pre>
         </div>
       </section>
@@ -642,11 +652,11 @@ func TracerDebug(opts TracerDebugOptions) gin.HandlerFunc</pre>
                 </ul>
               </div>
             </div>
-            <p class="jd-hint" style="margin-top:14px" lang="en">Try it — the debug pair goes in the query string (Jungo
-              default <code>t_debug=0604</code>; the value comes from <code>TRACER_DEBUG_VALUE</code> and differs per environment), the secret in <code>X-Internal-Secret</code> (Jungo uses
+            <p class="jd-hint" style="margin-top:14px" lang="en">Try it — the debug pair goes in the query string (e.g.
+              <code>t_debug=0604</code>; the value comes from <code>TRACER_DEBUG_VALUE</code> and differs per environment), the secret in <code>X-Internal-Secret</code> (Jungo uses
               <code>AUTH_INTERNAL_SECRET</code>):</p>
-            <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — cặp debug nằm trên query string (mặc định
-              của Jungo <code>t_debug=0604</code>; giá trị lấy từ <code>TRACER_DEBUG_VALUE</code>, mỗi môi trường một số khác nhau), secret nằm trong <code>X-Internal-Secret</code> (Jungo dùng
+            <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — cặp debug nằm trên query string (ví dụ
+              <code>t_debug=0604</code>; giá trị lấy từ <code>TRACER_DEBUG_VALUE</code>, mỗi môi trường một số khác nhau), secret nằm trong <code>X-Internal-Secret</code> (Jungo dùng
               <code>AUTH_INTERNAL_SECRET</code>):</p>
             <div class="jd-term" data-copy="commands">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · Jungo</span></div>
@@ -817,8 +827,7 @@ $ curl -si localhost:$API_SERVER_PORT/api/v1/auth/me -H 'X-Trace-Id: my-trace-12
                     <ul>
                       <li><code>"*"</code> <b>and</b> <code>AllowCredentials == false</code> →
                         <code>Access-Control-Allow-Origin: *</code></li>
-                      <li>otherwise → <code>Access-Control-Allow-Origin: &lt;the request's Origin&gt;</code> +
-                        <code>Vary: Origin</code></li>
+                      <li>otherwise → <code>Access-Control-Allow-Origin: &lt;the request's Origin&gt;</code></li>
                       <li><code>AllowCredentials</code> → <code>Access-Control-Allow-Credentials: true</code></li>
                     </ul>
                   </li>
@@ -827,8 +836,7 @@ $ curl -si localhost:$API_SERVER_PORT/api/v1/auth/me -H 'X-Trace-Id: my-trace-12
                     <ul>
                       <li><code>"*"</code> <b>và</b> <code>AllowCredentials == false</code> →
                         <code>Access-Control-Allow-Origin: *</code></li>
-                      <li>ngược lại → <code>Access-Control-Allow-Origin: &lt;Origin của request&gt;</code> +
-                        <code>Vary: Origin</code></li>
+                      <li>ngược lại → <code>Access-Control-Allow-Origin: &lt;Origin của request&gt;</code></li>
                       <li><code>AllowCredentials</code> → <code>Access-Control-Allow-Credentials: true</code></li>
                     </ul>
                   </li>
@@ -836,6 +844,12 @@ $ curl -si localhost:$API_SERVER_PORT/api/v1/auth/me -H 'X-Trace-Id: my-trace-12
                     browser hides the response.</li>
                   <li lang="vi">Origin không được phép <b>không bị từ chối</b> — nó chỉ không có header allow-origin,
                     nên trình duyệt giấu response.</li>
+                  <li lang="en">Always adds <code>Vary: Origin</code> (with <code>Header().Add</code>, so it sits beside Gzip's
+                    <code>Vary: Accept-Encoding</code>), even when <code>Origin</code> is missing or not allowed, so shared caches key on
+                    it.</li>
+                  <li lang="vi">Luôn thêm <code>Vary: Origin</code> (bằng <code>Header().Add</code>, nên nằm cạnh
+                    <code>Vary: Accept-Encoding</code> của Gzip), kể cả khi không có <code>Origin</code> hoặc origin không được phép, để cache dùng
+                    chung phân biệt theo nó.</li>
                   <li lang="en">Always sets <code>Access-Control-Allow-Headers</code>,
                     <code>Access-Control-Allow-Methods</code> (lists joined with <code>", "</code>) and
                     <code>Access-Control-Max-Age</code>, on every response.</li>
@@ -933,13 +947,17 @@ $ curl -si localhost:$API_SERVER_PORT/api/v1/auth/me -H 'Origin: https://app.exa
                 <ul>
                   <li lang="en">No body or <code>ContentLength == 0</code> → passes through untouched.</li>
                   <li lang="vi">Không có body hoặc <code>ContentLength == 0</code> → cho qua, không làm gì.</li>
-                  <li lang="en">Wraps the body in <code>http.MaxBytesReader(…, MaxBodySize)</code> and reads it <b>all
+                  <li lang="en">Picks the limit: <code>RouteLimits[RouteKey(method, c.FullPath())]</code> if the
+                    matched route has one, else <code>MaxBodySize</code>.</li>
+                  <li lang="vi">Chọn giới hạn: <code>RouteLimits[RouteKey(method, c.FullPath())]</code> nếu route khớp
+                    có khai báo, ngược lại là <code>MaxBodySize</code>.</li>
+                  <li lang="en">Wraps the body in <code>http.MaxBytesReader(…, limit)</code> and reads it <b>all
                       into memory</b>. Any read error (too large, or the client hung up) → <b>413</b>
-                    <code>request_body_too_large</code> "Request body exceeds the maximum allowed size", then abort.
+                    <code>PAYLOAD_TOO_LARGE</code> / <code>request_body_too_large</code> "Request body exceeds the maximum allowed size", then abort.
                   </li>
-                  <li lang="vi">Bọc body bằng <code>http.MaxBytesReader(…, MaxBodySize)</code> và đọc <b>toàn bộ vào bộ
+                  <li lang="vi">Bọc body bằng <code>http.MaxBytesReader(…, limit)</code> và đọc <b>toàn bộ vào bộ
                       nhớ</b>. Lỗi đọc bất kỳ (quá lớn, hoặc client ngắt) → <b>413</b>
-                    <code>request_body_too_large</code> "Request body exceeds the maximum allowed size", rồi abort.</li>
+                    <code>PAYLOAD_TOO_LARGE</code> / <code>request_body_too_large</code> "Request body exceeds the maximum allowed size", rồi abort.</li>
                   <li lang="en">Puts the bytes back as <code>c.Request.Body</code>, so <code>ShouldBindJSON</code> still
                     works, and stores them under <code>PayloadRawKey</code>.</li>
                   <li lang="vi">Trả lại bytes vào <code>c.Request.Body</code>, nên <code>ShouldBindJSON</code> vẫn chạy,
@@ -971,8 +989,33 @@ $ curl -si localhost:$API_SERVER_PORT/api/v1/auth/me -H 'Origin: https://app.exa
                       <td lang="vi">Số byte body tối đa. <b>Không có mặc định</b>: 0 sẽ từ chối mọi body không rỗng với
                         413.</td>
                     </tr>
+                    <tr>
+                      <td>RouteLimits</td>
+                      <td>map[string]int64 · nil</td>
+                      <td lang="en">Per-route limits that replace <code>MaxBodySize</code> (e.g. uploads), keyed by
+                        <code>RouteKey(method, pattern)</code>. A global Payload runs before any route middleware, so
+                        this is the only way a route gets a larger limit. Read per request: fill it before the server
+                        starts serving, never after.</td>
+                      <td lang="vi">Giới hạn riêng theo route, thay cho <code>MaxBodySize</code> (vd. upload), key là
+                        <code>RouteKey(method, pattern)</code>. Payload global chạy trước mọi middleware của route, nên
+                        đây là cách duy nhất để một route có giới hạn lớn hơn. Được đọc ở mỗi request: điền trước khi
+                        server bắt đầu phục vụ, không sửa sau đó.</td>
+                    </tr>
                   </table>
                 </div>
+              </div>
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">RouteKey</span><span
+                    class="jd-pill">payload.go</span></div>
+                <div class="jd-term">
+                  <pre data-hl="go">func RouteKey(method, pattern string) string // "POST /api/v1/users/:uuid/avatar"</pre>
+                </div>
+                <p lang="en">The <code>RouteLimits</code> key: the HTTP method and the Gin route <b>pattern</b> (what
+                  <code>c.FullPath()</code> returns, with <code>:params</code>), not the concrete URL. The limit is per
+                  method: a larger <code>POST</code> limit does not apply to <code>PUT</code> on the same path.</p>
+                <p lang="vi">Key của <code>RouteLimits</code>: HTTP method và <b>pattern</b> route của Gin (giá trị
+                  <code>c.FullPath()</code> trả về, có <code>:params</code>), không phải URL cụ thể. Giới hạn theo từng
+                  method: giới hạn <code>POST</code> lớn hơn không áp dụng cho <code>PUT</code> cùng path.</p>
               </div>
               <div class="jd-sym c-blue">
                 <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">GetPayload</span>
@@ -1044,11 +1087,15 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                     <code>c.Next()</code>, rồi ghi <b>một</b> entry với message <code>"HTTP_ACCESS_LOG"</code>.</li>
                   <li lang="en">Level by final status: <b>5xx → Error</b>, <b>4xx → Warn</b>, else Info.</li>
                   <li lang="vi">Level theo status cuối: <b>5xx → Error</b>, <b>4xx → Warn</b>, còn lại Info.</li>
-                  <li lang="en">Sensitive fields (case-insensitive, at any depth in maps and arrays of maps) in the
-                    request payload and a JSON response are replaced by <code>"[MASKED]"</code>. A non-JSON response is
+                  <li lang="en">Sensitive fields at any depth (nested objects and arrays; for the response also a top-level array) in
+                    the request payload and a JSON response are replaced by <code>"[MASKED]"</code>. Keys match
+                    case-insensitively, ignoring <code>_</code> and <code>-</code>, so <code>access_token</code>,
+                    <code>accessToken</code> and <code>Access-Token</code> all match. A non-JSON response is
                     logged as a string cut to 200 bytes + <code>"... [truncated]"</code>.</li>
-                  <li lang="vi">Trường nhạy cảm (không phân biệt hoa thường, ở mọi độ sâu trong map và mảng map) trong
-                    request payload và response JSON bị thay bằng <code>"[MASKED]"</code>. Response không phải JSON được
+                  <li lang="vi">Trường nhạy cảm ở mọi độ sâu (object lồng nhau và mảng; riêng response còn cả mảng ở cấp ngoài cùng) trong
+                    request payload và response JSON bị thay bằng <code>"[MASKED]"</code>. Tên key được so khớp không
+                    phân biệt hoa thường, bỏ qua <code>_</code> và <code>-</code>, nên <code>access_token</code>,
+                    <code>accessToken</code> và <code>Access-Token</code> đều khớp. Response không phải JSON được
                     ghi dạng chuỗi, cắt còn 200 byte + <code>"... [truncated]"</code>.</li>
                   <li lang="en">Never aborts and never changes the response.</li>
                   <li lang="vi">Không bao giờ abort và không thay đổi response.</li>
@@ -1075,8 +1122,8 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                     </tr>
                     <tr>
                       <td>ip · user_agent · resp_size</td>
-                      <td><code>c.ClientIP()</code>, <code>User-Agent</code>, <span lang="en">bytes written</span><span
-                          lang="vi">số byte đã ghi</span></td>
+                      <td><code>c.ClientIP()</code>, <code>User-Agent</code>, <span lang="en">bytes written (uncompressed when
+                          inside Gzip)</span><span lang="vi">số byte đã ghi (chưa nén khi nằm trong Gzip)</span></td>
                     </tr>
                     <tr>
                       <td>error</td>
@@ -1136,10 +1183,12 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                 </div>
                 <p lang="en">Default sensitive fields: <code>password</code>, <code>pass</code>, <code>token</code>,
                   <code>new_password</code>, <code>access_token</code>, <code>refresh_token</code>, <code>secret</code>,
-                  <code>authorization</code>, <code>recaptcha_token</code>.</p>
+                  <code>authorization</code>, <code>recaptcha_token</code>, <code>api_key</code>,
+                  <code>client_secret</code>, <code>current_password</code>, <code>old_password</code>.</p>
                 <p lang="vi">Trường nhạy cảm mặc định: <code>password</code>, <code>pass</code>, <code>token</code>,
                   <code>new_password</code>, <code>access_token</code>, <code>refresh_token</code>, <code>secret</code>,
-                  <code>authorization</code>, <code>recaptcha_token</code>.</p>
+                  <code>authorization</code>, <code>recaptcha_token</code>, <code>api_key</code>,
+                  <code>client_secret</code>, <code>current_password</code>, <code>old_password</code>.</p>
               </div>
             </div>
           </div>
@@ -1165,18 +1214,19 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                     <code>PostmanRuntime/</code> or <code>GoHttpTest/</code>.</li>
                   <li lang="vi">Được bỏ qua: IP có trong <code>IPWhitelist</code>, hoặc <code>User-Agent</code> bắt đầu
                     bằng <code>PostmanRuntime/</code> hay <code>GoHttpTest/</code>.</li>
-                  <li lang="en">Bucket empty → <b>429</b> <code>too_many_requests</code> "Too many requests. Please try
-                    again later.", then abort.</li>
-                  <li lang="vi">Hết token → <b>429</b> <code>too_many_requests</code> "Too many requests. Please try
-                    again later.", rồi abort.</li>
+                  <li lang="en">Bucket empty → <b>429</b> <code>TOO_MANY_REQUESTS</code> /
+                    <code>too_many_requests</code> "Too many requests. Please try again later.", then abort.</li>
+                  <li lang="vi">Hết token → <b>429</b> <code>TOO_MANY_REQUESTS</code> /
+                    <code>too_many_requests</code> "Too many requests. Please try again later.", rồi abort.</li>
                   <li lang="en">At most once per IP per <code>LogTTL</code>:
                     <code>logger.Warn("middleware: rate limit exceeded")</code> with <code>ip</code>, <code>path</code>,
                     <code>limit_rps</code>, and — if <code>notifier != nil</code> — an async HTML alert "🚦 Rate Limit
-                    Exceeded" (IP, method, path, time) via <code>notifier.SendMessageHTML(…, "error")</code>.</li>
+                    Exceeded" (IP, method, path, time; IP, method and path are HTML-escaped) via
+                    <code>notifier.SendMessageHTML(…, "error")</code>.</li>
                   <li lang="vi">Tối đa một lần mỗi IP trong mỗi <code>LogTTL</code>:
                     <code>logger.Warn("middleware: rate limit exceeded")</code> với <code>ip</code>, <code>path</code>,
                     <code>limit_rps</code>, và — nếu <code>notifier != nil</code> — một cảnh báo HTML bất đồng bộ "🚦
-                    Rate Limit Exceeded" (IP, method, path, thời gian) qua
+                    Rate Limit Exceeded" (IP, method, path, thời gian; IP, method và path được escape HTML) qua
                     <code>notifier.SendMessageHTML(…, "error")</code>.</li>
                 </ul>
               </div>
@@ -1191,16 +1241,20 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                       <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
                     </tr>
                     <tr>
-                      <td>RequestsPerSecond</td>
-                      <td>int · 0</td>
-                      <td lang="en">Sustained rate per IP (token refill per second).</td>
-                      <td lang="vi">Tốc độ duy trì mỗi IP (số token nạp lại mỗi giây).</td>
+                      <td>RequestsPerSecond<span class="req">require</span></td>
+                      <td>int · —</td>
+                      <td lang="en">Sustained rate per IP (token refill per second). <b>Must be &gt; 0</b> or
+                        <code>Limiter</code> panics at setup.</td>
+                      <td lang="vi">Tốc độ duy trì mỗi IP (số token nạp lại mỗi giây). <b>Phải &gt; 0</b> nếu không
+                        <code>Limiter</code> panic lúc khởi tạo.</td>
                     </tr>
                     <tr>
-                      <td>Burst</td>
-                      <td>int · 0</td>
-                      <td lang="en">Bucket size — requests allowed at once.</td>
-                      <td lang="vi">Kích thước bucket — số request được phép dồn một lúc.</td>
+                      <td>Burst<span class="req">require</span></td>
+                      <td>int · —</td>
+                      <td lang="en">Bucket size — requests allowed at once. <b>Must be &gt; 0</b> or
+                        <code>Limiter</code> panics at setup.</td>
+                      <td lang="vi">Kích thước bucket — số request được phép dồn một lúc. <b>Phải &gt; 0</b> nếu không
+                        <code>Limiter</code> panic lúc khởi tạo.</td>
                     </tr>
                     <tr>
                       <td>CleanupInterval<span class="req">require</span></td>
@@ -1268,10 +1322,12 @@ func (s *ClientStore) StartCleanup()
                     data-hl="go">func RoutePatterns(patterns map[string]func(string) bool, responder response.Responder) gin.HandlerFunc</pre>
                 </div>
                 <p lang="en">Checks every path parameter of the matched route. If <code>patterns</code> has a rule for
-                  its name and the value fails it → <code>404</code> <code>api_not_found</code> "API is not found" and
+                  its name and the value fails it → <code>404</code> <code>NOT_FOUND</code> /
+                  <code>api_not_found</code> "API is not found" and
                   abort. Parameters without a rule are not checked.</p>
                 <p lang="vi">Kiểm tra mọi path param của route đã khớp. Nếu <code>patterns</code> có rule cho tên param
-                  và giá trị không qua được → <code>404</code> <code>api_not_found</code> "API is not found" và abort.
+                  và giá trị không qua được → <code>404</code> <code>NOT_FOUND</code> /
+                  <code>api_not_found</code> "API is not found" và abort.
                   Param không có rule thì không bị kiểm tra.</p>
                 <ul>
                   <li lang="en">gin has no per-route regex (no Laravel <code>-&gt;where()</code>): <code>:uuid</code>
@@ -1377,11 +1433,11 @@ $ curl -i localhost:$API_SERVER_PORT/api/v1/users/abc
                   <li lang="en">Otherwise: <code>logger.Error("middleware: panic recovered")</code> with
                     <code>error</code>, <code>location</code>, <code>line</code>, <code>function</code>,
                     <code>stack</code>; <code>notifier.SendErrorNotification(c, errorData, 500)</code> if a notifier is
-                    set; then <b>500</b> <code>internal_server_error</code> "Internal Server Error" and abort.</li>
+                    set; then <b>500</b> <code>INTERNAL_SERVER_ERROR</code> / <code>internal_server_error</code> "Internal Server Error" and abort.</li>
                   <li lang="vi">Ngược lại: <code>logger.Error("middleware: panic recovered")</code> với
                     <code>error</code>, <code>location</code>, <code>line</code>, <code>function</code>,
                     <code>stack</code>; <code>notifier.SendErrorNotification(c, errorData, 500)</code> nếu có notifier;
-                    rồi <b>500</b> <code>internal_server_error</code> "Internal Server Error" và abort.</li>
+                    rồi <b>500</b> <code>INTERNAL_SERVER_ERROR</code> / <code>internal_server_error</code> "Internal Server Error" và abort.</li>
                 </ul>
               </div>
               <div class="jd-sym c-purple">
@@ -1421,11 +1477,11 @@ $ curl -i localhost:$API_SERVER_PORT/api/v1/users/abc
                 <ul>
                   <li lang="en">No usable token (see <code>BearerToken</code>) → <b>401</b> with
                     <code>MessageKey</code>, default <code>unauthorized_token</code> "Authentication token is invalid or
-                    expired". Sent with <code>responder.Send</code>, so there is <b>no <code>"code"</code> field</b>.
+                    expired", with <code>"code": "UNAUTHORIZED"</code>.
                   </li>
                   <li lang="vi">Không có token dùng được (xem <code>BearerToken</code>) → <b>401</b> với
                     <code>MessageKey</code>, mặc định <code>unauthorized_token</code> "Authentication token is invalid
-                    or expired". Gửi bằng <code>responder.Send</code>, nên <b>không có trường <code>"code"</code></b>.
+                    or expired", kèm <code>"code": "UNAUTHORIZED"</code>.
                   </li>
                   <li lang="en"><code>a.Authenticate(c.Request.Context(), token)</code> returns an error →
                     <code>responder.Error(c, err)</code>: a <code>*response.AppError</code> gives its mapped status,
@@ -1675,6 +1731,7 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
             <pre data-hl="json">
 {
   "status": "error",
+  "code": "UNAUTHORIZED",
   "message": "Authentication token is invalid or expired",
   "api_info": {
     "trace_id": "…",
@@ -1691,59 +1748,77 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
               <table class="jd-params c-purple">
                 <tr>
                   <th>status</th>
+                  <th>code</th>
                   <th>key</th>
                   <th>message</th>
                   <th><span lang="en">from</span><span lang="vi">từ</span></th>
                 </tr>
                 <tr>
                   <td>401</td>
+                  <td>UNAUTHORIZED</td>
                   <td>unauthorized_token</td>
                   <td>Authentication token is invalid or expired</td>
                   <td>BearerAuth</td>
                 </tr>
                 <tr>
                   <td>403</td>
+                  <td>FORBIDDEN</td>
                   <td>forbidden_internal_access</td>
                   <td>Forbidden internal system access</td>
                   <td>RequireSecret</td>
                 </tr>
                 <tr>
                   <td>404</td>
+                  <td>NOT_FOUND</td>
                   <td>api_not_found</td>
                   <td>API is not found</td>
                   <td>RoutePatterns</td>
                 </tr>
                 <tr>
                   <td>413</td>
+                  <td>PAYLOAD_TOO_LARGE</td>
                   <td>request_body_too_large</td>
                   <td>Request body exceeds the maximum allowed size</td>
                   <td>Payload</td>
                 </tr>
                 <tr>
                   <td>429</td>
+                  <td>TOO_MANY_REQUESTS</td>
                   <td>too_many_requests</td>
                   <td>Too many requests. Please try again later.</td>
                   <td>Limiter</td>
                 </tr>
                 <tr>
                   <td>500</td>
+                  <td>INTERNAL_SERVER_ERROR</td>
                   <td>internal_server_error</td>
                   <td>Internal Server Error</td>
-                  <td>Recover · BearerAuth</td>
+                  <td>Recover</td>
+                </tr>
+                <tr>
+                  <td>500</td>
+                  <td>INTERNAL_SERVER_ERROR</td>
+                  <td>internal_server_error</td>
+                  <td>Internal Server Error</td>
+                  <td><span lang="en">BearerAuth (non-AppError)</span><span lang="vi">BearerAuth (lỗi không phải
+                      AppError)</span></td>
                 </tr>
                 <tr>
                   <td>204</td>
+                  <td>—</td>
                   <td>—</td>
                   <td><span lang="en">(empty body)</span><span lang="vi">(body rỗng)</span></td>
                   <td>CORS · OPTIONS</td>
                 </tr>
               </table>
             </div>
-            <p class="jd-sub" lang="en">All of these use <code>responder.Send</code> (no <code>"code"</code> field)
-              except an <code>AppError</code> returned by your Authenticator. The response envelope is described on <a
+            <p class="jd-sub" lang="en">Every error carries a <code>"code"</code>: <code>responder.Error</code> takes it from the
+              <code>AppError</code>, and <code>responder.Send</code> derives it from the HTTP status (e.g.
+              <code>RequireSecret</code>'s 403 → <code>FORBIDDEN</code>). The response envelope is described on <a
                 href="response.html">response</a>.</p>
-            <p class="jd-sub" lang="vi">Tất cả đều dùng <code>responder.Send</code> (không có trường
-              <code>"code"</code>) trừ <code>AppError</code> do Authenticator của bạn trả về. Envelope response được mô
+            <p class="jd-sub" lang="vi">Mọi lỗi đều có <code>"code"</code>: <code>responder.Error</code> lấy từ
+              <code>AppError</code>, còn <code>responder.Send</code> suy ra từ HTTP status (vd. 403 của
+              <code>RequireSecret</code> → <code>FORBIDDEN</code>). Envelope response được mô
               tả ở <a href="response.html">response</a>.</p>
           </div>
         </div>
@@ -1828,7 +1903,7 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
             </tr>
             <tr>
               <td>TRACER_DEBUG_KEY<br>TRACER_DEBUG_VALUE</td>
-              <td>t_debug · 0604</td>
+              <td>t_debug · <span lang="en">(empty; app-init: random)</span><span lang="vi">(trống; app-init: ngẫu nhiên)</span></td>
               <td>TracerDebug, Recover, AccessLog.SkipIf</td>
             </tr>
             <tr>
@@ -1859,7 +1934,9 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
             <tr>
               <td>SECURITY_MAX_BODY_SIZE</td>
               <td>2097152 (2 MiB)</td>
-              <td>PayloadOptions.MaxBodySize</td>
+              <td>PayloadOptions.MaxBodySize <span lang="en">(routes that need more: <code>router.BodyLimited</code>
+                  → <code>RouteLimits</code>)</span><span lang="vi">(route cần lớn hơn: <code>router.BodyLimited</code>
+                  → <code>RouteLimits</code>)</span></td>
             </tr>
             <tr>
               <td>SECURITY_TRUSTED_PROXIES</td>
@@ -1899,7 +1976,7 @@ $ curl -i localhost:$API_SERVER_PORT/health
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 401 authentication token</span></div>
           <pre data-hl="bash">
-# 401 "Authentication token is invalid or expired" (no "code" field)
+# 401 "Authentication token is invalid or expired" (code UNAUTHORIZED)
 $ curl -i localhost:$API_SERVER_PORT/api/v1/users
 </pre>
         </div>
@@ -1931,13 +2008,14 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
         <div class="jd-explain" style="margin-top:16px">
           <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">Order is
               behaviour</span><span class="x" lang="en">A middleware only affects what comes after it. In Jungo's order,
-              CORS preflights (204) and Payload's 413 abort <b>before</b> AccessLog, so they are never access-logged;
-              anything that answers before Trace has no trace ID. Recover protects only what runs after it — a panic
-              inside an earlier middleware is not turned into a JSON 500.</span><span class="x" lang="vi">Một middleware
-              chỉ ảnh hưởng tới những gì đứng sau nó. Theo thứ tự của Jungo, preflight CORS (204) và 413 của Payload
-              abort <b>trước</b> AccessLog nên không bao giờ được ghi access log; cái gì trả lời trước Trace sẽ không có
-              trace ID. Recover chỉ bảo vệ những gì chạy sau nó — panic trong một middleware đứng trước không được biến
-              thành JSON 500.</span></div>
+              CORS preflights (204) abort <b>before</b> AccessLog, so they are never access-logged (Payload's 413 is
+              logged: Payload sits after AccessLog); anything that answers before Trace has no trace ID. Recover
+              protects only what runs after it — a panic inside TracerDebug, Security, Trace, CORS, Gzip or AccessLog
+              is not turned into a JSON 500.</span><span class="x" lang="vi">Một middleware chỉ ảnh hưởng tới những gì
+              đứng sau nó. Theo thứ tự của Jungo, preflight CORS (204) abort <b>trước</b> AccessLog nên không bao giờ
+              được ghi access log (413 của Payload thì có, vì Payload đứng sau AccessLog); cái gì trả lời trước Trace sẽ
+              không có trace ID. Recover chỉ bảo vệ những gì chạy sau nó — panic trong TracerDebug, Security, Trace,
+              CORS, Gzip hay AccessLog không được biến thành JSON 500.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Limiter: zero
               durations crash</span><span class="x" lang="en"><code>CleanupInterval</code> or <code>LogTTL</code> of 0
               makes <code>time.NewTicker</code> panic inside a background goroutine, which kills the whole process at
@@ -1972,10 +2050,14 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
               <code>OPTIONS</code> đều nhận 204.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Payload buffers
               everything</span><span class="x" lang="en">The whole body (uploads included — Payload is global) is read
-              into memory, so <code>MaxBodySize</code> is also your upload limit. 0 means "reject every body". A client
-              that disconnects mid-body also gets 413.</span><span class="x" lang="vi">Toàn bộ body (kể cả file upload —
-              Payload là global) được đọc vào bộ nhớ, nên <code>MaxBodySize</code> cũng chính là giới hạn upload. 0
-              nghĩa là "từ chối mọi body". Client ngắt kết nối giữa chừng cũng nhận 413.</span></div>
+              into memory, so the limit is also your upload limit. Raise it only for the routes that need it
+              (<code>RouteLimits</code>), never globally: every concurrent request may hold that much RAM. A route
+              middleware cannot raise it — Payload has already run. 0 means "reject every body". A client that
+              disconnects mid-body also gets 413.</span><span class="x" lang="vi">Toàn bộ body (kể cả file upload —
+              Payload là global) được đọc vào bộ nhớ, nên giới hạn này cũng chính là giới hạn upload. Chỉ nới cho route
+              cần (<code>RouteLimits</code>), đừng nới global: mỗi request đồng thời có thể giữ chừng đó RAM. Middleware
+              gắn trên route không nới được — Payload đã chạy trước rồi. 0 nghĩa là "từ chối mọi body". Client ngắt kết
+              nối giữa chừng cũng nhận 413.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">AccessLog masking has
               limits</span><span class="x" lang="en">Custom <code>SensitiveFields</code> / <code>ExcludedPaths</code>
               replace the defaults (add the defaults back yourself). The query string is logged raw — never put secrets
@@ -1987,11 +2069,12 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
               production</span><span class="x" lang="en">Anyone with the key/value <b>and</b>
               <code>AUTH_INTERNAL_SECRET</code> gets the full trace (SQL, timings) of any endpoint, and the handler
               really runs (writes still hit the database). Debug requests are not access-logged. Keep the secret
-              strong; leaving <code>AUTH_INTERNAL_SECRET</code> or <code>TRACER_DEBUG_VALUE</code> empty turns debug
-              mode off.</span><span class="x" lang="vi">Ai có key/value <b>và</b> <code>AUTH_INTERNAL_SECRET</code>
+              strong; leaving <code>AUTH_INTERNAL_SECRET</code>, <code>TRACER_DEBUG_KEY</code> or
+              <code>TRACER_DEBUG_VALUE</code> empty turns debug mode off.</span><span class="x" lang="vi">Ai có key/value <b>và</b> <code>AUTH_INTERNAL_SECRET</code>
               đều xem được toàn bộ trace (SQL, thời gian) của mọi endpoint, và handler chạy thật (ghi database vẫn xảy
               ra). Request debug không được ghi access log. Hãy dùng secret đủ mạnh; để
-              <code>AUTH_INTERNAL_SECRET</code> hoặc <code>TRACER_DEBUG_VALUE</code> rỗng là tắt chế độ debug.</span></div>
+              <code>AUTH_INTERNAL_SECRET</code>, <code>TRACER_DEBUG_KEY</code> hoặc <code>TRACER_DEBUG_VALUE</code> rỗng
+              là tắt chế độ debug.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">9</span><span class="w">HSTS needs TLS in
               Go</span><span class="x" lang="en"><code>Strict-Transport-Security</code> is only sent when Go itself
               terminated TLS (<code>c.Request.TLS != nil</code>). Behind a TLS-terminating proxy, set HSTS at the
@@ -2006,11 +2089,12 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
           <div class="jd-ex c-red" style="cursor:default"><span class="n">11</span><span class="w">Gzip: compress
               once</span><span class="x" lang="en">If nginx, an ingress or a CDN in front already compresses, leave
               <code>Gzip</code> out — it costs CPU for nothing. Put it after CORS so preflights skip it; responses
-              written by middleware before it (TracerDebug's dashboard) are not compressed. <code>c.Writer.Size()</code>
-              in AccessLog reports compressed bytes.</span><span class="x" lang="vi">Nếu nginx, ingress hoặc CDN phía
+              written by middleware before it (TracerDebug's dashboard) are not compressed. When Gzip runs before
+              AccessLog, <code>resp_size</code> (<code>c.Writer.Size()</code>) is the uncompressed size.</span><span class="x" lang="vi">Nếu nginx, ingress hoặc CDN phía
               trước đã nén, đừng dùng <code>Gzip</code> — tốn CPU vô ích. Đặt nó sau CORS để preflight không đi qua;
               response do middleware đứng trước ghi (dashboard của TracerDebug) không được nén.
-              <code>c.Writer.Size()</code> trong AccessLog sẽ là số byte đã nén.</span></div>
+              Khi Gzip chạy trước AccessLog, <code>resp_size</code> (<code>c.Writer.Size()</code>) là kích thước chưa
+              nén.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">12</span><span class="w">RoutePatterns: names
               are global</span><span class="x" lang="en">A rule applies to every route with that parameter name. A
               route that takes free text in <code>:id</code> or <code>:slug</code> starts returning 404 — rename the
@@ -2075,17 +2159,24 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
           }
         },
         {
-          node: "mw6", token: "body", color: req,
-          text: {
-            en: "<b>Payload</b> — reads the body once (max <code>MaxBodySize</code>, else <code>413</code>) and caches it for <code>GetPayload</code>.",
-            vi: "<b>Payload</b> — đọc body một lần (tối đa <code>MaxBodySize</code>, vượt thì <code>413</code>) và cache cho <code>GetPayload</code>."
-          }
-        },
-        {
           node: "mw7", token: "start timer", color: req,
           text: {
             en: "<b>AccessLog</b> — starts a timer and tees the response body; it writes its log line later, on the way out.",
             vi: "<b>AccessLog</b> — bắt đầu đếm giờ và chép response body; nó ghi log sau, lúc đi ra."
+          }
+        },
+        {
+          node: "mw9", token: "defer recover()", color: req,
+          text: {
+            en: "<b>Recover</b> — arms <code>defer recover()</code> around everything that follows: Payload, Limiter, RoutePatterns, auth and the handler.",
+            vi: "<b>Recover</b> — đặt <code>defer recover()</code> bao quanh mọi thứ phía sau: Payload, Limiter, RoutePatterns, auth và handler."
+          }
+        },
+        {
+          node: "mw6", token: "body", color: req,
+          text: {
+            en: "<b>Payload</b> — reads the body once (max <code>MaxBodySize</code>, or the route's own limit from <code>RouteLimits</code>; over it → <code>413</code>) and caches it for <code>GetPayload</code>.",
+            vi: "<b>Payload</b> — đọc body một lần (tối đa <code>MaxBodySize</code>, hoặc giới hạn riêng của route trong <code>RouteLimits</code>; vượt thì <code>413</code>) và cache cho <code>GetPayload</code>."
           }
         },
         {
@@ -2100,13 +2191,6 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
           text: {
             en: "<b>RoutePatterns</b> — checks every path parameter that has a rule (<code>:uuid</code>, <code>:id</code>, <code>:slug</code>). <code>/users</code> has none, so it passes. A bad value → <code>404 api_not_found</code> and abort.",
             vi: "<b>RoutePatterns</b> — kiểm tra mọi path param có rule (<code>:uuid</code>, <code>:id</code>, <code>:slug</code>). <code>/users</code> không có param nào nên đi qua. Giá trị sai → <code>404 api_not_found</code> và abort."
-          }
-        },
-        {
-          node: "mw9", token: "defer recover()", color: req,
-          text: {
-            en: "<b>Recover</b> — arms <code>defer recover()</code> around everything that follows.",
-            vi: "<b>Recover</b> — đặt <code>defer recover()</code> bao quanh mọi thứ phía sau."
           }
         },
         {

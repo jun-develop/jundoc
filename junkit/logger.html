@@ -586,11 +586,11 @@ type Definition struct {
             <ul>
               <li lang="en">For each definition, provides a <code>*zap.Logger</code> tagged
                 <code>name:"&lt;Name&gt;"</code>, built by <code>New</code> with <code>shared.Environment</code>,
-                <code>MaxSize</code>, <code>MaxBackups</code>, <code>MaxAge</code>, <code>Compress</code> and the
+                <code>Output</code>, <code>MaxSize</code>, <code>MaxBackups</code>, <code>MaxAge</code>, <code>Compress</code> and the
                 definition's own <code>Level</code> / <code>Filename</code>.</li>
               <li lang="vi">Với mỗi definition, cung cấp một <code>*zap.Logger</code> gắn tag
                 <code>name:"&lt;Name&gt;"</code>, tạo bằng <code>New</code> với <code>shared.Environment</code>,
-                <code>MaxSize</code>, <code>MaxBackups</code>, <code>MaxAge</code>, <code>Compress</code> và
+                <code>Output</code>, <code>MaxSize</code>, <code>MaxBackups</code>, <code>MaxAge</code>, <code>Compress</code> và
                 <code>Level</code> / <code>Filename</code> riêng của definition.</li>
               <li lang="en">The <code>"app"</code> channel is <b>also</b> provided untagged — the same instance — so
                 plain <code>*zap.Logger</code> parameters get it. No <code>"app"</code> definition → no untagged logger.
@@ -786,16 +786,23 @@ $ grep demo-123 storage/logs/http.log
               kênh cùng trỏ vào một <code>Filename</code> sẽ xoay vòng cùng một file một cách độc lập — hãy cho mỗi kênh
               một đường dẫn riêng.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Keep an "app"
-              channel</span><span class="x" lang="en">Without a definition named <code>"app"</code> (or with an empty
-              name) nothing provides an untagged <code>*zap.Logger</code>, and every constructor asking for one fails at
-              Fx start.</span><span class="x" lang="vi">Không có definition tên <code>"app"</code> (hoặc tên rỗng) thì
-              không có <code>*zap.Logger</code> không tag nào, và mọi constructor cần nó sẽ lỗi khi Fx khởi động.</span>
+              channel</span><span class="x" lang="en">An empty <code>Name</code> becomes <code>"app"</code>. With no definition
+              resolving to <code>"app"</code>, nothing provides an untagged <code>*zap.Logger</code> and every
+              constructor asking for one fails at Fx start. Two definitions resolving to <code>"app"</code> (e.g.
+              <code>"app"</code> and an empty name) fail at startup with an Fx duplicate-provide error.</span><span
+              class="x" lang="vi"><code>Name</code> rỗng sẽ thành <code>"app"</code>. Không có definition nào ra
+              <code>"app"</code> thì không có <code>*zap.Logger</code> không tag nào, và mọi constructor cần nó sẽ lỗi
+              khi Fx khởi động. Hai definition cùng ra <code>"app"</code> (ví dụ <code>"app"</code> và một tên rỗng) sẽ
+              lỗi khi khởi động vì Fx báo provide trùng.</span>
           </div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">Fatal / Panic skip the
-              flush hook</span><span class="x" lang="en"><code>log.Fatal</code> exits the process, so the
-              <code>OnStop</code> <code>Sync()</code> never runs. Prefer returning errors.</span><span class="x"
-              lang="vi"><code>log.Fatal</code> thoát process, nên <code>Sync()</code> trong <code>OnStop</code> không
-              bao giờ chạy. Nên trả lỗi về thay vì dùng nó.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">Fatal skips Fx
+              shutdown</span><span class="x" lang="en"><code>log.Fatal</code> calls <code>os.Exit</code>, so no Fx
+              <code>OnStop</code> hook runs (other modules' graceful shutdown included). No log line is lost: zap syncs
+              the core before exiting and the lumberjack writer is unbuffered. <code>log.Panic</code> does not exit — it
+              panics after writing. Prefer returning errors.</span><span class="x" lang="vi"><code>log.Fatal</code> gọi
+              <code>os.Exit</code>, nên không hook <code>OnStop</code> nào của Fx chạy (kể cả graceful shutdown của các
+              module khác). Không mất dòng log nào: zap sync core trước khi thoát và writer lumberjack không có buffer.
+              <code>log.Panic</code> không thoát — nó panic sau khi ghi log. Nên trả lỗi về thay vì dùng chúng.</span></div>
         </div>
       </section>
 

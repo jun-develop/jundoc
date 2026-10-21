@@ -140,6 +140,7 @@
             <pre data-hl="json">
 {
   "status": "error",
+  "code": "UNPROCESSABLE_ENTITY",
   "message": "Validation error",
   "error": {
     "email": "email must be a valid email format",
@@ -160,6 +161,7 @@
             <pre data-hl="json">
 {
   "status": "error",
+  "code": "UNPROCESSABLE_ENTITY",
   "message": "Validation error",
   "error": "Invalid JSON syntax",
   "api_info": {
@@ -216,10 +218,16 @@ func provideValidationOptions(cfg *config.Config) validation.Options {
             </div>
             <p class="jd-sub" style="margin-top:10px" lang="en"><code>cfg.Language</code> = env
               <code>API_LANGUAGE</code> (default <code>en</code>). Fx builds the Validator lazily — in Jungo the
-              handlers ask for <code>*validation.Validator</code>, so it exists before the server starts.</p>
+              handlers ask for <code>*validation.Validator</code> (reached through <code>fx.Invoke(router.RegisterAll)</code>),
+              so it exists before the server starts. If nothing requests it, it is never built, the custom tags are
+              never registered, and the first bind using one panics with <code>Undefined validation function
+              '…'</code> — force it with e.g. <code>fx.Invoke(func(*validation.Validator) {})</code>.</p>
             <p class="jd-sub" style="margin-top:10px" lang="vi"><code>cfg.Language</code> = env
               <code>API_LANGUAGE</code> (mặc định <code>en</code>). Fx tạo Validator khi có nơi cần — ở Jungo các
-              handler xin <code>*validation.Validator</code>, nên nó có trước khi server chạy.</p>
+              handler xin <code>*validation.Validator</code> (thông qua <code>fx.Invoke(router.RegisterAll)</code>), nên nó
+              có trước khi server chạy. Nếu không nơi nào xin, nó không bao giờ được tạo, các tag tùy chỉnh không được
+              đăng ký, và lần bind đầu tiên dùng tag đó sẽ panic với <code>Undefined validation function
+              '…'</code> — hãy ép tạo, ví dụ <code>fx.Invoke(func(*validation.Validator) {})</code>.</p>
           </div>
           <div class="jd-tabpanel" hidden>
             <div class="jd-term" data-copy>
@@ -229,12 +237,14 @@ translator := i18n.NewTranslator() // built-in English messages
 v := validation.NewValidator(validation.Options{Language: "en"}, translator)
 </pre>
             </div>
-            <p class="jd-sub" style="margin-top:10px" lang="en">On the first call it also creates / loads the
+            <p class="jd-sub" style="margin-top:10px" lang="en">Every call (each <code>NewValidator</code> /
+              <code>RegisterCustomValidation</code>) also creates / reloads the
               disposable-email blocklist at <code>storage/bootstrap/email_blocklist.conf</code> (relative to the working
-              directory) and prints <code>"validation: loaded disposable email blocklist from …"</code>.</p>
-            <p class="jd-sub" style="margin-top:10px" lang="vi">Nó cũng tạo / nạp blocklist email dùng một lần tại
-              <code>storage/bootstrap/email_blocklist.conf</code> (tương đối theo thư mục làm việc) và in ra
-              <code>"validation: loaded disposable email blocklist from …"</code>.</p>
+              directory) and prints <code>⚡ Validation: loaded disposable email blocklist from …</code> to stdout.</p>
+            <p class="jd-sub" style="margin-top:10px" lang="vi">Mỗi lần gọi (mỗi <code>NewValidator</code> /
+              <code>RegisterCustomValidation</code>) nó cũng tạo / nạp lại blocklist email dùng một lần tại
+              <code>storage/bootstrap/email_blocklist.conf</code> (tương đối theo thư mục làm việc) và in ra stdout
+              <code>⚡ Validation: loaded disposable email blocklist from …</code>.</p>
           </div>
         </div>
         <div class="jd-tablewrap" style="margin-top:16px">
@@ -436,14 +446,14 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
             </tr>
             <tr>
               <td>min_int=N</td>
-              <td lang="en">integer field ≥ N</td>
-              <td lang="vi">field số nguyên ≥ N</td>
+              <td lang="en">int or uint field ≥ N; any other kind fails</td>
+              <td lang="vi">field int hoặc uint ≥ N; kiểu khác thì không đạt</td>
               <td>%[1]s must be greater than %[2]s</td>
             </tr>
             <tr>
               <td>max_int=N</td>
-              <td lang="en">integer field ≤ N</td>
-              <td lang="vi">field số nguyên ≤ N</td>
+              <td lang="en">int or uint field ≤ N; any other kind fails</td>
+              <td lang="vi">field int hoặc uint ≤ N; kiểu khác thì không đạt</td>
               <td>%[1]s must be less than %[2]s</td>
             </tr>
             <tr>
@@ -553,10 +563,12 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
               <td>type_string → string · type_int → integer · type_int8/16/32/64 → integer (8-bit)… · type_uint →
                 positive integer · type_uint8/16/32/64 → positive integer (8-bit)… · type_float32 / type_float64 → float
                 · type_bool → boolean · type_time → datetime</td>
-              <td lang="en">friendly type names inside <code>invalid_type</code>; unknown types fall back to the Go type
-                name</td>
-              <td lang="vi">tên kiểu dễ đọc dùng trong <code>invalid_type</code>; kiểu không có thì dùng tên kiểu Go
-              </td>
+              <td lang="en">friendly type names inside <code>invalid_type</code>; pointers are unwrapped
+                (<code>*int</code> → type_int, <code>time.Time</code> / <code>*time.Time</code> → type_time). Unknown
+                types fall back to the Go type name — a custom named type shows as e.g. <code>domain.Status</code></td>
+              <td lang="vi">tên kiểu dễ đọc dùng trong <code>invalid_type</code>; con trỏ được bóc ra
+                (<code>*int</code> → type_int, <code>time.Time</code> / <code>*time.Time</code> → type_time). Kiểu
+                không có thì dùng tên kiểu Go — kiểu đặt tên riêng sẽ hiện ví dụ <code>domain.Status</code></td>
             </tr>
           </table>
         </div>
@@ -595,6 +607,12 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
             </tr>
           </table>
         </div>
+        <p lang="en">That is for rule errors. A JSON <b>type</b> error (e.g. a string sent to an int) is keyed by the
+          <b>JSON key path</b> instead, snake_cased. So <code>Phone string `json:"tel"`</code> is reported as
+          <code>"phone"</code> by a rule and as <code>"tel"</code> by a type error.</p>
+        <p lang="vi">Đó là với lỗi rule. Lỗi <b>kiểu</b> JSON (ví dụ gửi chuỗi vào field int) thì dùng <b>đường dẫn key
+            JSON</b>, chuyển sang snake_case. Nên <code>Phone string `json:"tel"`</code> được báo là
+          <code>"phone"</code> khi lỗi rule và <code>"tel"</code> khi lỗi kiểu.</p>
 
         <h3 style="margin-top:22px"><span lang="en">Add your own rule, or another language</span><span lang="vi">Thêm
             rule riêng, hoặc ngôn ngữ khác</span></h3>
@@ -935,16 +953,20 @@ $ curl -s 'localhost:$API_SERVER_PORT/api/v1/users?page_size=500' -H 'Authorizat
               <code>"page_size must be less than 100"</code> dù 100 vẫn đạt. Ghi đè văn bản nếu cần.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">email_advanced hits
               DNS</span><span class="x" lang="en">Every validation does a live MX lookup — slow, and it fails offline or
-              when DNS is down. It also logs the rejected address (<code>"validation: invalid email format: %s"</code>)
-              — personal data in logs.</span><span class="x" lang="vi">Mỗi lần validate là một lần tra MX thật — chậm,
-              và thất bại khi offline hoặc DNS lỗi. Nó còn log địa chỉ bị từ chối
-              (<code>"validation: invalid email format: %s"</code>) — dữ liệu cá nhân trong log.</span></div>
+              when DNS is down. Each rejection prints a warning to stdout via <code>console.Warnf</code> (not zap, so
+              the log level doesn't silence it). An invalid format prints no address, but the disposable / MX warnings
+              still print the domain.</span><span class="x" lang="vi">Mỗi lần validate là một lần tra MX thật — chậm,
+              và thất bại khi offline hoặc DNS lỗi. Mỗi lần từ chối in cảnh báo ra stdout qua
+              <code>console.Warnf</code> (không qua zap, nên log level không tắt được). Sai định dạng thì không in địa
+              chỉ, nhưng cảnh báo disposable / MX vẫn in domain.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Keys come from Go
               names</span><span class="x" lang="en">Gin's validator reports Go field names, so
-              <code>Phone string `json:"tel"`</code> yields the key <code>"phone"</code>, not <code>"tel"</code>. Keep
-              json tags = snake_case of the field name.</span><span class="x" lang="vi">Validator của gin báo tên field
-              Go, nên <code>Phone string `json:"tel"`</code> cho key <code>"phone"</code>, không phải
-              <code>"tel"</code>. Giữ json tag = snake_case của tên field.</span></div>
+              <code>Phone string `json:"tel"`</code> yields the key <code>"phone"</code> for a rule error — but a JSON
+              type error on the same field uses <code>"tel"</code>. One field, two keys. Keep json tags = snake_case of
+              the field name.</span><span class="x" lang="vi">Validator của gin báo tên field Go, nên
+              <code>Phone string `json:"tel"`</code> cho key <code>"phone"</code> khi lỗi rule — nhưng lỗi kiểu JSON
+              trên cùng field lại dùng <code>"tel"</code>. Một field, hai key. Giữ json tag = snake_case của tên
+              field.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Untranslated
               tags</span><span class="x" lang="en">A tag without a catalog entry (e.g. <code>url</code>,
               <code>len</code>, <code>numeric</code>) gives the bare tag as the message. Add a translation for every tag
@@ -952,11 +974,11 @@ $ curl -s 'localhost:$API_SERVER_PORT/api/v1/users?page_size=500' -H 'Authorizat
               <code>len</code>, <code>numeric</code>) cho message chỉ là tên tag. Thêm bản dịch cho mọi tag bạn
               dùng.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">min_int / max_int are
-              int-only</span><span class="x" lang="en">They call <code>fl.Field().Int()</code>; on a string or float
-              field that panics. For numbers prefer the standard <code>min</code> / <code>max</code> / <code>gte</code>
-              / <code>lte</code>.</span><span class="x" lang="vi">Chúng gọi <code>fl.Field().Int()</code>; trên field
-              chuỗi hay số thực sẽ panic. Với số, nên dùng <code>min</code> / <code>max</code> / <code>gte</code> /
-              <code>lte</code> chuẩn.</span></div>
+              integer-only</span><span class="x" lang="en">They accept int and uint fields; on a string, float or any
+              other kind they simply fail validation (no panic). For floats prefer the standard <code>min</code> /
+              <code>max</code> / <code>gte</code> / <code>lte</code>.</span><span class="x" lang="vi">Chúng nhận field
+              int và uint; trên field chuỗi, số thực hay kiểu khác thì chỉ báo không đạt (không panic). Với số thực, nên
+              dùng <code>min</code> / <code>max</code> / <code>gte</code> / <code>lte</code> chuẩn.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">password_strong
               details</span><span class="x" lang="en">Length is counted in bytes, and only the listed specials count —
               <code>~</code>, <code>`</code> and spaces don't, so <code>"Abcdefg1~"</code> fails.</span><span class="x"

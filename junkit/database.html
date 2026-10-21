@@ -184,12 +184,16 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
               riêng.</p>
           </div>
           <div class="jd-rule"><span class="n" style="background:var(--red)">3</span>
-            <p lang="en"><b>One transaction, one database, no nesting.</b> Writes to another database are not part of
-              it, and <code>WithTransaction</code> inside <code>WithTransaction</code> opens a second, independent
-              transaction.</p>
-            <p lang="vi"><b>Một transaction, một database, không lồng nhau.</b> Lệnh ghi sang database khác không thuộc
-              transaction, và <code>WithTransaction</code> lồng trong <code>WithTransaction</code> sẽ mở một transaction
-              thứ hai, độc lập.</p>
+            <p lang="en"><b>One transaction, one database; nested calls join it.</b> Writes to another database are
+              not part of it. <code>WithTransaction</code> called with a <code>ctx</code> that already carries the same
+              DB's transaction opens nothing new: <code>fn</code> runs in the outer transaction, which alone commits or
+              rolls back. No savepoints: if an inner Go error is swallowed, the outer transaction still commits; a swallowed SQL
+              error has already aborted the transaction in Postgres, so the outer commit fails.</p>
+            <p lang="vi"><b>Một transaction, một database; lời gọi lồng nhau nhập vào nó.</b> Lệnh ghi sang database
+              khác không thuộc transaction. <code>WithTransaction</code> gọi với <code>ctx</code> đã mang transaction
+              của cùng DB sẽ không mở gì mới: <code>fn</code> chạy trong transaction bên ngoài, và chỉ transaction đó
+              commit hoặc rollback. Không có savepoint: nếu nuốt một lỗi Go bên trong, transaction ngoài vẫn commit; còn lỗi SQL dù bị nuốt
+              thì Postgres đã abort transaction, nên commit bên ngoài sẽ lỗi.</p>
           </div>
         </div>
       </section>
@@ -221,8 +225,8 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
               <tr><td>ErrorInvalidInput</td><td>22P02, 22007, 22008</td></tr>
               <tr>
                 <td>ErrorConnection</td>
-                <td><span lang="en">08xxx, or a context timeout / cancel</span><span lang="vi">08xxx, hoặc context
-                    timeout / bị huỷ</span></td>
+                <td><span lang="en">08000, 08001, 08003, 08004, 08006, 08P01, or a context timeout / cancel</span><span
+                    lang="vi">08000, 08001, 08003, 08004, 08006, 08P01, hoặc context timeout / bị huỷ</span></td>
               </tr>
               <tr>
                 <td>ErrorUnknown</td>
@@ -301,9 +305,9 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
             <tr>
               <td>QueryLogging · SlowQueryThreshold</td>
               <td>DB_QUERY_LOGGING=true · DB_SLOW_QUERY_THRESHOLD=200ms</td>
-              <td lang="en">Log every query to <code>storage/logs/sql.log</code>; slower than the threshold → WARN
+              <td lang="en">Log every query to <code>storage/logs/sql.log</code> (stdout in development); slower than the threshold → WARN
                 <code>SLOW_QUERY_DETECTION</code>.</td>
-              <td lang="vi">Log mọi query vào <code>storage/logs/sql.log</code>; chậm hơn ngưỡng → WARN
+              <td lang="vi">Log mọi query vào <code>storage/logs/sql.log</code> (stdout ở development); chậm hơn ngưỡng → WARN
                 <code>SLOW_QUERY_DETECTION</code>.</td>
             </tr>
             <tr>
@@ -365,9 +369,11 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
             <tr>
               <td>(*DB) WithTransaction(ctx, fn) error</td>
               <td lang="en">Runs <code>fn(txCtx)</code>: <code>nil</code> → commit, error → rollback and the same error
-                is returned, panic → rollback and re-panic.</td>
+                is returned, panic → rollback and re-panic. If <code>ctx</code> already carries this DB's transaction,
+                <code>fn(ctx)</code> just runs inside it.</td>
               <td lang="vi">Chạy <code>fn(txCtx)</code>: <code>nil</code> → commit, lỗi → rollback và trả về đúng lỗi
-                đó, panic → rollback rồi panic lại.</td>
+                đó, panic → rollback rồi panic lại. Nếu <code>ctx</code> đã mang transaction của DB này, chỉ chạy
+                <code>fn(ctx)</code> bên trong nó.</td>
             </tr>
             <tr>
               <td>(*DB) Ping(ctx) error</td>

@@ -256,10 +256,10 @@ func (r *Reporter) Done(ctx context.Context, job string,
                 <code>nil</code>.</span></div>
             <div class="jd-ex c-blue" data-code="#code-quick" data-show="17-18"><span class="n">5</span><span
                 class="w">SendDocument streams</span><span class="x" lang="en">Any <code>io.Reader</code> — it is copied
-                into the multipart body while uploading, so big files don't sit in memory. The caption is optional
-                (<code>""</code> = none).</span><span class="x" lang="vi">Mọi <code>io.Reader</code> — được chép vào
-                body multipart trong lúc upload, nên file lớn không nằm hết trong bộ nhớ. Caption là tuỳ chọn
-                (<code>""</code> = không có).</span></div>
+                into the multipart body while uploading, so big files don't sit in memory (unless the injected client
+                retries — see below). The caption is optional (<code>""</code> = none).</span><span class="x" lang="vi">Mọi <code>io.Reader</code> — được chép vào
+                body multipart trong lúc upload, nên file lớn không nằm hết trong bộ nhớ (trừ khi client được inject có
+                retry — xem bên dưới). Caption là tuỳ chọn (<code>""</code> = không có).</span></div>
           </div>
         </div>
       </section>
@@ -345,11 +345,15 @@ type Client interface {
                 <code>chat_id</code>, field file <code>document</code> tên <code>filename</code>, và — chỉ khi
                 <code>caption != ""</code> — các field <code>caption</code> và <code>parse_mode=HTML</code>.</li>
               <li lang="en">The body is written by a goroutine into an <code>io.Pipe</code> while the request is sent:
-                memory use stays flat whatever the size of <code>content</code>. The reader is read to EOF but <b>not
-                  closed</b> — close files yourself.</li>
+                memory use stays flat whatever the size of <code>content</code>. Exception: an injected client with
+                <code>httpclient.Options.MaxRetries &gt; 0</code> reads the whole body into memory first so it can
+                resend it. The reader is read to EOF but <b>not closed</b> — close files yourself. If building or
+                sending the request fails, the pipe is closed so the writer goroutine stops (no leak).</li>
               <li lang="vi">Body được một goroutine ghi vào <code>io.Pipe</code> trong khi request đang gửi: bộ nhớ
-                không tăng theo kích thước <code>content</code>. Reader được đọc tới EOF nhưng <b>không bị đóng</b> — tự
-                đóng file của bạn.</li>
+                không tăng theo kích thước <code>content</code>. Ngoại lệ: client được inject có
+                <code>httpclient.Options.MaxRetries &gt; 0</code> sẽ đọc toàn bộ body vào bộ nhớ trước để có thể gửi
+                lại. Reader được đọc tới EOF nhưng <b>không bị đóng</b> — tự đóng file của bạn. Nếu tạo hoặc gửi
+                request lỗi, pipe được đóng để goroutine ghi dừng lại (không rò rỉ).</li>
               <li lang="en">Empty token, empty <code>chatID</code> or <code>content == nil</code> → logs Warn
                 <code>telegram: skip sending document due to invalid parameters</code>, returns <code>nil</code>.</li>
               <li lang="vi">Token trống, <code>chatID</code> trống hoặc <code>content == nil</code> → log Warn

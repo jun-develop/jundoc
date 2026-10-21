@@ -360,9 +360,11 @@ func (h *Handler) Me(c *gin.Context) {
                 (chúng không được export).</span></div>
             <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="12-15"><span class="n">2</span><span
                 class="w">CompareDummy</span><span class="x" lang="en">Unknown email still burns one bcrypt compare, so
-                response time does not reveal which emails are registered.</span><span class="x" lang="vi">Email không
+                response time does not reveal which emails are registered — as long as stored hashes use the current
+                cost; hashes from an older <code>AUTH_PASSWORD_COST</code> remain distinguishable.</span><span class="x" lang="vi">Email không
                 tồn tại vẫn tốn một lần so sánh bcrypt, nên thời gian phản hồi không tiết lộ email nào đã đăng
-                ký.</span></div>
+                ký — miễn là hash đã lưu dùng cost hiện tại; hash từ <code>AUTH_PASSWORD_COST</code> cũ vẫn phân biệt
+                được.</span></div>
             <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="16-18"><span class="n">3</span><span
                 class="w">Compare</span><span class="x" lang="en">Returns only <code>bool</code>. A malformed hash or a
                 password over 72 bytes is simply <code>false</code>.</span><span class="x" lang="vi">Chỉ trả
@@ -688,9 +690,13 @@ type PasswordHasher interface {
                 mật khẩu, hash rác hoặc <code>plain</code> quá 72 byte → <code>false</code> (trường hợp quá dài vẫn tốn
                 một lần so sánh giả).</li>
               <li lang="en"><b>CompareDummy</b> — compares against a hash made at startup with the same cost, so it
-                costs the same time as <code>Compare</code>. Call it when the user does not exist.</li>
+                costs the same time as <code>Compare</code> against hashes made with the <b>current</b> cost. Call it
+                when the user does not exist. Hashes stored under an older <code>AUTH_PASSWORD_COST</code> still take a
+                different time (nothing rehashes them on login yet), so those accounts stay distinguishable.</li>
               <li lang="vi"><b>CompareDummy</b> — so sánh với một hash tạo lúc khởi động với cùng cost, nên tốn đúng
-                thời gian như <code>Compare</code>. Gọi khi user không tồn tại.</li>
+                thời gian như <code>Compare</code> với các hash tạo bằng cost <b>hiện tại</b>. Gọi khi user không tồn
+                tại. Hash lưu từ <code>AUTH_PASSWORD_COST</code> cũ vẫn tốn thời gian khác (hiện chưa có bước hash lại
+                khi đăng nhập), nên vẫn phân biệt được các tài khoản đó.</li>
             </ul>
           </div>
 
