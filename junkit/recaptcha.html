@@ -55,33 +55,44 @@
               token đều qua.</p>
           </div>
         </div>
-        <div class="jd-flow" style="margin-top:22px" data-wires='[
+        <div class="jd-grid3w" style="margin-top:22px;grid-template-columns:repeat(4,minmax(0,1fr));gap:60px 36px" data-wires='[
       {"from":"r1","to":"r2","color":"blue","label":"token"},
-      {"from":"r2","to":"r3","color":"purple","label":"secret"},
-      {"from":"r3","to":"r4","color":"green","label":"score"}]'>
-          <div class="jd-node is-tint c-blue" data-node="r1"><span class="k">1 · browser</span><span class="t mono"
-              style="font-size:15px">grecaptcha.execute</span>
+      {"from":"r2","to":"r3","color":"purple","label":"✓"},
+      {"from":"r3","to":"r4","color":"green","label":"✓"},
+      {"from":"r2","to":"x2","color":"red","dir":"v","label":"✗"},
+      {"from":"r3","to":"x3","color":"red","dir":"v","label":"✗"},
+      {"from":"r4","to":"x4","color":"red","dir":"v","label":"✗"}]'>
+          <div class="jd-node is-tint c-blue" data-node="r1" style="grid-column:1;grid-row:1"><span class="k">1 · browser</span><span class="t mono" style="font-size:15px">grecaptcha.execute</span>
             <div class="d" lang="en">Google's v3 script returns a short-lived token.</div>
             <div class="d" lang="vi">Script v3 của Google trả về một token sống ngắn.</div>
           </div>
-          <div class="jd-node is-tint c-purple" data-node="r2"><span class="k"><span lang="en">2 · your
-                server</span><span lang="vi">2 · server của bạn</span></span><span class="t mono"
-              style="font-size:15px">Verify(ctx, token, ip)</span>
-            <div class="d" lang="en">Missing secret key → error before any call.</div>
-            <div class="d" lang="vi">Thiếu secret key → lỗi trước khi gọi gì.</div>
+          <div class="jd-node is-tint c-purple" data-node="r2" style="grid-column:2;grid-row:1"><span class="k"><span lang="en">2 · your server</span><span lang="vi">2 · server của bạn</span></span><span class="t mono" style="font-size:15px">Verify(ctx, token, ip)</span>
+            <div class="d" lang="en">Is a secret key configured?</div>
+            <div class="d" lang="vi">Đã cấu hình secret key chưa?</div>
           </div>
-          <div class="jd-node is-tint c-pink" data-node="r3"><span class="k">3 · Google</span><span class="t mono"
-              style="font-size:15px">siteverify</span>
-            <div class="d" lang="en"><code>POST https://www.google.com/recaptcha/api/siteverify</code></div>
-            <div class="d" lang="vi"><code>POST https://www.google.com/recaptcha/api/siteverify</code></div>
+          <div class="jd-node is-tint c-red" data-node="x2" style="grid-column:2;grid-row:2"><span class="k">✗ error</span>
+            <div class="d" lang="en"><code>recaptcha secret key not configured</code> — Google is never called.</div>
+            <div class="d" lang="vi"><code>recaptcha secret key not configured</code> — không hề gọi Google.</div>
           </div>
-          <div class="jd-node is-tint c-green" data-node="r4"><span class="k">4 · verdict</span><span class="t mono"
-              style="font-size:15px">score ≥ MinScore ?</span>
-            <div class="d" lang="en"><code>success</code> and score high enough → <code>nil</code>; otherwise an error.
-            </div>
-            <div class="d" lang="vi"><code>success</code> và điểm đủ cao → <code>nil</code>; ngược lại là error.</div>
+          <div class="jd-node is-tint c-pink" data-node="r3" style="grid-column:3;grid-row:1"><span class="k">3 · Google</span><span class="t mono" style="font-size:15px">siteverify</span>
+            <div class="d" lang="en"><code>POST https://www.google.com/recaptcha/api/siteverify</code> — did it answer 200 with valid JSON?</div>
+            <div class="d" lang="vi"><code>POST https://www.google.com/recaptcha/api/siteverify</code> — có trả 200 kèm JSON hợp lệ không?</div>
+          </div>
+          <div class="jd-node is-tint c-red" data-node="x3" style="grid-column:3;grid-row:2"><span class="k">✗ error</span>
+            <div class="d" lang="en">Network error, non-200 status or unreadable JSON.</div>
+            <div class="d" lang="vi">Lỗi mạng, status khác 200 hoặc JSON không đọc được.</div>
+          </div>
+          <div class="jd-node is-tint c-green" data-node="r4" style="grid-column:4;grid-row:1"><span class="k">4 · verdict</span><span class="t mono" style="font-size:15px">success &amp;&amp; score ≥ MinScore ?</span>
+            <div class="d" lang="en">Both true → <code>nil</code>: the request goes on.</div>
+            <div class="d" lang="vi">Cả hai đúng → <code>nil</code>: request đi tiếp.</div>
+          </div>
+          <div class="jd-node is-tint c-red" data-node="x4" style="grid-column:4;grid-row:2"><span class="k">✗ error</span>
+            <div class="d" lang="en"><code>recaptcha verification failed</code> or <code>recaptcha score too low</code>.</div>
+            <div class="d" lang="vi"><code>recaptcha verification failed</code> hoặc <code>recaptcha score too low</code>.</div>
           </div>
         </div>
+        <p class="jd-sub" style="text-align:center;margin:10px 0 0" lang="en">Each ✗ makes <code>Verify</code> return that error right away; only ✓ goes on to the next step.</p>
+        <p class="jd-sub" style="text-align:center;margin:10px 0 0" lang="vi">Mỗi nhánh ✗ làm <code>Verify</code> trả error đó ngay; chỉ nhánh ✓ mới đi tiếp sang bước sau.</p>
       </section>
 
       <!-- ============================================================ 2. SETUP -->
@@ -115,29 +126,29 @@ fx.Provide(httpclient.NewDefaultClient), // *http.Client — required even in Mo
 fx.Provide(provideRecaptchaOptions),
 recaptcha.Module,
 
-// provideRecaptchaOptions builds recaptcha.Options from cfg.Recaptcha; the mock is never used
-// in production.
+// provideRecaptchaOptions builds recaptcha.Options from cfg.Recaptcha; the mock is used only in
+// development.
 func provideRecaptchaOptions(cfg *config.Config) (recaptcha.Options, error) {
-	production := cfg.Environment == "production"
-	if production &amp;&amp; cfg.Auth.RecaptchaOnLogin &amp;&amp; cfg.Recaptcha.SecretKey == "" {
-		return recaptcha.Options{}, errors.New("RECAPTCHA_SECRET_KEY: required in production when AUTH_RECAPTCHA_ON_LOGIN=true")
+	dev := cfg.IsDevelopment()
+	if !dev &amp;&amp; cfg.Auth.RecaptchaOnLogin &amp;&amp; cfg.Recaptcha.SecretKey == "" {
+		return recaptcha.Options{}, errors.New("RECAPTCHA_SECRET_KEY: required outside development when AUTH_RECAPTCHA_ON_LOGIN=true")
 	}
 
 	return recaptcha.Options{
 		SecretKey: cfg.Recaptcha.SecretKey,
 		MinScore:  cfg.Recaptcha.MinScore,
-		Mock:      cfg.Recaptcha.Mock &amp;&amp; !production,
+		Mock:      cfg.Recaptcha.Mock &amp;&amp; dev,
 	}, nil
 }
 </pre>
             </div>
             <p class="jd-sub" style="margin-top:10px" lang="en">From <code>config.RecaptchaConfig</code>:
               <code>RECAPTCHA_SECRET_KEY</code>, <code>RECAPTCHA_MIN_SCORE</code> (default <code>0.5</code>),
-              <code>RECAPTCHA_MOCK</code> (default <code>true</code>, ignored when <code>API_ENVIRONMENT=production</code>,
+              <code>RECAPTCHA_MOCK</code> (default <code>true</code>, used only when <code>API_ENVIRONMENT=development</code>,
               see gotchas).</p>
             <p class="jd-sub" style="margin-top:10px" lang="vi">Từ <code>config.RecaptchaConfig</code>:
               <code>RECAPTCHA_SECRET_KEY</code>, <code>RECAPTCHA_MIN_SCORE</code> (mặc định <code>0.5</code>),
-              <code>RECAPTCHA_MOCK</code> (mặc định <code>true</code>, bị bỏ qua khi <code>API_ENVIRONMENT=production</code>,
+              <code>RECAPTCHA_MOCK</code> (mặc định <code>true</code>, chỉ có tác dụng khi <code>API_ENVIRONMENT=development</code>,
               xem phần lưu ý).</p>
           </div>
           <div class="jd-tabpanel" hidden>
@@ -548,10 +559,10 @@ func newVerifier(opts Options, httpClient *http.Client) Verifier
             </tr>
             <tr>
               <td>app/fx.go</td>
-              <td lang="en"><code>provideRecaptchaOptions</code> + <code>recaptcha.Module</code>. In production it
+              <td lang="en"><code>provideRecaptchaOptions</code> + <code>recaptcha.Module</code>. Outside development it
                 forces <code>Mock</code> off and fails startup if <code>AUTH_RECAPTCHA_ON_LOGIN=true</code> with an
                 empty <code>RECAPTCHA_SECRET_KEY</code>.</td>
-              <td lang="vi"><code>provideRecaptchaOptions</code> + <code>recaptcha.Module</code>. Ở production nó luôn
+              <td lang="vi"><code>provideRecaptchaOptions</code> + <code>recaptcha.Module</code>. Ngoài development nó luôn
                 tắt <code>Mock</code> và báo lỗi khi khởi động nếu <code>AUTH_RECAPTCHA_ON_LOGIN=true</code> mà
                 <code>RECAPTCHA_SECRET_KEY</code> trống.</td>
             </tr>
@@ -624,14 +635,14 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
         </div>
         <div class="jd-explain" style="margin-top:16px">
           <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w"><span lang="en">Jungo
-                mocks by default — outside production</span><span lang="vi">Jungo mặc định mock — trừ
-                production</span></span><span
-              class="x" lang="en"><code>RECAPTCHA_MOCK</code> has <code>envDefault:"true"</code>, so in development,
-              staging and any other non-production <code>API_ENVIRONMENT</code> every token passes. With
-              <code>API_ENVIRONMENT=production</code> Jungo ignores it and always uses the real client.</span><span class="x"
-              lang="vi"><code>RECAPTCHA_MOCK</code> có <code>envDefault:"true"</code>, nên ở development, staging và
-              mọi <code>API_ENVIRONMENT</code> khác production thì mọi token đều được cho qua. Với
-              <code>API_ENVIRONMENT=production</code> Jungo bỏ qua nó và luôn dùng client thật.</span></div>
+                mocks only in development</span><span lang="vi">Jungo chỉ mock ở
+                development</span></span><span
+              class="x" lang="en"><code>RECAPTCHA_MOCK</code> has <code>envDefault:"true"</code>, but Jungo honors it
+              only when <code>API_ENVIRONMENT=development</code>. Staging, production and any other value always use the
+              real client, so a renamed environment can't quietly let every token through.</span><span class="x"
+              lang="vi"><code>RECAPTCHA_MOCK</code> có <code>envDefault:"true"</code>, nhưng Jungo chỉ dùng nó khi
+              <code>API_ENVIRONMENT=development</code>. Staging, production và mọi giá trị khác luôn dùng client thật,
+              nên đặt tên môi trường khác đi cũng không vô tình cho mọi token qua.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">v3
                 only</span><span lang="vi">chỉ dùng v3</span></span><span class="x" lang="en">A v2 checkbox token has no
               score, so it decodes as 0 and fails with "score too low". The <code>action</code> and

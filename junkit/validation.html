@@ -333,6 +333,13 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
                 field of a bad query number). The map or string ends up in <code>"error"</code>.</span><span class="x"
                 lang="vi">Truyền lỗi và gin context (cần để tìm field của số sai trong query). Map hoặc string sẽ nằm ở
                 <code>"error"</code>.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick-hdl" data-show="3-6"><span class="n">5</span><span
+                class="w">BindJSON</span><span class="x" lang="en">Lines 3–6 in one call:
+                <code>if !validation.BindJSON(ctx, h.responder, h.validator, &amp;req) { return }</code>. Also
+                <code>BindQuery</code> and <code>ParseUUID</code> — see the <a href="#api">API reference</a>.</span><span
+                class="x" lang="vi">Dòng 3–6 gói trong một lời gọi:
+                <code>if !validation.BindJSON(ctx, h.responder, h.validator, &amp;req) { return }</code>. Có thêm
+                <code>BindQuery</code> và <code>ParseUUID</code> — xem <a href="#api">tham chiếu API</a>.</span></div>
           </div>
         </div>
       </section>
@@ -748,6 +755,38 @@ var Module = fx.Module("validation",
           </div>
         </div>
 
+        <h3 style="margin-top:22px"><span lang="en">Bind helpers</span><span lang="vi">Hàm bind</span></h3>
+        <p class="jd-sub" lang="en">Bind, validate and answer the error in one call. Each returns <code>false</code> once it
+          has written the response — the handler only has to <code>return</code>. They need a
+          <code>response.Responder</code> too.</p>
+        <p class="jd-sub" lang="vi">Bind, validate và trả lỗi trong một lời gọi. Mỗi hàm trả <code>false</code> khi đã ghi
+          response — handler chỉ cần <code>return</code>. Chúng cần thêm một <code>response.Responder</code>.</p>
+        <div class="jd-syms">
+          <div class="jd-sym c-green">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">BindJSON / BindQuery</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+func BindJSON(ctx *gin.Context, responder response.Responder, validator *Validator, req any) bool
+func BindQuery(ctx *gin.Context, responder response.Responder, validator *Validator, req any) bool
+</pre>
+            </div>
+            <p lang="en">Run <code>ShouldBindJSON</code> / <code>ShouldBindQuery</code> into <code>req</code>. On error:
+              422 <code>"validation_error"</code> with <code>GetValidationErrors</code> in <code>"error"</code>.</p>
+            <p lang="vi">Chạy <code>ShouldBindJSON</code> / <code>ShouldBindQuery</code> vào <code>req</code>. Lỗi thì: 422
+              <code>"validation_error"</code> với kết quả <code>GetValidationErrors</code> trong <code>"error"</code>.</p>
+          </div>
+          <div class="jd-sym c-green">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">ParseUUID</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func ParseUUID(ctx *gin.Context, responder response.Responder, validator *Validator) (uuid.UUID, bool)</pre>
+            </div>
+            <p lang="en">Reads the <code>:uuid</code> path parameter as a typed <code>uuid.UUID</code>. Missing or not a
+              UUID → 422 <code>{"uuid":"uuid must be a valid UUID"}</code>; the route must name it <code>:uuid</code>.</p>
+            <p lang="vi">Đọc tham số đường dẫn <code>:uuid</code> thành <code>uuid.UUID</code> có kiểu. Thiếu hoặc không phải
+              UUID → 422 <code>{"uuid":"uuid must be a valid UUID"}</code>; route phải đặt tên nó là <code>:uuid</code>.</p>
+          </div>
+        </div>
+
         <h3 style="margin-top:22px"><span lang="en">Rules &amp; email helpers</span><span lang="vi">Rule &amp; hàm hỗ
             trợ email</span></h3>
         <div class="jd-syms">
@@ -861,19 +900,10 @@ var Module = fx.Module("validation",
             </tr>
             <tr>
               <td>features/user/handler/v1/user_handler.go<br>features/auth/handler/v1/auth_handler.go</td>
-              <td lang="en">
-                <code>SendWithData(ctx, 422, "validation_error", h.validator.GetValidationErrors(ctx, err))</code> after
-                every failed bind.</td>
-              <td lang="vi">
-                <code>SendWithData(ctx, 422, "validation_error", h.validator.GetValidationErrors(ctx, err))</code> sau
-                mỗi lần bind thất bại.</td>
-            </tr>
-            <tr>
-              <td>common/httpx/uuid_param.go</td>
-              <td lang="en"><code>ParseUUID</code> binds <code>:uuid</code> with <code>required,uuid</code> →
-                <code>{"uuid":"uuid must be a valid UUID"}</code>.</td>
-              <td lang="vi"><code>ParseUUID</code> bind <code>:uuid</code> với <code>required,uuid</code> →
-                <code>{"uuid":"uuid must be a valid UUID"}</code>.</td>
+              <td lang="en"><code>validation.BindJSON</code>, <code>BindQuery</code> and <code>ParseUUID</code> on
+                every request — a failed bind answers 422 by itself.</td>
+              <td lang="vi"><code>validation.BindJSON</code>, <code>BindQuery</code> và <code>ParseUUID</code> ở mọi
+                request — bind lỗi thì tự trả 422.</td>
             </tr>
             <tr>
               <td>.gitignore (repo root)</td>
@@ -994,9 +1024,13 @@ $ curl -s 'localhost:$API_SERVER_PORT/api/v1/users?page_size=500' -H 'Authorizat
           <div class="jd-ex c-red" style="cursor:default"><span class="n">8</span><span class="w">Writes a file at
               startup</span><span class="x" lang="en"><code>NewValidator</code> creates <code>storage/bootstrap/</code>
               in the working directory if the blocklist is missing. In a read-only container it just logs a warning and
-              the blocklist stays empty.</span><span class="x" lang="vi"><code>NewValidator</code> tạo
+              the blocklist stays empty. <code>go test</code> runs each package in its own folder, so a test that
+              calls <code>NewValidator</code> leaves a <code>storage/</code> folder next to that package's files —
+              delete it, don't commit it.</span><span class="x" lang="vi"><code>NewValidator</code> tạo
               <code>storage/bootstrap/</code> trong thư mục làm việc nếu chưa có blocklist. Trong container chỉ đọc, nó
-              chỉ log cảnh báo và blocklist rỗng.</span></div>
+              chỉ log cảnh báo và blocklist rỗng. <code>go test</code> chạy mỗi package trong thư mục của nó, nên test
+              nào gọi <code>NewValidator</code> sẽ để lại thư mục <code>storage/</code> cạnh file của package đó — xóa
+              nó đi, đừng commit.</span></div>
         </div>
       </section>
 

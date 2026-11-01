@@ -107,7 +107,8 @@
 fx.Provide(provideCacheOptions),
 cache.Module,
 
-// provideCacheOptions selects the Redis driver when enabled, otherwise a no-op cache.
+// provideCacheOptions uses Redis when enabled, otherwise no cache, because an in-memory cache
+// would let other instances keep serving revoked sessions and permissions.
 func provideCacheOptions(cfg *config.Config) cache.Options {
     if !cfg.Redis.Enabled {
         return cache.Options{Driver: cache.DriverNoop}
@@ -127,13 +128,15 @@ func provideCacheOptions(cfg *config.Config) cache.Options {
             <p lang="en" style="margin-top:12px"><code>cache.Module</code> turns the <code>cache.Options</code> in the
               graph into a <code>cache.Cache[any]</code>. For typed caches, ask Fx for <code>cache.Options</code> and
               call <code>cache.New[T](opts)</code> yourself — that is what Jungo's features do.
-              <code>cfg.Redis.Enabled</code> is the env var <code>CACHE_ENABLED</code> (default <code>false</code>), so
-              out of the box Jungo runs with the <b>no-op</b> driver.</p>
+              <code>cfg.Redis.Enabled</code> is the env var <code>CACHE_REDIS_ENABLE</code> (default <code>false</code>), so
+              out of the box Jungo runs with the <b>no-op</b> driver: nothing is cached and every lookup reads the
+              database. Why not memory? Each process would hold its own copy, so with several instances a logout or
+              a removed permission would reach the others only when their copy expires.</p>
             <p lang="vi" style="margin-top:12px"><code>cache.Module</code> biến <code>cache.Options</code> có trong
               graph thành một <code>cache.Cache[any]</code>. Muốn cache có kiểu, hãy xin Fx <code>cache.Options</code>
               rồi tự gọi <code>cache.New[T](opts)</code> — các feature của Jungo làm đúng như vậy.
-              <code>cfg.Redis.Enabled</code> là biến môi trường <code>CACHE_ENABLED</code> (mặc định
-              <code>false</code>), nên mặc định Jungo chạy với driver <b>no-op</b>.</p>
+              <code>cfg.Redis.Enabled</code> là biến môi trường <code>CACHE_REDIS_ENABLE</code> (mặc định
+              <code>false</code>), nên mặc định Jungo chạy với driver <b>no-op</b>: không cache gì, mọi lần tra đều đọc database. Vì sao không dùng memory? Mỗi process sẽ giữ một bản riêng, nên khi chạy nhiều instance, logout hay một permission bị gỡ chỉ tới các instance khác khi bản của chúng hết hạn.</p>
           </div>
           <div class="jd-tabpanel" hidden>
             <div class="jd-term">
@@ -574,6 +577,57 @@ type Options struct {
           </div>
 
           <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">Options.OrMemory</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func (o Options) OrMemory() Options</pre>
+            </div>
+            <p lang="en">Keeps <code>DriverRedis</code>; any other driver becomes <code>DriverMemory</code>. Use it
+              for counters and blocks that must work without Redis (a no-op cache would never block), accepting that
+              each instance then keeps its own. Jungo's login guard and <code>middleware.Banner</code> use it.</p>
+            <p lang="vi">Giữ nguyên <code>DriverRedis</code>; driver khác thành <code>DriverMemory</code>. Dùng cho bộ
+              đếm và lệnh chặn phải chạy được cả khi không có Redis (cache no-op sẽ không bao giờ chặn), chấp nhận mỗi
+              instance giữ bản riêng. Bộ chặn login của Jungo và <code>middleware.Banner</code> dùng nó.</p>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Invalidatable[T]</span><span
+                class="jd-pill">invalidatable.go</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+func NewInvalidatable[T any](opts Options, ttl time.Duration) *Invalidatable[T]
+
+func (c *Invalidatable[T]) GetOrLoad(ctx context.Context, key string,
+    markers func(T) []string, load func() (T, error)) (value T, hit bool, err error)
+func (c *Invalidatable[T]) Delete(ctx context.Context, key string) error
+func (c *Invalidatable[T]) Invalidate(ctx context.Context, marker string) error
+</pre>
+            </div>
+            <p lang="en">A cache for values that must be dropped before their TTL when the data behind them
+              changes — Jungo's sessions (marker: the session's family) and permissions (markers: the user and a global
+              one).</p>
+            <p lang="vi">Cache cho những giá trị phải bỏ trước khi hết TTL khi dữ liệu gốc thay đổi — session của
+              Jungo (marker: family của session) và permission (marker: user và một marker chung).</p>
+            <ul>
+              <li lang="en"><code>Invalidate</code> stores the current time under <code>marker</code>, kept for 2× TTL
+                (a slow load can write its entry after it).</li>
+              <li lang="vi"><code>Invalidate</code> lưu thời điểm hiện tại dưới <code>marker</code>, giữ trong 2× TTL
+                (một lần nạp chậm có thể ghi entry sau đó).</li>
+              <li lang="en"><code>GetOrLoad</code> stores each entry with the time its load <b>started</b>. An entry is
+                a miss when one of <code>markers(value)</code> was set after that time, or within 2 s before it (clock
+                skew between instances). So a load that read the old data and finished after the change is never
+                served. <code>hit</code> tells whether the value came from the cache.</li>
+              <li lang="vi"><code>GetOrLoad</code> lưu mỗi entry kèm thời điểm <b>bắt đầu</b> nạp. Entry bị coi là miss
+                khi một trong <code>markers(value)</code> được đặt sau thời điểm đó, hoặc trong vòng 2 giây trước đó
+                (lệch đồng hồ giữa các instance). Nhờ vậy một lần nạp đọc dữ liệu cũ mà xong sau khi dữ liệu đổi sẽ
+                không bao giờ được trả ra. <code>hit</code> cho biết giá trị lấy từ cache hay không.</li>
+              <li lang="en">With a memory backend the cached value is shared: copy it before changing it. A failed load
+                is not cached. <code>ttl &lt;= 0</code> always loads.</li>
+              <li lang="vi">Với backend memory, giá trị cache được dùng chung: hãy copy trước khi sửa. Lần nạp lỗi không
+                được cache. <code>ttl &lt;= 0</code> thì luôn nạp lại.</li>
+            </ul>
+          </div>
+
+          <div class="jd-sym c-blue">
             <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">New</span></div>
             <div class="jd-term">
               <pre data-hl="go">func New[T any](opts Options) Cache[T]</pre>
@@ -880,47 +934,75 @@ func (c *NoopCache[T]) Close() error
             <tr>
               <td>app/fx.go</td>
               <td><span lang="en"><code>provideCacheOptions</code>: <code>DriverRedis</code> when
-                  <code>CACHE_ENABLED=true</code>, else <code>DriverNoop</code>; then
+                  <code>CACHE_REDIS_ENABLE=true</code>, else <code>DriverNoop</code>; then
                   <code>cache.Module</code>.</span><span lang="vi"><code>provideCacheOptions</code>:
-                  <code>DriverRedis</code> khi <code>CACHE_ENABLED=true</code>, ngược lại <code>DriverNoop</code>; sau
+                  <code>DriverRedis</code> khi <code>CACHE_REDIS_ENABLE=true</code>, ngược lại <code>DriverNoop</code>; sau
                   đó <code>cache.Module</code>.</span></td>
             </tr>
             <tr>
               <td>config/config.go</td>
-              <td><span lang="en"><code>CACHE_ENABLED</code> (default <code>false</code>), <code>REDIS_HOST</code>
+              <td><span lang="en"><code>CACHE_REDIS_ENABLE</code> (default <code>false</code>), <code>REDIS_HOST</code>
                   (<code>localhost</code>), <code>REDIS_PORT</code> (<code>6379</code>), <code>REDIS_PASSWORD</code>,
-                  <code>REDIS_DB</code> (<code>0</code>).</span><span lang="vi"><code>CACHE_ENABLED</code> (mặc định
+                  <code>REDIS_DB</code> (<code>0</code>).</span><span lang="vi"><code>CACHE_REDIS_ENABLE</code> (mặc định
                   <code>false</code>), <code>REDIS_HOST</code> (<code>localhost</code>), <code>REDIS_PORT</code>
                   (<code>6379</code>), <code>REDIS_PASSWORD</code>, <code>REDIS_DB</code> (<code>0</code>).</span></td>
             </tr>
             <tr>
               <td>features/auth/infrastructure/session_cache.go</td>
-              <td><span lang="en"><code>cache.New[*cachedSession](opts)</code> caches sessions for
-                  <code>AUTH_SESSION_CACHE_TTL</code> (default 3m); <code>cache.New[int64](opts)</code> stores
-                  per-family invalidation timestamps for 2× the TTL. Keys: <code>auth:session:&lt;hash&gt;</code>,
-                  <code>auth:family:&lt;uuid&gt;:invalidated_at</code>. With the default no-op driver every lookup hits
-                  the DB.</span><span lang="vi"><code>cache.New[*cachedSession](opts)</code> cache session trong
-                  <code>AUTH_SESSION_CACHE_TTL</code> (mặc định 3m); <code>cache.New[int64](opts)</code> lưu mốc thời
-                  gian vô hiệu hoá theo family trong 2× TTL. Key: <code>auth:session:&lt;hash&gt;</code>,
-                  <code>auth:family:&lt;uuid&gt;:invalidated_at</code>. Với driver no-op mặc định, mọi lần tra đều xuống
-                  DB.</span></td>
+              <td><span lang="en"><code>cache.NewInvalidatable[*domain.Session](opts, ttl)</code> caches sessions for
+                  <code>AUTH_SESSION_CACHE_TTL</code> (default 3m), with the session's family as its marker, kept for
+                  2× the TTL. Keys: <code>auth:session:&lt;hash&gt;:entry</code>,
+                  <code>auth:family:&lt;uuid&gt;:invalidated_at</code>. Without Redis (<code>CACHE_REDIS_ENABLE=false</code>, the default) the driver is no-op, so every
+                  lookup hits the DB; <code>AUTH_SESSION_CACHE_TTL=0</code> does the same with Redis. Entries loaded
+                  up to 2 s after an invalidation also count as stale, in case instances' clocks differ.</span><span lang="vi"><code>cache.NewInvalidatable[*domain.Session](opts, ttl)</code> cache session trong
+                  <code>AUTH_SESSION_CACHE_TTL</code> (mặc định 3m), dùng family của session làm marker, giữ trong 2×
+                  TTL. Key: <code>auth:session:&lt;hash&gt;:entry</code>,
+                  <code>auth:family:&lt;uuid&gt;:invalidated_at</code>. Không bật Redis (<code>CACHE_REDIS_ENABLE=false</code>, mặc định)
+                  thì driver là no-op, nên mọi lần tra đều xuống DB; <code>AUTH_SESSION_CACHE_TTL=0</code> cũng vậy khi có Redis.
+                  Entry nạp trong vòng 2 giây sau một lần vô hiệu hoá cũng bị coi là cũ, phòng khi đồng hồ các instance lệch nhau.</span></td>
             </tr>
             <tr>
               <td>features/auth/infrastructure/login_guard.go</td>
               <td><span lang="en"><code>cache.New[int64]</code> with fixed-window <code>Incr</code> counters
                   <code>auth:login:ip:short:&lt;ip&gt;</code>, <code>auth:login:ip:long:&lt;ip&gt;</code>,
-                  <code>auth:login:email:&lt;hash&gt;</code>. If the driver is not Redis it is forced to
-                  <code>DriverMemory</code> — a no-op counter would never block.</span><span
+                  <code>auth:login:email:&lt;hash&gt;</code>, built with <code>opts.OrMemory()</code>: a driver other than
+                  Redis becomes <code>DriverMemory</code> — a no-op counter would never block. An IPv6 <code>&lt;ip&gt;</code> is its
+                  <code>/64</code> block. If <code>Incr</code> fails (Redis down), the login is refused.</span><span
                   lang="vi"><code>cache.New[int64]</code> với các bộ đếm <code>Incr</code> cửa sổ cố định
                   <code>auth:login:ip:short:&lt;ip&gt;</code>, <code>auth:login:ip:long:&lt;ip&gt;</code>,
-                  <code>auth:login:email:&lt;hash&gt;</code>. Nếu driver không phải Redis thì bị ép sang
-                  <code>DriverMemory</code> — bộ đếm no-op sẽ không bao giờ chặn.</span></td>
+                  <code>auth:login:email:&lt;hash&gt;</code>, tạo bằng <code>opts.OrMemory()</code>: driver khác Redis bị
+                  chuyển sang <code>DriverMemory</code> — bộ đếm no-op sẽ không bao giờ chặn. Với IPv6, <code>&lt;ip&gt;</code> là cả
+                  khối <code>/64</code>. Nếu <code>Incr</code> lỗi (Redis sập), login bị từ chối.</span></td>
+            </tr>
+            <tr>
+              <td>router/router.go</td>
+              <td><span lang="en"><code>cache.New[int64](p.CacheOptions.OrMemory())</code> for
+                  <code>middleware.Banner</code>, memory without Redis for the same reason.
+                  Keys: <code>banner:ban:&lt;client&gt;</code> (ban end, Unix seconds),
+                  <code>banner:strikes:&lt;client&gt;</code>, <code>banner:level:&lt;client&gt;</code>. Unlike the
+                  login guard, a failing <code>Incr</code> lets the request through.</span><span
+                  lang="vi"><code>cache.New[int64](p.CacheOptions.OrMemory())</code> cho
+                  <code>middleware.Banner</code>, dùng memory khi không có Redis vì cùng lý do.
+                  Key: <code>banner:ban:&lt;client&gt;</code> (thời điểm hết ban, Unix giây),
+                  <code>banner:strikes:&lt;client&gt;</code>, <code>banner:level:&lt;client&gt;</code>. Khác bộ chặn
+                  login, <code>Incr</code> lỗi thì request vẫn được đi tiếp.</span></td>
             </tr>
             <tr>
               <td>features/auth/module.go</td>
               <td><span lang="en">Provides <code>NewSessionCache</code> and <code>NewLoginGuard</code>, which take
                   <code>cache.Options</code> from the graph.</span><span lang="vi">Cung cấp <code>NewSessionCache</code>
                   và <code>NewLoginGuard</code>, cả hai lấy <code>cache.Options</code> từ graph.</span></td>
+            </tr>
+            <tr>
+              <td>features/access/infrastructure/permission_cache.go</td>
+              <td><span lang="en">The same <code>cache.Invalidatable</code> for each user's permission codes, for
+                  <code>AUTH_PERMISSION_CACHE_TTL</code> (default 60s). Keys: <code>access:user:&lt;id&gt;:permissions:entry</code>,
+                  <code>access:user:&lt;id&gt;:invalidated_at</code>, <code>access:invalidated_at</code>. Invalidating a
+                  user also deletes their entry. See <a href="../jungo/access.html#inside">Permissions &amp;
+                  roles</a>.</span><span lang="vi">Cũng dùng <code>cache.Invalidatable</code>, cho các mã permission của từng user,
+                  trong <code>AUTH_PERMISSION_CACHE_TTL</code> (mặc định 60s). Key: <code>access:user:&lt;id&gt;:permissions:entry</code>,
+                  <code>access:user:&lt;id&gt;:invalidated_at</code>, <code>access:invalidated_at</code>. Vô hiệu hoá một
+                  user cũng xóa luôn entry của họ. Xem <a href="../jungo/access.html#inside">Phân quyền</a>.</span></td>
             </tr>
             <tr>
               <td>../cmd/scaffold/templates.go</td>
@@ -940,7 +1022,7 @@ func (c *NoopCache[T]) Close() error
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
           <pre data-hl="bash">
-# .env: CACHE_ENABLED=true, REDIS_HOST=redis
+# .env: CACHE_REDIS_ENABLE=true, REDIS_HOST=redis
 $ make app-dev WITH=cache
 </pre>
         </div>

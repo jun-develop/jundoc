@@ -19,7 +19,7 @@ jundoc/
 │   └── js/
 │       ├── nav.js          the menu — add every new page here
 │       └── jundoc.js       shell, language/theme toggle, wires, step player, code highlight
-├── jungo/                  the starter app: overview, build-a-feature, uber-fx, auth, multi-database
+├── jungo/                  the starter app: overview, build-a-feature, uber-fx, auth, access, multi-database
 │   └── *.html
 └── junkit/                 the library: index.html + one page per package (cache, logger, middleware, …)
     └── *.html

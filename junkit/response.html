@@ -1045,22 +1045,25 @@ func NewNode(name string) *Node
               <td lang="vi">Cùng mẫu cho login / refresh / logout / sessions / tokens.</td>
             </tr>
             <tr>
-              <td>common/httpx/uuid_param.go</td>
-              <td lang="en"><code>ParseUUID</code>: 422 for a missing/invalid <code>:uuid</code>, then 400
+              <td>junkit <a href="validation.html#api">validation</a></td>
+              <td lang="en"><code>BindJSON</code> / <code>BindQuery</code> answer 422 with the field errors on a failed
+                bind; <code>ParseUUID</code> answers 422 for a missing/invalid <code>:uuid</code>, then 400
                 <code>"invalid_uuid"</code>.</td>
-              <td lang="vi"><code>ParseUUID</code>: 422 khi <code>:uuid</code> thiếu/sai, rồi 400
-                <code>"invalid_uuid"</code>.</td>
+              <td lang="vi"><code>BindJSON</code> / <code>BindQuery</code> trả 422 kèm lỗi từng field khi bind lỗi;
+                <code>ParseUUID</code> trả 422 khi <code>:uuid</code> thiếu/sai, rồi 400 <code>"invalid_uuid"</code>.</td>
             </tr>
             <tr>
               <td>router/router.go</td>
               <td lang="en"><code>NoRoute</code> → 404 <code>"api_not_found"</code>, <code>NoMethod</code> → 405
                 <code>"method_not_allowed"</code>, <code>GET /health</code> → <code>"app_running"</code>; passes the
-                Responder to <code>Payload</code>, <code>Limiter</code>, <code>Recover</code> middlewares and
-                <code>BearerAuth</code>.</td>
+                Responder to the junkit <code>Payload</code>, <code>Limiter</code>, <code>Recover</code> middlewares;
+                the app's own <code>BearerAuth</code>, <code>RequireSecret</code> and <code>Guard</code>
+                (<code>internal/middleware</code>) get it by injection.</td>
               <td lang="vi"><code>NoRoute</code> → 404 <code>"api_not_found"</code>, <code>NoMethod</code> → 405
                 <code>"method_not_allowed"</code>, <code>GET /health</code> → <code>"app_running"</code>; truyền Responder
-                cho middleware <code>Payload</code>, <code>Limiter</code>, <code>Recover</code> và
-                <code>BearerAuth</code>.</td>
+                cho middleware <code>Payload</code>, <code>Limiter</code>, <code>Recover</code> của junkit;
+                <code>BearerAuth</code>, <code>RequireSecret</code> và <code>Guard</code> riêng của app
+                (<code>internal/middleware</code>) nhận nó qua injection.</td>
             </tr>
             <tr>
               <td>cmd/scaffold/templates.go</td>

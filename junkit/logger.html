@@ -76,9 +76,9 @@
           <div class="jd-node is-tint c-purple" data-node="l3"><span class="k">3 · output</span><span class="t mono"
               style="font-size:15px">stdout | file</span>
             <div class="d" lang="en"><code>"development"</code> → coloured console on stdout. Anything else → JSON lines
-              in <code>Filename</code>, rotated by lumberjack. <code>Output</code> overrides this choice.</div>
+              in <code>Filename</code>, rotated by lumberjack and buffered. <code>Output</code> overrides this choice.</div>
             <div class="d" lang="vi"><code>"development"</code> → console có màu ra stdout. Giá trị khác → từng dòng
-              JSON vào <code>Filename</code>, xoay vòng bởi lumberjack. <code>Output</code> ghi đè lựa chọn này.</div>
+              JSON vào <code>Filename</code>, xoay vòng bởi lumberjack và có buffer. <code>Output</code> ghi đè lựa chọn này.</div>
           </div>
           <div class="jd-node is-tint c-green" data-node="l4"><span class="k">4 · lifecycle</span><span class="t mono"
               style="font-size:15px">OnStop → Sync()</span>
@@ -500,11 +500,17 @@ type Options struct {
                 <code>caller</code>, <code>msg</code>, <code>stacktrace</code>), time as RFC 3339, written to a
                 lumberjack rotating file built from <code>Filename</code> / <code>MaxSize</code> /
                 <code>MaxBackups</code> / <code>MaxAge</code> / <code>Compress</code>. Nothing is printed to stdout.
+                Writes go through a 256 KB <code>zapcore.BufferedWriteSyncer</code>, flushed every second, when full,
+                on Fx stop and on a Panic/Fatal entry: without it every line was one write syscall behind the file's
+                lock — ~17% of a busy API's CPU in a profile. A crash can lose the last second of lines.
               </li>
               <li lang="vi"><b>còn lại</b>: JSON encoder production của zap (khoá <code>level</code>, <code>ts</code>,
                 <code>caller</code>, <code>msg</code>, <code>stacktrace</code>), thời gian dạng RFC 3339, ghi vào file
                 xoay vòng của lumberjack tạo từ <code>Filename</code> / <code>MaxSize</code> / <code>MaxBackups</code> /
-                <code>MaxAge</code> / <code>Compress</code>. Không in gì ra stdout.</li>
+                <code>MaxAge</code> / <code>Compress</code>. Không in gì ra stdout. Việc ghi đi qua
+                <code>zapcore.BufferedWriteSyncer</code> 256 KB, được flush mỗi giây, khi đầy, khi Fx stop và khi có
+                entry Panic/Fatal: không có nó, mỗi dòng là một syscall ghi phải chờ khoá file — chiếm ~17% CPU của một
+                API bận trong profile. App crash có thể mất dòng log của giây cuối.</li>
               <li lang="en">Both: <code>zap.AddCaller()</code> and <code>zap.AddStacktrace(zapcore.ErrorLevel)</code>.
                 An invalid <code>Level</code> silently becomes info.</li>
               <li lang="vi">Cả hai: <code>zap.AddCaller()</code> và <code>zap.AddStacktrace(zapcore.ErrorLevel)</code>.
@@ -689,12 +695,12 @@ type Definition struct {
                 <code>LOG_MAX_AGE</code>=7, <code>LOG_COMPRESS</code>=true,
                 <code>LOG_&lt;APP|HTTP|SQL|LIMITER&gt;_LEVEL</code>=info,
                 <code>LOG_…_FILENAME</code>=<code>storage/logs/&lt;app|http|sql|limiter&gt;.log</code>.
-                <code>API_ENVIRONMENT</code> defaults to <code>development</code>.</td>
+                <code>API_ENVIRONMENT</code> defaults to <code>production</code> (<code>.env.example</code> sets <code>development</code>).</td>
               <td lang="vi"><code>LoggerConfig</code>: <code>LOG_MAX_SIZE</code>=10, <code>LOG_MAX_BACKUPS</code>=5,
                 <code>LOG_MAX_AGE</code>=7, <code>LOG_COMPRESS</code>=true,
                 <code>LOG_&lt;APP|HTTP|SQL|LIMITER&gt;_LEVEL</code>=info,
                 <code>LOG_…_FILENAME</code>=<code>storage/logs/&lt;app|http|sql|limiter&gt;.log</code>.
-                <code>API_ENVIRONMENT</code> mặc định là <code>development</code>.</td>
+                <code>API_ENVIRONMENT</code> mặc định là <code>production</code> (<code>.env.example</code> đặt <code>development</code>).</td>
             </tr>
             <tr>
               <td>router/router.go</td>
@@ -798,10 +804,10 @@ $ grep demo-123 storage/logs/http.log
           <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">Fatal skips Fx
               shutdown</span><span class="x" lang="en"><code>log.Fatal</code> calls <code>os.Exit</code>, so no Fx
               <code>OnStop</code> hook runs (other modules' graceful shutdown included). No log line is lost: zap syncs
-              the core before exiting and the lumberjack writer is unbuffered. <code>log.Panic</code> does not exit — it
+              the core before exiting, which flushes the file buffer too. <code>log.Panic</code> does not exit — it
               panics after writing. Prefer returning errors.</span><span class="x" lang="vi"><code>log.Fatal</code> gọi
               <code>os.Exit</code>, nên không hook <code>OnStop</code> nào của Fx chạy (kể cả graceful shutdown của các
-              module khác). Không mất dòng log nào: zap sync core trước khi thoát và writer lumberjack không có buffer.
+              module khác). Không mất dòng log nào: zap sync core trước khi thoát, việc này cũng flush buffer của file.
               <code>log.Panic</code> không thoát — nó panic sau khi ghi log. Nên trả lỗi về thay vì dùng chúng.</span></div>
         </div>
       </section>

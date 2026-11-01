@@ -1,0 +1,1091 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Permissions &amp; roles · Jundoc</title>
+  <meta name="description" content="Jungo permission-based access control: permissions, roles, the route Guard, ownership checks, every role endpoint with demo calls, and the safety rules that stop privilege escalation.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+<body>
+<div id="jd-app" data-root="..">
+<article class="jd-content">
+
+  <!-- ============================================================ HERO -->
+  <header class="jd-hero" style="background:radial-gradient(1000px 380px at 0% 0%, rgba(167,139,250,.55), transparent 60%),radial-gradient(900px 380px at 100% 0%, rgba(96,165,250,.45), transparent 60%),linear-gradient(135deg,#2e1065,#4c1d95 45%,#1e3a8a)">
+    <div class="jd-eyebrow">Jungo · access control</div>
+    <h1><span lang="en">Permissions &amp; roles</span><span lang="vi">Phân quyền</span></h1>
+    <p lang="en">Who may call which route. Routes ask for a <b>permission</b> (<code>users:delete</code>), never for a role name. Roles are data in the database, so you change who can do what without changing code. This page covers the model, every endpoint with a runnable demo, what happens inside, and the rules that keep it safe.</p>
+    <p lang="vi">Ai được gọi route nào. Route đòi một <b>permission</b> (<code>users:delete</code>), không bao giờ đòi tên role. Role là dữ liệu trong database, nên đổi ai được làm gì mà không phải sửa code. Trang này trình bày mô hình, mọi endpoint kèm demo chạy được, những gì xảy ra bên trong, và các quy tắc giữ cho hệ thống an toàn.</p>
+    <div class="jd-chips">
+      <span class="jd-chip">internal/features/access</span>
+      <span class="jd-chip">internal/middleware</span>
+      <span class="jd-chip"><span lang="en">RBAC, checked by permission</span><span lang="vi">RBAC, kiểm tra theo permission</span></span>
+      <span class="jd-chip"><span lang="en">9 endpoints · 9 permissions</span><span lang="vi">9 endpoint · 9 permission</span></span>
+      <span class="jd-chip"><span lang="en">deny by default · no escalation</span><span lang="vi">mặc định từ chối · không leo thang quyền</span></span>
+    </div>
+  </header>
+
+  <nav class="jd-quickmap" aria-label="Sections">
+    <a class="jd-quick c-purple" href="#concepts"><span class="num">1</span><b lang="en">Concepts</b><b lang="vi">Khái niệm</b><span lang="en">Permission, role, Guard</span><span lang="vi">Permission, role, Guard</span></a>
+    <a class="jd-quick c-blue" href="#catalog"><span class="num">2</span><b lang="en">Permissions &amp; demo data</b><b lang="vi">Permission &amp; dữ liệu demo</b><span lang="en">Who can do what</span><span lang="vi">Ai làm được gì</span></a>
+    <a class="jd-quick c-green" href="#endpoints"><span class="num">3</span><b lang="en">Endpoints</b><b lang="vi">Endpoint</b><span lang="en">Params, responses, errors</span><span lang="vi">Tham số, response, lỗi</span></a>
+    <a class="jd-quick c-orange" href="#demo"><span class="num">4</span><b lang="en">API demo</b><b lang="vi">Demo API</b><span lang="en">One script, end to end</span><span lang="vi">Một script, từ đầu đến cuối</span></a>
+    <a class="jd-quick c-pink" href="#inside"><span class="num">5</span><b lang="en">Under the hood</b><b lang="vi">Bên trong</b><span lang="en">Request, startup, cache</span><span lang="vi">Request, khởi động, cache</span></a>
+    <a class="jd-quick c-red" href="#safety"><span class="num">6</span><b lang="en">Safety rules</b><b lang="vi">Quy tắc an toàn</b><span lang="en">Escalation simulator</span><span lang="vi">Mô phỏng leo thang quyền</span></a>
+    <a class="jd-quick c-blue" href="#integrate"><span class="num">7</span><b lang="en">Integrate</b><b lang="vi">Tích hợp</b><span lang="en">Your routes, new permissions</span><span lang="vi">Route của bạn, permission mới</span></a>
+    <a class="jd-quick c-muted" href="#ops"><span class="num">8</span><b lang="en">Config &amp; ops</b><b lang="vi">Cấu hình &amp; vận hành</b><span lang="en">.env, console, deploys</span><span lang="vi">.env, console, deploy</span></a>
+  </nav>
+
+  <!-- ============================================================ 1. CONCEPTS -->
+  <section id="concepts" class="jd-section c-purple">
+    <div class="jd-section-head">
+      <span class="jd-badge">1</span>
+      <div>
+        <h2><span lang="en">Four words to know</span><span lang="vi">Bốn khái niệm cốt lõi</span></h2>
+        <p class="jd-sub" lang="en">Authentication (<a href="auth.html">previous page</a>) answers "who are you?". This page answers "what may you do?".</p>
+        <p class="jd-sub" lang="vi">Xác thực (<a href="auth.html">trang trước</a>) trả lời "bạn là ai?". Trang này trả lời "bạn được làm gì?".</p>
+      </div>
+    </div>
+
+    <div class="jd-rules" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+      <div class="jd-rule"><span class="n" style="background:var(--purple)">1</span>
+        <h4>Permission</h4>
+        <p lang="en">One action on one resource, written <code>resource:action</code> — <code>users:read</code>, <code>roles:assign</code>. Each feature declares its own in <code>domain/permission.go</code>; the rows live in the database.</p>
+        <p lang="vi">Một hành động trên một tài nguyên, viết dạng <code>resource:action</code> — <code>users:read</code>, <code>roles:assign</code>. Mỗi feature tự khai báo permission của nó trong <code>domain/permission.go</code>; dữ liệu nằm trong database.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--blue)">2</span>
+        <h4>Role</h4>
+        <p lang="en">A named set of permissions — <code>manager</code> = read, create, update users. Roles are <b>data</b>: create and edit them through the API, no deploy.</p>
+        <p lang="vi">Một tập permission có tên — <code>manager</code> = xem, tạo, sửa user. Role là <b>dữ liệu</b>: tạo và sửa qua API, không cần deploy.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--green)">3</span>
+        <h4><span lang="en">User → roles</span><span lang="vi">User → role</span></h4>
+        <p lang="en">A user holds any number of roles and gets the <b>union</b> of their permissions. No role at all is normal: users can always read and edit themselves (all but their own status).</p>
+        <p lang="vi">Một user giữ bao nhiêu role cũng được và nhận <b>hợp</b> các permission của chúng. Không có role nào là bình thường: user luôn xem và sửa được chính mình (trừ status của chính mình).</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--orange)">4</span>
+        <h4>Guard</h4>
+        <p lang="en">Wraps every route handler: <code>Can(h, perm…)</code>, <code>Authenticated(h)</code> or <code>Public(h)</code>. A versioned route without one stops the app from starting.</p>
+        <p lang="vi">Bọc mọi handler của route: <code>Can(h, perm…)</code>, <code>Authenticated(h)</code> hoặc <code>Public(h)</code>. Route có version mà thiếu Guard thì app không khởi động.</p></div>
+    </div>
+
+    <h3><span lang="en">How they connect</span><span lang="vi">Chúng nối với nhau thế nào</span></h3>
+    <div class="jd-grid3w" data-wires='[
+      {"from":"u","to":"r","color":"blue"},
+      {"from":"r","to":"p","color":"purple","label":"role_permissions"},
+      {"from":"p","to":"rt","color":"orange","label":{"en":"Guard.Can","vi":"Guard.Can"},"delay":900}]'>
+      <div class="jd-node is-tint c-blue" data-node="u" style="grid-column:1;grid-row:1">
+        <span class="k">users</span><span class="t">jane@jungo.com</span>
+        <div class="d" lang="en">Has roles <code>manager</code> + <code>support</code>.</div><div class="d" lang="vi">Có role <code>manager</code> + <code>support</code>.</div>
+      </div>
+      <div class="jd-node is-tint c-purple" data-node="r" style="grid-column:2;grid-row:1">
+        <span class="k">roles</span><span class="t">manager</span>
+        <div class="d">users:read · users:create · users:update · roles:read</div>
+      </div>
+      <div class="jd-node is-tint c-purple" data-node="p" style="grid-column:3;grid-row:1">
+        <span class="k">permissions</span><span class="t mono">users:create</span>
+        <div class="d" lang="en">Defined in <code>user/domain/permission.go</code>.</div><div class="d" lang="vi">Định nghĩa trong <code>user/domain/permission.go</code>.</div>
+      </div>
+      <div class="jd-node is-tint c-orange" data-node="rt" style="grid-column:3;grid-row:2">
+        <span class="k">route</span><span class="t mono" style="font-size:15px">POST /api/v1/users</span>
+        <div class="d" lang="en">Asks for <code>users:create</code> — not for "manager".</div><div class="d" lang="vi">Đòi <code>users:create</code> — không đòi "manager".</div>
+      </div>
+    </div>
+
+    <div class="jd-vs">
+      <div style="--c:var(--red)">
+        <code class="big">if role == "admin"</code>
+        <p lang="en"><b>Not this.</b> Adding a role, or giving an existing role one more right, means editing and redeploying code.</p>
+        <p lang="vi"><b>Không làm thế này.</b> Thêm role, hay cho một role thêm một quyền, đều phải sửa code và deploy lại.</p>
+      </div>
+      <div style="--c:var(--green)">
+        <code class="big">guard.Can(h, "users:delete")</code>
+        <p lang="en"><b>This.</b> Code names the action; the database decides which roles have it. This is the usual RBAC model.</p>
+        <p lang="vi"><b>Làm thế này.</b> Code chỉ nêu hành động; database quyết định role nào có nó. Đây là mô hình RBAC thông dụng.</p>
+      </div>
+    </div>
+
+    <div class="jd-callout c-purple" style="margin-top:18px">
+      <b lang="en">Three deliberate "no"s:</b><b lang="vi">Ba điều cố ý không làm:</b>
+      <span lang="en"><b>no wildcards</b> (<code>users:*</code> would silently grant every future users permission), <b>no role hierarchy</b> (give a user several roles instead — "why can Jane do X?" stays one query), and <b>no permissions in the token</b> (a changed role takes effect on the next request, not at token expiry).</span>
+      <span lang="vi"><b>không có wildcard</b> (<code>users:*</code> sẽ âm thầm cấp mọi permission users thêm sau này), <b>không có role cha/con</b> (thay vào đó gán nhiều role cho user — câu hỏi "vì sao Jane làm được X?" vẫn chỉ là một query), và <b>không nhét permission vào token</b> (đổi role có hiệu lực ngay request kế tiếp, không phải đợi token hết hạn).</span>
+    </div>
+  </section>
+
+  <!-- ============================================================ 2. CATALOG & DEMO DATA -->
+  <section id="catalog" class="jd-section c-blue">
+    <div class="jd-section-head">
+      <span class="jd-badge">2</span>
+      <div>
+        <h2><span lang="en">The permissions and the demo accounts</span><span lang="vi">Các permission và tài khoản demo</span></h2>
+        <p class="jd-sub" lang="en">Every permission that exists today, and what each demo account can do after <code>make migrate-up</code> (development seeds them).</p>
+        <p class="jd-sub" lang="vi">Mọi permission đang có, và mỗi tài khoản demo làm được gì sau <code>make migrate-up</code> (môi trường development tự seed).</p>
+      </div>
+    </div>
+
+    <div class="jd-grid-2" style="margin-top:18px">
+      <div>
+        <h3><span lang="en">The 9 permissions</span><span lang="vi">9 permission</span></h3>
+        <div class="jd-tablewrap"><table class="jd-params c-blue">
+          <tr><th>permission</th><th><span lang="en">group</span><span lang="vi">nhóm</span></th><th><span lang="en">guards</span><span lang="vi">bảo vệ</span></th></tr>
+          <tr><td>users:read</td><td>users</td><td lang="en"><code>GET /users</code>; reading <b>another</b> user</td><td lang="vi"><code>GET /users</code>; xem user <b>khác</b></td></tr>
+          <tr><td>users:create</td><td>users</td><td><code>POST /users</code></td></tr>
+          <tr><td>users:update</td><td>users</td><td lang="en">editing <b>another</b> user — name, avatar, status — who is not stronger than you</td><td lang="vi">sửa user <b>khác</b> — tên, avatar, status — với điều kiện họ không mạnh hơn bạn</td></tr>
+          <tr><td>users:delete</td><td>users</td><td lang="en"><code>DELETE /users/:uuid</code> on another user who is not stronger than you</td><td lang="vi"><code>DELETE /users/:uuid</code> trên user khác không mạnh hơn bạn</td></tr>
+          <tr><td>roles:read</td><td>access</td><td><code>GET /permissions</code>, <code>GET /roles…</code>, <code>GET /users/:uuid/roles</code></td></tr>
+          <tr><td>roles:create</td><td>access</td><td><code>POST /roles</code></td></tr>
+          <tr><td>roles:update</td><td>access</td><td><code>PATCH /roles/:uuid</code>, <code>PUT /roles/:uuid/permissions</code></td></tr>
+          <tr><td>roles:delete</td><td>access</td><td><code>DELETE /roles/:uuid</code></td></tr>
+          <tr><td>roles:assign</td><td>access</td><td><code>PUT /users/:uuid/roles</code></td></tr>
+        </table></div>
+        <p class="jd-sub" lang="en"><code>roles:assign</code> is kept apart from <code>roles:update</code> on purpose: whoever assigns roles can raise other people's access, so it deserves its own decision.</p>
+        <p class="jd-sub" lang="vi"><code>roles:assign</code> được cố ý tách khỏi <code>roles:update</code>: người gán role có thể nâng quyền của người khác, nên cần được cấp riêng và cân nhắc kỹ.</p>
+      </div>
+      <div>
+        <h3><span lang="en">Demo accounts</span><span lang="vi">Tài khoản demo</span></h3>
+        <div class="jd-tablewrap"><table class="jd-params c-green">
+          <tr><th><span lang="en">account</span><span lang="vi">tài khoản</span></th><th>role</th><th><span lang="en">permissions</span><span lang="vi">permission</span></th></tr>
+          <tr><td>admin@jungo.com</td><td>super_admin <span class="rule">system</span></td><td lang="en">all 9</td><td lang="vi">cả 9</td></tr>
+          <tr><td>manager@jungo.com</td><td>manager</td><td>users:read, users:create, users:update, roles:read</td></tr>
+          <tr><td>member@jungo.com</td><td>member</td><td>users:read</td></tr>
+          <tr><td>user@jungo.com</td><td>—</td><td lang="en">none — only themself</td><td lang="vi">không có — chỉ chính mình</td></tr>
+        </table></div>
+        <p class="jd-sub" lang="en">Password for all: <code>Password@123</code>. Seeded by <code>internal/database/primary/seeders/002_access.sql</code>; re-run any time in development with <code>make db-seed</code>.</p>
+        <p class="jd-sub" lang="vi">Mật khẩu chung: <code>Password@123</code>. Seed bởi <code>internal/database/primary/seeders/002_access.sql</code>; ở development chạy lại lúc nào cũng được bằng <code>make db-seed</code>.</p>
+      </div>
+    </div>
+
+    <h3><span lang="en">Who can call what</span><span lang="vi">Ai gọi được gì</span></h3>
+    <p class="jd-sub" lang="en">✓ allowed · ✗ <code>403</code> · <b>self</b> = only on their own account (someone else → <code>404</code>) · <b>≤ me</b> = themself, or someone who holds no permission they lack (a stronger user → <code>403</code>, see <a href="#safety">safety</a>).</p>
+    <p class="jd-sub" lang="vi">✓ được phép · ✗ <code>403</code> · <b>self</b> = chỉ trên tài khoản của chính mình (người khác → <code>404</code>) · <b>≤ me</b> = chính mình, hoặc người không có permission nào mà họ thiếu (người mạnh hơn → <code>403</code>, xem <a href="#safety">an toàn</a>).</p>
+    <div class="jd-tablewrap"><table class="jd-params">
+      <tr><th>route</th><th>Guard</th><th>admin</th><th>manager</th><th>member</th><th>user</th></tr>
+      <tr><td>POST /auth/login, /refresh</td><td>Public</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+      <tr><td>/auth/me, /sessions, /logout…</td><td>Authenticated</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+      <tr><td>GET /users</td><td>Can(users:read)</td><td>✓</td><td>✓</td><td>✓</td><td>✗</td></tr>
+      <tr><td>POST /users</td><td>Can(users:create)</td><td>✓</td><td>✓</td><td>✗</td><td>✗</td></tr>
+      <tr><td>GET /users/:uuid</td><td>Authenticated</td><td>✓</td><td>✓</td><td>✓</td><td>self</td></tr>
+      <tr><td>PATCH /users/:uuid</td><td>Authenticated</td><td>✓ <span class="rule">not own status</span></td><td>≤ me <span class="rule">not own status</span></td><td>self <span class="rule">no status</span></td><td>self <span class="rule">no status</span></td></tr>
+      <tr><td>POST · DELETE /users/:uuid/avatar</td><td>Authenticated</td><td>✓</td><td>≤ me</td><td>self</td><td>self</td></tr>
+      <tr><td>DELETE /users/:uuid</td><td>Can(users:delete)</td><td>✓ <span class="rule">not self</span></td><td>✗</td><td>✗</td><td>✗</td></tr>
+      <tr><td>GET /permissions, /roles, /roles/:uuid</td><td>Can(roles:read)</td><td>✓</td><td>✓</td><td>✗</td><td>✗</td></tr>
+      <tr><td>GET /users/:uuid/roles</td><td>Can(roles:read)</td><td>✓</td><td>✓</td><td>✗</td><td>✗</td></tr>
+      <tr><td>POST /roles</td><td>Can(roles:create)</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
+      <tr><td>PATCH /roles/:uuid, PUT …/permissions</td><td>Can(roles:update)</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
+      <tr><td>DELETE /roles/:uuid</td><td>Can(roles:delete)</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
+      <tr><td>PUT /users/:uuid/roles</td><td>Can(roles:assign)</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
+    </table></div>
+
+    <h3><span lang="en">The four tables</span><span lang="vi">Bốn bảng</span></h3>
+    <div class="jd-grid-2">
+      <div class="jd-tablewrap"><table class="jd-params c-purple">
+        <tr><th><span lang="en">table</span><span lang="vi">bảng</span></th><th><span lang="en">holds</span><span lang="vi">chứa gì</span></th></tr>
+        <tr><td>permissions</td><td lang="en"><code>code</code> (primary key) + <code>group_code</code>. The source of truth — filled by <code>seeders/002_access.sql</code> (built-in) and each generated feature's migration, never by the app.</td><td lang="vi"><code>code</code> (khóa chính) + <code>group_code</code>. Nguồn sự thật — nạp bởi <code>seeders/002_access.sql</code> (có sẵn) và migration của từng feature sinh ra, app không bao giờ ghi.</td></tr>
+        <tr><td>roles</td><td lang="en"><code>uuid</code>, <code>code</code> (unique, never changes), <code>name</code>, <code>is_system</code>.</td><td lang="vi"><code>uuid</code>, <code>code</code> (duy nhất, không đổi), <code>name</code>, <code>is_system</code>.</td></tr>
+        <tr><td>role_permissions</td><td lang="en">Role ↔ permission code. A foreign key to <code>permissions.code</code>, so a typo can never be granted.</td><td lang="vi">Role ↔ mã permission. Khóa ngoại tới <code>permissions.code</code>, nên không thể cấp một mã gõ sai.</td></tr>
+        <tr><td>user_roles</td><td lang="en">User ↔ role. Deleting a user or a role cascades.</td><td lang="vi">User ↔ role. Xóa user hoặc role sẽ xóa dây chuyền.</td></tr>
+      </table></div>
+      <div class="jd-explain">
+        <div class="jd-ex c-purple" style="cursor:default"><span class="n">ⓘ</span><span class="w"><span lang="en">Migration 000003_roles</span><span lang="vi">Migration 000003_roles</span></span><span class="x" lang="en">Creates the four tables and the only system role, <code>super_admin</code> — in every environment, so production has it too.</span><span class="x" lang="vi">Tạo bốn bảng và role hệ thống duy nhất, <code>super_admin</code> — ở mọi môi trường, nên production cũng có.</span></div>
+        <div class="jd-ex c-purple" style="cursor:default"><span class="n">⇄</span><span class="w"><span lang="en">Database first, code follows</span><span lang="vi">Database trước, code theo sau</span></span><span class="x" lang="en"><code>002_access.sql</code> adds the built-in permissions (<code>users:*</code>, <code>roles:*</code>), gives them all to <code>super_admin</code>, and adds the demo roles; a generated feature's migration does the same for its own. At startup the app only <b>reads</b> this table and stops if a permission the code uses is missing. <code>make migrate-up</code> runs the seeder only in development (other servers: see <a href="#ops">ops</a>).</span><span class="x" lang="vi"><code>002_access.sql</code> thêm các permission có sẵn (<code>users:*</code>, <code>roles:*</code>), cấp hết cho <code>super_admin</code> và thêm role demo; migration của feature sinh ra làm điều tương tự cho permission của nó. Khi khởi động app chỉ <b>đọc</b> bảng này và dừng nếu thiếu permission mà code dùng. <code>make migrate-up</code> chỉ chạy seeder ở development (server khác: xem <a href="#ops">vận hành</a>).</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 3. ENDPOINTS -->
+  <section id="endpoints" class="jd-section c-green">
+    <div class="jd-section-head">
+      <span class="jd-badge">3</span>
+      <div>
+        <h2><span lang="en">Every endpoint</span><span lang="vi">Mọi endpoint</span></h2>
+        <p class="jd-sub" lang="en">All need <code>Authorization: Bearer &lt;access_token&gt;</code> and the permission shown. Without a token → <code>401</code>; without the permission → <code>403 You do not have permission to perform this action</code>. Bodies are JSON.</p>
+        <p class="jd-sub" lang="vi">Tất cả cần <code>Authorization: Bearer &lt;access_token&gt;</code> và permission ghi bên cạnh. Thiếu token → <code>401</code>; thiếu permission → <code>403 You do not have permission to perform this action</code>. Body là JSON.</p>
+      </div>
+    </div>
+
+    <div class="jd-tabs jd-ep-tabs c-green" style="margin-top:20px">
+      <div class="jd-tablist">
+        <button class="jd-tab" type="button" aria-selected="true">permissions</button>
+        <button class="jd-tab" type="button" aria-selected="false">list roles</button>
+        <button class="jd-tab" type="button" aria-selected="false">get role</button>
+        <button class="jd-tab" type="button" aria-selected="false">create role</button>
+        <button class="jd-tab" type="button" aria-selected="false">rename role</button>
+        <button class="jd-tab" type="button" aria-selected="false">set permissions</button>
+        <button class="jd-tab" type="button" aria-selected="false">delete role</button>
+        <button class="jd-tab" type="button" aria-selected="false">user roles</button>
+        <button class="jd-tab" type="button" aria-selected="false">set user roles</button>
+      </div>
+
+      <!-- ---------------- permissions -->
+      <div class="jd-tabpanel">
+        <div class="jd-ep-head"><span class="jd-method">GET</span><span class="jd-ep-path">/api/v1/permissions</span><span class="jd-auth need">roles:read</span></div>
+        <p class="jd-ep-desc" lang="en">Every permission in the database, grouped and named for a role editor UI (checkbox groups). Ordered by group, then code. Names come from i18n.</p>
+        <p class="jd-ep-desc" lang="vi">Mọi permission trong database, đã nhóm và đặt tên sẵn cho UI sửa role (các nhóm checkbox). Sắp theo nhóm, rồi theo mã. Tên lấy từ i18n.</p>
+        <div class="jd-grid-2">
+          <div>
+            <h3>Request</h3>
+            <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
+<pre data-hl="bash">
+$ curl -s localhost:$API_SERVER_PORT/api/v1/permissions \
+    -H "Authorization: Bearer $ADMIN" | jq
+</pre></div>
+            <h3><span lang="en">Response fields</span><span lang="vi">Các field trả về</span></h3>
+            <div class="jd-tablewrap"><table class="jd-params">
+              <tr><th>field</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+              <tr><td>[].code</td><td lang="en">Group code (<code>users</code>, <code>access</code>).</td><td lang="vi">Mã nhóm (<code>users</code>, <code>access</code>).</td></tr>
+              <tr><td>[].name</td><td lang="en">Group label (i18n <code>permission_group.&lt;code&gt;</code>).</td><td lang="vi">Nhãn nhóm (i18n <code>permission_group.&lt;code&gt;</code>).</td></tr>
+              <tr><td>[].permissions[].code</td><td lang="en">The value to send in <code>permissions</code> when creating / editing a role.</td><td lang="vi">Giá trị gửi trong <code>permissions</code> khi tạo / sửa role.</td></tr>
+              <tr><td>[].permissions[].name</td><td lang="en">Label (i18n <code>permission.&lt;resource&gt;.&lt;action&gt;</code>).</td><td lang="vi">Nhãn (i18n <code>permission.&lt;resource&gt;.&lt;action&gt;</code>).</td></tr>
+            </table></div>
+          </div>
+          <div>
+            <h3>Response</h3>
+            <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>200 OK</span></div>
+<pre data-hl="json">
+{
+  "status": "success",
+  "message": "Permissions listed successfully",
+  "data": [
+    {
+      "code": "access",
+      "name": "Access control",
+      "permissions": [
+        { "code": "roles:assign", "name": "Assign roles to users" },
+        { "code": "roles:create", "name": "Create roles" },
+        { "code": "roles:delete", "name": "Delete roles" },
+        { "code": "roles:read",   "name": "View roles and permissions" },
+        { "code": "roles:update", "name": "Edit roles and their permissions" }
+      ]
+    },
+    {
+      "code": "users",
+      "name": "Users",
+      "permissions": [
+        { "code": "users:create", "name": "Create users" },
+        { "code": "users:delete", "name": "Delete users" },
+        { "code": "users:read",   "name": "View users" },
+        { "code": "users:update", "name": "Update users" }
+      ]
+    }
+  ],
+  "api_info": { … }
+}
+</pre></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------------- list roles -->
+      <div class="jd-tabpanel" hidden>
+        <div class="jd-ep-head"><span class="jd-method">GET</span><span class="jd-ep-path">/api/v1/roles</span><span class="jd-auth need">roles:read</span></div>
+        <p class="jd-ep-desc" lang="en">Every role with its permissions and how many users hold it. System roles first, then by code. Not paginated — roles are few.</p>
+        <p class="jd-ep-desc" lang="vi">Mọi role kèm permission và số user đang giữ. Role hệ thống đứng trước, sau đó theo code. Không phân trang — số role ít.</p>
+        <div class="jd-grid-2">
+          <div>
+            <h3>Request</h3>
+            <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
+<pre data-hl="bash">
+$ curl -s localhost:$API_SERVER_PORT/api/v1/roles \
+    -H "Authorization: Bearer $ADMIN" | jq
+</pre></div>
+            <h3><span lang="en">Role fields (all role endpoints)</span><span lang="vi">Field của role (mọi endpoint role)</span></h3>
+            <div class="jd-tablewrap"><table class="jd-params">
+              <tr><th>field</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+              <tr><td>uuid</td><td lang="en">ID used in URLs and in <code>role_uuids</code>.</td><td lang="vi">ID dùng trong URL và trong <code>role_uuids</code>.</td></tr>
+              <tr><td>code</td><td lang="en">Stable machine name, set at creation, never changes.</td><td lang="vi">Tên máy cố định, đặt khi tạo, không bao giờ đổi.</td></tr>
+              <tr><td>name</td><td lang="en">Display name; editable.</td><td lang="vi">Tên hiển thị; sửa được.</td></tr>
+              <tr><td>is_system</td><td lang="en"><code>true</code> for <code>super_admin</code>: read-only through the API (see <a href="#safety">safety</a>).</td><td lang="vi"><code>true</code> với <code>super_admin</code>: chỉ đọc qua API (xem <a href="#safety">an toàn</a>).</td></tr>
+              <tr><td>permissions</td><td lang="en">Sorted permission codes; <code>[]</code> when none.</td><td lang="vi">Các mã permission đã sắp xếp; <code>[]</code> nếu không có.</td></tr>
+              <tr><td>user_count</td><td lang="en">How many users hold the role.</td><td lang="vi">Số user đang giữ role.</td></tr>
+              <tr><td>created_at, updated_at</td><td lang="en"><code>updated_at</code> is omitted until the role is renamed. Changing its permissions does not set it.</td><td lang="vi"><code>updated_at</code> không có cho tới khi role được đổi tên. Đổi permission của role không cập nhật nó.</td></tr>
+            </table></div>
+          </div>
+          <div>
+            <h3>Response</h3>
+            <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>200 OK</span></div>
+<pre data-hl="json">
+{
+  "status": "success",
+  "message": "Roles listed successfully",
+  "data": [
+    {
+      "uuid": "076ddda1-…",
+      "code": "super_admin",
+      "name": "Super Admin",
+      "is_system": true,
+      "permissions": ["roles:assign", "roles:create", "roles:delete", "roles:read",
+                      "roles:update", "users:create", "users:delete", "users:read", "users:update"],
+      "user_count": 1,
+      "created_at": "2026-10-21T07:30:46Z"
+    },
+    {
+      "uuid": "5c1f…",
+      "code": "manager",
+      "name": "Manager",
+      "is_system": false,
+      "permissions": ["roles:read", "users:create", "users:read", "users:update"],
+      "user_count": 1,
+      "created_at": "2026-10-21T07:30:47Z"
+    }
+  ],
+  "api_info": { … }
+}
+</pre></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------------- get role -->
+      <div class="jd-tabpanel" hidden>
+        <div class="jd-ep-head"><span class="jd-method">GET</span><span class="jd-ep-path">/api/v1/roles/:uuid</span><span class="jd-auth need">roles:read</span></div>
+        <p class="jd-ep-desc" lang="en">One role, same fields as in the list.</p>
+        <p class="jd-ep-desc" lang="vi">Một role, cùng các field như trong danh sách.</p>
+        <div class="jd-grid-2">
+          <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
+<pre data-hl="bash">
+$ curl -s localhost:$API_SERVER_PORT/api/v1/roles/$ROLE \
+    -H "Authorization: Bearer $ADMIN" | jq
+</pre></div>
+          <div class="jd-errlist">
+            <div class="jd-errrow"><span class="code">404</span><div><b>Role not found</b><span class="do" lang="en">No role has this UUID.</span><span class="do" lang="vi">Không có role nào có UUID này.</span></div></div>
+            <div class="jd-errrow"><span class="code">404</span><div><b>API is not found</b><span class="do" lang="en"><code>:uuid</code> is not a UUID (checked by the global <code>RoutePatterns</code> middleware).</span><span class="do" lang="vi"><code>:uuid</code> không phải UUID (middleware global <code>RoutePatterns</code> kiểm tra).</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------------- create role -->
+      <div class="jd-tabpanel" hidden>
+        <div class="jd-ep-head"><span class="jd-method post">POST</span><span class="jd-ep-path">/api/v1/roles</span><span class="jd-auth need">roles:create</span></div>
+        <p class="jd-ep-desc" lang="en">Creates a role, optionally with permissions. You can only include permissions <b>you hold yourself</b>.</p>
+        <p class="jd-ep-desc" lang="vi">Tạo role, có thể kèm permission. Chỉ được đưa vào những permission <b>chính bạn đang có</b>.</p>
+        <div class="jd-grid-2">
+          <div>
+            <h3>Request</h3>
+            <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
+<pre data-hl="bash">
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/roles \
+    -H "Authorization: Bearer $ADMIN" \
+    -H 'Content-Type: application/json' \
+    -d '{"code":"support","name":"Support","permissions":["users:read"]}' | jq
+</pre></div>
+            <h3>Body</h3>
+            <div class="jd-tablewrap"><table class="jd-params">
+              <tr><th>field</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+              <tr><td>code<span class="req">require</span><span class="rule">a-z and _ · 2–50</span></td><td lang="en">Machine name, unique, can never be changed. <code>Bad-Code</code> → 422.</td><td lang="vi">Tên máy, duy nhất, không bao giờ đổi được. <code>Bad-Code</code> → 422.</td></tr>
+              <tr><td>name<span class="req">require</span><span class="rule">2–100</span></td><td lang="en">Display name.</td><td lang="vi">Tên hiển thị.</td></tr>
+              <tr><td>permissions<span class="opt">optional</span><span class="rule">string[]</span></td><td lang="en">Codes from <code>GET /permissions</code>. Duplicates are ignored.</td><td lang="vi">Các mã lấy từ <code>GET /permissions</code>. Mã trùng được bỏ qua.</td></tr>
+            </table></div>
+          </div>
+          <div>
+            <h3>Response</h3>
+            <div class="jd-tabs c-green">
+              <div class="jd-tablist">
+                <button class="jd-tab" type="button" aria-selected="true">201</button>
+                <button class="jd-tab c-red" type="button" aria-selected="false"><span lang="en">errors</span><span lang="vi">lỗi</span></button>
+              </div>
+              <div class="jd-tabpanel">
+                <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>201 Created</span></div>
+<pre data-hl="json">
+{
+  "status": "success",
+  "message": "Role created successfully",
+  "data": {
+    "uuid": "9b0e…",
+    "code": "support",
+    "name": "Support",
+    "is_system": false,
+    "permissions": ["users:read"],
+    "user_count": 0,
+    "created_at": "2026-10-21T08:02:11Z"
+  },
+  "api_info": { … }
+}
+</pre></div>
+              </div>
+              <div class="jd-tabpanel" hidden>
+                <div class="jd-errlist">
+                  <div class="jd-errrow"><span class="code">403</span><div><b>This change involves a permission you do not hold yourself</b><span class="do" lang="en">A listed permission is not one of yours.</span><span class="do" lang="vi">Có permission trong danh sách mà bạn không có.</span></div></div>
+                  <div class="jd-errrow"><span class="code">409</span><div><b>A role with this code already exists</b><span class="do" lang="en">Pick another <code>code</code>.</span><span class="do" lang="vi">Chọn <code>code</code> khác.</span></div></div>
+                  <div class="jd-errrow"><span class="code">422</span><div><b>Role code must use lowercase letters and underscores</b><span class="do" lang="en"><code>code</code> has other characters.</span><span class="do" lang="vi"><code>code</code> có ký tự khác.</span></div></div>
+                  <div class="jd-errrow"><span class="code">422</span><div><b>Role name is required</b><span class="do" lang="en"><code>name</code> is only spaces.</span><span class="do" lang="vi"><code>name</code> chỉ toàn khoảng trắng.</span></div></div>
+                  <div class="jd-errrow"><span class="code">422</span><div><b>Unknown permission</b><span class="do" lang="en">A code is not in the <code>permissions</code> table (typo, or the seeder has not run).</span><span class="do" lang="vi">Có mã không nằm trong bảng <code>permissions</code> (gõ sai, hoặc seeder chưa chạy).</span></div></div>
+                  <div class="jd-errrow"><span class="code">422</span><div><b>Validation error</b><span class="do" lang="en">Missing <code>code</code> / <code>name</code>, or out of length.</span><span class="do" lang="vi">Thiếu <code>code</code> / <code>name</code>, hoặc sai độ dài.</span></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------------- rename role -->
+      <div class="jd-tabpanel" hidden>
+        <div class="jd-ep-head"><span class="jd-method patch">PATCH</span><span class="jd-ep-path">/api/v1/roles/:uuid</span><span class="jd-auth need">roles:update</span></div>
+        <p class="jd-ep-desc" lang="en">Changes the display name. The <code>code</code> stays. Returns the role. Like every other change to a role, you must hold all of its permissions.</p>
+        <p class="jd-ep-desc" lang="vi">Đổi tên hiển thị. <code>code</code> giữ nguyên. Trả về role. Như mọi thay đổi khác trên role, bạn phải có tất cả permission của nó.</p>
+        <div class="jd-grid-2">
+          <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
+<pre data-hl="bash">
+$ curl -s -X PATCH localhost:$API_SERVER_PORT/api/v1/roles/$ROLE \
+    -H "Authorization: Bearer $ADMIN" \
+    -H 'Content-Type: application/json' \
+    -d '{"name":"Support Team"}' | jq
+</pre></div>
+          <div class="jd-errlist">
+            <div class="jd-errrow"><span class="code">403</span><div><b>System roles cannot be changed</b><span class="do" lang="en">The role is <code>super_admin</code>.</span><span class="do" lang="vi">Role là <code>super_admin</code>.</span></div></div>
+            <div class="jd-errrow"><span class="code">403</span><div><b>This change involves a permission you do not hold yourself</b><span class="do" lang="en">The role has a permission you lack, so you can't rename it.</span><span class="do" lang="vi">Role có một permission mà bạn không có, nên bạn không đổi tên được.</span></div></div>
+            <div class="jd-errrow"><span class="code">404</span><div><b>Role not found</b></div></div>
+            <div class="jd-errrow"><span class="code">422</span><div><b>Validation error</b> · <b>Role name is required</b><span class="do" lang="en"><code>name</code> missing, only spaces, or not 2–100 characters.</span><span class="do" lang="vi">Thiếu <code>name</code>, chỉ toàn khoảng trắng, hoặc không dài 2–100 ký tự.</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------------- set permissions -->
+      <div class="jd-tabpanel" hidden>
+        <div class="jd-ep-head"><span class="jd-method put">PUT</span><span class="jd-ep-path">/api/v1/roles/:uuid/permissions</span><span class="jd-auth need">roles:update</span></div>
+        <p class="jd-ep-desc" lang="en"><b>Replaces</b> the role's permissions with exactly this list (<code>[]</code> clears it). Takes effect for every user of the role on their next request. You must hold every permission you <b>add or remove</b>; the ones that stay are not checked.</p>
+        <p class="jd-ep-desc" lang="vi"><b>Thay toàn bộ</b> permission của role bằng đúng danh sách này (<code>[]</code> là xóa hết). Có hiệu lực với mọi user của role ngay request kế tiếp. Bạn phải có mọi permission mà bạn <b>thêm hoặc gỡ</b>; permission giữ nguyên thì không bị kiểm tra.</p>
+        <div class="jd-grid-2">
+          <div>
+            <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
+<pre data-hl="bash">
+$ curl -s -X PUT localhost:$API_SERVER_PORT/api/v1/roles/$ROLE/permissions \
+    -H "Authorization: Bearer $ADMIN" \
+    -H 'Content-Type: application/json' \
+    -d '{"permissions":["users:read","users:update"]}' | jq
+</pre></div>
+            <div class="jd-tablewrap"><table class="jd-params">
+              <tr><th>field</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+              <tr><td>permissions<span class="req">require</span><span class="rule">string[]</span></td><td lang="en">Send the full list. The server replaces the role's permissions with exactly what you send (last save wins).</td><td lang="vi">Gửi cả danh sách. Server thay permission của role bằng đúng những gì bạn gửi (lần lưu sau cùng thắng).</td></tr>
+            </table></div>
+          </div>
+          <div class="jd-errlist">
+            <div class="jd-errrow"><span class="code">403</span><div><b>System roles cannot be changed</b></div></div>
+            <div class="jd-errrow"><span class="code">403</span><div><b>This change involves a permission you do not hold yourself</b><span class="do" lang="en">You add or remove a permission you lack. Example: without <code>users:delete</code> you can neither give it to the role nor take it away.</span><span class="do" lang="vi">Bạn thêm hoặc gỡ một permission mà bạn không có. Ví dụ: không có <code>users:delete</code> thì bạn không thể cấp nó cho role, cũng không thể gỡ nó đi.</span></div></div>
+            <div class="jd-errrow"><span class="code">404</span><div><b>Role not found</b></div></div>
+            <div class="jd-errrow"><span class="code">422</span><div><b>Unknown permission</b> · <b>Validation error</b><span class="do" lang="en">Typo in a code, or <code>permissions</code> missing.</span><span class="do" lang="vi">Gõ sai mã, hoặc thiếu <code>permissions</code>.</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------------- delete role -->
+      <div class="jd-tabpanel" hidden>
+        <div class="jd-ep-head"><span class="jd-method delete">DELETE</span><span class="jd-ep-path">/api/v1/roles/:uuid</span><span class="jd-auth need">roles:delete</span></div>
+        <p class="jd-ep-desc" lang="en">Deletes the role. Its users lose it immediately (their other roles stay). You must hold every permission of the role.</p>
+        <p class="jd-ep-desc" lang="vi">Xóa role. User đang giữ role mất nó ngay (các role khác vẫn còn). Bạn phải có mọi permission của role đó.</p>
+        <div class="jd-grid-2">
+          <div>
+            <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
+<pre data-hl="bash">
+$ curl -s -X DELETE localhost:$API_SERVER_PORT/api/v1/roles/$ROLE \
+    -H "Authorization: Bearer $ADMIN" | jq
+</pre></div>
+            <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>200 OK</span></div>
+<pre data-hl="json">
+{ "status": "success", "message": "Role deleted successfully", "api_info": { … } }
+</pre></div>
+          </div>
+          <div class="jd-errlist">
+            <div class="jd-errrow"><span class="code">403</span><div><b>System roles cannot be changed</b></div></div>
+            <div class="jd-errrow"><span class="code">403</span><div><b>This change involves a permission you do not hold yourself</b></div></div>
+            <div class="jd-errrow"><span class="code">404</span><div><b>Role not found</b></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------------- user roles -->
+      <div class="jd-tabpanel" hidden>
+        <div class="jd-ep-head"><span class="jd-method">GET</span><span class="jd-ep-path">/api/v1/users/:uuid/roles</span><span class="jd-auth need">roles:read</span></div>
+        <p class="jd-ep-desc" lang="en">The roles of one user (short form: no permissions or counts — fetch the role for those).</p>
+        <p class="jd-ep-desc" lang="vi">Các role của một user (dạng rút gọn: không có permission hay số đếm — lấy chi tiết role nếu cần).</p>
+        <div class="jd-grid-2">
+          <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
+<pre data-hl="bash">
+$ curl -s localhost:$API_SERVER_PORT/api/v1/users/$USER_UUID/roles \
+    -H "Authorization: Bearer $ADMIN" | jq
+</pre></div>
+          <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>200 OK</span></div>
+<pre data-hl="json">
+{
+  "status": "success",
+  "message": "User roles listed successfully",
+  "data": [
+    { "uuid": "076ddda1-…", "code": "super_admin", "name": "Super Admin", "is_system": true }
+  ],
+  "api_info": { … }
+}
+</pre></div>
+        </div>
+        <div class="jd-errlist" style="margin-top:12px">
+          <div class="jd-errrow"><span class="code">404</span><div><b>User not found</b><span class="do" lang="en">No (non-deleted) user has this UUID.</span><span class="do" lang="vi">Không có user (chưa bị xóa) nào có UUID này.</span></div></div>
+        </div>
+      </div>
+
+      <!-- ---------------- set user roles -->
+      <div class="jd-tabpanel" hidden>
+        <div class="jd-ep-head"><span class="jd-method put">PUT</span><span class="jd-ep-path">/api/v1/users/:uuid/roles</span><span class="jd-auth need">roles:assign</span></div>
+        <p class="jd-ep-desc" lang="en"><b>Replaces</b> the user's roles with this list and returns them. System roles the user already has are <b>kept</b> and cannot be given. For every role you add or remove, you must hold all its permissions. Takes effect on the user's next request — no re-login.</p>
+        <p class="jd-ep-desc" lang="vi"><b>Thay toàn bộ</b> role của user bằng danh sách này và trả về kết quả. Role hệ thống user đang có được <b>giữ nguyên</b> và không thể được gán. Với mỗi role bạn thêm hoặc gỡ, bạn phải có mọi permission của nó. Có hiệu lực ngay request kế tiếp của user — không cần đăng nhập lại.</p>
+        <div class="jd-grid-2">
+          <div>
+            <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
+<pre data-hl="bash">
+$ curl -s -X PUT localhost:$API_SERVER_PORT/api/v1/users/$USER_UUID/roles \
+    -H "Authorization: Bearer $ADMIN" \
+    -H 'Content-Type: application/json' \
+    -d "{\"role_uuids\":[\"$ROLE\"]}" | jq
+</pre></div>
+            <div class="jd-tablewrap"><table class="jd-params">
+              <tr><th>field</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+              <tr><td>role_uuids<span class="req">require</span><span class="rule">uuid[]</span></td><td lang="en">The full new list of (non-system) roles. <code>[]</code> removes them all; a missing field is a 422, so an empty body can't wipe roles by accident. Duplicate UUIDs are ignored.</td><td lang="vi">Toàn bộ danh sách role (không phải system) mới. <code>[]</code> là gỡ hết; thiếu field là 422, nên body rỗng không thể vô tình xóa sạch role. UUID trùng được bỏ qua.</td></tr>
+            </table></div>
+          </div>
+          <div>
+            <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>200 OK</span></div>
+<pre data-hl="json">
+{
+  "status": "success",
+  "message": "User roles updated successfully",
+  "data": [
+    { "uuid": "9b0e…", "code": "support", "name": "Support Team", "is_system": false }
+  ],
+  "api_info": { … }
+}
+</pre></div>
+            <div class="jd-errlist" style="margin-top:12px">
+              <div class="jd-errrow"><span class="code">403</span><div><b>You cannot change your own roles</b><span class="do" lang="en">The <code>:uuid</code> is yours. Ask another admin; this also stops you from removing your own access by mistake.</span><span class="do" lang="vi"><code>:uuid</code> là của chính bạn. Hãy nhờ admin khác; điều này cũng giúp bạn không lỡ tay tự gỡ quyền của mình.</span></div></div>
+              <div class="jd-errrow"><span class="code">403</span><div><b>This user holds permissions you do not hold yourself</b><span class="do" lang="en">The user is stronger than you: you must hold every permission they hold, as when editing a user. Checked before any role in the list.</span><span class="do" lang="vi">User đó mạnh hơn bạn: bạn phải có mọi permission họ đang có, giống khi sửa user. Được kiểm tra trước mọi role trong danh sách.</span></div></div>
+              <div class="jd-errrow"><span class="code">403</span><div><b>System roles cannot be changed</b><span class="do" lang="en">The list contains <code>super_admin</code> — give it with SQL (see <a href="#ops">ops</a>).</span><span class="do" lang="vi">Danh sách có <code>super_admin</code> — gán bằng SQL (xem <a href="#ops">vận hành</a>).</span></div></div>
+              <div class="jd-errrow"><span class="code">403</span><div><b>This change involves a permission you do not hold yourself</b><span class="do" lang="en">A role being added or removed has a permission you lack. Roles that stay unchanged are not checked.</span><span class="do" lang="vi">Một role được thêm hoặc gỡ có permission bạn không có. Role không đổi thì không bị xét.</span></div></div>
+              <div class="jd-errrow"><span class="code">404</span><div><b>User not found</b> · <b>Role not found</b></div></div>
+              <div class="jd-errrow"><span class="code">422</span><div><b>Validation error</b><span class="do" lang="en"><code>role_uuids</code> missing or not UUIDs.</span><span class="do" lang="vi">Thiếu <code>role_uuids</code> hoặc không phải UUID.</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="jd-grid-2" style="margin-top:22px;gap:12px">
+      <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>403 · <span lang="en">missing permission</span><span lang="vi">thiếu permission</span></span></div>
+<pre data-hl="json">
+{
+  "status": "error",
+  "code": "FORBIDDEN",
+  "message": "You do not have permission to perform this action",
+  "api_info": { … }
+}
+</pre></div>
+      <div class="jd-callout c-green">
+        <b lang="en">Telling 403s apart:</b><b lang="vi">Phân biệt các lỗi 403:</b>
+        <span lang="en">all have <code>"code": "FORBIDDEN"</code>; the <code>message</code> says why. <b>"You do not have permission…"</b> = the route's permission is missing (hide that button). <b>"This change involves a permission…"</b> = the route was allowed, but the role or permission list you touch has a permission you don't hold. <b>"System roles cannot be changed"</b> = it touches <code>super_admin</code>. On <code>/users/:uuid</code>: <b>"This user holds permissions you do not hold yourself"</b> = the user is stronger than you; <b>"You cannot change your own status"</b> and <b>"You cannot delete your own account"</b> speak for themselves.</span>
+        <span lang="vi">tất cả đều có <code>"code": "FORBIDDEN"</code>; <code>message</code> cho biết lý do. <b>"You do not have permission…"</b> = thiếu permission của route (ẩn nút đó đi). <b>"This change involves a permission…"</b> = route được phép, nhưng role hoặc danh sách permission bạn đụng tới có permission bạn không có. <b>"System roles cannot be changed"</b> = thao tác đụng tới <code>super_admin</code>. Ở <code>/users/:uuid</code>: <b>"This user holds permissions you do not hold yourself"</b> = user đó mạnh hơn bạn; <b>"You cannot change your own status"</b> (không tự đổi status của mình) và <b>"You cannot delete your own account"</b> (không tự xóa tài khoản của mình).</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 4. API DEMO -->
+  <section id="demo" class="jd-section c-orange">
+    <div class="jd-section-head">
+      <span class="jd-badge">4</span>
+      <div>
+        <h2><span lang="en">API demo, end to end</span><span lang="vi">Demo API từ đầu đến cuối</span></h2>
+        <p class="jd-sub" lang="en">Paste into a terminal with the dev stack running and the demo data seeded (needs <code>curl</code>, <code>jq</code> and <code>API_SERVER_PORT</code> from <code>.env</code>). Every expected status was checked against a running server.</p>
+        <p class="jd-sub" lang="vi">Dán vào terminal khi dev stack đang chạy và đã seed dữ liệu demo (cần <code>curl</code>, <code>jq</code> và <code>API_SERVER_PORT</code> từ <code>.env</code>). Mọi status mong đợi đã được kiểm trên server thật.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:18px;display:grid;gap:16px">
+      <div class="jd-term" data-copy lang="en"><div class="jd-term-bar"><i></i><i></i><i></i><span>demo.sh</span></div>
+<pre data-hl="bash">
+API=localhost:$API_SERVER_PORT/api/v1
+login() { curl -s -X POST $API/auth/login -H 'Content-Type: application/json' \
+  -H "X-Device-ID: $1" -d "{\"email\":\"$1\",\"password\":\"Password@123\"}" | jq -r .data.access_token; }
+ADMIN=$(login admin@jungo.com); MANAGER=$(login manager@jungo.com); USER=$(login user@jungo.com)
+
+# 1. user@ has no role: listing users is forbidden            → 403
+curl -s $API/users -H "Authorization: Bearer $USER" | jq .message
+
+# 2. admin creates a "support" role that can read and edit users  → 201
+ROLE=$(curl -s -X POST $API/roles -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"code":"support","name":"Support","permissions":["users:read","users:update"]}' | jq -r .data.uuid)
+
+# 3. find user@'s UUID and give them the role                   → 200
+USER_UUID=$(curl -s "$API/users?search=user@jungo.com" -H "Authorization: Bearer $ADMIN" | jq -r '.data.items[0].uuid')
+curl -s -X PUT $API/users/$USER_UUID/roles -H "Authorization: Bearer $ADMIN" \
+  -H 'Content-Type: application/json' -d "{\"role_uuids\":[\"$ROLE\"]}" | jq '.data[].code'
+
+# 4. same token, next request: allowed now (no re-login)        → 200
+curl -s $API/users -H "Authorization: Bearer $USER" | jq .message
+
+# 5. manager has roles:read but not roles:create                → 403
+curl -s -X POST $API/roles -H "Authorization: Bearer $MANAGER" -H 'Content-Type: application/json' \
+  -d '{"code":"mine","name":"Mine"}' | jq .message
+
+# 6. super_admin is read-only through the API                   → 403
+SUPER=$(curl -s $API/roles -H "Authorization: Bearer $ADMIN" | jq -r '.data[] | select(.code=="super_admin") | .uuid')
+curl -s -X PUT $API/users/$USER_UUID/roles -H "Authorization: Bearer $ADMIN" \
+  -H 'Content-Type: application/json' -d "{\"role_uuids\":[\"$SUPER\"]}" | jq .message
+
+# 7. delete the role: user@ loses it immediately                → 200, then 403
+curl -s -X DELETE $API/roles/$ROLE -H "Authorization: Bearer $ADMIN" | jq .message
+curl -s $API/users -H "Authorization: Bearer $USER" | jq .message
+</pre></div>
+      <div class="jd-term" data-copy lang="vi"><div class="jd-term-bar"><i></i><i></i><i></i><span>demo.sh</span></div>
+<pre data-hl="bash">
+API=localhost:$API_SERVER_PORT/api/v1
+login() { curl -s -X POST $API/auth/login -H 'Content-Type: application/json' \
+  -H "X-Device-ID: $1" -d "{\"email\":\"$1\",\"password\":\"Password@123\"}" | jq -r .data.access_token; }
+ADMIN=$(login admin@jungo.com); MANAGER=$(login manager@jungo.com); USER=$(login user@jungo.com)
+
+# 1. user@ chưa có role: không được xem danh sách user        → 403
+curl -s $API/users -H "Authorization: Bearer $USER" | jq .message
+
+# 2. admin tạo role "support" được xem và sửa user              → 201
+ROLE=$(curl -s -X POST $API/roles -H "Authorization: Bearer $ADMIN" -H 'Content-Type: application/json' \
+  -d '{"code":"support","name":"Support","permissions":["users:read","users:update"]}' | jq -r .data.uuid)
+
+# 3. lấy UUID của user@ rồi gán role cho họ                     → 200
+USER_UUID=$(curl -s "$API/users?search=user@jungo.com" -H "Authorization: Bearer $ADMIN" | jq -r '.data.items[0].uuid')
+curl -s -X PUT $API/users/$USER_UUID/roles -H "Authorization: Bearer $ADMIN" \
+  -H 'Content-Type: application/json' -d "{\"role_uuids\":[\"$ROLE\"]}" | jq '.data[].code'
+
+# 4. vẫn token cũ, request kế tiếp: đã được phép (không login lại) → 200
+curl -s $API/users -H "Authorization: Bearer $USER" | jq .message
+
+# 5. manager có roles:read nhưng không có roles:create          → 403
+curl -s -X POST $API/roles -H "Authorization: Bearer $MANAGER" -H 'Content-Type: application/json' \
+  -d '{"code":"mine","name":"Mine"}' | jq .message
+
+# 6. super_admin chỉ đọc qua API                                → 403
+SUPER=$(curl -s $API/roles -H "Authorization: Bearer $ADMIN" | jq -r '.data[] | select(.code=="super_admin") | .uuid')
+curl -s -X PUT $API/users/$USER_UUID/roles -H "Authorization: Bearer $ADMIN" \
+  -H 'Content-Type: application/json' -d "{\"role_uuids\":[\"$SUPER\"]}" | jq .message
+
+# 7. xóa role: user@ mất quyền ngay lập tức                     → 200, rồi 403
+curl -s -X DELETE $API/roles/$ROLE -H "Authorization: Bearer $ADMIN" | jq .message
+curl -s $API/users -H "Authorization: Bearer $USER" | jq .message
+</pre></div>
+      <div class="jd-explain">
+        <div class="jd-ex c-orange" style="cursor:default"><span class="n">1</span><span class="w"><span lang="en">Starts locked</span><span lang="vi">Ban đầu bị chặn</span></span><span class="x" lang="en"><code>user@</code> has no role → <code>403</code> on <code>GET /users</code>. They can still read <code>/users/&lt;own uuid&gt;</code>.</span><span class="x" lang="vi"><code>user@</code> chưa có role → <code>403</code> ở <code>GET /users</code>. Họ vẫn xem được <code>/users/&lt;uuid của mình&gt;</code>.</span></div>
+        <div class="jd-ex c-orange" style="cursor:default"><span class="n">2–3</span><span class="w"><span lang="en">Role created, assigned</span><span lang="vi">Tạo và gán role</span></span><span class="x" lang="en">Admin holds every permission, so it may grant any of them.</span><span class="x" lang="vi">Admin có mọi permission, nên được cấp bất kỳ cái nào.</span></div>
+        <div class="jd-ex c-orange" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">Live, no re-login</span><span lang="vi">Có hiệu lực ngay, không cần login lại</span></span><span class="x" lang="en">Permissions are loaded on every request — from the database, or from Redis when enabled (cleared on every change) — never baked into the token.</span><span class="x" lang="vi">Permission được nạp ở mọi request — từ database, hoặc từ Redis nếu bật (bị xóa mỗi khi có thay đổi) — không bao giờ gắn cứng vào token.</span></div>
+        <div class="jd-ex c-orange" style="cursor:default"><span class="n">5–6</span><span class="w"><span lang="en">Refusals</span><span lang="vi">Các lần từ chối</span></span><span class="x" lang="en">Missing route permission → "You do not have permission…". System role → "System roles cannot be changed".</span><span class="x" lang="vi">Thiếu permission của route → "You do not have permission…". Role hệ thống → "System roles cannot be changed".</span></div>
+        <div class="jd-ex c-orange" style="cursor:default"><span class="n">7</span><span class="w"><span lang="en">Delete = revoke</span><span lang="vi">Xóa = thu hồi</span></span><span class="x" lang="en">Deleting a role removes it from every holder at once.</span><span class="x" lang="vi">Xóa role là gỡ nó khỏi mọi người đang giữ cùng lúc.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 5. UNDER THE HOOD -->
+  <section id="inside" class="jd-section c-pink">
+    <div class="jd-section-head">
+      <span class="jd-badge">5</span>
+      <div>
+        <h2><span lang="en">Under the hood</span><span lang="vi">Bên trong hệ thống</span></h2>
+        <p class="jd-sub" lang="en">Code: <code>internal/middleware/permission.go</code> (Guard), <code>internal/common/actor</code> (Actor), <code>internal/features/access/service/access_service.go</code>.</p>
+        <p class="jd-sub" lang="vi">Code: <code>internal/middleware/permission.go</code> (Guard), <code>internal/common/actor</code> (Actor), <code>internal/features/access/service/access_service.go</code>.</p>
+      </div>
+    </div>
+
+    <h3><span lang="en">5.1 · One request, step by step</span><span lang="vi">5.1 · Một request, từng bước</span></h3>
+    <div class="jd-player c-pink" id="req-player">
+      <div class="jd-stage jd-grid3w" style="grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:34px 90px;max-width:980px;margin:0 auto" data-wires='[
+        {"from": "q1", "to": "q2", "color": "pink", "dir": "v", "label": "✓"},
+        {"from": "q2", "to": "q3", "color": "pink", "dir": "v"},
+        {"from": "q3", "to": "q4", "color": "pink", "dir": "v", "label": "✓"},
+        {"from": "q4", "to": "q5", "color": "pink", "dir": "v"},
+        {"from": "q5", "to": "q6", "color": "green", "dir": "v", "label": "✓"},
+        {"from": "q1", "to": "x1", "color": "red", "dir": "h", "label": "✗"},
+        {"from": "q3", "to": "x3", "color": "red", "dir": "h", "label": "✗"},
+        {"from": "q5", "to": "x5", "color": "red", "dir": "h", "label": "✗"}]'>
+        <div class="jd-node c-pink" data-node="q1" style="grid-column:1;grid-row:1"><span class="k">1 · BearerAuth</span><span class="t"><span lang="en">Token → Identity (see Authentication). Valid token?</span><span lang="vi">Token → Identity (xem trang Auth). Token hợp lệ?</span></span></div>
+        <div class="jd-node is-tint c-red" data-node="x1" style="grid-column:2;grid-row:1"><span class="k">✗ 401</span><span class="t"><span lang="en">Missing, invalid or expired token</span><span lang="vi">Token thiếu, sai hoặc hết hạn</span></span></div>
+        <div class="jd-node c-pink" data-node="q2" style="grid-column:1;grid-row:2"><span class="k">2 · Guard.Can / Authenticated</span><span class="t"><span lang="en">Load the user's permissions</span><span lang="vi">Nạp permission của user</span></span><div class="d" lang="en">Already read in step 1, in the same query as the session. A session from the Redis cache has none, so: PermissionCache, then <code>GetUserPermissions</code> (DB)</div><div class="d" lang="vi">Đã đọc sẵn ở bước 1, chung một query với session. Session lấy từ cache Redis thì không kèm, nên: PermissionCache, rồi <code>GetUserPermissions</code> (DB)</div></div>
+        <div class="jd-node c-pink" data-node="q3" style="grid-column:1;grid-row:3"><span class="k">3 · Can</span><span class="t"><span lang="en">Holds every permission of the route?</span><span lang="vi">Có đủ mọi permission của route?</span></span><div class="d" lang="en"><code>Authenticated</code> routes skip this check.</div><div class="d" lang="vi">Route <code>Authenticated</code> bỏ qua bước này.</div></div>
+        <div class="jd-node is-tint c-red" data-node="x3" style="grid-column:2;grid-row:3"><span class="k">✗ 403</span><span class="t"><span lang="en">You do not have permission to perform this action</span><span lang="vi">You do not have permission to perform this action</span></span></div>
+        <div class="jd-node c-pink" data-node="q4" style="grid-column:1;grid-row:4"><span class="k">4 · actor.With</span><span class="t"><span lang="en">Actor{UserID, UserUUID, Permissions} → request context</span><span lang="vi">Actor{UserID, UserUUID, Permissions} → context của request</span></span></div>
+        <div class="jd-node c-pink" data-node="q5" style="grid-column:1;grid-row:5"><span class="k">5 · handler → service</span><span class="t"><span lang="en">Yourself? Or the permission, and the user is not stronger? (authorize)</span><span lang="vi">Chính mình? Hay có permission, và user kia không mạnh hơn? (authorize)</span></span></div>
+        <div class="jd-node is-tint c-red" data-node="x5" style="grid-column:2;grid-row:5"><span class="k">✗ 404 · 403</span><span class="t"><span lang="en">404 without the permission; 403 for a stronger user or your own status</span><span lang="vi">404 khi thiếu permission; 403 với user mạnh hơn hoặc status của chính mình</span></span></div>
+        <div class="jd-node c-green" data-node="q6" style="grid-column:1;grid-row:6"><span class="k">6 · 200</span><span class="t"><span lang="en">Allowed</span><span lang="vi">Được phép</span></span></div>
+      </div>
+      <p class="jd-sub" style="text-align:center;margin:10px 0 0" lang="en">Each ✗ ends the request with that response; only ✓ goes on to the next step.</p>
+      <p class="jd-sub" style="text-align:center;margin:10px 0 0" lang="vi">Mỗi nhánh ✗ kết thúc request với response đó; chỉ nhánh ✓ mới đi tiếp xuống bước sau.</p>
+      <div class="jd-controls">
+        <button class="jd-btn primary" type="button" data-act="play"></button>
+        <button class="jd-btn" type="button" data-act="prev">‹ <span lang="en">Back</span><span lang="vi">Lùi</span></button>
+        <button class="jd-btn" type="button" data-act="next"><span lang="en">Next</span><span lang="vi">Tiếp</span> ›</button>
+        <button class="jd-btn" type="button" data-act="restart">↺</button>
+        <div class="jd-progress"><i></i></div>
+      </div>
+      <div class="jd-caption"></div>
+    </div>
+
+    <h3><span lang="en">5.2 · Acting on a user: route says "logged in", service says "yourself, or permitted and not stronger"</span><span lang="vi">5.2 · Thao tác lên user: route nói "đã đăng nhập", service nói "chính mình, hoặc được phép và không mạnh hơn"</span></h3>
+    <div class="jd-grid-2">
+      <div class="jd-term" data-copy><div class="jd-term-bar"><i></i><i></i><i></i><span>features/user/service/user_service.go</span></div>
+<pre data-hl="go" data-lines="5,9,11,18">
+// authorize: is the actor allowed to act on user uid? Reports whether it is themself.
+func (s *UserService) authorize(ctx context.Context, uid uuid.UUID, permission string) (bool, error) {
+    a, ok := actor.From(ctx)
+    if !ok { return false, domain.ErrUserNotFound }   // no actor → deny
+    if a.Is(uid) { return true, nil }                 // yourself → always allowed
+    if !a.Has(permission) { return false, domain.ErrUserNotFound } // → 404
+
+    targetID, err := s.repo.LockByUUID(ctx, uid)      // lock their row until the tx ends
+    held, target, err := s.permissions.GetActorAndTargetPermissions(ctx, a.UserID, targetID) // both, fresh from the DB, one query
+    …
+    if !actor.Covers(held, target) {                  // they hold something you don't
+        return false, domain.ErrCannotManageStrongerUser // → 403
+    }
+    return false, nil
+}
+
+// UpdateUser: inside one transaction, authorize, then save.
+self, err := s.authorize(ctx, uid, domain.UsersUpdate)
+if self &amp;&amp; input.Status != nil { return domain.ErrCannotChangeOwnStatus }
+</pre></div>
+      <div class="jd-explain">
+        <div class="jd-ex c-pink" style="cursor:default"><span class="n">?</span><span class="w"><span lang="en">Why in the service?</span><span lang="vi">Vì sao ở service?</span></span><span class="x" lang="en">The route doesn't know who <code>/users/:uuid</code> is. Only the service does — and it also protects calls that don't come from HTTP.</span><span class="x" lang="vi">Route không biết <code>/users/:uuid</code> là ai. Chỉ service biết — và nó còn bảo vệ cả những lời gọi không đến từ HTTP.</span></div>
+        <div class="jd-ex c-pink" style="cursor:default"><span class="n">≤</span><span class="w"><span lang="en">Never on a stronger user</span><span lang="vi">Không bao giờ lên user mạnh hơn</span></span><span class="x" lang="en">A manager with <code>users:update</code> can edit a member, but not the admin: the admin holds <code>roles:assign</code>, which the manager lacks. Two users with the same permissions can act on each other.</span><span class="x" lang="vi">Manager có <code>users:update</code> sửa được member, nhưng không sửa được admin: admin có <code>roles:assign</code> mà manager không có. Hai user cùng permission thì thao tác được lên nhau.</span></div>
+        <div class="jd-ex c-pink" style="cursor:default"><span class="n">⊘</span><span class="w"><span lang="en">Fails closed</span><span lang="vi">Mặc định từ chối</span></span><span class="x" lang="en">No actor in the context (a service called outside a guarded route) → denied. Background code must set one itself: <code>ctx = actor.With(ctx, &amp;actor.Actor{UserID: …, Permissions: …})</code>.</span><span class="x" lang="vi">Context không có actor (service bị gọi ngoài route có Guard) → từ chối. Code chạy nền phải tự đặt actor: <code>ctx = actor.With(ctx, &amp;actor.Actor{UserID: …, Permissions: …})</code>.</span></div>
+        <div class="jd-ex c-pink" style="cursor:default"><span class="n">404</span><span class="w"><span lang="en">Hide, don't refuse</span><span lang="vi">Giấu, không từ chối</span></span><span class="x" lang="en">Without the permission, every <code>/users/:uuid</code> route answers 404 for someone else, like a missing user. With it, a refusal is 403 (you can list users anyway, so it reveals nothing).</span><span class="x" lang="vi">Không có permission, mọi route <code>/users/:uuid</code> trả 404 khi nhắm vào người khác, giống user không tồn tại. Có permission mà vẫn bị từ chối thì trả 403 (đằng nào bạn cũng liệt kê được user, nên không lộ gì).</span></div>
+      </div>
+    </div>
+
+    <h3><span lang="en">5.3 · What happens at startup</span><span lang="vi">5.3 · Chuyện gì xảy ra khi khởi động</span></h3>
+    <div class="jd-grid3w" style="grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:34px 90px;max-width:980px;margin:0 auto" data-wires='[
+        {"from": "s1", "to": "s2", "color": "pink", "dir": "v", "label": "✓"},
+        {"from": "s2", "to": "s3", "color": "pink", "dir": "v", "label": "✓"},
+        {"from": "s3", "to": "s4", "color": "green", "dir": "v", "label": "✓"},
+        {"from": "s1", "to": "f1", "color": "red", "dir": "h", "label": "✗"},
+        {"from": "s2", "to": "f2", "color": "red", "dir": "h", "label": "✗"},
+        {"from": "s3", "to": "f3", "color": "red", "dir": "h", "label": "✗"}]'>
+        <div class="jd-node c-pink" data-node="s1" style="grid-column:1;grid-row:1"><span class="k">route registration</span><span class="t"><span lang="en">Is every code in Guard.Can known?</span><span lang="vi">Mọi mã trong Guard.Can đều hợp lệ?</span></span><div class="d" lang="en">Known = listed in some feature's <code>Permissions</code>. A typo can't lock (or open) a route silently.</div><div class="d" lang="vi">Hợp lệ = có trong <code>Permissions</code> của một feature nào đó. Gõ sai không thể âm thầm khóa (hay mở) một route.</div></div>
+        <div class="jd-node is-tint c-red" data-node="f1" style="grid-column:2;grid-row:1"><span class="k">✗ <span lang="en">app stops</span><span lang="vi">app dừng</span></span><div class="d" lang="en"><b>panic</b>: <code>unknown permission "…"</code></div><div class="d" lang="vi"><b>panic</b>: <code>unknown permission "…"</code></div></div>
+        <div class="jd-node c-pink" data-node="s2" style="grid-column:1;grid-row:2"><span class="k">router.RegisterAll</span><span class="t"><span lang="en">Is every /api/v{n} route wrapped by Guard?</span><span lang="vi">Mọi route /api/v{n} đều được Guard bọc?</span></span><div class="d" lang="en">Deny by default: the last handler must be a Guard one.</div><div class="d" lang="vi">Mặc định từ chối: handler cuối phải là của Guard.</div></div>
+        <div class="jd-node is-tint c-red" data-node="f2" style="grid-column:2;grid-row:2"><span class="k">✗ <span lang="en">app stops</span><span lang="vi">app dừng</span></span><div class="d" lang="en"><code>router: DELETE /api/v1/users/:uuid is not wrapped by Guard…</code></div><div class="d" lang="vi"><code>router: DELETE /api/v1/users/:uuid is not wrapped by Guard…</code></div></div>
+        <div class="jd-node c-pink" data-node="s3" style="grid-column:1;grid-row:3"><span class="k">CheckPermissions · OnStart</span><span class="t"><span lang="en">Is every code in the database?</span><span lang="vi">Mọi mã đều có trong database?</span></span><div class="d" lang="en">One read-only <code>SELECT</code> on <code>permissions</code>. <b>Nothing is written.</b></div><div class="d" lang="vi">Một câu <code>SELECT</code> chỉ đọc trên <code>permissions</code>. <b>Không ghi gì cả.</b></div></div>
+        <div class="jd-node is-tint c-red" data-node="f3" style="grid-column:2;grid-row:3"><span class="k">✗ <span lang="en">app stops</span><span lang="vi">app dừng</span></span><div class="d" lang="en"><code>access: permissions used by the code are missing from the database (run seeders/002_access.sql, or make migrate-up for a feature's): roles:assign</code></div><div class="d" lang="vi"><code>access: permissions used by the code are missing from the database (run seeders/002_access.sql, or make migrate-up for a feature's): roles:assign</code></div></div>
+        <div class="jd-node c-green" data-node="s4" style="grid-column:1;grid-row:4"><span class="k">HTTP server</span><span class="t"><span lang="en">Starts serving</span><span lang="vi">Bắt đầu phục vụ</span></span><div class="d" lang="en">Reached only when all three checks pass.</div><div class="d" lang="vi">Chỉ tới được đây khi cả ba bước kiểm tra đều qua.</div></div>
+      </div>
+    <p class="jd-sub" style="text-align:center;margin:10px 0 0" lang="en">Each ✗ stops the app with that error; only ✓ goes on to the next check.</p>
+    <p class="jd-sub" style="text-align:center;margin:10px 0 0" lang="vi">Mỗi nhánh ✗ làm app dừng với lỗi đó; chỉ nhánh ✓ mới đi tiếp sang bước kiểm tra sau.</p>
+    <div class="jd-callout c-pink" style="margin-top:16px">
+      <b lang="en">Why the app never writes permissions:</b><b lang="vi">Vì sao app không bao giờ tự ghi permission:</b>
+      <span lang="en">a buggy start must not be able to damage the database. Permissions change only through SQL you review and run yourself (the seeder, or a feature's migration); the app only checks that what it needs is there. Order: <b>add the permissions to the database first, then deploy the new code.</b></span>
+      <span lang="vi">một lần khởi động lỗi không được phép làm hỏng database. Permission chỉ thay đổi qua SQL do bạn review và tự chạy (seeder, hoặc migration của feature); app chỉ kiểm tra rằng những gì nó cần đã có. Thứ tự: <b>thêm permission vào database trước, rồi mới deploy code mới.</b></span>
+    </div>
+
+    <h3><span lang="en">5.4 · The permission cache</span><span lang="vi">5.4 · Cache permission</span></h3>
+    <div class="jd-grid-2">
+      <div class="jd-tablewrap"><table class="jd-params c-pink">
+        <tr><th>key</th><th><span lang="en">holds</span><span lang="vi">chứa gì</span></th></tr>
+        <tr><td>access:user:{id}:permissions:entry</td><td lang="en">The user's codes + when they were read. TTL <code>AUTH_PERMISSION_CACHE_TTL</code> (60s). Empty lists are cached too — most users have no role.</td><td lang="vi">Các mã của user + thời điểm đọc. TTL <code>AUTH_PERMISSION_CACHE_TTL</code> (60s). Danh sách rỗng cũng được cache — đa số user không có role.</td></tr>
+        <tr><td>access:user:{id}:invalidated_at</td><td lang="en">Set when the user's roles change, or when a role they hold is edited or deleted. Entries loaded before it count as misses.</td><td lang="vi">Ghi khi role của user thay đổi, hoặc khi role họ đang giữ bị sửa/xóa. Entry nạp trước mốc này bị coi là trượt.</td></tr>
+        <tr><td>access:invalidated_at</td><td lang="en">Set instead of per-user markers when an edited or deleted role has more than 1000 users; every cached entry becomes stale.</td><td lang="vi">Ghi thay cho mốc từng user khi role bị sửa/xóa có hơn 1000 user; mọi entry trong cache đều cũ.</td></tr>
+      </table></div>
+      <div class="jd-explain">
+        <div class="jd-ex c-pink" style="cursor:default"><span class="n">R</span><span class="w"><span lang="en">Redis or nothing</span><span lang="vi">Redis hoặc không cache</span></span><span class="x" lang="en">With <code>CACHE_REDIS_ENABLE=false</code> (default) there is no cache: every request reads the database, so a change applies on every instance at once. With Redis the cache is shared, and a change clears it for every instance.</span><span class="x" lang="vi">Với <code>CACHE_REDIS_ENABLE=false</code> (mặc định) không có cache: mọi request đều đọc database, nên thay đổi có hiệu lực ngay trên mọi instance. Có Redis thì cache được dùng chung, và mỗi thay đổi xóa cache cho mọi instance.</span></div>
+        <div class="jd-ex c-pink" style="cursor:default"><span class="n">⏱</span><span class="w"><span lang="en">Same scheme as sessions</span><span lang="vi">Cùng cơ chế với session</span></span><span class="x" lang="en">Invalidation deletes the user's entry and also writes a timestamp marker, so a slow read that finishes after the change can't put stale permissions back. Entries read up to 2 s after the marker count as stale too, in case instances' clocks differ. If writing fails (logged), old permissions last at most the TTL.</span><span class="x" lang="vi">Vô hiệu hóa xóa entry của user và ghi thêm một mốc thời gian, nên một lần đọc chậm kết thúc sau thay đổi không thể đưa permission cũ trở lại. Entry đọc trong vòng 2 giây sau mốc cũng bị coi là cũ, phòng khi đồng hồ các instance lệch nhau. Nếu ghi lỗi (có log), permission cũ tồn tại tối đa bằng TTL.</span></div>
+        <div class="jd-ex c-pink" style="cursor:default"><span class="n">!</span><span class="w"><span lang="en">Changes never trust the cache</span><span lang="vi">Thao tác thay đổi không tin cache</span></span><span class="x" lang="en">The cache only serves the route check. Anything that hands out or takes away access — role edits, role assignments, changing or deleting a user — re-reads your permissions from the database first.</span><span class="x" lang="vi">Cache chỉ phục vụ bước kiểm tra ở route. Mọi thao tác cấp hoặc thu quyền — sửa role, gán role, sửa hay xóa user — đều đọc lại permission của bạn từ database trước.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 6. SAFETY -->
+  <section id="safety" class="jd-section c-red">
+    <div class="jd-section-head">
+      <span class="jd-badge">6</span>
+      <div>
+        <h2><span lang="en">Safety rules</span><span lang="vi">Quy tắc an toàn</span></h2>
+        <p class="jd-sub" lang="en">Holding <code>roles:assign</code> must not mean "can make anyone, including me, an admin".</p>
+        <p class="jd-sub" lang="vi">Có <code>roles:assign</code> không được đồng nghĩa với "biến bất kỳ ai, kể cả tôi, thành admin".</p>
+      </div>
+    </div>
+
+    <div class="jd-rules" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+      <div class="jd-rule"><span class="n" style="background:var(--red)">1</span>
+        <h4><span lang="en">No escalation</span><span lang="vi">Không leo thang quyền</span></h4>
+        <p lang="en">Through the API you can never give or take away access you don't hold yourself. Creating a role: every permission in it must be yours. Setting a role's permissions: every permission you add or remove must be yours. Deleting a role, or adding or removing a role on a user: every permission of that role must be yours.</p>
+        <p lang="vi">Qua API bạn không bao giờ cấp hay thu được quyền mà chính bạn không có. Tạo role: mọi permission trong đó phải là của bạn. Đặt permission cho role: mọi permission bạn thêm hoặc gỡ phải là của bạn. Xóa role, hoặc thêm/gỡ role của một user: mọi permission của role đó phải là của bạn.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--pink)">2</span>
+        <h4><span lang="en">Never on a stronger user</span><span lang="vi">Không đụng tới user mạnh hơn</span></h4>
+        <p lang="en">To change, disable or delete someone else you need the permission <b>and</b> every permission they hold. A manager can't disable the admin; only a <code>super_admin</code> acts on a <code>super_admin</code>. The same goes for their roles (<code>PUT /users/:uuid/roles</code>). No one changes their own status or roles, or deletes themself, so the last <code>super_admin</code> always stays.</p>
+        <p lang="vi">Muốn sửa, khóa hay xóa người khác, bạn cần permission đó <b>và</b> mọi permission mà người kia đang có. Manager không khóa được admin; chỉ <code>super_admin</code> mới thao tác được lên <code>super_admin</code>. Role của họ cũng vậy (<code>PUT /users/:uuid/roles</code>). Không ai tự đổi status, tự đổi role hay tự xóa mình, nên <code>super_admin</code> cuối cùng luôn còn lại.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--orange)">3</span>
+        <h4><span lang="en">System roles are read-only</span><span lang="vi">Role hệ thống chỉ đọc</span></h4>
+        <p lang="en"><code>super_admin</code> can't be renamed, edited, deleted, given or taken through the API, and <code>PUT /users/:uuid/roles</code> keeps it. Only SQL run directly on the database assigns it.</p>
+        <p lang="vi"><code>super_admin</code> không thể đổi tên, sửa, xóa, gán hay gỡ qua API, và <code>PUT /users/:uuid/roles</code> luôn giữ nguyên nó. Chỉ SQL chạy trực tiếp trên database mới gán được.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--blue)">4</span>
+        <h4><span lang="en">Checked on fresh data</span><span lang="vi">Kiểm tra trên dữ liệu mới nhất</span></h4>
+        <p lang="en">Each change runs in one transaction: it locks the user or role rows it touches, then re-reads your permissions from the database. A permission removed a second ago no longer counts, and two admins editing the same role or user at once wait for each other instead of slipping past the check.</p>
+        <p lang="vi">Mỗi thao tác thay đổi chạy trong một transaction: khóa các hàng user hoặc role mà nó đụng tới, rồi đọc lại permission của bạn từ database. Permission vừa bị gỡ một giây trước không còn tính, và hai admin cùng sửa một role hay một user sẽ chờ nhau thay vì lách qua bước kiểm tra.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--purple)">5</span>
+        <h4><span lang="en">Deny by default</span><span lang="vi">Mặc định từ chối</span></h4>
+        <p lang="en">Any <code>/api/v1/...</code> route without a Guard, a permission typo in the code, or a permission missing from the database stops the app at startup. Unversioned routes (<code>/api/internal/*</code>) are not checked; they use <code>RequireSecret</code> instead.</p>
+        <p lang="vi">Route <code>/api/v1/...</code> thiếu Guard, permission gõ sai trong code, hoặc permission chưa có trong database đều làm app dừng khi khởi động. Route không có version (<code>/api/internal/*</code>) không bị kiểm tra; chúng dùng <code>RequireSecret</code>.</p></div>
+    </div>
+
+    <h3><span lang="en">Escalation simulator — try it</span><span lang="vi">Mô phỏng leo thang quyền — thử ngay</span></h3>
+    <div class="jd-sim">
+      <div>
+        <p class="jd-sub" style="margin:0 0 10px" lang="en">You are calling <code>PUT /users/:uuid/roles</code> to <b>add</b> one role to someone. Toggle the permissions you hold, pick the role, and see what the API answers. Mirrors <code>Guard.Can</code> + <code>AccessService.SetUserRoles</code>.</p>
+        <p class="jd-sub" style="margin:0 0 10px" lang="vi">Bạn đang gọi <code>PUT /users/:uuid/roles</code> để <b>thêm</b> một role cho ai đó. Bật/tắt các permission bạn có, chọn role, và xem API trả lời gì. Mô phỏng đúng <code>Guard.Can</code> + <code>AccessService.SetUserRoles</code>.</p>
+        <h4 style="margin:12px 0 6px"><span lang="en">Your permissions</span><span lang="vi">Permission của bạn</span></h4>
+        <div class="jd-sim-btns" id="es-perms"></div>
+        <h4 style="margin:12px 0 6px"><span lang="en">Role to add</span><span lang="vi">Role cần thêm</span></h4>
+        <div class="jd-seg" id="es-roles"></div>
+        <div class="jd-sim-btns" style="margin-top:14px">
+          <button class="jd-btn" type="button" id="es-preset-manager"><span lang="en">Preset: manager + roles:assign</span><span lang="vi">Mẫu: manager + roles:assign</span></button>
+          <button class="jd-btn" type="button" id="es-preset-admin"><span lang="en">Preset: super_admin</span><span lang="vi">Mẫu: super_admin</span></button>
+        </div>
+      </div>
+      <div>
+        <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span lang="en">API answer</span><span lang="vi">API trả lời</span></div><pre data-hl="json" id="es-out">{ }</pre></div>
+        <p class="jd-sub" id="es-why" style="margin-top:10px"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 7. INTEGRATE -->
+  <section id="integrate" class="jd-section c-blue">
+    <div class="jd-section-head">
+      <span class="jd-badge">7</span>
+      <div>
+        <h2><span lang="en">Integrate</span><span lang="vi">Tích hợp</span></h2>
+        <p class="jd-sub" lang="en">For backend developers adding routes and permissions, and for frontend developers building the admin UI.</p>
+        <p class="jd-sub" lang="vi">Cho dev backend thêm route và permission, và cho dev frontend xây UI quản trị.</p>
+      </div>
+    </div>
+
+    <h3><span lang="en">Backend: guard your routes</span><span lang="vi">Backend: gắn Guard cho route</span></h3>
+    <div class="jd-grid-2">
+      <div class="jd-term" data-copy><div class="jd-term-bar"><i></i><i></i><i></i><span>features/product/router/v1/product_router.go</span></div>
+<pre data-hl="go" class="code-guard-router">
+import (
+    authdomain "jungo/internal/features/auth/domain"
+    "jungo/internal/features/product/domain"
+    "jungo/internal/middleware" // not junkit/middleware
+)
+
+func NewProductRoutes(
+    handler *v1handler.ProductHandler,
+    authenticator middleware.Authenticator[*authdomain.Identity],
+    guard *middleware.Guard,
+    responder response.Responder,
+) *ProductRoutes { … }
+
+func (r *ProductRoutes) Register(group *gin.RouterGroup) {
+    items := group.Group("/products")
+    items.Use(middleware.BearerAuth(r.authenticator, r.responder, middleware.BearerAuthOptions{}))
+
+    items.GET("", r.guard.Can(r.handler.ListProducts, domain.ProductsRead))
+    items.POST("", r.guard.Can(r.handler.CreateProduct, domain.ProductsCreate))
+    items.GET("/:uuid", r.guard.Authenticated(r.handler.GetProduct)) // service checks owner
+}
+</pre></div>
+      <div class="jd-explain">
+        <div class="jd-ex c-blue" data-code=".code-guard-router" data-show="4"><span class="n">1</span><span class="w"><span lang="en">Import path</span><span lang="vi">Đường dẫn import</span></span><span class="x" lang="en"><code>BearerAuth</code>, <code>RequireSecret</code> and <code>Guard</code> live in <code>jungo/internal/middleware</code> — the app's access policy. junkit keeps the infrastructure middleware.</span><span class="x" lang="vi"><code>BearerAuth</code>, <code>RequireSecret</code> và <code>Guard</code> nằm ở <code>jungo/internal/middleware</code> — chính sách truy cập của app. junkit giữ các middleware hạ tầng.</span></div>
+        <div class="jd-ex c-blue" data-code=".code-guard-router" data-show="10"><span class="n">2</span><span class="w">*middleware.Guard</span><span class="x" lang="en">Ask for it in the constructor — the access module provides it.</span><span class="x" lang="vi">Xin nó trong constructor — module access cung cấp sẵn.</span></div>
+        <div class="jd-ex c-blue" data-code=".code-guard-router" data-show="18"><span class="n">3</span><span class="w">Can</span><span class="x" lang="en">Needs every listed permission. Use the consts from the feature's own <code>domain/permission.go</code> — generated routers already do.</span><span class="x" lang="vi">Cần đủ mọi permission được liệt kê. Dùng const trong <code>domain/permission.go</code> của chính feature — router sinh ra đã làm sẵn.</span></div>
+        <div class="jd-ex c-blue" data-code=".code-guard-router" data-show="20"><span class="n">4</span><span class="w">Authenticated / Public</span><span class="x" lang="en"><code>Authenticated</code> = any logged-in user, the service decides with <code>actor.RequireSelfOrPermission</code>. <code>Public</code> = no login (e.g. login itself) — the explicit way to open a route.</span><span class="x" lang="vi"><code>Authenticated</code> = mọi user đã đăng nhập, service quyết định bằng <code>actor.RequireSelfOrPermission</code>. <code>Public</code> = không cần đăng nhập (vd. chính login) — cách mở route một cách tường minh.</span></div>
+      </div>
+    </div>
+
+    <h3><span lang="en">Backend: add a permission</span><span lang="vi">Backend: thêm một permission</span></h3>
+    <div class="jd-grid-2">
+      <div>
+        <div class="jd-term" data-copy><div class="jd-term-bar"><i></i><i></i><i></i><span>features/report/domain/permission.go</span></div>
+<pre data-hl="go" data-lines="3,7">
+const (
+    …
+    ReportsExport = "reports:export"
+)
+
+var Permissions = []string{
+    …, ReportsExport,
+}
+</pre></div>
+        <div class="jd-term" data-copy style="margin-top:12px"><div class="jd-term-bar"><i></i><i></i><i></i><span>migrations/000005_reports_export.up.sql</span></div>
+<pre data-hl="sql">
+INSERT INTO permissions (code, group_code) VALUES ('reports:export', 'reports')
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO role_permissions (role_id, permission_code)
+SELECT r.id, 'reports:export' FROM roles r WHERE r.code = 'super_admin'
+ON CONFLICT DO NOTHING;
+
+-- .down.sql: DELETE FROM permissions WHERE code = 'reports:export';
+</pre></div>
+      </div>
+      <div class="jd-explain">
+        <div class="jd-ex c-blue" style="cursor:default"><span class="n">1</span><span class="w"><span lang="en">Const</span><span lang="vi">Const</span></span><span class="x" lang="en">In the feature that checks it: name it in its <code>domain/permission.go</code> and add it to <code>Permissions</code>. The feature's <code>module.go</code> already hands that list to the access feature (the <code>permissions</code> Fx group).</span><span class="x" lang="vi">Trong feature dùng nó: khai báo trong <code>domain/permission.go</code> của feature và thêm vào <code>Permissions</code>. <code>module.go</code> của feature đã chuyển danh sách này cho feature access (Fx group <code>permissions</code>).</span></div>
+        <div class="jd-ex c-blue" style="cursor:default"><span class="n">2</span><span class="w">i18n</span><span class="x" lang="en"><code>permission.reports.export</code> (and <code>permission_group.reports</code> for a new group) in the same <code>module.go</code>.</span><span class="x" lang="vi"><code>permission.reports.export</code> (và <code>permission_group.reports</code> nếu là nhóm mới) trong cùng <code>module.go</code> đó.</span></div>
+        <div class="jd-ex c-blue" style="cursor:default"><span class="n">3</span><span class="w">Migration</span><span class="x" lang="en">A new migration inserts the row and grants it to <code>super_admin</code>; its down file deletes it (grants cascade).</span><span class="x" lang="vi">Một migration mới chèn dòng đó và cấp cho <code>super_admin</code>; file down xóa nó (quyền đã cấp xóa dây chuyền).</span></div>
+        <div class="jd-ex c-blue" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">Migrate, then use</span><span lang="vi">Migrate, rồi dùng</span></span><span class="x" lang="en"><code>make migrate-up</code>, then <code>guard.Can(…)</code>. If the row is missing from the database, the app stops at startup and names it. Nothing checks the labels: a permission without an i18n name shows its raw key in <code>GET /permissions</code>.</span><span class="x" lang="vi"><code>make migrate-up</code>, rồi <code>guard.Can(…)</code>. Nếu database thiếu dòng đó, app dừng khi khởi động và nêu tên nó. Không có gì kiểm tra nhãn: permission thiếu tên i18n sẽ hiện key thô trong <code>GET /permissions</code>.</span></div>
+      </div>
+    </div>
+
+    <div class="jd-callout c-blue" style="margin-top:14px">
+      <b lang="en"><code>make feature</code> generates guarded routes:</b><b lang="vi"><code>make feature</code> sinh sẵn route có Guard:</b>
+      <span lang="en">the new feature gets <code>domain/permission.go</code> with <code>products:read/create/update/delete</code>, their labels ("View products", …) in its <code>module.go</code>, a router using <code>guard.Can(…, domain.ProductsCreate)</code> etc., and the SQL that adds the four permissions and grants them to <code>super_admin</code> <b>inside the feature's table migration</b>. <code>make migrate-up</code> applies everything; <code>make migrate-down</code> removes the table and the permissions together. The seeder is never touched.</span>
+      <span lang="vi">feature mới có sẵn <code>domain/permission.go</code> với <code>products:read/create/update/delete</code>, nhãn của chúng ("View products", …) trong <code>module.go</code>, router dùng <code>guard.Can(…, domain.ProductsCreate)</code>, v.v., và câu SQL thêm bốn permission đó rồi cấp cho <code>super_admin</code> <b>nằm ngay trong migration tạo bảng của feature</b>. <code>make migrate-up</code> áp dụng tất cả; <code>make migrate-down</code> gỡ bảng và permission cùng lúc. Seeder không bị đụng tới.</span>
+    </div>
+
+    <h3><span lang="en">Frontend: the role editor</span><span lang="vi">Frontend: màn hình sửa role</span></h3>
+    <div class="jd-explain">
+      <div class="jd-ex c-blue" style="cursor:default"><span class="n">1</span><span class="w"><span lang="en">Checkbox groups</span><span lang="vi">Nhóm checkbox</span></span><span class="x" lang="en"><code>GET /permissions</code> gives groups and labels; render one fieldset per group. A "select all" in a group just ticks today's permissions — the server never stores a wildcard.</span><span class="x" lang="vi"><code>GET /permissions</code> trả về nhóm và nhãn; vẽ mỗi nhóm một fieldset. Nút "chọn cả nhóm" chỉ tick các permission hiện có — server không bao giờ lưu wildcard.</span></div>
+      <div class="jd-ex c-blue" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">Save = send the whole list</span><span lang="vi">Lưu = gửi cả danh sách</span></span><span class="x" lang="en"><code>PUT /roles/:uuid/permissions</code> and <code>PUT /users/:uuid/roles</code> replace everything — send the full checked set.</span><span class="x" lang="vi"><code>PUT /roles/:uuid/permissions</code> và <code>PUT /users/:uuid/roles</code> thay toàn bộ — gửi đủ tập đang được tick.</span></div>
+      <div class="jd-ex c-blue" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">Disable system roles</span><span lang="vi">Khóa role hệ thống</span></span><span class="x" lang="en">When <code>is_system</code> is true, show the role read-only and leave it out of the user's role picker.</span><span class="x" lang="vi">Khi <code>is_system</code> là true, hiển thị role ở chế độ chỉ đọc và không đưa vào ô chọn role của user.</span></div>
+      <div class="jd-ex c-blue" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">Handle 403 by message</span><span lang="vi">Xử lý 403 theo message</span></span><span class="x" lang="en"><code>GET /auth/me</code> returns <code>permissions</code>: show a button only when its permission is in the list. Still handle a 403 (see "Telling 403s apart" in <a href="#endpoints">endpoints</a>) — a permission can be removed while the page is open, and a stronger user is refused even when you hold the permission.</span><span class="x" lang="vi"><code>GET /auth/me</code> trả về <code>permissions</code>: chỉ hiện nút khi permission của nó có trong danh sách. Vẫn phải xử lý 403 (xem "Phân biệt các lỗi 403" ở <a href="#endpoints">endpoint</a>) — permission có thể bị gỡ khi trang đang mở, và thao tác lên user mạnh hơn vẫn bị từ chối dù bạn có permission.</span></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 8. CONFIG & OPS -->
+  <section id="ops" class="jd-section c-muted">
+    <div class="jd-section-head">
+      <span class="jd-badge">8</span>
+      <div>
+        <h2><span lang="en">Configuration &amp; operations</span><span lang="vi">Cấu hình &amp; vận hành</span></h2>
+        <p class="jd-sub" lang="en">Roles are managed through the API only; there are no console commands. The very first super_admin is given with the SQL below.</p>
+        <p class="jd-sub" lang="vi">Role chỉ được quản lý qua API, không có console command. super_admin đầu tiên được gán bằng câu SQL bên dưới.</p>
+      </div>
+    </div>
+    <div class="jd-tablewrap" style="margin-top:18px"><table class="jd-params c-blue">
+      <tr><th><span lang="en">variable</span><span lang="vi">biến</span></th><th><span lang="en">default</span><span lang="vi">mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+      <tr><td>AUTH_PERMISSION_CACHE_TTL</td><td>60s</td><td lang="en">How long a user's permissions are cached in Redis (no cache without Redis). <code>0</code> disables it. Also the worst-case delay of a revoked permission if invalidation fails.</td><td lang="vi">Permission của user được cache trong Redis bao lâu (không có Redis thì không cache). <code>0</code> là tắt. Đây cũng là độ trễ tối đa của một permission bị thu hồi nếu vô hiệu hóa cache lỗi.</td></tr>
+    </table></div>
+
+    <div style="margin-top:18px;display:grid;gap:16px">
+      <div class="jd-term" data-copy="commands" lang="en"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="sql">
+-- first super_admin on a new server — review, then run it yourself
+-- create the user first: make console CMD="user:create" ARGS="-email=ops@jungo.com …"
+INSERT INTO user_roles (user_id, role_id)
+SELECT u.id, r.id FROM users u JOIN roles r ON r.code = 'super_admin'
+WHERE u.email = 'ops@jungo.com' AND u.deleted_at IS NULL
+ON CONFLICT DO NOTHING;
+</pre></div>
+      <div class="jd-term" data-copy="commands" lang="vi"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="sql">
+-- super_admin đầu tiên trên server mới — xem lại rồi tự chạy
+-- tạo user trước: make console CMD="user:create" ARGS="-email=ops@jungo.com …"
+INSERT INTO user_roles (user_id, role_id)
+SELECT u.id, r.id FROM users u JOIN roles r ON r.code = 'super_admin'
+WHERE u.email = 'ops@jungo.com' AND u.deleted_at IS NULL
+ON CONFLICT DO NOTHING;
+</pre></div>
+      <div class="jd-explain">
+        <div class="jd-ex c-muted" style="cursor:default"><span class="n">✎</span><span class="w"><span lang="en">Rename or remove a permission</span><span lang="vi">Đổi tên hoặc bỏ permission</span></span><span class="x" lang="en">Seeders and migrations only insert. Change the const, then fix existing databases with a new migration: <code>UPDATE permissions SET code = 'new' WHERE code = 'old'</code> (grants follow via <code>ON UPDATE CASCADE</code>) or <code>DELETE FROM permissions WHERE code = '…'</code> (grants cascade).</span><span class="x" lang="vi">Seeder và migration chỉ chèn. Sửa const, rồi sửa database hiện có bằng một migration mới: <code>UPDATE permissions SET code = 'new' WHERE code = 'old'</code> (gán quyền đi theo nhờ <code>ON UPDATE CASCADE</code>) hoặc <code>DELETE FROM permissions WHERE code = '…'</code> (gán quyền xóa dây chuyền).</span></div>
+        <div class="jd-ex c-muted" style="cursor:default"><span class="n">⇆</span><span class="w"><span lang="en">Outside development</span><span lang="vi">Ngoài development</span></span><span class="x" lang="en"><code>make migrate-up</code> seeds only when <code>API_ENVIRONMENT=development</code>. On other servers run only <code>seeders/002_access.sql</code> with psql, once, for the built-in permissions; a feature's own permissions come with <code>make migrate-up</code>, which must run before the code that uses them is deployed. Never run <code>make db-seed</code> there: it loads every demo seeder. The file also adds the demo roles <code>manager</code> and <code>member</code>; delete them afterwards with <code>DELETE FROM roles WHERE code IN ('manager', 'member') AND NOT is_system;</code> (their grants and assignments go with them). Several instances work without Redis (nothing is cached); enable Redis to save the database reads.</span><span class="x" lang="vi"><code>make migrate-up</code> chỉ seed khi <code>API_ENVIRONMENT=development</code>. Trên server khác chỉ chạy <code>seeders/002_access.sql</code> bằng psql, một lần, cho các permission có sẵn; permission của từng feature đi kèm <code>make migrate-up</code>, lệnh này phải chạy trước khi deploy code dùng chúng. Không bao giờ chạy <code>make db-seed</code> ở đó: lệnh này nạp mọi seeder demo. File này cũng thêm role demo <code>manager</code> và <code>member</code>; xóa chúng sau đó bằng <code>DELETE FROM roles WHERE code IN ('manager', 'member') AND NOT is_system;</code> (quyền đã cấp và việc gán role bị xóa theo). Chạy nhiều instance vẫn ổn khi không có Redis (không cache gì); bật Redis để bớt đọc database.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="jd-footer">
+    <span>Jundoc · permissions &amp; roles</span>
+    <span><a href="auth.html">← <span lang="en">Authentication</span><span lang="vi">Auth</span></a> · <a href="overview.html"><span lang="en">Jungo overview</span><span lang="vi">Tổng quan Jungo</span></a></span>
+  </footer>
+</article>
+</div>
+
+<script>
+document.addEventListener("jd:ready", function () {
+  // ---------------------------------------------------------------- request flow
+  JD.player(document.getElementById("req-player"), [
+    { node: "q1", token: "Bearer v1.…", color: "pink",
+      text: { en: "<code>PATCH /api/v1/users/:uuid</code> arrives. BearerAuth turns the token into an Identity, exactly as on the Authentication page.", vi: "<code>PATCH /api/v1/users/:uuid</code> tới. BearerAuth đổi token thành Identity, y như trang Auth." } },
+    { node: "q2", token: "user 42", color: "pink", ms: 2600,
+      text: { en: "The route is <code>guard.Authenticated</code>. The Guard takes user 42's permission codes, already read in step 1 together with the session (the same query joins <code>user_roles</code> and <code>role_permissions</code>). When the session came from the Redis cache, the codes come from the permission cache instead.", vi: "Route là <code>guard.Authenticated</code>. Guard lấy các mã permission của user 42, đã đọc sẵn ở bước 1 cùng với session (chung query đó nối <code>user_roles</code> và <code>role_permissions</code>). Khi session lấy từ cache Redis, các mã này lấy từ cache permission." } },
+    { node: "q3", token: "skip", color: "muted",
+      text: { en: "<code>Authenticated</code> requires no specific permission. On a <code>Can(…)</code> route a missing one stops here with <code>403</code>.", vi: "<code>Authenticated</code> không đòi permission cụ thể nào. Ở route <code>Can(…)</code>, thiếu permission thì dừng tại đây với <code>403</code>." } },
+    { node: "q4", token: "Actor", color: "pink",
+      text: { en: "The Actor (who + what they hold) goes into the request context, so the service needs no second lookup.", vi: "Actor (là ai + có quyền gì) được đặt vào context của request, nên service không cần tra lại lần nữa." } },
+    { node: "q5", token: "authorize", color: "pink", ms: 2800,
+      text: { en: "The service checks: editing <b>yourself</b> (fine, but not your own status)? Otherwise you need <code>users:update</code> <b>and</b> every permission the other user holds — read fresh from the database, with their row locked.", vi: "Service kiểm tra: đang sửa <b>chính mình</b> (được, trừ status của mình)? Nếu không, bạn cần <code>users:update</code> <b>và</b> mọi permission mà user kia đang có — đọc mới từ database, kèm khóa hàng của họ." } },
+    { node: "q6", token: "200", color: "green",
+      text: { en: "Allowed — the handler answers as usual.", vi: "Được phép — handler trả lời như bình thường." } }
+  ]);
+
+  // ---------------------------------------------------------------- escalation simulator
+  // Mirrors Guard.Can(roles:assign) + AccessService.SetUserRoles for adding one role.
+  var PERMS = ["users:read", "users:create", "users:update", "users:delete",
+               "roles:read", "roles:create", "roles:update", "roles:delete", "roles:assign"];
+  var ROLES = {
+    member:      { perms: ["users:read"] },
+    support:     { perms: ["users:read", "users:update"] },
+    deleter:     { perms: ["users:delete"] },
+    super_admin: { perms: PERMS, system: true }
+  };
+  var MSG = {
+    route:  [403, "FORBIDDEN", "You do not have permission to perform this action"],
+    system: [403, "FORBIDDEN", "System roles cannot be changed"],
+    escal:  [403, "FORBIDDEN", "This change involves a permission you do not hold yourself"],
+    ok:     [200, null, "User roles updated successfully"]
+  };
+  function decide(held, roleCode) {
+    var role = ROLES[roleCode];
+    if (held.indexOf("roles:assign") < 0) return ["route", null];
+    if (role.system) return ["system", null];
+    var missing = role.perms.filter(function (p) { return held.indexOf(p) < 0; });
+    return missing.length ? ["escal", missing] : ["ok", null];
+  }
+  (function selfCheck() {
+    console.assert(decide(["users:read"], "member")[0] === "route", "jundoc escalation: needs roles:assign");
+    console.assert(decide(PERMS, "super_admin")[0] === "system", "jundoc escalation: system role");
+    console.assert(decide(["roles:assign", "users:read"], "support")[1].join() === "users:update", "jundoc escalation: missing perm");
+    console.assert(decide(["roles:assign", "users:read", "users:update"], "support")[0] === "ok", "jundoc escalation: allowed");
+  })();
+
+  var held = [], roleCode = "support";
+  var permsEl = document.getElementById("es-perms"), rolesEl = document.getElementById("es-roles");
+  var out = document.getElementById("es-out"), why = document.getElementById("es-why");
+  PERMS.forEach(function (p) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "jd-btn"; b.textContent = p; b.dataset.perm = p;
+    b.addEventListener("click", function () {
+      var i = held.indexOf(p);
+      if (i < 0) held.push(p); else held.splice(i, 1);
+      paint();
+    });
+    permsEl.appendChild(b);
+  });
+  Object.keys(ROLES).forEach(function (code) {
+    var b = document.createElement("button");
+    b.type = "button"; b.textContent = code; b.dataset.role = code;
+    b.addEventListener("click", function () { roleCode = code; paint(); });
+    rolesEl.appendChild(b);
+  });
+  function preset(list) { held = list.slice(); paint(); }
+  document.getElementById("es-preset-manager").addEventListener("click", function () {
+    preset(["users:read", "users:create", "users:update", "roles:read", "roles:assign"]);
+  });
+  document.getElementById("es-preset-admin").addEventListener("click", function () { preset(PERMS); });
+
+  function paint() {
+    permsEl.querySelectorAll("button").forEach(function (b) {
+      var on = held.indexOf(b.dataset.perm) >= 0;
+      b.classList.toggle("good", on);
+      b.setAttribute("aria-pressed", on);
+    });
+    rolesEl.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.role === roleCode); });
+    var d = decide(held, roleCode), m = MSG[d[0]];
+    var o = { status: m[0] === 200 ? "success" : "error" };
+    if (m[1]) o.code = m[1];
+    o.message = m[2];
+    if (m[0] === 200) o.data = [{ code: roleCode, is_system: false }];
+    out.innerHTML = JD.highlight(m[0] + "\n" + JSON.stringify(o, null, 2), "json");
+    var role = ROLES[roleCode].perms.join(", ");
+    why.innerHTML = JD.bi({
+      route: { en: "Stopped by the route: <code>PUT /users/:uuid/roles</code> is <code>Can(roles:assign)</code>.", vi: "Bị route chặn: <code>PUT /users/:uuid/roles</code> là <code>Can(roles:assign)</code>." },
+      system: { en: "<code>super_admin</code> is a system role: only SQL on the database can give it.", vi: "<code>super_admin</code> là role hệ thống: chỉ SQL trên database mới gán được." },
+      escal: { en: "The role holds <code>" + role + "</code>; you lack <code>" + (d[1] || []).join(", ") + "</code>.", vi: "Role có <code>" + role + "</code>; bạn thiếu <code>" + (d[1] || []).join(", ") + "</code>." },
+      ok: { en: "You hold every permission of <code>" + roleCode + "</code> (" + role + "), so you may give it.", vi: "Bạn có mọi permission của <code>" + roleCode + "</code> (" + role + "), nên được gán nó." }
+    }[d[0]]);
+  }
+  preset(["users:read", "users:create", "users:update", "roles:read", "roles:assign"]);
+});
+</script>
+</body>
+</html>

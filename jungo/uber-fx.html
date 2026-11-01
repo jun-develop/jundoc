@@ -62,7 +62,7 @@ db, _ := primary.New(lc, sqlLogger, cfg)
 
 // 2. Feature User: manual constructor calls and hand-offs
 userRepo    := repository.NewUserRepository(db)
-userSvc     := service.NewUserService(userRepo, storage, hasher, …)
+userSvc     := service.NewUserService(userRepo, accessRepo, storage, hasher, …)
 userHandler := v1handler.NewUserHandler(userSvc, responder, …)
 userRoutes  := v1route.NewUserRoutes(userHandler, …)
 
@@ -90,7 +90,7 @@ db, _ := primary.New(lc, sqlLogger, cfg)
 
 // 2. Feature User: phải tự tay gọi từng hàm và truyền biến
 userRepo    := repository.NewUserRepository(db)
-userSvc     := service.NewUserService(userRepo, storage, hasher, …)
+userSvc     := service.NewUserService(userRepo, accessRepo, storage, hasher, …)
 userHandler := v1handler.NewUserHandler(userSvc, responder, …)
 userRoutes  := v1route.NewUserRoutes(userHandler, …)
 
@@ -815,6 +815,12 @@ func NewConsoleFx() *fx.App {
         <div class="d" lang="en">Receives all routes as a slice and mounts each one. Never imports any feature package directly.</div>
         <div class="d" lang="vi">Nhận toàn bộ danh sách routes trong thùng và gắn lên Gin engine. Hoàn toàn không cần import trực tiếp bất kỳ feature nào.</div>
       </div>
+    </div>
+
+    <div class="jd-callout c-green" style="margin-top:16px">
+      <b lang="en">The same trick for permissions:</b><b lang="vi">Cùng cách đó cho permission:</b>
+      <span lang="en">each feature's <code>module.go</code> provides its <code>domain.Permissions</code> with <code>fx.ResultTags(`group:"permissions,flatten"`)</code> (<code>flatten</code> adds each code, not the whole slice). The access service receives one <code>[]string</code> with every code (<code>fx.ParamTags(…, `group:"permissions"`)</code>) — so it never imports the features, and removing a feature removes its permissions.</span>
+      <span lang="vi">mỗi <code>module.go</code> của feature cung cấp <code>domain.Permissions</code> của nó với <code>fx.ResultTags(`group:"permissions,flatten"`)</code> (<code>flatten</code> bỏ từng mã vào thùng, không bỏ cả slice). Access service nhận một <code>[]string</code> chứa mọi mã (<code>fx.ParamTags(…, `group:"permissions"`)</code>) — nên nó không import feature nào, và gỡ feature thì permission của feature đó cũng đi theo.</span>
     </div>
 
     <h3><span lang="en">name — distinguish multiple instances of the same type</span><span lang="vi">name — Nhãn dán phân biệt khi có nhiều đối tượng cùng chung một kiểu</span></h3>

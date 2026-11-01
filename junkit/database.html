@@ -304,10 +304,10 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
             </tr>
             <tr>
               <td>QueryLogging · SlowQueryThreshold</td>
-              <td>DB_QUERY_LOGGING=true · DB_SLOW_QUERY_THRESHOLD=200ms</td>
-              <td lang="en">Log every query to <code>storage/logs/sql.log</code> (stdout in development); slower than the threshold → WARN
+              <td>DB_QUERY_LOGGING=false · DB_SLOW_QUERY_THRESHOLD=200ms</td>
+              <td lang="en">Off by default, because the log holds real values (emails, password hashes); <code>.env.example</code> turns it on for development. When on: log every query to <code>storage/logs/sql.log</code> (stdout in development); slower than the threshold → WARN
                 <code>SLOW_QUERY_DETECTION</code>.</td>
-              <td lang="vi">Log mọi query vào <code>storage/logs/sql.log</code> (stdout ở development); chậm hơn ngưỡng → WARN
+              <td lang="vi">Mặc định tắt, vì log chứa giá trị thật (email, hash mật khẩu); <code>.env.example</code> bật nó cho development. Khi bật: log mọi query vào <code>storage/logs/sql.log</code> (stdout ở development); chậm hơn ngưỡng → WARN
                 <code>SLOW_QUERY_DETECTION</code>.</td>
             </tr>
             <tr>
@@ -407,6 +407,24 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
               <td lang="en">Mapped type → your error (the original is dropped). Otherwise <code>err</code> unchanged.</td>
               <td lang="vi">Loại có trong map → lỗi của bạn (lỗi gốc bị bỏ). Không thì trả <code>err</code> nguyên vẹn.
               </td>
+            </tr>
+            <tr>
+              <td>MatchNotFound(err, notFound error) error</td>
+              <td lang="en">Shorthand for the most common <code>Match</code>: not found → <code>notFound</code>,
+                anything else unchanged, <code>nil</code> stays <code>nil</code>.
+                <code>return nil, database.MatchNotFound(err, domain.ErrUserNotFound)</code>.</td>
+              <td lang="vi">Cách viết gọn cho trường hợp <code>Match</code> hay gặp nhất: not found →
+                <code>notFound</code>, lỗi khác giữ nguyên, <code>nil</code> vẫn là <code>nil</code>.
+                <code>return nil, database.MatchNotFound(err, domain.ErrUserNotFound)</code>.</td>
+            </tr>
+            <tr>
+              <td>EscapeLike(s string) string</td>
+              <td lang="en">Escapes <code>%</code>, <code>_</code> and <code>\</code> so a search term matches literally
+                inside <code>LIKE</code> / <code>ILIKE '%' || $1 || '%'</code>. Without it, searching <code>%</code>
+                matches every row. Jungo's user list and every scaffolded list use it.</td>
+              <td lang="vi">Escape <code>%</code>, <code>_</code> và <code>\</code> để từ khóa tìm kiếm khớp đúng nguyên
+                văn trong <code>LIKE</code> / <code>ILIKE '%' || $1 || '%'</code>. Thiếu nó, tìm <code>%</code> sẽ khớp
+                mọi dòng. Danh sách user của Jungo và mọi danh sách sinh từ scaffold đều dùng nó.</td>
             </tr>
             <tr>
               <td>Classify(err) (ErrorType, string)</td>

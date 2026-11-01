@@ -136,7 +136,7 @@ var Module = fx.Module("user",
     fx.Invoke(registerTranslations),
 )
 
-// registerTranslations registers domain-specific translation messages.
+// registerTranslations registers this feature's messages and the display names of its permissions.
 func registerTranslations(translator *i18n.Translator) {
     translator.AddTranslations(map[string]map[string]string{
         i18n.LangEN: {

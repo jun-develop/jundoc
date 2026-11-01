@@ -87,9 +87,9 @@
       {"from":"i2","to":"i3","color":"purple","label":"ctx"}]'>
           <div class="jd-node is-tint c-purple" data-node="i1"><span class="k">middleware</span><span class="t mono"
               style="font-size:15px">SetIdentity(c, id)</span>
-            <div class="d" lang="en">Done for you by <code>middleware.BearerAuth</code>. Stored in gin keys <b>and</b>
+            <div class="d" lang="en">Called by your app's auth middleware (Jungo: <code>internal/middleware.BearerAuth</code>). Stored in gin keys <b>and</b>
               the request context.</div>
-            <div class="d" lang="vi"><code>middleware.BearerAuth</code> làm sẵn. Lưu trong gin keys <b>và</b> request
+            <div class="d" lang="vi">Middleware auth của app gọi nó (Jungo: <code>internal/middleware.BearerAuth</code>). Lưu trong gin keys <b>và</b> request
               context.</div>
           </div>
           <div class="jd-node is-tint c-purple" data-node="i2"><span class="k">handler</span><span class="t mono"
@@ -166,7 +166,7 @@ func provideSecurityOptions(cfg *config.Config, log *zap.Logger) (security.Optio
 # generate each key with: openssl rand -base64 32
 AUTH_TOKEN_HMAC_SECRET=&lt;base64, ≥ 32 bytes decoded&gt;
 AUTH_TOKEN_ENCRYPTION_KEY=&lt;base64, exactly 32 bytes decoded&gt;
-AUTH_PASSWORD_COST=12
+AUTH_PASSWORD_COST=10
 </pre>
             </div>
           </div>
@@ -235,11 +235,25 @@ if err != nil {
               <td>Password.Cost</td>
               <td>int <span class="jd-sub">(PasswordOptions)</span></td>
               <td lang="en">0 → <code>bcrypt.DefaultCost</code> (10). Valid range 4–31; anything else fails. Jungo
-                default: 12.</td>
+                default: 10.</td>
               <td lang="vi">0 → <code>bcrypt.DefaultCost</code> (10). Khoảng hợp lệ 4–31; ngoài khoảng là lỗi. Mặc định
-                trong Jungo: 12.</td>
+                trong Jungo: 10.</td>
               <td lang="en">bcrypt work factor. +1 doubles hashing time.</td>
               <td lang="vi">Hệ số công bcrypt. +1 là gấp đôi thời gian hash.</td>
+            </tr>
+            <tr>
+              <td>Password.MaxConcurrent</td>
+              <td>int <span class="jd-sub">(PasswordOptions)</span></td>
+              <td lang="en">≤ 0 → half of <code>GOMAXPROCS</code>, at least 1.</td>
+              <td lang="vi">≤ 0 → một nửa <code>GOMAXPROCS</code>, tối thiểu 1.</td>
+              <td lang="en">How many <code>Hash</code> / <code>Compare</code> / <code>CompareDummy</code> calls run at
+                once; the rest wait their turn. One cost-12 compare burns ~190 ms of CPU, so without a cap a login
+                flood from many IPs takes every core and slows every other route. Measured on 10 cores: logins cap at
+                ~25/s while <code>/auth/me</code> keeps its p99.</td>
+              <td lang="vi">Số lệnh <code>Hash</code> / <code>Compare</code> / <code>CompareDummy</code> chạy cùng
+                lúc; phần còn lại chờ đến lượt. Một lần compare với cost 12 tốn ~190 ms CPU, nên nếu không giới hạn,
+                một đợt flood login từ nhiều IP sẽ ăn hết mọi core và làm chậm mọi route khác. Đo trên 10 core: login
+                bị giới hạn ở ~25/s trong khi <code>/auth/me</code> giữ nguyên p99.</td>
             </tr>
           </table>
         </div>
@@ -658,9 +672,25 @@ type TokenSealer interface {
               <pre data-hl="go">func SecureEqual(a, b string) bool</pre>
             </div>
             <p lang="en">Constant-time string comparison (<code>crypto/subtle</code>) for shared secrets such as an
-              internal API header. Used by <code>middleware.RequireSecret</code>.</p>
+              internal API header. Jungo's <code>internal/middleware.RequireSecret</code> uses it.</p>
             <p lang="vi">So sánh chuỗi constant-time (<code>crypto/subtle</code>) cho secret dùng chung như header API
-              nội bộ. Được <code>middleware.RequireSecret</code> dùng.</p>
+              nội bộ. <code>internal/middleware.RequireSecret</code> của Jungo dùng nó.</p>
+          </div>
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">ClientKey</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func ClientKey(ip string) string</pre>
+            </div>
+            <p lang="en">The key to limit or match a client by. An IPv6 address becomes its <code>/64</code> block
+              (<code>2001:db8:1:2::99</code> → <code>2001:db8:1:2::/64</code>): one client usually owns the whole
+              block, so without this it could change address on every request and never hit a limit. An IPv4-mapped
+              address becomes plain IPv4; IPv4 stays as it is. Used by <code>middleware.Limiter</code>, <code>middleware.Banner</code> and Jungo's login
+              guard. Use the raw IP, not this key, in logs.</p>
+            <p lang="vi">Key dùng để giới hạn hoặc so khớp một client. Địa chỉ IPv6 thành cả khối <code>/64</code>
+              của nó (<code>2001:db8:1:2::99</code> → <code>2001:db8:1:2::/64</code>): một client thường sở hữu cả khối,
+              nên nếu không gom lại, nó có thể đổi địa chỉ mỗi request và không bao giờ chạm giới hạn. Địa chỉ
+              IPv4-mapped thành IPv4 thường; IPv4 giữ nguyên. <code>middleware.Limiter</code>, <code>middleware.Banner</code> và bộ chặn login của Jungo
+              dùng nó. Khi ghi log thì dùng IP gốc, không dùng key này.</p>
           </div>
         </div>
 
@@ -870,9 +900,9 @@ var Module = fx.Module("security",
             <tr>
               <td>config/config.go</td>
               <td lang="en"><code>AuthConfig</code>: <code>AUTH_TOKEN_HMAC_SECRET</code>,
-                <code>AUTH_TOKEN_ENCRYPTION_KEY</code>, <code>AUTH_PASSWORD_COST</code> (default 12).</td>
+                <code>AUTH_TOKEN_ENCRYPTION_KEY</code>, <code>AUTH_PASSWORD_COST</code> (default 10).</td>
               <td lang="vi"><code>AuthConfig</code>: <code>AUTH_TOKEN_HMAC_SECRET</code>,
-                <code>AUTH_TOKEN_ENCRYPTION_KEY</code>, <code>AUTH_PASSWORD_COST</code> (mặc định 12).</td>
+                <code>AUTH_TOKEN_ENCRYPTION_KEY</code>, <code>AUTH_PASSWORD_COST</code> (mặc định 10).</td>
             </tr>
             <tr>
               <td>features/auth/service/auth_service.go</td>
@@ -895,18 +925,18 @@ var Module = fx.Module("security",
                 Sessions.</td>
             </tr>
             <tr>
-              <td>features/auth/router/v1/auth_router.go</td>
-              <td lang="en"><code>middleware.BearerAuth</code> (Junkit) — it calls <code>security.SetIdentity</code>
-                after authenticating.</td>
-              <td lang="vi"><code>middleware.BearerAuth</code> (Junkit) — nó gọi <code>security.SetIdentity</code> sau
-                khi xác thực.</td>
+              <td>middleware/auth.go</td>
+              <td lang="en"><code>BearerAuth</code> (Jungo's own, used by the auth and user routers) — it calls
+                <code>security.SetIdentity</code> after authenticating.</td>
+              <td lang="vi"><code>BearerAuth</code> (của Jungo, router auth và user dùng) — nó gọi
+                <code>security.SetIdentity</code> sau khi xác thực.</td>
             </tr>
             <tr>
-              <td>features/auth/router/private/auth_router.go</td>
-              <td lang="en"><code>middleware.RequireSecret("X-Internal-Secret", …)</code> — compares with
-                <code>security.SecureEqual</code>.</td>
-              <td lang="vi"><code>middleware.RequireSecret("X-Internal-Secret", …)</code> — so sánh bằng
-                <code>security.SecureEqual</code>.</td>
+              <td>middleware/auth.go</td>
+              <td lang="en"><code>RequireSecret("X-Internal-Secret", …)</code> (Jungo's own, on
+                <code>/api/internal/auth/*</code>) — compares with <code>security.SecureEqual</code>.</td>
+              <td lang="vi"><code>RequireSecret("X-Internal-Secret", …)</code> (của Jungo, cho
+                <code>/api/internal/auth/*</code>) — so sánh bằng <code>security.SecureEqual</code>.</td>
             </tr>
             <tr>
               <td>features/auth/infrastructure/login_guard.go</td>

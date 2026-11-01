@@ -127,10 +127,10 @@ func provideNotificationOptions(cfg *config.Config) notification.Options {
             </div>
             <p class="jd-sub" style="margin-top:10px" lang="en"><code>cfg.Telegram.ChatID</code> ←
               <code>TELEGRAM_CHAT_ID</code>, <code>cfg.Environment</code> ← <code>API_ENVIRONMENT</code> (default
-              <code>development</code>).</p>
+              <code>production</code>; <code>.env.example</code> sets <code>development</code>).</p>
             <p class="jd-sub" style="margin-top:10px" lang="vi"><code>cfg.Telegram.ChatID</code> ←
               <code>TELEGRAM_CHAT_ID</code>, <code>cfg.Environment</code> ← <code>API_ENVIRONMENT</code> (mặc định
-              <code>development</code>).</p>
+              <code>production</code>; <code>.env.example</code> đặt <code>development</code>).</p>
           </div>
           <div class="jd-tabpanel" hidden>
             <div class="jd-term">
@@ -251,9 +251,9 @@ func (h *OrderHandler) Create(c *gin.Context) {
             <div class="jd-ex c-orange" data-code="#code-quick" data-show="16"><span class="n">3</span><span
                 class="w">status picks the banner</span><span class="x" lang="en"><code>&gt;= 500</code> → "Error
                 Notification", otherwise "Client Error". Production only. Runs synchronously and needs the live request
-                (it reads the body for the curl).</span><span class="x" lang="vi"><code>&gt;= 500</code> → "Error
+                (it reads the method, path and headers for the curl).</span><span class="x" lang="vi"><code>&gt;= 500</code> → "Error
                 Notification", ngược lại "Client Error". Chỉ chạy ở production. Chạy đồng bộ và cần request gốc (nó đọc
-                body để dựng curl).</span></div>
+                method, path và header để dựng curl).</span></div>
             <div class="jd-ex c-orange" data-code="#code-quick" data-show="21-25"><span class="n">4</span><span
                 class="w">SendMessageHTML</span><span class="x" lang="en">Free-form alert, any environment.
                 <code>"error"</code> → 🚨 banner, anything else → 🟠 Warning. Your text is not escaped. Use
@@ -273,10 +273,12 @@ func (h *OrderHandler) Create(c *gin.Context) {
             <h2><span lang="en">Try it: preview an alert</span><span lang="vi">Thử ngay: xem trước cảnh báo</span></h2>
             <p class="jd-sub" lang="en">Same formatting as <code>SendErrorNotification</code>, shown as the raw HTML
               text sent to Telegram. Request headers are left out here; real alerts add one <code>-H</code> per header
-              except Content-Length, User-Agent, Postman-Token and Cookie.</p>
+              except Content-Length, User-Agent, Postman-Token and Cookie, with secret values masked
+              (<code>Authorization: Bearer ****</code>). The query string and body never go into the alert.</p>
             <p class="jd-sub" lang="vi">Cùng cách định dạng với <code>SendErrorNotification</code>, hiển thị dạng HTML
               thô gửi tới Telegram. Ở đây bỏ qua header; cảnh báo thật thêm một <code>-H</code> cho mỗi header trừ
-              Content-Length, User-Agent, Postman-Token và Cookie.</p>
+              Content-Length, User-Agent, Postman-Token và Cookie, với giá trị bí mật đã được che
+              (<code>Authorization: Bearer ****</code>). Query string và body không bao giờ được đưa vào cảnh báo.</p>
           </div>
         </div>
         <div class="jd-grid-2" style="margin-top:18px">
@@ -293,8 +295,7 @@ func (h *OrderHandler) Create(c *gin.Context) {
                   <option>PUT</option>
                   <option>DELETE</option>
                 </select></label>
-              <label>URL <input type="text" id="nf-url" value="http://api.example.com/api/v1/orders"></label>
-              <label>body <input type="text" id="nf-body" value='{"item":"book","qty":2}'></label>
+              <label>URL <input type="text" id="nf-url" value="http://api.example.com/api/v1/orders?token=abc"></label>
               <label>User-Agent <input type="text" id="nf-ua" value="curl/8.7.1"></label>
               <label>errData["error"] <input type="text" id="nf-err"
                   value="pq: relation &quot;orders&quot; does not exist"></label>
@@ -418,7 +419,7 @@ sb.WriteString(fmt.Sprintf(
 		"&lt;/pre&gt;\n\n",
 	escapeTelegram(getString(errData, "location")),
 	escapeTelegram(getString(errData, "function")),
-	errData["line"], getTraceID(c),
+	errData["line"], escapeTelegram(getTraceID(c)),
 ))
 
 sb.WriteString(fmt.Sprintf("🐞 &lt;b&gt;Error:&lt;/b&gt;\n&lt;pre&gt;%s&lt;/pre&gt;\n\n",
@@ -471,16 +472,19 @@ sb.WriteString(fmt.Sprintf("\n💾 &lt;b&gt;SQL:&lt;/b&gt;\n&lt;pre&gt;%s&lt;/pr
                   <td>c *gin.Context</td>
                   <td lang="en">User-Agent (or <code>-</code>), <code>c.ClientIP()</code>, method,
                     <code>c.Get("trace_id")</code> (or <code>-</code>), and the curl:
-                    <code>curl -X &lt;METHOD&gt; "&lt;scheme://host/uri&gt;"</code> (scheme from TLS, then
-                    <code>X-Forwarded-Proto</code>, else http), every header except Content-Length / User-Agent /
-                    Postman-Token / Cookie, and <code>-d '&lt;body&gt;'</code> (pretty-printed if JSON). The body is
-                    read and put back, so it is only there if nothing consumed it before.</td>
+                    <code>curl -X &lt;METHOD&gt; "&lt;scheme://host/path&gt;"</code> (scheme from TLS, then
+                    <code>X-Forwarded-Proto</code>, else http; no query string), and every header except Content-Length /
+                    User-Agent / Postman-Token / Cookie, with secret values masked by <code>tracer.MaskHeader</code>
+                    (<code>Authorization</code> → <code>Bearer ****</code>, any header whose name has token, secret,
+                    password, api-key… → <code>****</code>). The body is never added. The trace ID is escaped.</td>
                   <td lang="vi">User-Agent (hoặc <code>-</code>), <code>c.ClientIP()</code>, method,
                     <code>c.Get("trace_id")</code> (hoặc <code>-</code>), và lệnh curl:
-                    <code>curl -X &lt;METHOD&gt; "&lt;scheme://host/uri&gt;"</code> (scheme lấy từ TLS, rồi
-                    <code>X-Forwarded-Proto</code>, không thì http), mọi header trừ Content-Length / User-Agent /
-                    Postman-Token / Cookie, và <code>-d '&lt;body&gt;'</code> (format đẹp nếu là JSON). Body được đọc
-                    rồi trả lại, nên chỉ có nếu chưa ai đọc nó trước đó.</td>
+                    <code>curl -X &lt;METHOD&gt; "&lt;scheme://host/path&gt;"</code> (scheme lấy từ TLS, rồi
+                    <code>X-Forwarded-Proto</code>, không thì http; không có query string), và mọi header trừ
+                    Content-Length / User-Agent / Postman-Token / Cookie, với giá trị bí mật được che bằng
+                    <code>tracer.MaskHeader</code> (<code>Authorization</code> → <code>Bearer ****</code>, header nào có
+                    tên chứa token, secret, password, api-key… → <code>****</code>). Body không bao giờ được thêm. Trace ID
+                    được escape.</td>
                 </tr>
               </table>
             </div>
@@ -596,7 +600,7 @@ var Module = fx.Module("notification",
 API_ENVIRONMENT=production       # panic alerts are only sent in production
 TELEGRAM_BOT_TOKEN=123456:ABC-your-bot-token
 TELEGRAM_CHAT_ID=-1001234567890  # empty = alerts are skipped (Warn log)
-LIMITER_IP_WHITELIST=127.0.0.1,::1  # default: whitelisted IPs never trigger rate-limit alerts
+LIMITER_IP_WHITELIST=10.0.0.5      # optional (empty by default): whitelisted IPs never trigger rate-limit alerts
 </pre>
         </div>
       </section>
@@ -611,12 +615,12 @@ LIMITER_IP_WHITELIST=127.0.0.1,::1  # default: whitelisted IPs never trigger rat
         </div>
         <div class="jd-explain" style="margin-top:16px">
           <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w"><span
-                lang="en">secrets go to the chat</span><span lang="vi">bí mật bị gửi vào chat</span></span><span
-              class="x" lang="en">The curl repro keeps the <code>Authorization</code> header and the raw body (passwords
-              included, if the body is still unread). Only Content-Length, User-Agent, Postman-Token and Cookie are
-              dropped. Treat the alert chat as sensitive.</span><span class="x" lang="vi">Lệnh curl giữ nguyên header
-              <code>Authorization</code> và body thô (kể cả mật khẩu, nếu body chưa bị đọc). Chỉ Content-Length,
-              User-Agent, Postman-Token và Cookie bị bỏ. Hãy coi chat cảnh báo là nơi nhạy cảm.</span></div>
+                lang="en">the curl is not complete</span><span lang="vi">lệnh curl không đầy đủ</span></span><span
+              class="x" lang="en">So that no credential lands in the chat, the curl masks secret headers and leaves out
+              the query string and the body. To reproduce, add them back from the access log (trace ID) and use your
+              own token.</span><span class="x" lang="vi">Để không có thông tin đăng nhập nào lọt vào chat, lệnh curl che
+              các header bí mật và bỏ query string cùng body. Muốn tái hiện, lấy lại chúng từ access log (theo trace ID)
+              và dùng token của chính bạn.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">always
                 pass "line"</span><span lang="vi">luôn truyền "line"</span></span><span class="x" lang="en">A missing
               <code>line</code> prints <code>Line: &lt;nil&gt;</code> unescaped inside Telegram HTML. Telegram rejects
@@ -628,9 +632,9 @@ LIMITER_IP_WHITELIST=127.0.0.1,::1  # default: whitelisted IPs never trigger rat
           <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span
                 lang="en">captions are capped at 1024</span><span lang="vi">caption tối đa 1024</span></span><span
               class="x" lang="en">With a stack trace the whole alert becomes a document caption. Telegram limits
-              captions to 1024 characters; a long curl/body/SQL can push it over and the panic alert is lost without a
+              captions to 1024 characters; a long curl/SQL can push it over and the panic alert is lost without a
               trace (errors are dropped).</span><span class="x" lang="vi">Khi có stack trace, toàn bộ cảnh báo trở thành
-              caption của tài liệu. Telegram giới hạn caption 1024 ký tự; curl/body/SQL dài có thể vượt mức và cảnh báo
+              caption của tài liệu. Telegram giới hạn caption 1024 ký tự; curl/SQL dài có thể vượt mức và cảnh báo
               panic mất mà không để lại dấu vết (lỗi bị bỏ qua).</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">it
                 blocks the request</span><span lang="vi">nó chặn request</span></span><span class="x"
@@ -663,39 +667,32 @@ document.addEventListener("jd:ready", function () {
   // Mirrors escapeTelegram, getString, generateCurlCommand (without headers) and buildErrorNotification.
   function esc(s) { return s ? s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : ""; }
   function str(v) { return typeof v === "string" ? v : "-"; }
-  function body(b) {
-    if (!b) return "";
-    var pretty = b;
-    try { pretty = JSON.stringify(JSON.parse(b), null, 2).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026"); } catch (e) {}
-    return pretty.replace(/'/g, "'\\''");
-  }
-  function curl(method, url, b) {
-    var parts = ["curl -X " + method + " " + JSON.stringify(url)];
-    var d = body(b);
-    if (d) parts.push("-d '" + d + "'");
-    return parts.join(" \\\n  ");
+  // The query string and body are never part of the curl.
+  function curl(method, url) {
+    return "curl -X " + method + " " + JSON.stringify(url.split("?")[0]);
   }
   function build(r) {
     var e = r.errData, s = "";
     s += r.status >= 500 ? "🚨 <b>Error Notification</b> 🚨\n\n" : "🟠 <b>Client Error</b> 🟠\n\n";
     s += "🛜 <b>User Agent:</b> " + esc(r.ua || "-") + "\n💻 <b>IP:</b> " + r.ip + "\n📡 <b>Status:</b> " + r.status + "\n📦 <b>Method:</b> " + r.method + "\n\n";
     s += "📝 <b>Location:</b>\n<pre>File: " + esc(str(e.location)) + "\nFunction: " + esc(str(e["function"])) +
-         "\nLine: " + ("line" in e ? String(e.line) : "<nil>") + "\nTrace ID: " + (r.trace || "-") + "</pre>\n\n";
+         "\nLine: " + ("line" in e ? String(e.line) : "<nil>") + "\nTrace ID: " + esc(r.trace || "-") + "</pre>\n\n";
     s += "🐞 <b>Error:</b>\n<pre>" + esc(str(e.error)) + "</pre>\n\n";
-    s += "🍺 <b>cURL Command:</b>\n<pre>" + esc(curl(r.method, r.url, r.body)) + "</pre>\n";
+    s += "🍺 <b>cURL Command:</b>\n<pre>" + esc(curl(r.method, r.url)) + "</pre>\n";
     if (r.sql) s += "\n💾 <b>SQL:</b>\n<pre>" + esc(r.sql) + "</pre>";
     return s;
   }
-  var base = { status: 500, ua: "", ip: "1.2.3.4", method: "GET", url: "http://h/x", body: "", trace: "", sql: "", errData: {} };
+  var base = { status: 500, ua: "", ip: "1.2.3.4", method: "GET", url: "http://h/x", trace: "", sql: "", errData: {} };
   function mk(o) { var r = JSON.parse(JSON.stringify(base)); for (var k in o) r[k] = o[k]; return r; }
   console.assert(build(mk({})).indexOf("🚨 <b>Error Notification</b> 🚨\n\n🛜 <b>User Agent:</b> -\n") === 0, "5xx banner + UA fallback");
   console.assert(build(mk({ status: 404 })).indexOf("🟠 <b>Client Error</b> 🟠") === 0, "4xx banner");
   console.assert(build(mk({})).indexOf("Line: <nil>\nTrace ID: -</pre>") > 0, "line nil, trace fallback");
   console.assert(build(mk({ errData: { error: "a<b&c" } })).indexOf("<pre>a&lt;b&amp;c</pre>") > 0, "escape");
   console.assert(build(mk({})).indexOf("<pre>curl -X GET \"http://h/x\"</pre>\n") > 0 && build(mk({})).indexOf("SQL") < 0, "curl only, no SQL");
-  console.assert(curl("POST", "http://h", '{"a":"it\'s"}') === "curl -X POST \"http://h\" \\\n  -d '{\n  \"a\": \"it'\\''s\"\n}'", "curl body");
+  console.assert(curl("POST", "http://h/x?token=abc") === "curl -X POST \"http://h/x\"", "curl drops the query string");
+  console.assert(build(mk({ trace: "<a>" })).indexOf("Trace ID: &lt;a&gt;</pre>") > 0, "trace ID escaped");
 
-  var ids = ["nf-env", "nf-status", "nf-method", "nf-url", "nf-body", "nf-ua", "nf-err", "nf-fn", "nf-loc", "nf-line", "nf-sql", "nf-stack"];
+  var ids = ["nf-env", "nf-status", "nf-method", "nf-url", "nf-ua", "nf-err", "nf-fn", "nf-loc", "nf-line", "nf-sql", "nf-stack"];
   function v(id) { return document.getElementById(id).value; }
   function paint() {
     var verdict = document.getElementById("nf-verdict"), out = document.getElementById("nf-out"), title = document.getElementById("nf-title");
@@ -709,7 +706,7 @@ document.addEventListener("jd:ready", function () {
     if (v("nf-loc")) e.location = v("nf-loc");
     if (v("nf-line")) e.line = /^-?\d+$/.test(v("nf-line")) ? parseInt(v("nf-line"), 10) : v("nf-line");
     var text = build({ status: parseInt(v("nf-status"), 10) || 0, ua: v("nf-ua"), ip: "203.0.113.7", method: v("nf-method"),
-      url: v("nf-url"), body: v("nf-body"), trace: "4bf92f3577b34da6", sql: v("nf-sql"), errData: e });
+      url: v("nf-url"), trace: "4bf92f3577b34da6", sql: v("nf-sql"), errData: e });
     if (v("nf-stack")) {
       verdict.innerHTML = JD.bi({ en: "<b>SendDocument</b> — file <code>stack-YYYYMMDD-HHMMSS.txt</code>, this text as caption.", vi: "<b>SendDocument</b> — file <code>stack-YYYYMMDD-HHMMSS.txt</code>, nội dung này làm caption." });
       title.textContent = "caption";

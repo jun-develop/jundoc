@@ -1460,6 +1460,8 @@ button.jd-card h3 { font-size: 28px; color: var(--c); }
   background: var(--green);
 }
 .jd-method.post { background: var(--blue); }
+.jd-method.put, .jd-method.patch { background: var(--orange); }
+.jd-method.delete { background: var(--red); }
 .jd-ep-path { font: 700 17px var(--mono); color: var(--ink); }
 .jd-auth {
   font: 700 12px var(--font);

@@ -82,6 +82,7 @@
         </div>
         <div class="bf-note">
           <code>domain/</code> <span lang="en">— the contract every layer shares: <code>Product</code>, the two interfaces, the errors.</span><span lang="vi">— Hợp đồng dùng chung cho mọi tầng: entity <code>Product</code>, interface Repository/Service và các mã lỗi.</span><br>
+          <code>infrastructure/</code> <span lang="en">— optional, add it yourself when needed: code that talks to a cache or an outside service (e.g. <code>PermissionCache</code>).</span><span lang="vi">— Tùy chọn, tự thêm khi cần: code làm việc với cache hoặc dịch vụ bên ngoài (vd: <code>PermissionCache</code>).</span><br>
           <code>module.go</code> <span lang="en">— tells Fx how to build all of the above.</span><span lang="vi">— Đăng ký với Uber Fx cách lắp ráp và khởi tạo tất cả các thành phần trên.</span>
         </div>
       </div>
@@ -105,6 +106,7 @@
           <tr><td><span lang="en">check input format (required, min, email…)</span><span lang="vi">Validate định dạng input (required, min, email…)</span></td><td><code>dto/v1/</code> — dùng tag <code>binding:"…"</code></td></tr>
           <tr><td><span lang="en">a business rule ("only the owner may edit")</span><span lang="vi">Quy tắc nghiệp vụ (vd: "chỉ chủ sở hữu mới có quyền sửa")</span></td><td>Viết trong <code>service/</code></td></tr>
           <tr><td><span lang="en">a new error for the client</span><span lang="vi">Mã lỗi nghiệp vụ trả về cho client</span></td><td><code>domain/errors.go</code> + <span lang="en">text in</span><span lang="vi">câu chữ trong</span> <code>module.go</code></td></tr>
+          <tr><td><span lang="en">cache something / call an outside service</span><span lang="vi">Cache dữ liệu / gọi dịch vụ bên ngoài</span></td><td><code>infrastructure/</code> + <span lang="en">its interface in</span><span lang="vi">interface của nó trong</span> <code>domain/</code></td></tr>
           <tr><td><span lang="en">the JSON shape of the response</span><span lang="vi">Cấu trúc JSON response trả về</span></td><td><code>dto/v1/</code> — struct <code>ProductResponse</code></td></tr>
           <tr><td><span lang="en">a URL, its method, login required?</span><span lang="vi">Khai báo URL, method, yêu cầu đăng nhập?</span></td><td><code>router/v1/</code></td></tr>
           <tr><td><span lang="en">HTTP status of a success</span><span lang="vi">HTTP status code khi thành công</span></td><td><code>handler/v1/</code></td></tr>
@@ -137,34 +139,28 @@
       <span class="jd-badge">2</span>
       <div>
         <h2><span lang="en">Generate the skeleton</span><span lang="vi">Khởi tạo khung (skeleton) cho feature</span></h2>
-        <p class="jd-sub" lang="en">Start the stack first (<code>make app-dev-bg</code>, see <a href="overview.html#run">Overview</a>). Then run these four commands <b>on your machine</b>, from the Jungo folder. The app container hot-reloads by itself whenever a <code>.go</code> file changes.</p>
-        <p class="jd-sub" lang="vi">Trước tiên, hãy khởi động stack dịch vụ (<code>make app-dev-bg</code>, xem <a href="overview.html#run">Tổng quan</a>). Sau đó mở terminal trên máy tại thư mục gốc <code>jungo</code> và chạy tuần tự 4 lệnh dưới đây. Container app sẽ tự động nhận diện thay đổi (hot-reload) mỗi khi bạn lưu file <code>.go</code>.</p>
+        <p class="jd-sub" lang="en">Start the stack first (<code>make app-dev-bg</code>, see <a href="overview.html#run">Overview</a>). Then do these three steps <b>on your machine</b>, from the Jungo folder. The app container reloads by itself when a <code>.go</code> file changes; it won't start until step 3 is done.</p>
+        <p class="jd-sub" lang="vi">Trước tiên khởi động stack (<code>make app-dev-bg</code>, xem <a href="overview.html#run">Tổng quan</a>). Sau đó làm 3 bước dưới đây <b>trên máy bạn</b>, tại thư mục <code>jungo</code>. Container app tự reload khi file <code>.go</code> thay đổi; app chỉ chạy được sau bước 3.</p>
       </div>
     </div>
 
     <div class="jd-flow" style="margin-top:22px" data-wires='[
       {"from":"g1","to":"g2","color":"pink"},
-      {"from":"g2","to":"g3","color":"pink"},
-      {"from":"g3","to":"g4","color":"pink"}]'>
+      {"from":"g2","to":"g3","color":"pink"}]'>
       <div class="jd-node is-tint c-pink" data-node="g1">
         <span class="k">1</span><span class="t mono" style="font-size:14px">make feature NAME=product</span>
-        <div class="d" lang="en">Writes the feature folder, a migration, a query file, and adds <code>product.Module</code> to <code>internal/app/fx.go</code>.</div>
-        <div class="d" lang="vi">Tự động sinh toàn bộ khung thư mục, 1 cặp file migration, file query SQL và đăng ký sẵn <code>product.Module</code> vào <code>internal/app/fx.go</code>.</div>
+        <div class="d" lang="en">Generates the code (with its permissions and their labels), a migration and a query file.</div>
+        <div class="d" lang="vi">Sinh code (kèm permission và nhãn của chúng), file migration và file query.</div>
       </div>
       <div class="jd-node is-tint c-pink" data-node="g2">
         <span class="k">2</span><span class="t mono" style="font-size:14px">make migrate-up</span>
-        <div class="d" lang="en">Creates the <code>products</code> table in PostgreSQL.</div>
-        <div class="d" lang="vi">Thực thi migration để tạo bảng <code>products</code> trong cơ sở dữ liệu PostgreSQL.</div>
+        <div class="d" lang="en">Creates the <code>products</code> table, adds <code>products:*</code> to <code>permissions</code> and gives them to <code>super_admin</code>.</div>
+        <div class="d" lang="vi">Tạo bảng <code>products</code>, thêm <code>products:*</code> vào <code>permissions</code> và cấp cho <code>super_admin</code>.</div>
       </div>
       <div class="jd-node is-tint c-pink" data-node="g3">
         <span class="k">3</span><span class="t mono" style="font-size:14px">make sqlc</span>
-        <div class="d" lang="en">Turns <code>queries/product.sql</code> into Go: <code>sqlc/product.sql.go</code>. <b>Until you run it, the project does not compile.</b></div>
-        <div class="d" lang="vi">Biên dịch <code>queries/product.sql</code> thành mã nguồn Go chuẩn: <code>sqlc/product.sql.go</code>. <b>Bắt buộc chạy lệnh này thì project mới biên dịch được.</b></div>
-      </div>
-      <div class="jd-node is-tint c-pink" data-node="g4">
-        <span class="k">4</span><span class="t mono" style="font-size:14px">go build ./...</span>
-        <div class="d" lang="en">Quick check that everything compiles. The container is already restarting with the new code.</div>
-        <div class="d" lang="vi">Kiểm tra nhanh xem toàn bộ code có build thành công không. Container đang tự khởi động lại với code mới.</div>
+        <div class="d" lang="en">Generates the Go code for <code>queries/product.sql</code>. The project doesn't compile without it. Then the app starts.</div>
+        <div class="d" lang="vi">Sinh code Go cho <code>queries/product.sql</code>. Thiếu bước này project không biên dịch được. Xong bước này app chạy được.</div>
       </div>
     </div>
 
@@ -173,12 +169,13 @@
         <h3><span lang="en">What the generator prints</span><span lang="vi">Generator in ra những gì</span></h3>
         <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>make feature NAME=product</span></div>
 <pre data-hl="bash">
-⚡ Generating feature "product" (table "products", migration 000003)...
- ✅ Created internal/database/primary/migrations/000003_products.up.sql
- ✅ Created internal/database/primary/migrations/000003_products.down.sql
+⚡ Generating feature "product" (table "products", migration 000004)...
+ ✅ Created internal/database/primary/migrations/000004_products.up.sql
+ ✅ Created internal/database/primary/migrations/000004_products.down.sql
  ✅ Created internal/database/primary/queries/product.sql
  ✅ Created internal/features/product/domain/product.go
  ✅ Created internal/features/product/domain/errors.go
+ ✅ Created internal/features/product/domain/permission.go
  ✅ Created internal/features/product/repository/product_repository.go
  ✅ Created internal/features/product/service/product_service.go
  ✅ Created internal/features/product/service/product_service_test.go
@@ -189,7 +186,7 @@
 → Registering jungo/internal/features/product in internal/app/fx.go
  ✅ Registered in internal/app/fx.go
  ✅ Feature "product" generated in internal/features/product
-⚡ Next: make migrate-up   (creates the products table)
+⚡ Next: make migrate-up   (creates the products table and its products:* permissions, granted to super_admin)
 ⚡ Then: make sqlc         (generates internal/database/primary/sqlc/product.sql.go)
 ⚡ Then: go build ./...    (verify everything compiles)
 </pre></div>
@@ -200,16 +197,16 @@
           <tr><th>Endpoint</th><th><span lang="en">does</span><span lang="vi">chức năng</span></th></tr>
           <tr><td>POST /api/v1/products</td><td><span lang="en">create — body <code>{"name": "…", "status": 1}</code></span><span lang="vi">tạo mới sản phẩm — body <code>{"name": "…", "status": 1}</code></span></td></tr>
           <tr><td>GET /api/v1/products</td><td><span lang="en">list — <code>?page=&amp;page_size=&amp;search=</code></span><span lang="vi">danh sách — hỗ trợ <code>?page=&amp;page_size=&amp;search=</code></span></td></tr>
-          <tr><td>GET /api/v1/products/:uuid</td><td><span lang="en">get one (cached 5 min once <code>CACHE_ENABLED=true</code>)</span><span lang="vi">xem chi tiết (cache Redis 5 phút khi bật <code>CACHE_ENABLED=true</code>)</span></td></tr>
+          <tr><td>GET /api/v1/products/:uuid</td><td><span lang="en">get one (cached 5 min in Redis with <code>CACHE_REDIS_ENABLE=true</code>; without Redis every GET reads the DB)</span><span lang="vi">xem chi tiết (cache 5 phút trong Redis khi <code>CACHE_REDIS_ENABLE=true</code>; không có Redis thì mọi GET đều đọc DB)</span></td></tr>
           <tr><td>PATCH /api/v1/products/:uuid</td><td><span lang="en">update name / status</span><span lang="vi">cập nhật linh hoạt tên / trạng thái</span></td></tr>
           <tr><td>DELETE /api/v1/products/:uuid</td><td><span lang="en">soft delete (sets <code>deleted_at</code>)</span><span lang="vi">xóa mềm (tự gán <code>deleted_at</code>)</span></td></tr>
         </table></div>
         <p class="jd-sub" style="margin-top:12px" lang="en">The table already has <code>id</code>, <code>uuid</code>, <code>name</code>, <code>status</code> (1 = active, 2 = inactive), <code>created_at</code>, <code>updated_at</code> (set by a trigger) and <code>deleted_at</code>. A unit test file for the service is generated too: <code>go test ./internal/features/product/...</code> passes out of the box.</p>
         <p class="jd-sub" style="margin-top:12px" lang="vi">Bảng dữ liệu đã chuẩn hóa sẵn các cột: <code>id</code>, <code>uuid</code>, <code>name</code>, <code>status</code> (1 = đang bán, 2 = ngừng bán), <code>created_at</code>, <code>updated_at</code> (trigger PostgreSQL tự gán) và <code>deleted_at</code>. Bộ Unit Test cho tầng Service cũng được sinh sẵn: chạy <code>go test ./internal/features/product/...</code> sẽ pass ngay lập tức.</p>
         <div class="jd-callout c-green" style="margin-top:14px">
-          <b lang="en">🔒 Every generated route requires login.</b><b lang="vi">🔒 Mọi route sinh ra đều bắt buộc đăng nhập (Bearer Token).</b>
-          <span lang="en">The generated router puts <code>middleware.BearerAuth</code> on the whole <code>/products</code> group, exactly like <code>user_router.go</code>: no valid access token → <b>401</b>, your handler never runs. If one endpoint must stay public, register it before the protected group — the way <code>auth_router.go</code> leaves <code>/auth/login</code> open.</span>
-          <span lang="vi">Router được tạo ra tự động gắn middleware <code>middleware.BearerAuth</code> cho toàn bộ nhóm route <code>/products</code> (tương tự như <code>user_router.go</code>): nếu client không gửi access token hợp lệ → hệ thống trả về ngay mã lỗi <b>401</b> và Handler sẽ không bao giờ được thực thi. Nếu có endpoint nào muốn mở công khai (public), bạn chỉ cần đăng ký nó nằm ngoài nhóm route được bảo vệ này — tương tự như cách <code>auth_router.go</code> mở công khai cho route <code>/auth/login</code>.</span>
+          <b lang="en">🔒 Every generated route requires login and a permission.</b><b lang="vi">🔒 Mọi route sinh ra đều bắt buộc đăng nhập và có permission.</b>
+          <span lang="en">The generated router puts <code>middleware.BearerAuth</code> on the whole <code>/products</code> group (no valid access token → <b>401</b>) and wraps each handler in <code>guard.Can(…, domain.Products…)</code> (missing permission → <b>403</b>). The demo admin is <code>super_admin</code>: <code>make migrate-up</code> gives it the new permissions. A public endpoint goes outside the protected group, wrapped in <code>guard.Public</code> — the way <code>auth_router.go</code> opens <code>/auth/login</code>.</span>
+          <span lang="vi">Router sinh ra gắn <code>middleware.BearerAuth</code> cho cả nhóm <code>/products</code> (không có access token hợp lệ → <b>401</b>) và bọc từng handler bằng <code>guard.Can(…, domain.Products…)</code> (thiếu permission → <b>403</b>). Admin demo là <code>super_admin</code>: <code>make migrate-up</code> cấp cho nó các permission mới. Endpoint public thì đăng ký ngoài nhóm được bảo vệ và bọc bằng <code>guard.Public</code> — như cách <code>auth_router.go</code> mở <code>/auth/login</code>.</span>
         </div>
       </div>
     </div>
@@ -378,9 +375,7 @@ func (r *ProductRepository) Update(ctx context.Context, uid uuid.UUID, input dom
         Status: input.Status,
     })
     if err != nil {
-        return nil, database.Match(err, map[database.ErrorType]error{
-            database.ErrorNotFound: domain.ErrProductNotFound,
-        })
+        return nil, database.MatchNotFound(err, domain.ErrProductNotFound)
     }
 
     return mapProduct(row), nil
@@ -402,8 +397,8 @@ err := r.db.Executor(ctx).QueryRow(ctx,
         <span class="n">3.4</span>
         <h3><span lang="en">Service — the business logic</span><span lang="vi">Service — xử lý logic nghiệp vụ</span></h3>
         <div class="file">internal/features/product/service/product_service.go</div>
-        <p lang="en">The place for rules. Editing a name has no rule yet, so the service only saves and clears the cache. <code>GetProduct</code> caches products for 5 minutes, so after a write the cache key must go, or readers keep seeing the old name. (The cache only works with <code>CACHE_ENABLED=true</code>; the default <code>false</code> uses a no-op cache, and <code>make app-dev WITH=cache</code> only starts Redis.) Write the flow in the doc comment — the whole codebase does.</p>
-        <p lang="vi">Service là trái tim của hệ thống — nơi lưu giữ toàn bộ quy tắc nghiệp vụ (Business Rules). Ở ví dụ cập nhật tên này, logic rất tinh gọn: gọi repository để lưu vào DB và xóa cache cũ. Vì hàm <code>GetProduct</code> cache sản phẩm trong Redis 5 phút, nên sau khi ghi thành công bắt buộc phải xóa cache key, nếu không client sẽ tiếp tục nhìn thấy tên cũ. (Cache chỉ hoạt động khi đặt <code>CACHE_ENABLED=true</code>; mặc định <code>false</code> dùng cache rỗng không làm gì, còn <code>make app-dev WITH=cache</code> chỉ khởi động Redis.) Hãy luôn ghi tóm tắt luồng xử lý (Flow) ngay trong comment của hàm — toàn bộ codebase đều tuân thủ quy chuẩn này.</p>
+        <p lang="en">The place for rules. Editing a name has no rule yet, so the service only saves and clears the cache. <code>GetProduct</code> caches products for 5 minutes, so after a write the cache key must go, or readers keep seeing the old name. (With <code>CACHE_REDIS_ENABLE=true</code> the cache is Redis; with the default <code>false</code> there is no cache and both calls do nothing. <code>make app-dev WITH=cache</code> only starts Redis.) Write the flow in the doc comment — the whole codebase does.</p>
+        <p lang="vi">Service là trái tim của hệ thống — nơi lưu giữ toàn bộ quy tắc nghiệp vụ (Business Rules). Ở ví dụ cập nhật tên này, logic rất tinh gọn: gọi repository để lưu vào DB và xóa cache cũ. Vì hàm <code>GetProduct</code> cache sản phẩm 5 phút, nên sau khi ghi thành công bắt buộc phải xóa cache key, nếu không client sẽ tiếp tục nhìn thấy tên cũ. (Với <code>CACHE_REDIS_ENABLE=true</code> cache nằm trong Redis; mặc định <code>false</code> thì không có cache và cả hai lệnh đều không làm gì. <code>make app-dev WITH=cache</code> chỉ khởi động Redis.) Hãy luôn ghi tóm tắt luồng xử lý (Flow) ngay trong comment của hàm — toàn bộ codebase đều tuân thủ quy chuẩn này.</p>
         <div class="jd-grid-2">
           <div><div class="jd-sticky">
             <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>service/product_service.go</span></div>
@@ -493,14 +488,13 @@ func ToUpdateProductInput(req UpdateProductRequest) domain.UpdateProductInput {
 <pre data-hl="go" id="code-h">
 // UpdateProduct handles PATCH /products/:uuid.
 func (h *ProductHandler) UpdateProduct(ctx *gin.Context) {
-    uid, ok := httpx.ParseUUID(ctx, h.responder, h.validator)
+    uid, ok := validation.ParseUUID(ctx, h.responder, h.validator)
     if !ok {
         return
     }
 
     var req v1dto.UpdateProductRequest
-    if err := ctx.ShouldBindJSON(&amp;req); err != nil {
-        h.responder.SendWithData(ctx, http.StatusUnprocessableEntity, "validation_error", h.validator.GetValidationErrors(ctx, err))
+    if !validation.BindJSON(ctx, h.responder, h.validator, &amp;req) {
         return
     }
 
@@ -516,15 +510,15 @@ func (h *ProductHandler) UpdateProduct(ctx *gin.Context) {
           </div></div>
           <div class="jd-explain">
             <div class="jd-ex c-orange" data-code="#code-h" data-show="3-6"><span class="n">1</span>
-              <span class="w">httpx.ParseUUID</span>
-              <span class="x"><span lang="en">Reads <code>:uuid</code> from the URL as a typed <code>uuid.UUID</code>. A malformed one is normally stopped earlier with 404 by the global <a href="../junkit/middleware.html">RoutePatterns</a>; if one still gets here, it writes a 422 for you; just <code>return</code>.</span><span lang="vi">Đọc tham số <code>:uuid</code> trên URL thành <code>uuid.UUID</code> có kiểu. UUID sai định dạng thường đã bị middleware global <a href="../junkit/middleware.html">RoutePatterns</a> chặn trước bằng 404; nếu vẫn lọt tới đây, hàm tự động trả mã 422 về client; bạn chỉ cần gọi <code>return</code>.</span></span></div>
-            <div class="jd-ex c-orange" data-code="#code-h" data-show="8-12"><span class="n">2</span>
-              <span class="w">ShouldBindJSON</span>
-              <span class="x"><span lang="en">Parses the body and runs the <code>binding</code> tags. On failure, send 422 with one message per field (broken JSON → <code>"error": "Invalid JSON syntax"</code>).</span><span lang="vi">Parse dữ liệu từ request body và tự động kiểm tra theo các tag <code>binding</code>. Nếu có lỗi, trả về mã 422 kèm chi tiết cho từng trường bị lỗi (nếu JSON sai cú pháp → trả về <code>"error": "Invalid JSON syntax"</code>).</span></span></div>
-            <div class="jd-ex c-orange" data-code="#code-h" data-show="14-18"><span class="n">3</span>
+              <span class="w">validation.ParseUUID</span>
+              <span class="x"><span lang="en">From junkit's <a href="../junkit/validation.html">validation</a> package, like <code>BindJSON</code>. Reads <code>:uuid</code> from the URL as a typed <code>uuid.UUID</code>. A malformed one is normally stopped earlier with 404 by the global <a href="../junkit/middleware.html">RoutePatterns</a>; if one still gets here, it writes a 422 for you; just <code>return</code>.</span><span lang="vi">Thuộc package <a href="../junkit/validation.html">validation</a> của junkit, giống <code>BindJSON</code>. Đọc tham số <code>:uuid</code> trên URL thành <code>uuid.UUID</code> có kiểu. UUID sai định dạng thường đã bị middleware global <a href="../junkit/middleware.html">RoutePatterns</a> chặn trước bằng 404; nếu vẫn lọt tới đây, hàm tự động trả mã 422 về client; bạn chỉ cần gọi <code>return</code>.</span></span></div>
+            <div class="jd-ex c-orange" data-code="#code-h" data-show="8-11"><span class="n">2</span>
+              <span class="w">validation.BindJSON</span>
+              <span class="x"><span lang="en">Parses the body and runs the <code>binding</code> tags. On failure it has already answered 422 with one message per field (broken JSON → <code>"error": "Invalid JSON syntax"</code>); just <code>return</code>. <code>validation.BindQuery</code> does the same for query strings (list endpoints).</span><span lang="vi">Parse dữ liệu từ request body và tự động kiểm tra theo các tag <code>binding</code>. Nếu có lỗi, hàm đã tự trả mã 422 kèm chi tiết cho từng trường (JSON sai cú pháp → <code>"error": "Invalid JSON syntax"</code>); bạn chỉ cần <code>return</code>. <code>validation.BindQuery</code> làm tương tự cho query string (endpoint danh sách).</span></span></div>
+            <div class="jd-ex c-orange" data-code="#code-h" data-show="13-17"><span class="n">3</span>
               <span class="w">h.service.UpdateProduct</span>
               <span class="x"><span lang="en">Pass <code>ctx.Request.Context()</code>, not the Gin context — it carries the trace ID, the debugger and cancellation. <code>responder.Error</code> turns a domain error into its status (404…); anything unknown becomes a 500 with a generic message.</span><span lang="vi">Luôn truyền <code>ctx.Request.Context()</code> thay vì Gin context — vì nó chứa Trace ID, công cụ debugger và tín hiệu hủy context. Hàm <code>responder.Error</code> tự động ánh xạ lỗi Domain thành HTTP Status tương ứng (404…); các lỗi lạ chưa định nghĩa sẽ thành 500 với thông báo an toàn.</span></span></div>
-            <div class="jd-ex c-orange" data-code="#code-h" data-show="20"><span class="n">4</span>
+            <div class="jd-ex c-orange" data-code="#code-h" data-show="19"><span class="n">4</span>
               <span class="w">SendWithData(200, key, dto)</span>
               <span class="x"><span lang="en">Status, the translation key for <code>message</code>, and the DTO (never the domain struct). Use <code>Send</code> when there is no data, <code>Pagination</code> for lists.</span><span lang="vi">Truyền HTTP status, key bản dịch cho <code>message</code>, và struct DTO (tuyệt đối không trả thẳng struct Domain ra ngoài). Dùng <code>Send</code> khi không có payload data, hoặc <code>Pagination</code> khi trả về danh sách phân trang.</span></span></div>
           </div>
@@ -534,30 +528,30 @@ func (h *ProductHandler) UpdateProduct(ctx *gin.Context) {
       <!-- 3.7 -->
       <div class="bf-step c-orange">
         <span class="n">3.7</span>
-        <h3><span lang="en">Router — the URL, behind login</span><span lang="vi">Router — định tuyến URL &amp; bảo vệ đăng nhập</span></h3>
+        <h3><span lang="en">Router — the URL, behind login and a permission</span><span lang="vi">Router — định tuyến URL, bảo vệ đăng nhập &amp; permission</span></h3>
         <div class="file">internal/features/product/router/v1/product_router.go</div>
-        <p lang="en">One line maps <code>PATCH /:uuid</code> to the handler. <code>Version()</code> returning <code>"v1"</code> puts it under <code>/api/v1</code>, and <code>BearerAuth</code> on the group means no valid access token → 401 before the handler runs. A new endpoint = one more line inside the group, and it is protected too. The method matters: <code>PUT</code> on this URL answers 405 "HTTP method is not allowed".</p>
-        <p lang="vi">Chỉ cần 1 dòng khai báo để ánh xạ đường dẫn <code>PATCH /:uuid</code> tới hàm xử lý trong Handler. Hàm <code>Version()</code> trả về <code>"v1"</code> giúp tự động đặt toàn bộ endpoint dưới tiền tố <code>/api/v1</code>. Middleware <code>BearerAuth</code> gắn trên nhóm route đảm bảo: không có access token hợp lệ → trả ngay lỗi 401 trước khi Handler kịp chạy. Khi thêm endpoint mới, chỉ cần thêm 1 dòng vào nhóm này là nó tự động được bảo vệ an toàn. Lưu ý về HTTP Method: nếu gọi nhầm method (ví dụ gọi <code>PUT</code> vào URL này), Jungo sẽ trả về mã 405 kèm thông báo "HTTP method is not allowed".</p>
+        <p lang="en">One line maps <code>PATCH /:uuid</code> to the handler. <code>Version()</code> returning <code>"v1"</code> puts it under <code>/api/v1</code>, <code>BearerAuth</code> on the group means no valid access token → 401, and <code>guard.Can</code> means no <code>products:update</code> → 403, both before the handler runs. A new endpoint = one more line inside the group, wrapped in the Guard — a route without one stops the app at startup. The method matters: <code>PUT</code> on this URL answers 405 "HTTP method is not allowed".</p>
+        <p lang="vi">Chỉ cần 1 dòng khai báo để ánh xạ đường dẫn <code>PATCH /:uuid</code> tới hàm xử lý trong Handler. Hàm <code>Version()</code> trả về <code>"v1"</code> giúp tự động đặt toàn bộ endpoint dưới tiền tố <code>/api/v1</code>. Middleware <code>BearerAuth</code> gắn trên nhóm route đảm bảo: không có access token hợp lệ → lỗi 401; <code>guard.Can</code> đảm bảo: không có <code>products:update</code> → lỗi 403, cả hai đều trước khi Handler kịp chạy. Khi thêm endpoint mới, thêm 1 dòng vào nhóm và bọc bằng Guard — route thiếu Guard sẽ làm app dừng khi khởi động. Lưu ý về HTTP Method: nếu gọi nhầm method (ví dụ gọi <code>PUT</code> vào URL này), Jungo sẽ trả về mã 405 kèm thông báo "HTTP method is not allowed".</p>
         <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>router/v1/product_router.go</span></div>
 <pre data-hl="go" data-lines="8,13">
 func (r *ProductRoutes) Version() string {
     return "v1" // → everything below lives under /api/v1
 }
 
-// Register implements router.Routes; every route requires a logged-in user.
+// Register implements router.Routes; every route requires a logged-in user holding its permission.
 func (r *ProductRoutes) Register(group *gin.RouterGroup) {
     items := group.Group("/products")
     items.Use(middleware.BearerAuth(r.authenticator, r.responder, middleware.BearerAuthOptions{}))
 
-    items.POST("", r.handler.CreateProduct)
-    items.GET("", r.handler.ListProducts)
-    items.GET("/:uuid", r.handler.GetProduct)
-    items.PATCH("/:uuid", r.handler.UpdateProduct)
-    items.DELETE("/:uuid", r.handler.DeleteProduct)
+    items.POST("", r.guard.Can(r.handler.CreateProduct, "products:create"))
+    items.GET("", r.guard.Can(r.handler.ListProducts, "products:read"))
+    items.GET("/:uuid", r.guard.Can(r.handler.GetProduct, "products:read"))
+    items.PATCH("/:uuid", r.guard.Can(r.handler.UpdateProduct, "products:update"))
+    items.DELETE("/:uuid", r.guard.Can(r.handler.DeleteProduct, "products:delete"))
 }
 </pre></div>
-        <p class="jd-hint" style="margin-top:10px" lang="en">Need a public endpoint? Register it outside the protected group, the way <code>auth_router.go</code> leaves <code>/auth/login</code> open. Inside a protected handler you can read the logged-in user — see "Integrate" on the <a href="auth.html#client">Authentication</a> page.</p>
-        <p class="jd-hint" style="margin-top:10px" lang="vi">Cần mở endpoint public? Hãy đăng ký nó nằm ngoài nhóm route có <code>BearerAuth</code>, tương tự cách <code>auth_router.go</code> mở route <code>/auth/login</code>. Bên trong Handler được bảo vệ, bạn có thể dễ dàng đọc thông tin user đang đăng nhập — xem mục "Tích hợp" tại trang <a href="auth.html#client">Auth</a>.</p>
+        <p class="jd-hint" style="margin-top:10px" lang="en">Need a public endpoint? Register it outside the protected group, wrapped in <code>r.guard.Public(…)</code>, the way <code>auth_router.go</code> opens <code>/auth/login</code>. Want "only the owner"? Use <code>r.guard.Authenticated(…)</code> and check in the service — see <a href="access.html#inside">Permissions &amp; roles</a>. Inside a protected handler you can read the logged-in user — see "Integrate" on the <a href="auth.html#client">Authentication</a> page.</p>
+        <p class="jd-hint" style="margin-top:10px" lang="vi">Cần mở endpoint public? Hãy đăng ký nó nằm ngoài nhóm route có <code>BearerAuth</code> và bọc bằng <code>r.guard.Public(…)</code>, tương tự cách <code>auth_router.go</code> mở route <code>/auth/login</code>. Muốn "chỉ chủ sở hữu"? Dùng <code>r.guard.Authenticated(…)</code> và kiểm tra trong service — xem <a href="access.html#inside">Phân quyền</a>. Bên trong Handler được bảo vệ, bạn có thể dễ dàng đọc thông tin user đang đăng nhập — xem mục "Tích hợp" tại trang <a href="auth.html#client">Auth</a>.</p>
         <p class="jd-hint" style="margin-top:10px" lang="en">Need a body over 2 MB (an image upload, an import file)? Every body is capped by the global <code>Payload</code> middleware, which runs <b>before</b> any group middleware — so it can't be raised inside <code>Register</code>. Implement <code>router.BodyLimited</code> on the routes type instead, as <code>user_router.go</code> does for the 5 MB avatar (file size + 64 KiB for multipart overhead):</p>
         <p class="jd-hint" style="margin-top:10px" lang="vi">Cần body lớn hơn 2 MB (upload ảnh, file import)? Mọi body đều bị middleware global <code>Payload</code> giới hạn, và nó chạy <b>trước</b> mọi middleware của group — nên không thể nới giới hạn bên trong <code>Register</code>. Thay vào đó hãy implement <code>router.BodyLimited</code> trên struct routes, như <code>user_router.go</code> làm cho avatar 5 MB (kích thước file + 64 KiB cho phần bao của multipart):</p>
         <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>router/v1/product_router.go</span></div>
@@ -834,8 +828,8 @@ $ curl -s -X PATCH localhost:$API_SERVER_PORT/api/v1/products/$UUID \
         <div class="jd-tablewrap" style="margin-top:14px"><table class="jd-params">
           <tr><th><span lang="en">channel</span><span lang="vi">kênh</span></th><th><span lang="en">file (non-dev) · what's in it</span><span lang="vi">file (ngoài dev) · nội dung</span></th></tr>
           <tr><td>app</td><td><code>storage/logs/app.log</code> · <span lang="en">startup, Fx, your own <code>*zap.Logger</code> calls</span><span lang="vi">Khởi động ứng dụng, hoạt động của Uber Fx, và các câu lệnh log do bạn gọi qua <code>*zap.Logger</code></span></td></tr>
-          <tr><td>http</td><td><code>storage/logs/http.log</code> · <span lang="en"><code>HTTP_ACCESS_LOG</code>: one line per request with status, latency, masked request + response body, error</span><span lang="vi"><code>HTTP_ACCESS_LOG</code>: Mỗi request một dòng log chứa status, độ trễ latency, payload request + response (đã tự động che thông tin nhạy cảm), và lỗi</span></td></tr>
-          <tr><td>sql</td><td><code>storage/logs/sql.log</code> · <span lang="en"><code>SQL_EXECUTION</code> for every query with its values filled in; <code>SLOW_QUERY_DETECTION</code> (WARN) over <code>DB_SLOW_QUERY_THRESHOLD</code> (200ms)</span><span lang="vi"><code>SQL_EXECUTION</code>: Ghi lại mọi câu query SQL đã được điền sẵn giá trị thực tế; cảnh báo <code>SLOW_QUERY_DETECTION</code> (WARN) khi thời gian chạy vượt ngưỡng <code>DB_SLOW_QUERY_THRESHOLD</code> (mặc định 200ms)</span></td></tr>
+          <tr><td>http</td><td><code>storage/logs/http.log</code> · <span lang="en"><code>HTTP_ACCESS_LOG</code>: one line per request with status, latency, error; the request and response bodies (masked) only when status ≥ 400, so successful responses' personal data stays out</span><span lang="vi"><code>HTTP_ACCESS_LOG</code>: Mỗi request một dòng log chứa status, độ trễ latency và lỗi; payload request + response (đã che thông tin nhạy cảm) chỉ được ghi khi status ≥ 400, để dữ liệu cá nhân trong response thành công không nằm trong log</span></td></tr>
+          <tr><td>sql</td><td><code>storage/logs/sql.log</code> · <span lang="en"><code>SQL_EXECUTION</code> for every query with its values filled in, only when <code>DB_QUERY_LOGGING=true</code> (off by default, on in <code>.env.example</code>); <code>SLOW_QUERY_DETECTION</code> (WARN) over <code>DB_SLOW_QUERY_THRESHOLD</code> (200ms)</span><span lang="vi"><code>SQL_EXECUTION</code>: Ghi lại mọi câu query SQL đã được điền sẵn giá trị thực tế, chỉ khi <code>DB_QUERY_LOGGING=true</code> (mặc định tắt, <code>.env.example</code> bật); cảnh báo <code>SLOW_QUERY_DETECTION</code> (WARN) khi thời gian chạy vượt ngưỡng <code>DB_SLOW_QUERY_THRESHOLD</code> (mặc định 200ms)</span></td></tr>
           <tr><td>limiter</td><td><code>storage/logs/limiter.log</code> · <span lang="en">rate-limit hits</span><span lang="vi">Ghi nhận các trường hợp bị hệ thống giới hạn tốc độ truy cập (Rate Limit)</span></td></tr>
         </table></div>
         <p class="jd-hint" style="margin-top:10px" lang="en">Level per channel: <code>LOG_APP_LEVEL</code>, <code>LOG_HTTP_LEVEL</code>, <code>LOG_SQL_LEVEL</code>, <code>LOG_LIMITER_LEVEL</code> (debug · info · warn · error; default info — but <code>.env.example</code> sets <code>LOG_APP_LEVEL=debug</code>). <code>LOG_APP_LEVEL=debug</code> also shows every Fx step at startup. <code>DB_QUERY_LOGGING=false</code> turns SQL logging off.</p>
@@ -1059,7 +1053,7 @@ INFO  service/product_service.go:61  product: updated
         <div class="jd-rule"><span class="n" style="background:var(--blue)">✓</span><p lang="en">New migration pair with a working <code>down</code>; old migrations untouched.</p><p lang="vi">Tạo đủ cặp migration mới với hàm <code>down</code> hoạt động chuẩn xác; tuyệt đối không sửa các migration cũ.</p></div>
         <div class="jd-rule"><span class="n" style="background:var(--blue)">✓</span><p lang="en"><code>make sqlc</code> run and the generated files committed.</p><p lang="vi">Đã chạy <code>make sqlc</code> và commit đầy đủ các file Go được sinh tự động.</p></div>
         <div class="jd-rule"><span class="n" style="background:var(--purple)">✓</span><p lang="en">Rules live in the service; the handler only translates HTTP.</p><p lang="vi">Mọi quy tắc nghiệp vụ nằm gọn trong Service; Handler chỉ làm nhiệm vụ tiếp nhận và điều phối HTTP.</p></div>
-        <div class="jd-rule"><span class="n" style="background:var(--purple)">✓</span><p lang="en">Routes stay inside the <code>BearerAuth</code> group; any public one is deliberate and reviewed.</p><p lang="vi">Các endpoint đều nằm trong nhóm có <code>BearerAuth</code>; nếu mở public endpoint nào thì phải có lý do rõ ràng và được review kỹ.</p></div>
+        <div class="jd-rule"><span class="n" style="background:var(--purple)">✓</span><p lang="en">Routes stay inside the <code>BearerAuth</code> group, each wrapped by the Guard with its own permission (in the feature's <code>domain/permission.go</code> and in a migration); any <code>guard.Public</code> one is deliberate and reviewed.</p><p lang="vi">Các endpoint đều nằm trong nhóm có <code>BearerAuth</code>, mỗi cái bọc bằng Guard với permission riêng (có trong <code>domain/permission.go</code> của feature và trong một migration); endpoint <code>guard.Public</code> nào cũng phải có lý do rõ ràng và được review kỹ.</p></div>
       </div>
       <div class="jd-rules" style="grid-template-columns:minmax(0,1fr)">
         <div class="jd-rule"><span class="n" style="background:var(--pink)">✓</span><p lang="en">Every new message key has its text in <code>registerTranslations</code>.</p><p lang="vi">Mọi key thông báo mới đều được khai báo bản dịch đầy đủ trong <code>registerTranslations</code>.</p></div>
@@ -1085,8 +1079,8 @@ document.addEventListener("jd:ready", function () {
       text: { en: "The <b>client</b> sends <code>PATCH /api/v1/products/:uuid</code>, body <code>{\"name\": \"Iced coffee\"}</code>, header <code>Authorization: Bearer …</code>.",
               vi: "<b>Client</b> gửi request <code>PATCH /api/v1/products/:uuid</code>, kèm body <code>{\"name\": \"Iced coffee\"}</code> và header xác thực <code>Authorization: Bearer …</code>." } },
     { node: "router", token: "BearerAuth", color: req, ms: 2400,
-      text: { en: "<b>Router</b> (step 3.7) matches the URL to <code>handler.UpdateProduct</code>. A malformed <code>:uuid</code> was already answered <b>404</b> by the global <code>RoutePatterns</code>. <code>BearerAuth</code> checks the token first — invalid → <b>401</b>, the handler never runs.",
-              vi: "<b>Router</b> (bước 3.7) điều hướng URL tới method <code>handler.UpdateProduct</code>. <code>:uuid</code> sai định dạng đã bị middleware global <code>RoutePatterns</code> trả <b>404</b> từ trước. Middleware <code>BearerAuth</code> kiểm tra token trước tiên — nếu không hợp lệ → trả ngay mã <b>401</b>, Handler sẽ không bao giờ được gọi." } },
+      text: { en: "<b>Router</b> (step 3.7) matches the URL to <code>handler.UpdateProduct</code>. A malformed <code>:uuid</code> was already answered <b>404</b> by the global <code>RoutePatterns</code>. <code>BearerAuth</code> checks the token first — invalid → <b>401</b>; then <code>guard.Can</code> checks <code>products:update</code> — missing → <b>403</b>. Either way the handler never runs.",
+              vi: "<b>Router</b> (bước 3.7) điều hướng URL tới method <code>handler.UpdateProduct</code>. <code>:uuid</code> sai định dạng đã bị middleware global <code>RoutePatterns</code> trả <b>404</b> từ trước. Middleware <code>BearerAuth</code> kiểm tra token trước tiên — không hợp lệ → <b>401</b>; sau đó <code>guard.Can</code> kiểm tra <code>products:update</code> — thiếu → <b>403</b>. Cả hai trường hợp Handler đều không được gọi." } },
     { node: "handler", token: ":uuid + body", color: req, ms: 2600,
       text: { en: "<b>Handler</b> (3.6) reads <code>:uuid</code> and binds the body into <code>UpdateProductRequest</code> (3.5). A name shorter than 2 → <b>422</b> right here.",
               vi: "<b>Handler</b> (bước 3.6) đọc <code>:uuid</code> và bind dữ liệu body vào struct <code>UpdateProductRequest</code> (bước 3.5). Nếu tên ngắn hơn 2 ký tự → trả ngay mã lỗi <b>422</b> tại đây." } },
@@ -1103,8 +1097,8 @@ document.addEventListener("jd:ready", function () {
       text: { en: "On the way back the <b>repository</b> maps the row to a <code>domain.Product</code>.",
               vi: "Trên chiều dữ liệu trả về, <b>Repository</b> chuyển đổi (map) dòng dữ liệu từ database thành entity <code>domain.Product</code>." } },
     { node: "service", token: "cache.Delete", color: res, ms: 2200,
-      text: { en: "The <b>service</b> deletes <code>product:&lt;uuid&gt;</code> from the cache so the next GET reads the new name (a no-op unless <code>CACHE_ENABLED=true</code>).",
-              vi: "<b>Service</b> xóa sạch key <code>product:&lt;uuid&gt;</code> trong Redis cache để các request GET sau đó sẽ đọc được tên sản phẩm mới nhất (không làm gì nếu chưa bật <code>CACHE_ENABLED=true</code>)." } },
+      text: { en: "The <b>service</b> deletes <code>product:&lt;uuid&gt;</code> from the cache so the next GET reads the new name (Redis with <code>CACHE_REDIS_ENABLE=true</code>; without Redis there is nothing to delete).",
+              vi: "<b>Service</b> xóa sạch key <code>product:&lt;uuid&gt;</code> trong cache để các request GET sau đó sẽ đọc được tên sản phẩm mới nhất (Redis khi bật <code>CACHE_REDIS_ENABLE=true</code>; không có Redis thì không có gì để xóa)." } },
     { node: "handler", token: "ProductResponse", color: res, ms: 2200,
       text: { en: "The <b>handler</b> converts the product to the DTO and sends <code>200</code> with the message key <code>product_updated</code> (text from 3.8).",
               vi: "<b>Handler</b> chuyển đổi product thành DTO response và gửi mã <b>200</b> kèm key thông báo <code>product_updated</code> (đã được định nghĩa ở bước 3.8)." } },

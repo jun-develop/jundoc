@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Junkit middleware · Jundoc</title>
   <meta name="description"
-    content="junkit/middleware: Gin middleware for debug tracing, security headers, trace IDs, CORS, body limits, access logs, rate limiting, panic recovery, authentication and gzip compression.">
+    content="junkit/middleware: Gin middleware for debug tracing, security headers, trace IDs, CORS, body limits, access logs, rate limiting, path-parameter checks, panic recovery and gzip compression. Authentication and permissions live in the app.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -26,12 +26,13 @@
         style="background:radial-gradient(1000px 380px at 0% 0%, rgba(251,146,60,.5), transparent 60%),linear-gradient(135deg,#7c2d12,#c2410c 55%,#be123c)">
         <div class="jd-eyebrow">Junkit · middleware</div>
         <h1>middleware</h1>
-        <p lang="en">Twelve ready-made Gin middleware: a debug dashboard, security headers, trace IDs, CORS, body
-          limits, access logs, per-IP rate limiting, path-parameter checks, panic recovery, bearer-token auth, a shared-secret guard and gzip
-          response compression.</p>
-        <p lang="vi">Mười hai middleware Gin dùng ngay: dashboard debug, header bảo mật, trace ID, CORS, giới hạn body,
-          access log, rate limit theo IP, kiểm tra path param, bắt panic, xác thực bearer token, chốt chặn bằng shared secret và nén gzip cho
-          response.</p>
+        <p lang="en">Ten ready-made Gin middleware every app needs: a debug dashboard, security headers, trace IDs,
+          CORS, body limits, access logs, per-IP rate limiting, path-parameter checks, panic recovery and gzip
+          response compression. Authentication and permissions are app policy — in Jungo they live in
+          <code>jungo/internal/middleware</code>.</p>
+        <p lang="vi">Mười middleware Gin dùng ngay mà app nào cũng cần: dashboard debug, header bảo mật, trace ID,
+          CORS, giới hạn body, access log, rate limit theo IP, kiểm tra path param, bắt panic và nén gzip cho response.
+          Xác thực và phân quyền là chính sách của app — ở Jungo chúng nằm trong <code>jungo/internal/middleware</code>.</p>
         <div class="jd-chips">
           <span class="jd-chip">github.com/jun-develop/junkit/middleware</span>
           <span class="jd-chip"><span lang="en">no Fx Module — construct per route group</span><span lang="vi">không có
@@ -48,16 +49,46 @@
           <span class="jd-badge">1</span>
           <div>
             <h2><span lang="en">What is in the box</span><span lang="vi">Trong package có gì</span></h2>
-            <p class="jd-sub" lang="en">Ten middleware form the global chain; two (<code>BearerAuth</code>,
-              <code>RequireSecret</code>) guard single route groups. Each one is a plain <code>gin.HandlerFunc</code>:
-              code before <code>c.Next()</code> runs on the way in, code after it on the way out. Press ▶ to follow one
-              request.</p>
-            <p class="jd-sub" lang="vi">Mười middleware tạo thành chuỗi chung; hai cái (<code>BearerAuth</code>,
-              <code>RequireSecret</code>) chỉ canh một route group. Mỗi cái là một <code>gin.HandlerFunc</code> bình
-              thường: code trước <code>c.Next()</code> chạy lúc đi vào, code sau nó chạy lúc đi ra. Bấm ▶ để theo dõi
-              một request.</p>
+            <p class="jd-sub" lang="en">Ten middleware that form the global chain — the protection and plumbing every
+              app needs. Authentication and permissions are <b>not</b> here: they are app policy and live in the app
+              (see below). Each one is a plain <code>gin.HandlerFunc</code>: code before <code>c.Next()</code> runs on
+              the way in, code after it on the way out. Press ▶ to follow one request.</p>
+            <p class="jd-sub" lang="vi">Mười middleware tạo thành chuỗi chung — lớp bảo vệ và hạ tầng mà app nào cũng
+              cần. Xác thực và phân quyền <b>không</b> nằm ở đây: chúng là chính sách của app và nằm trong app (xem bên
+              dưới). Mỗi cái là một <code>gin.HandlerFunc</code> bình thường: code trước <code>c.Next()</code> chạy lúc
+              đi vào, code sau nó chạy lúc đi ra. Bấm ▶ để theo dõi một request.</p>
           </div>
         </div>
+
+        <h3><span lang="en">Two places for middleware</span><span lang="vi">Hai nơi chứa middleware</span></h3>
+        <div class="jd-vs">
+          <div style="--c:var(--green)">
+            <code class="big">junkit/middleware</code>
+            <p lang="en"><b>Required, the same in every app.</b> Security headers, tracing, CORS, gzip, access log,
+              panic recovery, body limits, rate limiting, route patterns, debug switch. They protect the system and
+              save you plumbing. You configure them (options in <code>router.go</code>) — you don't rewrite them.</p>
+            <p lang="vi"><b>Bắt buộc, giống nhau ở mọi app.</b> Header bảo mật, trace, CORS, gzip, access log, bắt
+              panic, giới hạn body, rate limit, route pattern, công tắc debug. Chúng bảo vệ hệ thống và giúp bạn khỏi
+              viết lại phần hạ tầng. Bạn cấu hình chúng (options trong <code>router.go</code>) — không viết lại.</p>
+          </div>
+          <div style="--c:var(--purple)">
+            <code class="big">jungo/internal/middleware</code>
+            <p lang="en"><b>Yours to customise.</b> Who may call what: <code>BearerAuth</code> (token → identity),
+              <code>RequireSecret</code> (service-to-service), and the permission <code>Guard</code>. Every app decides
+              this differently, so the code lives in the app — read it, change it, add your own. See <a
+                href="../jungo/access.html">Jungo · permissions &amp; roles</a>.</p>
+            <p lang="vi"><b>Tùy biến theo app.</b> Ai được gọi gì: <code>BearerAuth</code> (token → identity),
+              <code>RequireSecret</code> (giữa các service), và <code>Guard</code> phân quyền. Mỗi app quyết định điều
+              này một kiểu, nên code nằm trong app — đọc, sửa, thêm của riêng bạn. Xem <a
+                href="../jungo/access.html">Jungo · phân quyền</a>.</p>
+          </div>
+        </div>
+        <p class="jd-sub" style="margin-top:12px" lang="en">Rule of thumb: a middleware that decides <b>who may do
+            what</b> goes in the app; one that protects or instruments <b>every</b> request, whatever the app, belongs
+          in junkit.</p>
+        <p class="jd-sub" style="margin-top:12px" lang="vi">Quy tắc nhanh: middleware quyết định <b>ai được làm
+            gì</b> thì đặt trong app; middleware bảo vệ hoặc đo đạc <b>mọi</b> request, bất kể app nào, thì thuộc về
+          junkit.</p>
 
         <div class="jd-player c-orange" id="mw-player" style="margin-top:26px">
           <div class="jd-stage rf" data-wires='[
@@ -82,14 +113,15 @@
                 <div class="jd-node c-green" data-node="mw7"><span class="t"><small>6</small>AccessLog</span></div>
                 <div class="jd-node c-green" data-node="mw9"><span class="t"><small>7</small>Recover</span></div>
                 <div class="jd-node c-green" data-node="mw6"><span class="t"><small>8</small>Payload</span></div>
-                <div class="jd-node c-green" data-node="mw8"><span class="t"><small>9</small>Limiter</span></div>
-                <div class="jd-node c-green" data-node="mwrp"><span class="t"><small>10</small>RoutePatterns</span></div>
+                <div class="jd-node c-green" data-node="mwbn"><span class="t"><small>9</small>Banner</span></div>
+                <div class="jd-node c-green" data-node="mw8"><span class="t"><small>10</small>Limiter</span></div>
+                <div class="jd-node c-green" data-node="mwrp"><span class="t"><small>11</small>RoutePatterns</span></div>
               </div>
             </div>
             <div class="jd-node is-tint c-purple" data-node="group" style="grid-column:2 / 4">
-              <span class="t">Route group</span><span class="p">BearerAuth · RequireSecret</span>
-              <div class="d" lang="en">per group, not global</div>
-              <div class="d" lang="vi">theo từng group, không phải global</div>
+              <span class="t"><span lang="en">App middleware</span><span lang="vi">Middleware của app</span></span><span class="p">BearerAuth · Guard</span>
+              <div class="d" lang="en">per group, from <code>jungo/internal/middleware</code></div>
+              <div class="d" lang="vi">theo từng group, từ <code>jungo/internal/middleware</code></div>
             </div>
             <div class="jd-node is-tint c-blue" data-node="handler" style="grid-column:5 / 7">
               <span class="t">Handler</span><span class="p">your code</span>
@@ -155,6 +187,16 @@
               <td>—</td>
             </tr>
             <tr>
+              <td>Banner</td>
+              <td lang="en">Bans a client that probes the API: a scanner-only path such as <code>/.env</code>, an
+                attack payload in the URL, a scanner's User-Agent, or too many 401/403/404/405/429 responses in a
+                short time.</td>
+              <td lang="vi">Ban client đang dò API: gọi đường dẫn chỉ kẻ quét mới gọi như <code>/.env</code>, gửi
+                payload tấn công trong URL, dùng User-Agent của tool quét, hoặc nhận quá nhiều response
+                401/403/404/405/429 trong thời gian ngắn.</td>
+              <td>403</td>
+            </tr>
+            <tr>
               <td>Limiter</td>
               <td lang="en">Token bucket per client IP.</td>
               <td lang="vi">Token bucket theo IP client.</td>
@@ -173,19 +215,6 @@
               <td lang="en">Turns panics into 500 + log + alert.</td>
               <td lang="vi">Biến panic thành 500 + log + cảnh báo.</td>
               <td>500</td>
-            </tr>
-            <tr>
-              <td>BearerAuth</td>
-              <td lang="en">Resolves <code>Authorization: Bearer …</code> into an identity.</td>
-              <td lang="vi">Biến <code>Authorization: Bearer …</code> thành identity.</td>
-              <td><span lang="en">401 / your AppError / 500</span><span lang="vi">401 / AppError của bạn / 500</span>
-              </td>
-            </tr>
-            <tr>
-              <td>RequireSecret</td>
-              <td lang="en">Shared-secret header check for internal routes.</td>
-              <td lang="vi">Kiểm tra header shared secret cho route nội bộ.</td>
-              <td>403</td>
             </tr>
             <tr>
               <td>Gzip</td>
@@ -252,6 +281,19 @@ func registerGlobalMiddlewares(p Params, bodyLimits map[string]int64) {
             MaxBodySize: cfg.Security.MaxRequestBodySize,
             RouteLimits: bodyLimits,
         }, p.Responder),
+    )
+
+    if cfg.Banner.Enabled {
+        p.Router.Use(middleware.Banner(middleware.BannerOptions{
+            Cache:        cache.New[int64](p.CacheOptions.OrMemory()),
+            MaxStrikes:   cfg.Banner.MaxStrikes,
+            StrikeWindow: cfg.Banner.StrikeWindow,
+            BanDurations: cfg.Banner.BanDurations,
+            IPWhitelist:  cfg.Limiter.IPWhitelist,
+        }, p.LimiterLogger, p.Responder, p.Notifier))
+    }
+
+    p.Router.Use(
         middleware.Limiter(middleware.LimiterOptions{
             RequestsPerSecond: cfg.Limiter.RequestsPerSecond,
             Burst:             cfg.Limiter.Burst,
@@ -325,11 +367,11 @@ func registerGlobalMiddlewares(p Params, bodyLimits map[string]int64) {
                 log.</span></div>
             <div class="jd-ex c-blue" data-code="#code-router" data-show="29"><span class="n">7</span><span
                 class="w">Recover — right inside AccessLog</span><span class="x" lang="en">It catches panics from
-                everything after it: Payload, Limiter, RoutePatterns, BearerAuth and handlers. It must sit
+                everything after it: Payload, Limiter, RoutePatterns, the app's auth middleware and handlers. It must sit
                 <b>inside</b> AccessLog — a panic unwinding through AccessLog would skip its logging — and its 500
                 still flows out through Gzip, CORS, Trace and Security. On a debug request it hands the panic to the
                 tracer instead, so TracerDebug can show it.</span><span class="x" lang="vi">Nó bắt panic từ mọi thứ
-                sau nó: Payload, Limiter, RoutePatterns, BearerAuth và handler. Nó phải nằm <b>bên trong</b>
+                sau nó: Payload, Limiter, RoutePatterns, middleware auth của app và handler. Nó phải nằm <b>bên trong</b>
                 AccessLog — panic đi xuyên qua AccessLog sẽ làm mất dòng log — và response 500 của nó vẫn đi ra qua
                 Gzip, CORS, Trace và Security. Với request debug, nó chuyển panic cho tracer để TracerDebug hiển
                 thị.</span></div>
@@ -343,81 +385,84 @@ func registerGlobalMiddlewares(p Params, bodyLimits map[string]int64) {
                 <code>RouteLimits</code> (lấy từ các route implement <code>router.BodyLimited</code>, ví dụ upload
                 avatar 5 MB). Nó cache body đã parse để AccessLog ghi được <code>request_payload</code> và handler vẫn
                 bind được.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="34-42"><span class="n">9</span><span
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="34-46"><span class="n">9</span><span
+                class="w">Banner — before Limiter</span><span class="x" lang="en">A banned client gets 403 here
+                without spending a rate-limit token, and since it reads the status after <code>c.Next()</code>, the
+                429s Limiter returns count as strikes: a client that keeps sending after being limited ends up banned.
+                It is a separate <code>Use</code> call only because <code>BANNER_ENABLED=false</code> leaves it out;
+                <code>Use</code> appends, so the order stays the same.</span><span class="x" lang="vi">Client đã bị
+                ban nhận 403 tại đây mà không tốn token rate limit, và vì nó đọc status sau <code>c.Next()</code>,
+                các response 429 từ Limiter được tính là lỗi: client đã bị giới hạn mà vẫn gửi tiếp sẽ bị ban. Nó nằm
+                trong một lệnh <code>Use</code> riêng chỉ để <code>BANNER_ENABLED=false</code> bỏ được nó;
+                <code>Use</code> nối thêm vào cuối nên thứ tự không đổi.</span></div>
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="47-55"><span class="n">10</span><span
                 class="w">Limiter — before the expensive part</span><span class="x" lang="en">A rejected request gets
                 429 without touching handlers or the database, and the rejection is still access-logged.</span><span
                 class="x" lang="vi">Request bị từ chối nhận 429 mà không chạm tới handler hay database, và việc từ chối
                 vẫn được ghi access log.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="43-47"><span class="n">10</span><span
+            <div class="jd-ex c-blue" data-code="#code-router" data-show="56-60"><span class="n">11</span><span
                 class="w">RoutePatterns — after Limiter, before auth</span><span class="x" lang="en">Junk URLs such as
-                <code>/users/abc</code> still spend a rate-limit token, then get 404 before BearerAuth or the handler
+                <code>/users/abc</code> still spend a rate-limit token, then get 404 before the app's auth middleware or the handler
                 runs.</span><span class="x" lang="vi">URL rác như <code>/users/abc</code> vẫn tốn token rate limit, rồi
-                nhận 404 trước khi BearerAuth hay handler chạy.</span></div>
+                nhận 404 trước khi middleware auth của app hay handler chạy.</span></div>
           </div>
         </div>
 
-        <h3><span lang="en">Per feature — BearerAuth and RequireSecret</span><span lang="vi">Theo feature — BearerAuth
-            và RequireSecret</span></h3>
+        <h3><span lang="en">After the chain — the app's own middleware</span><span lang="vi">Sau chuỗi chung —
+            middleware của chính app</span></h3>
+        <p class="jd-sub" lang="en">Route groups add the app's access policy on top of the chain. In Jungo it comes from
+          <code>jungo/internal/middleware</code>, not from junkit:</p>
+        <p class="jd-sub" lang="vi">Các route group đặt chính sách truy cập của app lên trên chuỗi chung. Ở Jungo nó đến
+          từ <code>jungo/internal/middleware</code>, không phải junkit:</p>
         <div class="jd-grid-2">
-          <div>
-            <div class="jd-term" data-copy>
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>features/auth/module.go</span></div>
-              <pre data-hl="go">
-// newAccessAuthenticator exposes AuthService.AuthenticateAccess as a middleware.Authenticator.
-func newAccessAuthenticator(svc domain.AuthService) middleware.Authenticator[*domain.Identity] {
-    return middleware.AuthenticatorFunc[*domain.Identity](svc.AuthenticateAccess)
-}
-</pre>
-            </div>
-            <div class="jd-term" data-copy style="margin-top:12px">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>features/user/router/v1/user_router.go</span></div>
-              <pre data-hl="go">
+          <div class="jd-term" data-copy>
+            <div class="jd-term-bar"><i></i><i></i><i></i><span>features/user/router/v1/user_router.go</span></div>
+            <pre data-hl="go">
+import "jungo/internal/middleware" // the app's, not junkit's
+
 func (r *UserRoutes) Register(group *gin.RouterGroup) {
     users := group.Group("/users")
     users.Use(middleware.BearerAuth(r.authenticator, r.responder, middleware.BearerAuthOptions{}))
-    users.POST("", r.handler.CreateUser)
-    users.GET("", r.handler.ListUsers)
+    users.POST("", r.guard.Can(r.handler.CreateUser, domain.UsersCreate))
+    users.GET("/:uuid", r.guard.Authenticated(r.handler.GetUser))
     // …
 }
 </pre>
-            </div>
           </div>
-          <div>
-            <div class="jd-term" data-copy>
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>features/auth/router/v1/auth_router.go</span></div>
-              <pre data-hl="go">
-items := group.Group("/auth")
-items.POST("/login", r.handler.Login)     // public
-items.POST("/refresh", r.handler.Refresh) // public
-
-protected := items.Group("", middleware.BearerAuth(r.authenticator, r.responder, middleware.BearerAuthOptions{}))
-protected.POST("/logout", r.handler.Logout)
-protected.POST("/logout-all", r.handler.LogoutAll)
-protected.GET("/me", r.handler.Me)
-protected.GET("/sessions", r.handler.Sessions)
-</pre>
-            </div>
-            <div class="jd-term" data-copy style="margin-top:12px">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>features/auth/router/private/auth_router.go</span>
-              </div>
-              <pre data-hl="go">
-const internalSecretHeader = "X-Internal-Secret"
-
-items := group.Group("/internal/auth",
-    middleware.RequireSecret(internalSecretHeader, r.cfg.Auth.InternalSecret, r.responder))
-items.POST("/token-details", r.handler.TokenDetails)
-</pre>
-            </div>
+          <div class="jd-tablewrap">
+            <table class="jd-params c-purple">
+              <tr>
+                <th>jungo/internal/middleware</th>
+                <th><span lang="en">does</span><span lang="vi">làm gì</span></th>
+              </tr>
+              <tr>
+                <td>BearerAuth</td>
+                <td lang="en"><code>Authorization: Bearer …</code> → identity (401 otherwise). See <a href="../jungo/auth.html">auth</a>.</td>
+                <td lang="vi"><code>Authorization: Bearer …</code> → identity (không thì 401). Xem <a href="../jungo/auth.html">auth</a>.</td>
+              </tr>
+              <tr>
+                <td>RequireSecret</td>
+                <td lang="en">Shared-secret header for <code>/api/internal/*</code> (403 otherwise).</td>
+                <td lang="vi">Header shared secret cho <code>/api/internal/*</code> (không thì 403).</td>
+              </tr>
+              <tr>
+                <td>Guard</td>
+                <td lang="en"><code>Can</code> / <code>Authenticated</code> / <code>Public</code> on every versioned route (<code>/api/v1/...</code>; 403 without the permission). See <a href="../jungo/access.html">permissions</a>.</td>
+                <td lang="vi"><code>Can</code> / <code>Authenticated</code> / <code>Public</code> cho mọi route có version (<code>/api/v1/...</code>; thiếu permission thì 403). Xem <a href="../jungo/access.html">phân quyền</a>.</td>
+              </tr>
+            </table>
           </div>
         </div>
-        <p class="jd-sub" style="margin-top:12px" lang="en">The authenticator is provided once by Fx and injected into
-          every router that needs it. What <code>AuthenticateAccess</code> checks is explained on <a
-            href="../jungo/auth.html">Jungo · auth</a>; the whole request path is on <a
-            href="../jungo/overview.html#flow">Jungo · overview</a>.</p>
-        <p class="jd-sub" style="margin-top:12px" lang="vi">Authenticator được Fx cung cấp một lần rồi inject vào mọi
-          router cần nó. <code>AuthenticateAccess</code> kiểm tra gì được giải thích ở <a
-            href="../jungo/auth.html">Jungo · auth</a>; toàn bộ đường đi của request có ở <a
-            href="../jungo/overview.html#flow">Jungo · overview</a>.</p>
+        <p class="jd-sub" style="margin-top:12px" lang="en">junkit still provides the pieces they are built from —
+          <code>security.TokenSealer</code>, <code>security.HashToken</code>, <code>security.SecureEqual</code>,
+          <code>security.SetIdentity</code> / <code>MustGetIdentity</code> and the i18n keys
+          <code>unauthorized_token</code>, <code>forbidden_internal_access</code>, <code>insufficient_permission</code>.
+          Building another app? Copy <code>jungo/internal/middleware/auth.go</code> as a starting point.</p>
+        <p class="jd-sub" style="margin-top:12px" lang="vi">junkit vẫn cung cấp các mảnh để xây chúng —
+          <code>security.TokenSealer</code>, <code>security.HashToken</code>, <code>security.SecureEqual</code>,
+          <code>security.SetIdentity</code> / <code>MustGetIdentity</code> và các key i18n
+          <code>unauthorized_token</code>, <code>forbidden_internal_access</code>, <code>insufficient_permission</code>.
+          Làm app khác? Chép <code>jungo/internal/middleware/auth.go</code> làm điểm khởi đầu.</p>
       </section>
 
       <!-- ============================================================ 3. QUICK START -->
@@ -427,11 +472,9 @@ items.POST("/token-details", r.handler.TokenDetails)
           <div>
             <h2><span lang="en">A minimal chain in 30 seconds</span><span lang="vi">Chuỗi tối thiểu trong 30 giây</span>
             </h2>
-            <p class="jd-sub" lang="en">A complete <code>main.go</code> without Fx (imports and
-              <code>type Identity struct{ UserID string }</code> omitted; verified to compile). Hover an explanation to
+            <p class="jd-sub" lang="en">A complete <code>main.go</code> without Fx (imports omitted). Hover an explanation to
               light up its lines.</p>
-            <p class="jd-sub" lang="vi">Một <code>main.go</code> hoàn chỉnh Không dùng Fx (lược bỏ import và
-              <code>type Identity struct{ UserID string }</code>; đã kiểm tra biên dịch được). Rê chuột vào giải thích
+            <p class="jd-sub" lang="vi">Một <code>main.go</code> hoàn chỉnh không dùng Fx (lược bỏ import). Rê chuột vào giải thích
               để làm sáng các dòng tương ứng.</p>
           </div>
         </div>
@@ -475,17 +518,6 @@ func main() {
         responder.SendWithData(c, http.StatusOK, "operation_successful", middleware.GetPayload(c))
     })
 
-    authn := middleware.AuthenticatorFunc[*Identity](func(ctx context.Context, token string) (*Identity, error) {
-        if token != "demo" {
-            return nil, response.New(response.Unauthorized, "unauthorized_token")
-        }
-        return &amp;Identity{UserID: "42"}, nil
-    })
-    me := r.Group("/me", middleware.BearerAuth(authn, responder, middleware.BearerAuthOptions{}))
-    me.GET("", func(c *gin.Context) {
-        responder.SendWithData(c, http.StatusOK, "operation_successful", security.MustGetIdentity[*Identity](c))
-    })
-
     _ = r.Run(":" + os.Getenv("API_SERVER_PORT"))
 }
 </pre>
@@ -494,10 +526,9 @@ func main() {
           </div>
           <div class="jd-explain">
             <div class="jd-ex c-green" data-code="#code-quick" data-show="2-3"><span class="n">1</span><span
-                class="w">logger + responder</span><span class="x" lang="en">Payload, Limiter, Recover and the auth
-                guards answer through a <code>response.Responder</code>, so their messages are i18n texts in the
-                standard envelope. Any <code>*zap.Logger</code> works.</span><span class="x" lang="vi">Payload, Limiter,
-                Recover và các chốt xác thực trả lời qua <code>response.Responder</code>, nên message là text i18n trong
+                class="w">logger + responder</span><span class="x" lang="en">Payload, Limiter and Recover answer through a <code>response.Responder</code>, so their messages are i18n texts in the
+                standard envelope. Any <code>*zap.Logger</code> works.</span><span class="x" lang="vi">Payload, Limiter và
+                Recover trả lời qua <code>response.Responder</code>, nên message là text i18n trong
                 envelope chuẩn. <code>*zap.Logger</code> nào cũng được.</span></div>
             <div class="jd-ex c-green" data-code="#code-quick" data-show="7-8"><span class="n">2</span><span
                 class="w">gin.New + trusted proxies</span><span class="x" lang="en">Use <code>gin.New()</code> (no
@@ -533,25 +564,7 @@ func main() {
                 <code>map[string]any</code>, already read once by Payload. <code>ShouldBindJSON</code> still works
                 too.</span><span class="x" lang="vi">Body JSON / form dạng <code>map[string]any</code>, Payload đã đọc
                 sẵn một lần. <code>ShouldBindJSON</code> vẫn dùng bình thường.</span></div>
-            <div class="jd-ex c-green" data-code="#code-quick" data-show="35-44"><span class="n">9</span><span
-                class="w">BearerAuth on a group</span><span class="x" lang="en">Your function turns the token into an
-                identity; return a <code>*response.AppError</code> to reject. Handlers read it with
-                <code>security.MustGetIdentity</code>.</span><span class="x" lang="vi">Hàm của bạn biến token thành
-                identity; trả <code>*response.AppError</code> để từ chối. Handler đọc nó bằng
-                <code>security.MustGetIdentity</code>.</span></div>
           </div>
-        </div>
-        <div class="jd-term" data-copy="commands" style="margin-top:16px">
-          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 401 no token</span></div>
-          <pre data-hl="bash">
-$ curl -i localhost:$API_SERVER_PORT/me
-</pre>
-        </div>
-        <div class="jd-term" data-copy="commands" style="margin-top:10px">
-          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 200 identity</span></div>
-          <pre data-hl="bash">
-$ curl -i localhost:$API_SERVER_PORT/me -H 'Authorization: Bearer demo'
-</pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · post echo</span></div>
@@ -562,7 +575,8 @@ $ curl -i -X POST localhost:$API_SERVER_PORT/echo -H 'Content-Type: application/
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · json debug report</span></div>
           <pre data-hl="bash">
-$ curl -s "localhost:$API_SERVER_PORT/me?t_debug=change-me" -H 'X-Internal-Secret: change-me-secret' | jq
+$ curl -s -X POST "localhost:$API_SERVER_PORT/echo?t_debug=change-me" -H 'X-Internal-Secret: change-me-secret' \
+    -H 'Content-Type: application/json' -d '{"a":1}' | jq
 </pre>
         </div>
       </section>
@@ -589,11 +603,10 @@ $ curl -s "localhost:$API_SERVER_PORT/me?t_debug=change-me" -H 'X-Internal-Secre
             <button class="jd-tab" type="button" aria-selected="false">CORS</button>
             <button class="jd-tab" type="button" aria-selected="false">Payload</button>
             <button class="jd-tab" type="button" aria-selected="false">AccessLog</button>
+            <button class="jd-tab" type="button" aria-selected="false">Banner</button>
             <button class="jd-tab" type="button" aria-selected="false">Limiter</button>
             <button class="jd-tab" type="button" aria-selected="false">RoutePatterns</button>
             <button class="jd-tab" type="button" aria-selected="false">Recover</button>
-            <button class="jd-tab" type="button" aria-selected="false">BearerAuth</button>
-            <button class="jd-tab" type="button" aria-selected="false">RequireSecret</button>
             <button class="jd-tab" type="button" aria-selected="false">Gzip</button>
           </div>
 
@@ -733,10 +746,12 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/auth/me?t_debug=$TRACER_DEBUG_VALUE
                   <pre data-hl="go">func Trace(opts TraceOptions) gin.HandlerFunc</pre>
                 </div>
                 <ul>
-                  <li lang="en">Reuses the incoming <code>X-Trace-Id</code> request header as-is, or generates
-                    <code>uuid.NewString()</code>.</li>
-                  <li lang="vi">Dùng lại nguyên văn header request <code>X-Trace-Id</code> nếu có, không thì sinh
-                    <code>uuid.NewString()</code>.</li>
+                  <li lang="en">Reuses the incoming <code>X-Trace-Id</code> request header if it is 1–64 letters, digits,
+                    <code>-</code> or <code>_</code>; otherwise (missing, too long, other characters) generates
+                    <code>uuid.NewString()</code>. That keeps a client's value safe in logs, headers and alerts.</li>
+                  <li lang="vi">Dùng lại header request <code>X-Trace-Id</code> nếu nó dài 1–64 ký tự gồm chữ, số,
+                    <code>-</code> hoặc <code>_</code>; nếu không (thiếu, quá dài, có ký tự khác) thì sinh
+                    <code>uuid.NewString()</code>. Nhờ vậy giá trị do client gửi luôn an toàn trong log, header và cảnh báo.</li>
                   <li lang="en">Puts it in the request context with <code>logger.WithTraceID</code> (read it back with
                     <code>logger.GetTraceID(ctx)</code>) and sets the response header <code>X-Trace-Id</code>.</li>
                   <li lang="vi">Đưa nó vào request context bằng <code>logger.WithTraceID</code> (đọc lại bằng
@@ -1117,8 +1132,10 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                     </tr>
                     <tr>
                       <td>latency_ms · status · method · path · query</td>
-                      <td lang="en">Query is the raw query string (not masked).</td>
-                      <td lang="vi">Query là chuỗi query thô (không bị che).</td>
+                      <td lang="en">Query is the query string with the values of sensitive parameters replaced by
+                        <code>[MASKED]</code> (e.g. <code>?reset_token=…</code>); unchanged when none is sensitive.</td>
+                      <td lang="vi">Query là chuỗi query, với giá trị của tham số nhạy cảm thay bằng
+                        <code>[MASKED]</code> (vd. <code>?reset_token=…</code>); giữ nguyên nếu không có tham số nào nhạy cảm.</td>
                     </tr>
                     <tr>
                       <td>ip · user_agent · resp_size</td>
@@ -1134,13 +1151,15 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                     </tr>
                     <tr>
                       <td>request_payload</td>
-                      <td lang="en"><code>GetPayload(c)</code>, masked — needs Payload in the chain.</td>
-                      <td lang="vi"><code>GetPayload(c)</code>, đã che — cần có Payload trong chuỗi.</td>
+                      <td lang="en"><code>GetPayload(c)</code>, masked — needs Payload in the chain. Null for
+                        status &lt; 400 when <code>BodiesOnErrorOnly</code> is set.</td>
+                      <td lang="vi"><code>GetPayload(c)</code>, đã che — cần có Payload trong chuỗi. Là null khi
+                        status &lt; 400 và có bật <code>BodiesOnErrorOnly</code>.</td>
                     </tr>
                     <tr>
                       <td>response_payload · request_time</td>
-                      <td lang="en">Parsed / truncated body; start time.</td>
-                      <td lang="vi">Body đã parse / cắt; thời điểm bắt đầu.</td>
+                      <td lang="en">Parsed / truncated body (same <code>BodiesOnErrorOnly</code> rule); start time.</td>
+                      <td lang="vi">Body đã parse / cắt (cùng quy tắc <code>BodiesOnErrorOnly</code>); thời điểm bắt đầu.</td>
                     </tr>
                   </table>
                 </div>
@@ -1164,8 +1183,22 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                     <tr>
                       <td>SensitiveFields</td>
                       <td>[]string · <span lang="en">see below</span><span lang="vi">xem dưới</span></td>
-                      <td lang="en">Field names to mask. A non-empty list <b>replaces</b> the defaults.</td>
-                      <td lang="vi">Tên trường cần che. Danh sách không rỗng sẽ <b>thay thế</b> mặc định.</td>
+                      <td lang="en">Body field and query parameter names to mask. A non-empty list <b>replaces</b> the
+                        defaults. Any name containing password, token, secret, api key or authorization (e.g.
+                        <code>password_confirmation</code>, <code>reset_token</code>) is always masked.</td>
+                      <td lang="vi">Tên trường trong body và tên tham số query cần che. Danh sách không rỗng sẽ <b>thay
+                        thế</b> mặc định. Tên nào chứa password, token, secret, api key hoặc authorization (vd.
+                        <code>password_confirmation</code>, <code>reset_token</code>) luôn bị che.</td>
+                    </tr>
+                    <tr>
+                      <td>BodiesOnErrorOnly</td>
+                      <td>bool · false</td>
+                      <td lang="en">Log <code>request_payload</code> / <code>response_payload</code> only when status ≥ 400.
+                        Successful responses often carry personal data (emails, phone numbers); this keeps it out of the
+                        log while errors stay debuggable. Jungo turns it on.</td>
+                      <td lang="vi">Chỉ ghi <code>request_payload</code> / <code>response_payload</code> khi status ≥ 400.
+                        Response thành công thường chứa dữ liệu cá nhân (email, số điện thoại); bật lên để giữ chúng ngoài
+                        log mà lỗi vẫn debug được. Jungo bật option này.</td>
                     </tr>
                     <tr>
                       <td>MaxBodySize</td>
@@ -1193,6 +1226,173 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
             </div>
           </div>
 
+          <!-- ---------------------------------------------------- Banner -->
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-syms">
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Banner</span><span
+                    class="jd-pill">banner.go</span></div>
+                <div class="jd-term">
+                  <pre
+                    data-hl="go">func Banner(opts BannerOptions, logger *zap.Logger, responder response.Responder, notifier notification.Notifier) gin.HandlerFunc</pre>
+                </div>
+                <p lang="en">Bans clients that probe the API for weak spots. Limiter counts <b>how many</b> requests a
+                  client sends; Banner looks at <b>what</b> they ask for, so it also catches a slow scanner that never
+                  reaches the rate limit. The client is <code>security.ClientKey(c.ClientIP())</code>, like Limiter.</p>
+                <p lang="vi">Ban client đang dò tìm lỗ hổng của API. Limiter đếm <b>bao nhiêu</b> request một client
+                  gửi; Banner nhìn vào <b>cái gì</b> họ gọi, nên bắt được cả kẻ quét chậm không bao giờ chạm ngưỡng rate
+                  limit. Client là <code>security.ClientKey(c.ClientIP())</code>, giống Limiter.</p>
+                <ul>
+                  <li lang="en">Banned → <b>403</b> <code>FORBIDDEN</code> / <code>access_denied</code> "Access denied
+                    due to suspicious activity or IP restriction" with <code>Retry-After</code> (seconds left), then
+                    abort.</li>
+                  <li lang="vi">Đang bị ban → <b>403</b> <code>FORBIDDEN</code> / <code>access_denied</code> "Access
+                    denied due to suspicious activity or IP restriction" kèm <code>Retry-After</code> (số giây còn
+                    lại), rồi abort.</li>
+                  <li lang="en"><b>Instant ban</b> on the first request when <code>ScannerAgents</code> match the
+                    User-Agent, <code>AttackPatterns</code> the URL-decoded query, or — only for a request that matched
+                    no route — <code>TrapPaths</code> or <code>AttackPatterns</code> the path. The defaults hold only
+                    signs no real client sends; anything vaguer is left to strikes, since an unknown path still
+                    answers 404.</li>
+                  <li lang="vi"><b>Ban ngay</b> từ request đầu tiên khi <code>ScannerAgents</code> khớp với User-Agent,
+                    <code>AttackPatterns</code> khớp với query đã URL-decode, hoặc — chỉ với request không trúng route
+                    nào — <code>TrapPaths</code> hay <code>AttackPatterns</code> khớp với path. Mặc định chỉ chứa dấu
+                    hiệu mà client thật không bao giờ gửi; cái gì mơ hồ hơn để bộ đếm lỗi lo, vì đường dẫn lạ vẫn trả
+                    404.</li>
+                  <li lang="en"><b>Speed</b>: patterns see lowercased input and each starts with a literal, which Go's
+                    <code>regexp</code> finds with a plain substring search before running its matcher. One big
+                    alternation would cost ~20 µs per string; this list costs ~1–2 µs per request. Real routes skip
+                    the path checks entirely. Keep custom patterns starting with a literal too.</li>
+                  <li lang="vi"><b>Tốc độ</b>: pattern nhận chuỗi đã viết thường và mỗi pattern bắt đầu bằng chữ cố
+                    định, để <code>regexp</code> của Go tìm chuỗi con nhanh trước khi chạy bộ khớp. Một regex lớn gồm
+                    nhiều nhánh <code>|</code> tốn ~20 µs mỗi chuỗi; danh sách này chỉ tốn ~1–2 µs mỗi request. Route
+                    thật bỏ qua hẳn phần kiểm tra path. Pattern tự thêm cũng nên bắt đầu bằng chữ cố định.</li>
+                  <li lang="en"><b>Strikes</b>: after the handler, a status in <code>StrikeStatuses</code> adds a
+                    strike; the <code>MaxStrikes</code>-th strike within <code>StrikeWindow</code> bans. The request
+                    that hits the limit still gets its normal answer; the ban applies from the next one.</li>
+                  <li lang="vi"><b>Lỗi</b>: sau handler, status nằm trong <code>StrikeStatuses</code> được tính một
+                    lỗi; lỗi thứ <code>MaxStrikes</code> trong <code>StrikeWindow</code> sẽ ban. Request chạm ngưỡng
+                    vẫn nhận response bình thường; lệnh ban có hiệu lực từ request kế tiếp.</li>
+                  <li lang="en"><b>Escalation</b>: the 1st ban lasts <code>BanDurations[0]</code>, the 2nd
+                    <code>BanDurations[1]</code>, … the last one repeats. The ban count is forgotten twice the longest
+                    duration after the first ban.</li>
+                  <li lang="vi"><b>Tăng dần</b>: lần ban thứ 1 kéo dài <code>BanDurations[0]</code>, lần 2
+                    <code>BanDurations[1]</code>, … mục cuối được lặp lại. Số lần ban được quên sau gấp đôi thời
+                    lượng dài nhất kể từ lần ban đầu.</li>
+                  <li lang="en">Once per ban: <code>logger.Warn("middleware: client banned")</code> with
+                    <code>ip</code>, <code>blocked</code> (the key), <code>reason</code>, <code>path</code>,
+                    <code>duration</code>, and — if <code>notifier != nil</code> — an async HTML alert "⛔ Client
+                    Banned". Requests refused during a ban are not logged by Banner (AccessLog still logs them).</li>
+                  <li lang="vi">Mỗi lần ban một lần: <code>logger.Warn("middleware: client banned")</code> với
+                    <code>ip</code>, <code>blocked</code> (key), <code>reason</code>, <code>path</code>,
+                    <code>duration</code>, và — nếu <code>notifier != nil</code> — một cảnh báo HTML bất đồng bộ "⛔
+                    Client Banned". Request bị từ chối trong lúc ban không được Banner ghi log (AccessLog vẫn ghi).</li>
+                  <li lang="en">A cache error never blocks anyone: a failed strike count is logged and the request
+                    goes on.</li>
+                  <li lang="vi">Lỗi cache không bao giờ chặn nhầm ai: đếm lỗi thất bại thì ghi log và request đi tiếp.
+                  </li>
+                </ul>
+              </div>
+              <div class="jd-sym c-purple">
+                <div class="jd-sym-head"><span class="jd-kind">type</span><span
+                    class="jd-sym-name">BannerOptions</span></div>
+                <div class="jd-tablewrap">
+                  <table class="jd-params">
+                    <tr>
+                      <th>field</th>
+                      <th>type · default</th>
+                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
+                    </tr>
+                    <tr>
+                      <td>Cache<span class="req">require</span></td>
+                      <td>cache.Cache[int64] · —</td>
+                      <td lang="en">Where strikes and bans live. Redis shares bans across instances; a memory cache works
+                        per instance; a no-op cache disables banning (trap paths still get 403).</td>
+                      <td lang="vi">Nơi lưu lỗi và lệnh ban. Redis dùng chung lệnh ban giữa các instance; memory cache
+                        hoạt động theo từng instance; cache no-op tắt việc ban (đường dẫn bẫy vẫn nhận 403).</td>
+                    </tr>
+                    <tr>
+                      <td>MaxStrikes<span class="req">require</span></td>
+                      <td>int64 · —</td>
+                      <td lang="en">Strikes within <code>StrikeWindow</code> that ban.</td>
+                      <td lang="vi">Số lỗi trong <code>StrikeWindow</code> thì bị ban.</td>
+                    </tr>
+                    <tr>
+                      <td>StrikeWindow<span class="req">require</span></td>
+                      <td>time.Duration · —</td>
+                      <td lang="en">Fixed window strikes are counted in.</td>
+                      <td lang="vi">Cửa sổ cố định để đếm lỗi.</td>
+                    </tr>
+                    <tr>
+                      <td>BanDurations<span class="req">require</span></td>
+                      <td>[]time.Duration · —</td>
+                      <td lang="en">Length of the 1st, 2nd, … ban; the last repeats.</td>
+                      <td lang="vi">Thời lượng lần ban thứ 1, 2, …; mục cuối được lặp lại.</td>
+                    </tr>
+                    <tr>
+                      <td>TrapPaths</td>
+                      <td>[]*regexp.Regexp · DefaultTrapPaths</td>
+                      <td lang="en">Paths (of requests that matched no route) that ban at once, at any depth:
+                        dotfiles (<code>/.env.example</code>, <code>/api/.git/config</code>, <code>/.aws</code>,
+                        <code>/.htaccess</code>…), <code>*.env</code> files (<code>/production.env</code>,
+                        <code>/app.env.bak</code>), extensions a Go API never serves (<code>.php</code>,
+                        <code>.asp(x)</code>, <code>.jsp</code>, <code>.cgi</code>, <code>.sql</code>, <code>.bak</code>),
+                        <code>/wp-admin</code>, <code>/phpmyadmin</code>, <code>/cgi-bin</code>, <code>/actuator</code>…,
+                        and <code>../</code> or <code>/etc/passwd</code>. Add your own with
+                        <code>append(DefaultTrapPaths, regexp.MustCompile(`/my-trap`))</code>; turn the check off with
+                        <code>[]*regexp.Regexp{}</code>.</td>
+                      <td lang="vi">Path (của request không trúng route nào) bị ban ngay, ở mọi cấp thư mục:
+                        dotfile (<code>/.env.example</code>, <code>/api/.git/config</code>, <code>/.aws</code>,
+                        <code>/.htaccess</code>…), file <code>*.env</code> (<code>/production.env</code>,
+                        <code>/app.env.bak</code>), đuôi file mà API Go không bao giờ phục vụ (<code>.php</code>,
+                        <code>.asp(x)</code>, <code>.jsp</code>, <code>.cgi</code>, <code>.sql</code>, <code>.bak</code>),
+                        <code>/wp-admin</code>, <code>/phpmyadmin</code>, <code>/cgi-bin</code>, <code>/actuator</code>…,
+                        và <code>../</code> hoặc <code>/etc/passwd</code>. Thêm bẫy riêng bằng
+                        <code>append(DefaultTrapPaths, regexp.MustCompile(`/my-trap`))</code>; tắt phần kiểm tra bằng
+                        <code>[]*regexp.Regexp{}</code>.</td>
+                    </tr>
+                    <tr>
+                      <td>AttackPatterns</td>
+                      <td>[]*regexp.Regexp · DefaultAttackPatterns</td>
+                      <td lang="en">Injection payloads in the URL-decoded query (and the path, when it matched no route): Log4Shell
+                        (<code>${jndi:</code>), XSS (<code>&lt;script</code>, <code>javascript:</code>), SQL injection
+                        (<code>UNION SELECT</code>, <code>SLEEP(5)</code>, <code>information_schema</code>), command
+                        injection (<code>;wget </code>, <code>$(curl </code>), <code>php://</code>-style wrappers, SSRF to
+                        cloud metadata (<code>169.254.169.254</code>) and NUL bytes. Request bodies are not checked.</td>
+                      <td lang="vi">Payload tấn công trong query đã URL-decode (và path, khi không trúng route nào): Log4Shell
+                        (<code>${jndi:</code>), XSS (<code>&lt;script</code>, <code>javascript:</code>), SQL injection
+                        (<code>UNION SELECT</code>, <code>SLEEP(5)</code>, <code>information_schema</code>), chèn lệnh
+                        (<code>;wget </code>, <code>$(curl </code>), wrapper kiểu <code>php://</code>, SSRF tới metadata
+                        cloud (<code>169.254.169.254</code>) và byte NUL. Không kiểm tra body.</td>
+                    </tr>
+                    <tr>
+                      <td>ScannerAgents</td>
+                      <td>[]*regexp.Regexp · DefaultScannerAgents</td>
+                      <td lang="en">User-Agents of scanners and fuzzers: sqlmap, Nikto, Nuclei, Nmap, masscan, zgrab,
+                        Acunetix, WPScan, gobuster, ffuf, dirsearch, Burp, … Easy to fake, but many scans keep the tool's
+                        default. Browsers, curl, okhttp, Go and Python HTTP clients are not matched.</td>
+                      <td lang="vi">User-Agent của tool quét và fuzzer: sqlmap, Nikto, Nuclei, Nmap, masscan, zgrab,
+                        Acunetix, WPScan, gobuster, ffuf, dirsearch, Burp, … Dễ giả mạo, nhưng nhiều lần quét vẫn giữ UA
+                        mặc định của tool. Trình duyệt, curl, okhttp, HTTP client của Go và Python không bị khớp.</td>
+                    </tr>
+                    <tr>
+                      <td>StrikeStatuses</td>
+                      <td>[]int · DefaultStrikeStatuses</td>
+                      <td lang="en">Statuses that count as a strike: 401, 403, 404, 405, 429.</td>
+                      <td lang="vi">Status được tính là lỗi: 401, 403, 404, 405, 429.</td>
+                    </tr>
+                    <tr>
+                      <td>IPWhitelist</td>
+                      <td>[]string · nil</td>
+                      <td lang="en">Exact IPs that are never banned.</td>
+                      <td lang="vi">IP chính xác không bao giờ bị ban.</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- ---------------------------------------------------- Limiter -->
           <div class="jd-tabpanel" hidden>
             <div class="jd-syms">
@@ -1203,17 +1403,21 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                   <pre
                     data-hl="go">func Limiter(opts LimiterOptions, logger *zap.Logger, responder response.Responder, notifier notification.Notifier) gin.HandlerFunc</pre>
                 </div>
-                <p lang="en">A token bucket (<code>golang.org/x/time/rate</code>) per <code>c.ClientIP()</code>, kept in
-                  memory. Calling <code>Limiter</code> starts two background goroutines (idle-client sweep, log-cache
+                <p lang="en">A token bucket (<code>golang.org/x/time/rate</code>) per client, kept in memory. The client
+                  is <code>security.ClientKey(c.ClientIP())</code>: an IPv4 address, or an IPv6 address's whole
+                  <code>/64</code> block, so rotating addresses inside it does not get a fresh bucket. The whitelist
+                  is still checked against the exact IP. Calling <code>Limiter</code> starts two background goroutines (idle-client sweep, log-cache
                   sweep).</p>
-                <p lang="vi">Một token bucket (<code>golang.org/x/time/rate</code>) cho mỗi <code>c.ClientIP()</code>,
-                  lưu trong bộ nhớ. Gọi <code>Limiter</code> sẽ khởi động hai goroutine nền (dọn client không hoạt động,
+                <p lang="vi">Một token bucket (<code>golang.org/x/time/rate</code>) cho mỗi client, lưu trong bộ nhớ.
+                  Client là <code>security.ClientKey(c.ClientIP())</code>: một địa chỉ IPv4, hoặc cả khối
+                  <code>/64</code> của địa chỉ IPv6, nên đổi địa chỉ trong khối đó không được bucket mới. Whitelist
+                  vẫn so với đúng IP gốc. Gọi <code>Limiter</code> sẽ khởi động hai goroutine nền (dọn client không hoạt động,
                   dọn log cache).</p>
                 <ul>
-                  <li lang="en">Bypass: IP in <code>IPWhitelist</code>, or <code>User-Agent</code> starting with
-                    <code>PostmanRuntime/</code> or <code>GoHttpTest/</code>.</li>
-                  <li lang="vi">Được bỏ qua: IP có trong <code>IPWhitelist</code>, hoặc <code>User-Agent</code> bắt đầu
-                    bằng <code>PostmanRuntime/</code> hay <code>GoHttpTest/</code>.</li>
+                  <li lang="en">Bypass: only an IP in <code>IPWhitelist</code>. Nothing the client sends (such as
+                    <code>User-Agent</code>) skips the limit.</li>
+                  <li lang="vi">Được bỏ qua: chỉ IP có trong <code>IPWhitelist</code>. Không thứ gì client tự gửi (như
+                    <code>User-Agent</code>) giúp bỏ qua giới hạn.</li>
                   <li lang="en">Bucket empty → <b>429</b> <code>TOO_MANY_REQUESTS</code> /
                     <code>too_many_requests</code> "Too many requests. Please try again later.", then abort.</li>
                   <li lang="vi">Hết token → <b>429</b> <code>TOO_MANY_REQUESTS</code> /
@@ -1337,11 +1541,11 @@ func (s *ClientStore) StartCleanup()
                     Laravel.</li>
                   <li lang="en">Global, so it runs before group middleware and the handler:
                     <code>GET /api/v1/users/abc</code> → 404, not 401 (no token) or 422 (from
-                    <code>httpx.ParseUUID</code>). Keep <code>httpx.ParseUUID</code> in handlers — it gives you a typed
+                    <code>validation.ParseUUID</code>). Keep <code>validation.ParseUUID</code> in handlers — it gives you a typed
                     <code>uuid.UUID</code> and is a second line of defence.</li>
                   <li lang="vi">Là middleware global nên chạy trước middleware của group và handler:
                     <code>GET /api/v1/users/abc</code> → 404, không phải 401 (thiếu token) hay 422 (từ
-                    <code>httpx.ParseUUID</code>). Vẫn giữ <code>httpx.ParseUUID</code> trong handler — nó cho
+                    <code>validation.ParseUUID</code>). Vẫn giữ <code>validation.ParseUUID</code> trong handler — nó cho
                     <code>uuid.UUID</code> có kiểu và là lớp phòng thủ thứ hai.</li>
                   <li lang="en">It runs after route matching, so it cannot make gin choose between
                     <code>/posts/:id</code> and <code>/posts/:slug</code> (gin rejects such duplicate routes anyway).</li>
@@ -1464,173 +1668,6 @@ $ curl -i localhost:$API_SERVER_PORT/api/v1/users/abc
             </div>
           </div>
 
-          <!-- ---------------------------------------------------- BearerAuth -->
-          <div class="jd-tabpanel" hidden>
-            <div class="jd-syms">
-              <div class="jd-sym c-purple">
-                <div class="jd-sym-head"><span class="jd-kind">func</span><span
-                    class="jd-sym-name">BearerAuth[T]</span><span class="jd-pill">auth.go</span></div>
-                <div class="jd-term">
-                  <pre
-                    data-hl="go">func BearerAuth[T any](a Authenticator[T], responder response.Responder, opts BearerAuthOptions) gin.HandlerFunc</pre>
-                </div>
-                <ul>
-                  <li lang="en">No usable token (see <code>BearerToken</code>) → <b>401</b> with
-                    <code>MessageKey</code>, default <code>unauthorized_token</code> "Authentication token is invalid or
-                    expired", with <code>"code": "UNAUTHORIZED"</code>.
-                  </li>
-                  <li lang="vi">Không có token dùng được (xem <code>BearerToken</code>) → <b>401</b> với
-                    <code>MessageKey</code>, mặc định <code>unauthorized_token</code> "Authentication token is invalid
-                    or expired", kèm <code>"code": "UNAUTHORIZED"</code>.
-                  </li>
-                  <li lang="en"><code>a.Authenticate(c.Request.Context(), token)</code> returns an error →
-                    <code>responder.Error(c, err)</code>: a <code>*response.AppError</code> gives its mapped status,
-                    <code>"code"</code> and message; any other error gives <b>500</b> "Internal Server Error". Then
-                    abort.</li>
-                  <li lang="vi"><code>a.Authenticate(c.Request.Context(), token)</code> trả lỗi →
-                    <code>responder.Error(c, err)</code>: <code>*response.AppError</code> cho status tương ứng,
-                    <code>"code"</code> và message; lỗi khác cho <b>500</b> "Internal Server Error". Rồi abort.</li>
-                  <li lang="en">Success → <code>security.SetIdentity(c, identity)</code> (Gin context <b>and</b> request
-                    context), then <code>c.Next()</code>. Read it with <code>security.MustGetIdentity[T](c)</code> or
-                    <code>security.GetIdentity[T](ctx)</code> — see <a href="security.html">security</a>.</li>
-                  <li lang="vi">Thành công → <code>security.SetIdentity(c, identity)</code> (cả Gin context <b>và</b>
-                    request context), rồi <code>c.Next()</code>. Đọc bằng <code>security.MustGetIdentity[T](c)</code>
-                    hoặc <code>security.GetIdentity[T](ctx)</code> — xem <a href="security.html">security</a>.</li>
-                </ul>
-              </div>
-              <div class="jd-sym c-purple">
-                <div class="jd-sym-head"><span class="jd-kind">type</span><span
-                    class="jd-sym-name">BearerAuthOptions</span></div>
-                <div class="jd-tablewrap">
-                  <table class="jd-params">
-                    <tr>
-                      <th>field</th>
-                      <th>type · default</th>
-                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-                    </tr>
-                    <tr>
-                      <td>MessageKey</td>
-                      <td>string · "unauthorized_token"</td>
-                      <td lang="en">i18n key for a <b>missing / malformed</b> header only.</td>
-                      <td lang="vi">Key i18n chỉ dành cho header <b>thiếu / sai dạng</b>.</td>
-                    </tr>
-                  </table>
-                </div>
-              </div>
-              <div class="jd-sym c-blue">
-                <div class="jd-sym-head"><span class="jd-kind">interface</span><span
-                    class="jd-sym-name">Authenticator[T]</span><span class="jd-kind">func type</span><span
-                    class="jd-sym-name">AuthenticatorFunc[T]</span></div>
-                <div class="jd-term">
-                  <pre data-hl="go">
-type Authenticator[T any] interface {
-    Authenticate(ctx context.Context, token string) (T, error)
-}
-
-type AuthenticatorFunc[T any] func(ctx context.Context, token string) (T, error)
-
-func (f AuthenticatorFunc[T]) Authenticate(ctx context.Context, token string) (T, error)
-</pre>
-                </div>
-                <p lang="en">Return a <code>*response.AppError</code> (e.g.
-                  <code>response.New(response.Unauthorized, "unauthorized_token")</code>) for token problems; anything
-                  else becomes 500. <code>AuthenticatorFunc</code> turns a function or method value into an
-                  <code>Authenticator</code>.</p>
-                <p lang="vi">Trả <code>*response.AppError</code> (vd.
-                  <code>response.New(response.Unauthorized, "unauthorized_token")</code>) cho lỗi token; lỗi khác thành
-                  500. <code>AuthenticatorFunc</code> biến một hàm hoặc method value thành <code>Authenticator</code>.
-                </p>
-              </div>
-              <div class="jd-sym c-blue">
-                <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">BearerToken</span>
-                </div>
-                <div class="jd-term">
-                  <pre data-hl="go">func BearerToken(c *gin.Context) (string, bool)</pre>
-                </div>
-                <p lang="en">Reads <code>Authorization</code>. The <code>"Bearer "</code> prefix is case-insensitive
-                  (<code>bearer x</code> works); the rest is trimmed. Returns <code>false</code> for a missing header,
-                  another scheme, or an empty token.</p>
-                <p lang="vi">Đọc <code>Authorization</code>. Tiền tố <code>"Bearer "</code> không phân biệt hoa thường
-                  (<code>bearer x</code> vẫn được); phần còn lại được trim. Trả <code>false</code> khi thiếu header,
-                  scheme khác, hoặc token rỗng.</p>
-              </div>
-            </div>
-            <p class="jd-hint" style="margin-top:14px" lang="en">Try it — log in, keep the access token, send it as
-              <code>Authorization: Bearer …</code>:</p>
-            <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — đăng nhập, giữ access token, gửi nó qua
-              <code>Authorization: Bearer …</code>:</p>
-            <div class="jd-term" data-copy="commands">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 1 · lấy token</span></div>
-              <pre data-hl="bash">
-$ TOKEN=$(curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login -H 'Content-Type: application/json' \
-    -d '{"email":"admin@example.com","password":"secret"}' | jq -r .data.access_token)
-</pre>
-            </div>
-            <div class="jd-term" data-copy="commands" style="margin-top:10px">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 2 · 401 no token</span></div>
-              <pre data-hl="bash">
-$ curl -i localhost:$API_SERVER_PORT/api/v1/auth/me
-</pre>
-            </div>
-            <div class="jd-term" data-copy="commands" style="margin-top:10px">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 3 · 401 token sai</span></div>
-              <pre data-hl="bash">
-$ curl -i localhost:$API_SERVER_PORT/api/v1/auth/me -H 'Authorization: Bearer nope'
-</pre>
-            </div>
-            <div class="jd-term" data-copy="commands" style="margin-top:10px">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 4 · 200 token hợp lệ</span></div>
-              <pre data-hl="bash">
-$ curl -i localhost:$API_SERVER_PORT/api/v1/auth/me -H "Authorization: Bearer $TOKEN"
-</pre>
-            </div>
-          </div>
-
-          <!-- ---------------------------------------------------- RequireSecret -->
-          <div class="jd-tabpanel" hidden>
-            <div class="jd-syms">
-              <div class="jd-sym c-purple">
-                <div class="jd-sym-head"><span class="jd-kind">func</span><span
-                    class="jd-sym-name">RequireSecret</span><span class="jd-pill">auth.go</span></div>
-                <div class="jd-term">
-                  <pre
-                    data-hl="go">func RequireSecret(header, secret string, responder response.Responder) gin.HandlerFunc</pre>
-                </div>
-                <ul>
-                  <li lang="en">Compares <code>c.GetHeader(header)</code> with <code>secret</code> using
-                    <code>security.SecureEqual</code> (constant time).</li>
-                  <li lang="vi">So sánh <code>c.GetHeader(header)</code> với <code>secret</code> bằng
-                    <code>security.SecureEqual</code> (thời gian hằng định).</li>
-                  <li lang="en">Mismatch, missing header, or <b>empty <code>secret</code></b> (fails closed) →
-                    <b>403</b> <code>forbidden_internal_access</code> "Forbidden internal system access", then abort.
-                  </li>
-                  <li lang="vi">Không khớp, thiếu header, hoặc <b><code>secret</code> rỗng</b> (mặc định đóng) →
-                    <b>403</b> <code>forbidden_internal_access</code> "Forbidden internal system access", rồi abort.
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <p class="jd-hint" style="margin-top:14px" lang="en">Try it — the secret goes in
-              <code>X-Internal-Secret</code> and must equal <code>AUTH_INTERNAL_SECRET</code>:</p>
-            <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — secret nằm trong
-              <code>X-Internal-Secret</code> và phải bằng <code>AUTH_INTERNAL_SECRET</code>:</p>
-            <div class="jd-term" data-copy="commands">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 403 thiếu secret</span></div>
-              <pre data-hl="bash">
-$ curl -i -X POST localhost:$API_SERVER_PORT/api/internal/auth/token-details \
-    -H 'Content-Type: application/json' -d "{\"token\":\"$TOKEN\"}"
-</pre>
-            </div>
-            <div class="jd-term" data-copy="commands" style="margin-top:10px">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 200 có secret</span></div>
-              <pre data-hl="bash">
-$ curl -i -X POST localhost:$API_SERVER_PORT/api/internal/auth/token-details \
-    -H "X-Internal-Secret: $AUTH_INTERNAL_SECRET" \
-    -H 'Content-Type: application/json' -d "{\"token\":\"$TOKEN\"}"
-</pre>
-            </div>
-          </div>
-
           <!-- ---------------------------------------------------- Gzip -->
           <div class="jd-tabpanel" hidden>
             <div class="jd-syms">
@@ -1727,12 +1764,12 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
             nào</span></h3>
         <div class="jd-grid-2">
           <div class="jd-term">
-            <div class="jd-term-bar"><i></i><i></i><i></i><span>401 · BearerAuth, no token</span></div>
+            <div class="jd-term-bar"><i></i><i></i><i></i><span>429 · Limiter</span></div>
             <pre data-hl="json">
 {
   "status": "error",
-  "code": "UNAUTHORIZED",
-  "message": "Authentication token is invalid or expired",
+  "code": "TOO_MANY_REQUESTS",
+  "message": "Too many requests. Please try again later.",
   "api_info": {
     "trace_id": "…",
     "timestamp": "…",
@@ -1752,20 +1789,6 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
                   <th>key</th>
                   <th>message</th>
                   <th><span lang="en">from</span><span lang="vi">từ</span></th>
-                </tr>
-                <tr>
-                  <td>401</td>
-                  <td>UNAUTHORIZED</td>
-                  <td>unauthorized_token</td>
-                  <td>Authentication token is invalid or expired</td>
-                  <td>BearerAuth</td>
-                </tr>
-                <tr>
-                  <td>403</td>
-                  <td>FORBIDDEN</td>
-                  <td>forbidden_internal_access</td>
-                  <td>Forbidden internal system access</td>
-                  <td>RequireSecret</td>
                 </tr>
                 <tr>
                   <td>404</td>
@@ -1796,14 +1819,6 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
                   <td>Recover</td>
                 </tr>
                 <tr>
-                  <td>500</td>
-                  <td>INTERNAL_SERVER_ERROR</td>
-                  <td>internal_server_error</td>
-                  <td>Internal Server Error</td>
-                  <td><span lang="en">BearerAuth (non-AppError)</span><span lang="vi">BearerAuth (lỗi không phải
-                      AppError)</span></td>
-                </tr>
-                <tr>
                   <td>204</td>
                   <td>—</td>
                   <td>—</td>
@@ -1814,11 +1829,11 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
             </div>
             <p class="jd-sub" lang="en">Every error carries a <code>"code"</code>: <code>responder.Error</code> takes it from the
               <code>AppError</code>, and <code>responder.Send</code> derives it from the HTTP status (e.g.
-              <code>RequireSecret</code>'s 403 → <code>FORBIDDEN</code>). The response envelope is described on <a
+              Limiter's 429 → <code>TOO_MANY_REQUESTS</code>). The response envelope is described on <a
                 href="response.html">response</a>.</p>
             <p class="jd-sub" lang="vi">Mọi lỗi đều có <code>"code"</code>: <code>responder.Error</code> lấy từ
-              <code>AppError</code>, còn <code>responder.Send</code> suy ra từ HTTP status (vd. 403 của
-              <code>RequireSecret</code> → <code>FORBIDDEN</code>). Envelope response được mô
+              <code>AppError</code>, còn <code>responder.Send</code> suy ra từ HTTP status (vd. 429 của
+              Limiter → <code>TOO_MANY_REQUESTS</code>). Envelope response được mô
               tả ở <a href="response.html">response</a>.</p>
           </div>
         </div>
@@ -1842,49 +1857,38 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
             </tr>
             <tr>
               <td>router/router.go</td>
-              <td lang="en"><code>registerGlobalMiddlewares</code>: the 10-step chain above; RoutePatterns gets the <code>uuid</code> / <code>id</code> /
+              <td lang="en"><code>registerGlobalMiddlewares</code>: the 11-step chain above; Banner (left out when
+                <code>BANNER_ENABLED=false</code>) gets a Redis cache when <code>CACHE_REDIS_ENABLE=true</code>,
+                otherwise memory, and Limiter's whitelist; RoutePatterns gets the <code>uuid</code> / <code>id</code> /
                 <code>slug</code> rules. HTTPLogger is the zap logger
-                named <code>http</code>, Limiter gets the one named <code>limiter</code>; Notifier is
+                named <code>http</code>, Banner and Limiter get the one named <code>limiter</code>; Notifier is
                 <code>optional:"true"</code>.</td>
-              <td lang="vi"><code>registerGlobalMiddlewares</code>: chuỗi 10 bước ở trên; RoutePatterns nhận rule <code>uuid</code> / <code>id</code> /
+              <td lang="vi"><code>registerGlobalMiddlewares</code>: chuỗi 11 bước ở trên; Banner (bị bỏ khi
+                <code>BANNER_ENABLED=false</code>) dùng cache Redis khi <code>CACHE_REDIS_ENABLE=true</code>, không thì
+                memory, và dùng chung whitelist của Limiter; RoutePatterns nhận rule <code>uuid</code> / <code>id</code> /
                 <code>slug</code>. HTTPLogger là zap logger tên
-                <code>http</code>, Limiter nhận logger tên <code>limiter</code>; Notifier là
+                <code>http</code>, Banner và Limiter nhận logger tên <code>limiter</code>; Notifier là
                 <code>optional:"true"</code>.</td>
             </tr>
             <tr>
               <td>app/fx.go</td>
               <td lang="en"><code>provideGin</code>: <code>gin.New()</code> +
-                <code>SetTrustedProxies(SECURITY_TRUSTED_PROXIES)</code>, or <code>nil</code> when unset — what Limiter
-                and AccessLog see as the client IP.</td>
+                <code>SetTrustedProxies(SECURITY_TRUSTED_PROXIES)</code>, or <code>nil</code> when unset — what Banner,
+                Limiter and AccessLog see as the client IP.</td>
               <td lang="vi"><code>provideGin</code>: <code>gin.New()</code> +
                 <code>SetTrustedProxies(SECURITY_TRUSTED_PROXIES)</code>, hoặc <code>nil</code> khi không đặt — quyết
-                định IP client mà Limiter và AccessLog nhìn thấy.</td>
+                định IP client mà Banner, Limiter và AccessLog nhìn thấy.</td>
             </tr>
             <tr>
-              <td>features/auth/module.go</td>
-              <td lang="en"><code>newAccessAuthenticator</code> wraps <code>AuthService.AuthenticateAccess</code> in
-                <code>AuthenticatorFunc[*domain.Identity]</code>.</td>
-              <td lang="vi"><code>newAccessAuthenticator</code> bọc <code>AuthService.AuthenticateAccess</code> trong
-                <code>AuthenticatorFunc[*domain.Identity]</code>.</td>
-            </tr>
-            <tr>
-              <td>features/auth/router/v1/auth_router.go</td>
-              <td lang="en">BearerAuth on <code>/api/v1/auth/logout</code>, <code>/logout-all</code>, <code>/me</code>,
-                <code>/sessions</code>; login and refresh stay public.</td>
-              <td lang="vi">BearerAuth cho <code>/api/v1/auth/logout</code>, <code>/logout-all</code>, <code>/me</code>,
-                <code>/sessions</code>; login và refresh vẫn công khai.</td>
-            </tr>
-            <tr>
-              <td>features/user/router/v1/user_router.go</td>
-              <td lang="en">BearerAuth on every <code>/api/v1/users</code> route.</td>
-              <td lang="vi">BearerAuth cho mọi route <code>/api/v1/users</code>.</td>
-            </tr>
-            <tr>
-              <td>features/auth/router/private/auth_router.go</td>
-              <td lang="en">RequireSecret(<code>X-Internal-Secret</code>, <code>AUTH_INTERNAL_SECRET</code>) on
-                <code>/api/internal/auth/*</code> — all 403 while the secret is unset.</td>
-              <td lang="vi">RequireSecret(<code>X-Internal-Secret</code>, <code>AUTH_INTERNAL_SECRET</code>) cho
-                <code>/api/internal/auth/*</code> — luôn 403 khi chưa đặt secret.</td>
+              <td>middleware/</td>
+              <td lang="en">The app's own middleware, used per route group: <code>BearerAuth</code> on <code>/users</code> and
+                the protected <code>/auth</code> routes, <code>RequireSecret</code> on <code>/api/internal/auth/*</code>
+                (all 403 while <code>AUTH_INTERNAL_SECRET</code> is unset), and the permission <code>Guard</code> on every
+                <code>/api/v1</code> route. See <a href="../jungo/access.html">permissions &amp; roles</a>.</td>
+              <td lang="vi">Middleware riêng của app, dùng theo từng route group: <code>BearerAuth</code> cho <code>/users</code>
+                và các route <code>/auth</code> cần đăng nhập, <code>RequireSecret</code> cho <code>/api/internal/auth/*</code>
+                (luôn 403 khi chưa đặt <code>AUTH_INTERNAL_SECRET</code>), và <code>Guard</code> phân quyền cho mọi route
+                <code>/api/v1</code>. Xem <a href="../jungo/access.html">phân quyền</a>.</td>
             </tr>
             <tr>
               <td>config/config.go</td>
@@ -1908,7 +1912,7 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
             </tr>
             <tr>
               <td>API_VERSION<br>API_COMMIT<br>API_ENVIRONMENT</td>
-              <td>v0.1.0 · unknown · development</td>
+              <td>v0.1.0 · unknown · production</td>
               <td>TraceOptions</td>
             </tr>
             <tr>
@@ -1928,7 +1932,7 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
             </tr>
             <tr>
               <td>CORS_ALLOW_CREDENTIALS<br>CORS_MAX_AGE</td>
-              <td>true · 86400</td>
+              <td>false · 86400</td>
               <td>CORSOptions</td>
             </tr>
             <tr>
@@ -1954,14 +1958,19 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
               <td>LimiterOptions</td>
             </tr>
             <tr>
+              <td>BANNER_ENABLED<br>BANNER_MAX_STRIKES<br>BANNER_STRIKE_WINDOW<br>BANNER_BAN_DURATIONS</td>
+              <td>true · 30 · 1m · 15m,1h,24h</td>
+              <td>BannerOptions</td>
+            </tr>
+            <tr>
               <td>LIMITER_IP_WHITELIST</td>
-              <td>127.0.0.1,::1</td>
+              <td>—</td>
               <td>LimiterOptions.IPWhitelist</td>
             </tr>
             <tr>
               <td>AUTH_INTERNAL_SECRET</td>
               <td>—</td>
-              <td>RequireSecret, TracerDebug (<code>X-Internal-Secret</code>)</td>
+              <td>TracerDebug (<code>X-Internal-Secret</code>); <span lang="en">also the app's</span><span lang="vi">và cả</span> RequireSecret</td>
             </tr>
           </table>
         </div>
@@ -2026,25 +2035,25 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
           <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Limiter keys on
               ClientIP()</span><span class="x" lang="en">Behind a load balancer without
               <code>SECURITY_TRUSTED_PROXIES</code>, every client has the balancer's IP and shares one bucket. Behind a
-              reverse proxy on the same host, every request comes from <code>127.0.0.1</code> — which is in Jungo's
-              default whitelist, so <b>nothing is limited</b>. Set trusted proxies to your proxy addresses.</span><span
+              reverse proxy on the same host, every request comes from <code>127.0.0.1</code> — and if you add it to
+              <code>LIMITER_IP_WHITELIST</code> (empty by default), <b>nothing is limited</b>. Set trusted proxies to
+              your proxy addresses.</span><span
               class="x" lang="vi">Đứng sau load balancer mà không có <code>SECURITY_TRUSTED_PROXIES</code>, mọi client
               mang IP của balancer và dùng chung một bucket. Đứng sau reverse proxy cùng máy, mọi request đến từ
-              <code>127.0.0.1</code> — nằm trong whitelist mặc định của Jungo, nên <b>không có gì bị giới hạn</b>. Hãy
-              đặt trusted proxies là địa chỉ proxy của bạn.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Limiter: User-Agent
-              bypass, per process</span><span class="x" lang="en">Any client sending
-              <code>User-Agent: PostmanRuntime/…</code> or <code>GoHttpTest/…</code> skips the limit — the header is
-              client-controlled. Buckets live in process memory: with N instances, a client effectively gets N× the
-              rate.</span><span class="x" lang="vi">Client nào gửi <code>User-Agent: PostmanRuntime/…</code> hoặc
-              <code>GoHttpTest/…</code> đều bỏ qua giới hạn — header này do client tự đặt. Bucket nằm trong bộ nhớ
-              process: với N instance, một client thực tế được N lần tốc độ.</span></div>
+              <code>127.0.0.1</code> — nếu bạn thêm địa chỉ này vào <code>LIMITER_IP_WHITELIST</code> (mặc định trống)
+              thì <b>không có gì bị giới hạn</b>. Hãy đặt trusted proxies là địa chỉ proxy của bạn.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Limiter: per
+              process</span><span class="x" lang="en">Buckets live in process memory: with N instances, a client
+              effectively gets N× the rate. Postman and tests are limited like any client — whitelist their IP if
+              they need more.</span><span class="x" lang="vi">Bucket nằm trong bộ nhớ process: với N instance, một
+              client thực tế được N lần tốc độ. Postman và test cũng bị giới hạn như mọi client — cần nhiều hơn thì
+              whitelist IP của chúng.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">CORS "*" +
               credentials</span><span class="x" lang="en">With <code>"*"</code> and <code>AllowCredentials: true</code>
-              (Jungo's defaults), any origin is echoed back with <code>Access-Control-Allow-Credentials: true</code> —
+              (Jungo defaults to <code>false</code>; setting it <code>true</code> turns this on), any origin is echoed back with <code>Access-Control-Allow-Credentials: true</code> —
               every website may make credentialed calls. List real origins in production. Also: disallowed origins are
               not blocked server-side, and every <code>OPTIONS</code> gets 204.</span><span class="x" lang="vi">Với
-              <code>"*"</code> và <code>AllowCredentials: true</code> (mặc định của Jungo), mọi origin đều được trả lại
+              <code>"*"</code> và <code>AllowCredentials: true</code> (Jungo mặc định là <code>false</code>; đặt <code>true</code> mới bật), mọi origin đều được trả lại
               kèm <code>Access-Control-Allow-Credentials: true</code> — website nào cũng gọi kèm credentials được. Trong
               production hãy liệt kê origin thật. Ngoài ra: origin không được phép không bị chặn ở server, và mọi
               <code>OPTIONS</code> đều nhận 204.</span></div>
@@ -2060,10 +2069,10 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
               nối giữa chừng cũng nhận 413.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">AccessLog masking has
               limits</span><span class="x" lang="en">Custom <code>SensitiveFields</code> / <code>ExcludedPaths</code>
-              replace the defaults (add the defaults back yourself). The query string is logged raw — never put secrets
-              in URLs. Masking edits the cached payload map in place, after the handler has run.</span><span class="x"
+              replace the defaults (add the defaults back yourself). Only names on the list or containing a credential word are
+              masked — a secret under another name (e.g. <code>otp</code>) is logged; add it to the list. Masking edits the cached payload map in place, after the handler has run.</span><span class="x"
               lang="vi"><code>SensitiveFields</code> / <code>ExcludedPaths</code> tự đặt sẽ thay thế mặc định (tự thêm
-              lại mặc định nếu cần). Query string được ghi nguyên văn — đừng đặt secret trên URL. Việc che sửa trực tiếp
+              lại mặc định nếu cần). Chỉ tên có trong danh sách hoặc chứa từ chỉ thông tin đăng nhập mới bị che — secret mang tên khác (vd. <code>otp</code>) vẫn bị ghi; hãy thêm nó vào danh sách. Việc che sửa trực tiếp
               map payload đã cache, sau khi handler chạy xong.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">8</span><span class="w">Debug mode in
               production</span><span class="x" lang="en">Anyone with the key/value <b>and</b>
@@ -2081,11 +2090,10 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
               proxy.</span><span class="x" lang="vi"><code>Strict-Transport-Security</code> chỉ được gửi khi chính Go xử
               lý TLS (<code>c.Request.TLS != nil</code>). Đứng sau proxy xử lý TLS thì đặt HSTS ở proxy.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">10</span><span class="w">Trusted
-              inputs</span><span class="x" lang="en">An incoming <code>X-Trace-Id</code> is reused without validation.
-              In an Authenticator, return <code>*response.AppError</code> for bad tokens — a plain
-              <code>errors.New</code> becomes a 500.</span><span class="x" lang="vi"><code>X-Trace-Id</code> gửi lên
-              được dùng lại mà không kiểm tra. Trong Authenticator, hãy trả <code>*response.AppError</code> cho token
-              sai — <code>errors.New</code> thông thường sẽ thành 500.</span></div>
+              inputs</span><span class="x" lang="en">A client can still choose its own <code>X-Trace-Id</code> (any
+              1–64 letters, digits, <code>-</code>, <code>_</code>), so don't treat it as unique or as proof of
+              anything.</span><span class="x" lang="vi">Client vẫn tự chọn được <code>X-Trace-Id</code> (1–64 ký tự
+              chữ, số, <code>-</code>, <code>_</code>), nên đừng coi nó là duy nhất hay là bằng chứng cho điều gì.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">11</span><span class="w">Gzip: compress
               once</span><span class="x" lang="en">If nginx, an ingress or a CDN in front already compresses, leave
               <code>Gzip</code> out — it costs CPU for nothing. Put it after CORS so preflights skip it; responses
@@ -2180,6 +2188,13 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
           }
         },
         {
+          node: "mwbn", token: "banned?", color: req,
+          text: {
+            en: "<b>Banner</b> — is this client banned? Yes → <code>403</code> and abort. A scanner-only path such as <code>/.env</code>, an attack payload in the URL or a scanner's User-Agent bans it on the spot. On the way back out it counts a 401/403/404/405/429 answer as a strike; too many strikes → banned.",
+            vi: "<b>Banner</b> — client này có đang bị ban không? Có → <code>403</code> và abort. Đường dẫn chỉ kẻ quét mới gọi như <code>/.env</code>, payload tấn công trong URL hoặc User-Agent của tool quét sẽ ban ngay. Lúc đi ra, nó tính response 401/403/404/405/429 là một lỗi; quá nhiều lỗi → bị ban."
+          }
+        },
+        {
           node: "mw8", token: "1 token", color: req,
           text: {
             en: "<b>Limiter</b> — takes one token from this IP's bucket. Empty bucket → <code>429</code> and abort.",
@@ -2196,8 +2211,8 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
         {
           node: "group", token: "Bearer …", color: req, ms: 2200,
           text: {
-            en: "<b>BearerAuth</b> on the <code>/users</code> group — no / bad token → <code>401</code>; else the identity is stored with <code>security.SetIdentity</code>.",
-            vi: "<b>BearerAuth</b> trên group <code>/users</code> — không có / sai token → <code>401</code>; ngược lại identity được lưu bằng <code>security.SetIdentity</code>."
+            en: "The chain is done. The <b>app's own middleware</b> takes over (Jungo: <code>internal/middleware</code>) — <code>BearerAuth</code> on the <code>/users</code> group (bad token → <code>401</code>), then the permission <code>Guard</code> (missing permission → <code>403</code>).",
+            vi: "Chuỗi chung đã xong. <b>Middleware của app</b> tiếp quản (Jungo: <code>internal/middleware</code>) — <code>BearerAuth</code> trên group <code>/users</code> (sai token → <code>401</code>), rồi <code>Guard</code> phân quyền (thiếu permission → <code>403</code>)."
           }
         },
         {

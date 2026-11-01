@@ -32,6 +32,7 @@
           interface hai method mà bạn có thể thay bằng S3 hay GCS.</p>
         <div class="jd-chips">
           <span class="jd-chip">github.com/jun-develop/junkit/storage</span>
+          <span class="jd-chip">github.com/jun-develop/junkit/upload</span>
           <span class="jd-chip"><span lang="en">Fx: storage.Module → provides storage.Service</span><span lang="vi">Fx:
               storage.Module → cung cấp storage.Service</span></span>
           <span class="jd-chip">github.com/google/uuid · go.uber.org/fx</span>
@@ -387,6 +388,68 @@ func NewLocalService(baseDir, baseURL string) (*LocalService, error)
                 <code>invalid file URL: &lt;fileURL&gt;</code>. Lỗi xoá khác → <code>delete file: …</code>.</li>
             </ul>
           </div>
+
+          <div class="jd-sym c-green">
+            <div class="jd-sym-head"><span class="jd-kind">package</span><span class="jd-sym-name">upload</span><span
+                class="jd-pill">upload/upload.go</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+var ErrInvalidFile = errors.New("upload: invalid file")
+
+type Rule struct {
+    MaxSize    int64    // largest allowed size in bytes
+    Extensions []string // allowed lowercase extensions, with the dot
+    Types      []string // allowed content types, as http.DetectContentType reports them
+}
+
+func Image(maxSize int64) Rule // JPEG, PNG, WebP
+func Open(fh *multipart.FileHeader, rule Rule) (multipart.File, error)
+func HasType(file io.ReadSeeker, types ...string) bool
+func Extension(filename string) string
+</pre>
+            </div>
+            <p lang="en">Checks an uploaded file before you hand it to <code>UploadFile</code> — <code>storage</code>
+              itself stores any bytes under any extension.</p>
+            <p lang="vi">Kiểm tra file upload trước khi đưa cho <code>UploadFile</code> — bản thân
+              <code>storage</code> lưu mọi loại byte với mọi phần mở rộng.</p>
+            <ul>
+              <li lang="en"><code>Open(fh, rule)</code> refuses with <code>ErrInvalidFile</code> a file over
+                <code>rule.MaxSize</code>, with an extension outside <code>rule.Extensions</code> (compared lower-cased),
+                or whose first 512 bytes are not one of <code>rule.Types</code> (e.g. HTML or PHP renamed to
+                <code>.png</code>). It then rewinds the file so the whole of it is stored. The caller closes it.</li>
+              <li lang="vi"><code>Open(fh, rule)</code> từ chối bằng <code>ErrInvalidFile</code> file lớn hơn
+                <code>rule.MaxSize</code>, có phần mở rộng ngoài <code>rule.Extensions</code> (so sánh dạng chữ thường),
+                hoặc có 512 byte đầu không thuộc <code>rule.Types</code> (vd. file HTML hay PHP đổi tên thành
+                <code>.png</code>). Sau đó nó tua lại đầu file để lưu được trọn vẹn. Bên gọi tự đóng file.</li>
+              <li lang="en"><code>Image(maxSize)</code> is the rule for JPEG, PNG and WebP. For another kind of file
+                (PDF, CSV…) write your own <code>Rule</code>.</li>
+              <li lang="vi"><code>Image(maxSize)</code> là rule cho JPEG, PNG và WebP. Loại file khác (PDF, CSV…) thì
+                tự viết <code>Rule</code>.</li>
+              <li lang="en"><code>HasType</code> and <code>Extension</code> are the content and extension checks on
+                their own.</li>
+              <li lang="vi"><code>HasType</code> và <code>Extension</code> là hai bước kiểm tra nội dung và phần mở
+                rộng dùng riêng lẻ.</li>
+            </ul>
+            <div class="jd-term" data-copy="code" style="margin-top:12px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>handler</span></div>
+              <pre data-hl="go">
+fileHeader, err := ctx.FormFile("avatar")
+if err != nil {
+    h.responder.Send(ctx, http.StatusBadRequest, "invalid_avatar_file")
+    return
+}
+
+file, err := upload.Open(fileHeader, upload.Image(5 &lt;&lt; 20))
+if err != nil {
+    h.responder.Send(ctx, http.StatusBadRequest, "invalid_avatar_file")
+    return
+}
+defer file.Close()
+
+url, err := storageService.UploadFile(ctx, file, fileHeader.Filename)
+</pre>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -430,22 +493,25 @@ func NewLocalService(baseDir, baseURL string) (*LocalService, error)
             </tr>
             <tr>
               <td>features/user/handler/v1/user_handler.go</td>
-              <td><span lang="en"><code>UploadAvatar</code> reads form field <code>avatar</code>, rejects files over
-                  <code>maxAvatarFileSize</code> (5 MB) or with an extension outside <code>.jpg .jpeg .png .webp</code>
-                  (checked lower-cased) → 400 <code>invalid_avatar_file</code>.</span><span
-                  lang="vi"><code>UploadAvatar</code> đọc field form <code>avatar</code>, từ chối file lớn hơn
-                  <code>maxAvatarFileSize</code> (5 MB) hoặc phần mở rộng ngoài <code>.jpg .jpeg .png .webp</code> (so
-                  sánh dạng chữ thường) → 400 <code>invalid_avatar_file</code>.</span></td>
+              <td><span lang="en"><code>UploadAvatar</code> reads form field <code>avatar</code> and opens it with
+                  <code>upload.Open(fileHeader, upload.Image(MaxAvatarFileSize))</code>; any error → 400
+                  <code>invalid_avatar_file</code>.</span><span lang="vi"><code>UploadAvatar</code> đọc field form
+                  <code>avatar</code> và mở nó bằng <code>upload.Open(fileHeader, upload.Image(MaxAvatarFileSize))</code>;
+                  lỗi bất kỳ → 400 <code>invalid_avatar_file</code>.</span></td>
             </tr>
             <tr>
               <td>features/user/service/user_service.go</td>
               <td><span lang="en"><code>UploadAvatar</code>: get user → <code>UploadFile</code> (any error →
-                  <code>domain.ErrInvalidAvatarFile</code>) → save URL, on failure <code>DeleteFile(newURL)</code> →
-                  <code>DeleteFile</code> the old avatar. <code>DeleteAvatar</code>: <code>DeleteFile</code>, then set
-                  <code>avatar_url</code> to <code>""</code>.</span><span lang="vi"><code>UploadAvatar</code>: lấy user
-                  → <code>UploadFile</code> (lỗi nào cũng thành <code>domain.ErrInvalidAvatarFile</code>) → lưu URL, lỗi
-                  thì <code>DeleteFile(newURL)</code> → <code>DeleteFile</code> avatar cũ. <code>DeleteAvatar</code>:
-                  <code>DeleteFile</code>, rồi đặt <code>avatar_url</code> thành <code>""</code>.</span></td>
+                  <code>domain.ErrInvalidAvatarFile</code>) → check permission again and save URL in one transaction (the
+                  user's roles may have changed during the upload), on failure <code>DeleteFile(newURL)</code> →
+                  <code>DeleteFile</code> the old avatar. <code>DeleteAvatar</code>: set <code>avatar_url</code> to
+                  <code>""</code>, then <code>DeleteFile</code>. <code>DeleteUser</code> (soft delete) also clears
+                  <code>avatar_url</code> and deletes the file.</span><span lang="vi"><code>UploadAvatar</code>: lấy user
+                  → <code>UploadFile</code> (lỗi nào cũng thành <code>domain.ErrInvalidAvatarFile</code>) → kiểm tra quyền
+                  lại và lưu URL trong cùng một transaction (role của user có thể đã đổi trong lúc upload), lỗi thì
+                  <code>DeleteFile(newURL)</code> → <code>DeleteFile</code> avatar cũ. <code>DeleteAvatar</code>: đặt
+                  <code>avatar_url</code> thành <code>""</code>, rồi <code>DeleteFile</code>. <code>DeleteUser</code>
+                  (xóa mềm) cũng xóa <code>avatar_url</code> và xóa file.</span></td>
             </tr>
             <tr>
               <td>features/user/module.go</td>
@@ -494,12 +560,12 @@ $ curl -s -X DELETE 'localhost:$API_SERVER_PORT/api/v1/users/&lt;uuid&gt;/avatar
               extension and ideally the real content type before calling <code>UploadFile</code> — files under
               <code>/uploads</code> are public. Stored XSS: the extension is kept and <code>/uploads</code> is served on
               the API origin, so an uploaded <code>.html</code> or <code>.svg</code> runs script there. Allow-list
-              extensions (Jungo's avatar handler does).</span><span class="x" lang="vi">Package lưu mọi loại byte với mọi phần
+              extensions and check the first bytes (<code>upload.Open</code> does both).</span><span class="x" lang="vi">Package lưu mọi loại byte với mọi phần
               mở rộng. Hãy kiểm tra kích thước, phần mở rộng và tốt nhất là content type thật trước khi gọi
               <code>UploadFile</code> — file trong <code>/uploads</code> là công khai. Stored XSS: phần mở rộng được giữ
               nguyên và <code>/uploads</code> được phục vụ trên chính origin của API, nên file <code>.html</code> hay
-              <code>.svg</code> tải lên sẽ chạy script ở đó. Hãy giới hạn phần mở rộng theo danh sách cho phép (handler
-              avatar của Jungo làm vậy).</span></div>
+              <code>.svg</code> tải lên sẽ chạy script ở đó. Hãy giới hạn phần mở rộng theo danh sách cho phép và kiểm
+              tra các byte đầu (<code>upload.Open</code> làm cả hai).</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Body limit comes
               first</span><span class="x" lang="en">In Jungo the global <code>Payload</code> middleware caps every
               body at <code>SECURITY_MAX_BODY_SIZE</code> (default <code>2097152</code> = 2 MiB) and answers 413
