@@ -24,7 +24,7 @@
     <p lang="vi">Gửi email + mật khẩu, nhận về hai token. Trang này giải thích mọi khái niệm, mọi endpoint (header, body, từng field của response, mọi lỗi) và những gì xảy ra bên trong — để bạn gọi được, xây tiếp được và debug được.</p>
     <div class="jd-chips">
       <span class="jd-chip">internal/features/auth</span>
-      <span class="jd-chip">9 endpoints</span>
+      <span class="jd-chip">11 endpoints</span>
       <span class="jd-chip"><span lang="en">opaque tokens, not JWT</span><span lang="vi">Opaque token, không phải JWT</span></span>
       <span class="jd-chip"><span lang="en">refresh rotation + reuse detection</span><span lang="vi">xoay vòng refresh + phát hiện dùng lại</span></span>
     </div>
@@ -177,6 +177,8 @@
         <button class="jd-tab" type="button" aria-selected="false">sessions</button>
         <button class="jd-tab" type="button" aria-selected="false">logout</button>
         <button class="jd-tab" type="button" aria-selected="false">logout-all</button>
+        <button class="jd-tab" type="button" aria-selected="false">forgot-password</button>
+        <button class="jd-tab" type="button" aria-selected="false">reset-password</button>
         <button class="jd-tab c-red" type="button" aria-selected="false">internal · token-details</button>
         <button class="jd-tab c-red" type="button" aria-selected="false">internal · revoke</button>
         <button class="jd-tab c-red" type="button" aria-selected="false">internal · revoke-all</button>
@@ -546,6 +548,119 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/logout-all \
   "api_info": { … }
 }
 </pre></div>
+        </div>
+      </div>
+
+      <!-- ---------------- forgot-password -->
+      <div class="jd-tabpanel" hidden>
+        <div class="jd-ep-head"><span class="jd-method post">POST</span><span class="jd-ep-path">/api/v1/auth/forgot-password</span><span class="jd-auth"><span lang="en">public</span><span lang="vi">công khai</span></span></div>
+        <p class="jd-ep-desc" lang="en">Emails a single-use link to <code>AUTH_PASSWORD_RESET_URL?token=…</code> when the email belongs to an active user. The answer is <b>the same</b> for unknown or disabled emails, and the email is sent in the background, so neither the message nor the response time reveals who is registered. A newer request replaces the previous link.</p>
+        <p class="jd-ep-desc" lang="vi">Gửi một link dùng một lần tới <code>AUTH_PASSWORD_RESET_URL?token=…</code> nếu email thuộc về một user đang hoạt động. Câu trả lời <b>giống hệt</b> với email không tồn tại hoặc đã bị khóa, và mail được gửi ngầm, nên cả thông báo lẫn thời gian phản hồi đều không lộ ai đã đăng ký. Yêu cầu mới thay thế link cũ.</p>
+        <div class="jd-grid-2">
+          <div>
+            <h3>Request</h3>
+            <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
+<pre data-hl="bash">
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/forgot-password \
+    -H 'Content-Type: application/json' \
+    -d '{"email":"admin@jungo.com"}' | jq
+</pre></div>
+            <h3>Body</h3>
+            <div class="jd-tablewrap"><table class="jd-params">
+              <tr><th>field</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+              <tr><td>email<span class="req">require</span><span class="rule">string · email · ≤150</span></td><td lang="en">The account email. Case-insensitive.</td><td lang="vi">Email của tài khoản. Không phân biệt hoa thường.</td></tr>
+            </table></div>
+            <h3><span lang="en">The email</span><span lang="vi">Nội dung mail</span></h3>
+            <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>Reset your password</span></div>
+<pre data-hl="bash">
+Hi Admin Jungo,
+
+We received a request to reset the password for your account. Open this link within 30 minutes to choose a new one (it can be used once):
+
+http://localhost:3000/reset-password?token=ysTgvk0tm2Sp…
+
+If you did not ask for this, you can ignore this email: your password stays the same.
+
+— Jungo
+</pre></div>
+            <p class="jd-sub" style="margin-top:10px" lang="en">The plain-text part is shown; the HTML part has the same content with a button. Both come from <code>internal/features/auth/service/templates/</code>. In development with <code>MAIL_DRIVER=log</code> this email is written to the app log instead (copy the link from there), followed by a Warn line saying it was not sent.</p>
+            <p class="jd-sub" style="margin-top:10px" lang="vi">Trên đây là phần text; phần HTML cùng nội dung nhưng có nút bấm. Cả hai nằm trong <code>internal/features/auth/service/templates/</code>. Ở development với <code>MAIL_DRIVER=log</code>, mail này được ghi ra log của app thay vì gửi đi (copy link từ đó), kèm một dòng Warn báo là chưa gửi thật.</p>
+          </div>
+          <div>
+            <h3>Response</h3>
+            <div class="jd-tabs c-green">
+              <div class="jd-tablist">
+                <button class="jd-tab" type="button" aria-selected="true">200</button>
+                <button class="jd-tab c-red" type="button" aria-selected="false"><span lang="en">errors</span><span lang="vi">lỗi</span></button>
+              </div>
+              <div class="jd-tabpanel">
+                <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>200 OK</span></div>
+<pre data-hl="json">
+{
+  "status": "success",
+  "message": "If an account exists for this email, a password reset link has been sent",
+  "api_info": { … }
+}
+</pre></div>
+              </div>
+              <div class="jd-tabpanel" hidden>
+                <div class="jd-errlist">
+                  <div class="jd-errrow"><span class="code">422</span><div><b>Validation error</b><span class="do" lang="en">Missing or invalid email.</span><span class="do" lang="vi">Thiếu hoặc sai định dạng email.</span></div></div>
+                  <div class="jd-errrow"><span class="code">429</span><div><b>Too many password reset requests, please try again later</b><span class="do" lang="en">More than <code>AUTH_PASSWORD_RESET_IP_MAX</code> (5) requests from this IP, or <code>AUTH_PASSWORD_RESET_EMAIL_MAX</code> (3) for this email, within <code>AUTH_PASSWORD_RESET_WINDOW</code> (1 h). Unknown emails count too, so the limit says nothing about who is registered.</span><span class="do" lang="vi">Quá <code>AUTH_PASSWORD_RESET_IP_MAX</code> (5) yêu cầu từ IP này, hoặc <code>AUTH_PASSWORD_RESET_EMAIL_MAX</code> (3) cho email này, trong <code>AUTH_PASSWORD_RESET_WINDOW</code> (1 giờ). Email không tồn tại cũng được đếm, nên giới hạn này không lộ ai đã đăng ký.</span></div></div>
+                  <div class="jd-errrow"><span class="code">500</span><div><b>Password reset is unavailable because email sending is not configured</b><span class="do" lang="en">For the developer: <code>AUTH_PASSWORD_RESET_URL</code> is empty, or outside development <code>MAIL_DRIVER</code> is still <code>log</code>. The app log (Error) names the variable to set.</span><span class="do" lang="vi">Dành cho developer: <code>AUTH_PASSWORD_RESET_URL</code> đang trống, hoặc ngoài development mà <code>MAIL_DRIVER</code> vẫn là <code>log</code>. Log của app (Error) ghi rõ cần đặt biến nào.</span></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------------- reset-password -->
+      <div class="jd-tabpanel" hidden>
+        <div class="jd-ep-head"><span class="jd-method post">POST</span><span class="jd-ep-path">/api/v1/auth/reset-password</span><span class="jd-auth"><span lang="en">token from the email</span><span lang="vi">token từ mail</span></span></div>
+        <p class="jd-ep-desc" lang="en">Your reset page reads <code>?token=</code> from its URL and posts it here with the new password. On success every session of the user ends (<code>revoked_reason = password_reset</code>), so the user logs in again with the new password.</p>
+        <p class="jd-ep-desc" lang="vi">Trang reset của bạn đọc <code>?token=</code> từ URL rồi gửi lên đây cùng mật khẩu mới. Thành công thì mọi session của user bị kết thúc (<code>revoked_reason = password_reset</code>), user đăng nhập lại bằng mật khẩu mới.</p>
+        <div class="jd-grid-2">
+          <div>
+            <h3>Request</h3>
+            <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>curl</span></div>
+<pre data-hl="bash">
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/reset-password \
+    -H 'Content-Type: application/json' \
+    -d '{"token":"ysTgvk0tm2Sp…","password":"New-passw0rd!"}' | jq
+</pre></div>
+            <h3>Body</h3>
+            <div class="jd-tablewrap"><table class="jd-params">
+              <tr><th>field</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+              <tr><td>token<span class="req">require</span><span class="rule">string · ≤128</span></td><td lang="en">The <code>token</code> query value from the emailed link. Works once, for <code>AUTH_PASSWORD_RESET_TTL</code> (30 min). Only its SHA-256 hash is stored.</td><td lang="vi">Giá trị query <code>token</code> trong link đã gửi. Dùng được một lần, trong <code>AUTH_PASSWORD_RESET_TTL</code> (30 phút). Chỉ lưu hash SHA-256 của nó.</td></tr>
+              <tr><td>password<span class="req">require</span><span class="rule">string · 8–72 · strong</span></td><td lang="en">The new password; same rules as creating a user (upper, lower, digit, special character). At most 72 <b>bytes</b>.</td><td lang="vi">Mật khẩu mới; cùng quy tắc như khi tạo user (chữ hoa, chữ thường, số, ký tự đặc biệt). Tối đa 72 <b>byte</b>.</td></tr>
+            </table></div>
+          </div>
+          <div>
+            <h3>Response</h3>
+            <div class="jd-tabs c-green">
+              <div class="jd-tablist">
+                <button class="jd-tab" type="button" aria-selected="true">200</button>
+                <button class="jd-tab c-red" type="button" aria-selected="false"><span lang="en">errors</span><span lang="vi">lỗi</span></button>
+              </div>
+              <div class="jd-tabpanel">
+                <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>200 OK</span></div>
+<pre data-hl="json">
+{
+  "status": "success",
+  "message": "Your password has been reset; please log in again",
+  "api_info": { … }
+}
+</pre></div>
+              </div>
+              <div class="jd-tabpanel" hidden>
+                <div class="jd-errlist">
+                  <div class="jd-errrow"><span class="code">400</span><div><b>This password reset link is invalid or has expired</b><span class="do" lang="en">Unknown, already used, replaced by a newer request, expired, or the user is disabled. Ask for a new link.</span><span class="do" lang="vi">Token không tồn tại, đã dùng, đã bị thay bằng yêu cầu mới hơn, hết hạn, hoặc user đã bị khóa. Yêu cầu link mới.</span></div></div>
+                  <div class="jd-errrow"><span class="code">422</span><div><b>Validation error</b><span class="do" lang="en">Missing token, or the password is too short / not strong enough. Over 72 bytes → <i>Password is too long</i>; the token stays valid.</span><span class="do" lang="vi">Thiếu token, hoặc mật khẩu quá ngắn / chưa đủ mạnh. Quá 72 byte → <i>Password is too long</i>; token vẫn còn dùng được.</span></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1018,6 +1133,10 @@ identity := security.MustGetIdentity[*authdomain.Identity](ctx)
       <tr><td>AUTH_LOGIN_MAX_ATTEMPTS / _BLOCK_WINDOW</td><td>5 / 15m</td><td lang="en">Failures per IP before a short block.</td><td lang="vi">Số lần sai mỗi IP trước khi bị chặn ngắn.</td></tr>
       <tr><td>AUTH_LOGIN_BLACKLIST_ATTEMPTS / _WINDOW</td><td>8 / 24h</td><td lang="en">Failures per IP before a long block (+ Telegram alert if configured).</td><td lang="vi">Số lần sai mỗi IP trước khi bị chặn dài (+ cảnh báo Telegram nếu có cấu hình).</td></tr>
       <tr><td>AUTH_LOGIN_EMAIL_MAX_ATTEMPTS</td><td>10</td><td lang="en">Failures per email (from any IP) within the block window. Checked before the password, so anyone can lock a known email for the window.</td><td lang="vi">Số lần sai mỗi email (từ mọi IP) trong khung thời gian chặn. Kiểm tra trước mật khẩu, nên ai cũng có thể khóa một email đã biết trong khung thời gian đó.</td></tr>
+      <tr><td>AUTH_PASSWORD_RESET_URL</td><td>—</td><td lang="en">Frontend page the reset email links to; <code>?token=…</code> is appended (existing query parameters are kept). Empty = password reset disabled (<code>forgot-password</code> answers 500 and the log says so).</td><td lang="vi">Trang frontend mà mail reset trỏ tới; <code>?token=…</code> được thêm vào (giữ nguyên query sẵn có). Trống = tắt quên mật khẩu (<code>forgot-password</code> trả 500 và log báo rõ).</td></tr>
+      <tr><td>AUTH_PASSWORD_RESET_TTL</td><td>30m</td><td lang="en">How long a reset link works.</td><td lang="vi">Link reset dùng được bao lâu.</td></tr>
+      <tr><td>AUTH_PASSWORD_RESET_IP_MAX / _EMAIL_MAX / _WINDOW</td><td>5 / 3 / 1h</td><td lang="en">Reset requests allowed per IP and per email within the window; caps how many emails one client can make the app send. Counted in Redis when enabled, otherwise per instance.</td><td lang="vi">Số yêu cầu reset cho phép mỗi IP và mỗi email trong khung thời gian; giới hạn số mail một client có thể khiến app gửi. Đếm trong Redis nếu bật, không thì theo từng instance.</td></tr>
+      <tr><td>MAIL_DRIVER / MAIL_*</td><td>log</td><td lang="en">How emails go out — see <a href="../junkit/mailer.html">junkit mailer</a>. <code>log</code> only writes them to the log and is accepted for password reset in development only.</td><td lang="vi">Cách gửi mail — xem <a href="../junkit/mailer.html">junkit mailer</a>. <code>log</code> chỉ ghi ra log và chỉ được chấp nhận cho quên mật khẩu ở development.</td></tr>
       <tr><td>SECURITY_TRUSTED_PROXIES</td><td>—</td><td lang="en">Proxies whose <code>X-Forwarded-For</code> is trusted for <code>ctx.ClientIP()</code>, which every IP limit uses. Empty = the TCP peer address: behind a load balancer all users then share its IP and one attacker can lock everyone out. List only your own proxies — trusting more lets clients spoof their IP and dodge the limits.</td><td lang="vi">Các proxy có <code>X-Forwarded-For</code> được tin cho <code>ctx.ClientIP()</code>, thứ mà mọi giới hạn theo IP đều dùng. Trống = địa chỉ TCP kết nối trực tiếp: sau load balancer, mọi user dùng chung IP của nó và một kẻ tấn công có thể khóa tất cả. Chỉ liệt kê proxy của bạn — tin rộng hơn sẽ cho client giả mạo IP để né giới hạn.</td></tr>
       <tr><td>TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID</td><td>—</td><td lang="en">Both set = a Telegram alert when an IP is blocked for 24 h. Either empty = no alert.</td><td lang="vi">Đặt cả hai = gửi cảnh báo Telegram khi một IP bị chặn 24 giờ. Thiếu một trong hai = không gửi.</td></tr>
     </table></div>
@@ -1026,7 +1145,7 @@ identity := security.MustGetIdentity[*authdomain.Identity](ctx)
     <div class="jd-grid-2">
       <div class="jd-term" data-copy="commands" lang="en"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
 <pre data-hl="bash">
-# delete expired / revoked tokens — run daily (cron)
+# delete expired / revoked tokens and old password reset tokens — run daily (cron)
 $ make console CMD="auth:cleanup-tokens"
 
 # keep them for 3 days instead of AUTH_REVOKED_RETENTION
@@ -1037,7 +1156,7 @@ $ make console CMD="user:create" ARGS="-email=ops@jungo.com -first-name=Ops -las
 </pre></div>
       <div class="jd-term" data-copy="commands" lang="vi"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
 <pre data-hl="bash">
-# xóa token đã hết hạn / bị thu hồi — chạy định kỳ hàng ngày (cron)
+# xóa token đã hết hạn / bị thu hồi và token reset mật khẩu cũ — chạy định kỳ hàng ngày (cron)
 $ make console CMD="auth:cleanup-tokens"
 
 # lưu giữ lại trong 3 ngày thay vì thời gian mặc định AUTH_REVOKED_RETENTION

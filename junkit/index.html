@@ -19,8 +19,8 @@
   <header class="jd-hero" style="background:radial-gradient(1000px 380px at 0% 0%, rgba(52,211,153,.5), transparent 60%),radial-gradient(900px 380px at 100% 0%, rgba(96,165,250,.45), transparent 60%),linear-gradient(135deg,#064e3b,#065f46 45%,#1e3a8a)">
     <div class="jd-eyebrow">Junkit</div>
     <h1>Junkit</h1>
-    <p lang="en">18 modular infrastructure packages for Go backends built on Gin and Uber Fx — logging, database, cache, responses, validation, security, middleware and more. Jungo is built on them, but each package works completely standalone.</p>
-    <p lang="vi">18 package hạ tầng độc lập cho Go backend xây dựng trên Gin và Uber Fx — logging, database, cache, response chuẩn, validation, bảo mật, middleware và hơn thế nữa. Jungo sử dụng bộ kit này làm nền tảng, nhưng từng package đều có thể tách rời và tích hợp vào bất kỳ dự án Go nào.</p>
+    <p lang="en">19 modular infrastructure packages for Go backends built on Gin and Uber Fx — logging, database, cache, responses, validation, security, middleware and more. Jungo is built on them, but each package works completely standalone.</p>
+    <p lang="vi">19 package hạ tầng độc lập cho Go backend xây dựng trên Gin và Uber Fx — logging, database, cache, response chuẩn, validation, bảo mật, middleware và hơn thế nữa. Jungo sử dụng bộ kit này làm nền tảng, nhưng từng package đều có thể tách rời và tích hợp vào bất kỳ dự án Go nào.</p>
     <div class="jd-chips">
       <span class="jd-chip">go get github.com/jun-develop/junkit</span>
       <span class="jd-chip">Go 1.26.5+</span>
@@ -103,6 +103,7 @@
       <tr><td>httpclient.Module</td><td>httpclient.Options</td><td>*http.Client</td><td lang="en">not used — Jungo provides <code>httpclient.NewDefaultClient</code></td><td lang="vi">không dùng — Jungo cung cấp <code>httpclient.NewDefaultClient</code></td></tr>
       <tr><td>telegram.Module</td><td>telegram.Options, *http.Client, *zap.Logger</td><td>telegram.Client</td><td>✓</td></tr>
       <tr><td>notification.Module</td><td>notification.Options, telegram.Client</td><td>notification.Notifier</td><td>✓</td></tr>
+      <tr><td>mailer.Module</td><td>mailer.Options, *zap.Logger, *http.Client (optional)</td><td>mailer.Sender</td><td>✓</td></tr>
       <tr><td>recaptcha.Module</td><td>recaptcha.Options, *http.Client</td><td>recaptcha.Verifier</td><td>✓</td></tr>
       <tr><td style="color:var(--muted)">console · pagination · database · sqlfmt · middleware · tracer · scaffold</td><td colspan="3" lang="en">No Module: plain functions, per-route constructors, request-scoped context, or build-time tooling. Import and call them directly.</td><td colspan="3" lang="vi">Không cần Module: các package này cung cấp hàm tiện ích, middleware theo route, context gắn theo request hoặc công cụ CLI lúc build. Bạn chỉ cần import và sử dụng trực tiếp.</td></tr>
     </table></div>
@@ -120,7 +121,7 @@ document.addEventListener("jd:ready", function () {
   var groups = [
     { t: { en: "Foundation — every app needs these", vi: "Nền tảng — app nào cũng cần" }, p: ["logger", "i18n", "response", "validation", "pagination", "console"] },
     { t: { en: "Data", vi: "Dữ liệu" }, p: ["database", "cache", "storage", "sqlfmt"] },
-    { t: { en: "Outside services", vi: "Dịch vụ bên ngoài" }, p: ["httpclient", "telegram", "notification", "recaptcha"] },
+    { t: { en: "Outside services", vi: "Dịch vụ bên ngoài" }, p: ["httpclient", "telegram", "notification", "mailer", "recaptcha"] },
     { t: { en: "HTTP & security", vi: "HTTP & bảo mật" }, p: ["security", "middleware", "tracer"] },
     { t: { en: "Tooling", vi: "Công cụ" }, p: ["scaffold"] }
   ];
