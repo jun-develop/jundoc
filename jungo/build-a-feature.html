@@ -153,14 +153,14 @@
         <div class="d" lang="vi">Sinh code (kèm permission và nhãn của chúng), file migration và file query.</div>
       </div>
       <div class="jd-node is-tint c-pink" data-node="g2">
-        <span class="k">2</span><span class="t mono" style="font-size:14px">make migrate-up</span>
-        <div class="d" lang="en">Creates the <code>products</code> table, adds <code>products:*</code> to <code>permissions</code> and gives them to <code>super_admin</code>.</div>
-        <div class="d" lang="vi">Tạo bảng <code>products</code>, thêm <code>products:*</code> vào <code>permissions</code> và cấp cho <code>super_admin</code>.</div>
+        <span class="k">2</span><span class="t mono" style="font-size:14px">make sqlc</span>
+        <div class="d" lang="en">Generates the Go code for <code>queries/product.sql</code>. The project doesn't compile without it.</div>
+        <div class="d" lang="vi">Sinh code Go cho <code>queries/product.sql</code>. Thiếu bước này project không biên dịch được.</div>
       </div>
       <div class="jd-node is-tint c-pink" data-node="g3">
-        <span class="k">3</span><span class="t mono" style="font-size:14px">make sqlc</span>
-        <div class="d" lang="en">Generates the Go code for <code>queries/product.sql</code>. The project doesn't compile without it. Then the app starts.</div>
-        <div class="d" lang="vi">Sinh code Go cho <code>queries/product.sql</code>. Thiếu bước này project không biên dịch được. Xong bước này app chạy được.</div>
+        <span class="k">3</span><span class="t mono" style="font-size:14px">make migrate-up</span>
+        <div class="d" lang="en">Creates the <code>products</code> table, adds <code>products:*</code> to <code>permissions</code> and gives them to <code>super_admin</code>. Then the app starts.</div>
+        <div class="d" lang="vi">Tạo bảng <code>products</code>, thêm <code>products:*</code> vào <code>permissions</code> và cấp cho <code>super_admin</code>. Xong bước này app chạy được.</div>
       </div>
     </div>
 
@@ -169,9 +169,9 @@
         <h3><span lang="en">What the generator prints</span><span lang="vi">Generator in ra những gì</span></h3>
         <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>make feature NAME=product</span></div>
 <pre data-hl="bash">
-⚡ Generating feature "product" (table "products", migration 000004)...
- ✅ Created internal/database/primary/migrations/000004_products.up.sql
- ✅ Created internal/database/primary/migrations/000004_products.down.sql
+⚡ Generating feature "product" (table "products", migration 000005)...
+ ✅ Created internal/database/primary/migrations/000005_products.up.sql
+ ✅ Created internal/database/primary/migrations/000005_products.down.sql
  ✅ Created internal/database/primary/queries/product.sql
  ✅ Created internal/features/product/domain/product.go
  ✅ Created internal/features/product/domain/errors.go
@@ -186,9 +186,9 @@
 → Registering jungo/internal/features/product in internal/app/fx.go
  ✅ Registered in internal/app/fx.go
  ✅ Feature "product" generated in internal/features/product
-⚡ Next: make migrate-up   (creates the products table and its products:* permissions, granted to super_admin)
-⚡ Then: make sqlc         (generates internal/database/primary/sqlc/product.sql.go)
-⚡ Then: go build ./...    (verify everything compiles)
+⚡ Next: make sqlc         (generates internal/database/primary/sqlc/product.sql.go; the feature does not build before)
+⚡ Then: make migrate-up   (creates the products table and its products:* permissions, granted to super_admin)
+⚡ Then: go build ./... &amp;&amp; go test ./internal/features/product/...
 </pre></div>
       </div>
       <div>
@@ -533,21 +533,38 @@ func (h *ProductHandler) UpdateProduct(ctx *gin.Context) {
         <p lang="en">One line maps <code>PATCH /:uuid</code> to the handler. <code>Version()</code> returning <code>"v1"</code> puts it under <code>/api/v1</code>, <code>BearerAuth</code> on the group means no valid access token → 401, and <code>guard.Can</code> means no <code>products:update</code> → 403, both before the handler runs. A new endpoint = one more line inside the group, wrapped in the Guard — a route without one stops the app at startup. The method matters: <code>PUT</code> on this URL answers 405 "HTTP method is not allowed".</p>
         <p lang="vi">Chỉ cần 1 dòng khai báo để ánh xạ đường dẫn <code>PATCH /:uuid</code> tới hàm xử lý trong Handler. Hàm <code>Version()</code> trả về <code>"v1"</code> giúp tự động đặt toàn bộ endpoint dưới tiền tố <code>/api/v1</code>. Middleware <code>BearerAuth</code> gắn trên nhóm route đảm bảo: không có access token hợp lệ → lỗi 401; <code>guard.Can</code> đảm bảo: không có <code>products:update</code> → lỗi 403, cả hai đều trước khi Handler kịp chạy. Khi thêm endpoint mới, thêm 1 dòng vào nhóm và bọc bằng Guard — route thiếu Guard sẽ làm app dừng khi khởi động. Lưu ý về HTTP Method: nếu gọi nhầm method (ví dụ gọi <code>PUT</code> vào URL này), Jungo sẽ trả về mã 405 kèm thông báo "HTTP method is not allowed".</p>
         <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>router/v1/product_router.go</span></div>
-<pre data-hl="go" data-lines="8,13">
+<pre data-hl="go" data-lines="7,12">
 func (r *ProductRoutes) Version() string {
     return "v1" // → everything below lives under /api/v1
 }
 
 // Register implements router.Routes; every route requires a logged-in user holding its permission.
 func (r *ProductRoutes) Register(group *gin.RouterGroup) {
-    items := group.Group("/products")
-    items.Use(middleware.BearerAuth(r.authenticator, r.responder, middleware.BearerAuthOptions{}))
+    productGroup := group.Group("/products", gin.HandlerFunc(r.authenticate))
 
-    items.POST("", r.guard.Can(r.handler.CreateProduct, "products:create"))
-    items.GET("", r.guard.Can(r.handler.ListProducts, "products:read"))
-    items.GET("/:uuid", r.guard.Can(r.handler.GetProduct, "products:read"))
-    items.PATCH("/:uuid", r.guard.Can(r.handler.UpdateProduct, "products:update"))
-    items.DELETE("/:uuid", r.guard.Can(r.handler.DeleteProduct, "products:delete"))
+    productGroup.POST("", r.guard.Can(r.handler.CreateProduct, domain.ProductsCreate))
+    productGroup.GET("", r.guard.Can(r.handler.ListProducts, domain.ProductsRead))
+    productGroup.GET("/:uuid", r.guard.Can(r.handler.GetProduct, domain.ProductsRead))
+    productGroup.PATCH("/:uuid", r.guard.Can(r.handler.UpdateProduct, domain.ProductsUpdate))
+    productGroup.DELETE("/:uuid", r.guard.Can(r.handler.DeleteProduct, domain.ProductsDelete))
+}
+</pre></div>
+        <div id="docs"></div>
+        <p class="jd-hint" style="margin-top:10px" lang="en"><b>Every route also needs one line in <code>Docs()</code></b>, right below <code>Register</code> — the generator writes it for you. It names the body, query and response structs; field names, rules (<code>binding</code>), samples (<code>example</code>) and the permission (from the Guard) are read from the code. A route under <code>/api</code> without a doc, or a doc for a route that doesn't exist, stops the app at startup. Read the result at <code>http://localhost:$API_SERVER_PORT/docs</code> (development only) — see <a href="../junkit/apidoc.html">apidoc</a>.</p>
+        <p class="jd-hint" style="margin-top:10px" lang="vi"><b>Mỗi route cũng cần một dòng trong <code>Docs()</code></b>, ngay dưới <code>Register</code> — generator đã viết sẵn. Dòng đó chỉ ra struct body, query và response; tên field, luật (<code>binding</code>), giá trị mẫu (<code>example</code>) và permission (lấy từ Guard) được đọc từ code. Route dưới <code>/api</code> thiếu docs, hoặc docs cho route không tồn tại, đều làm app dừng khi khởi động. Xem kết quả tại <code>http://localhost:$API_SERVER_PORT/docs</code> (chỉ ở development) — xem <a href="../junkit/apidoc.html">apidoc</a>.</p>
+        <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>router/v1/product_router.go</span></div>
+<pre data-hl="go">
+// Docs implements router.Documented; it describes every route Register adds (the API docs at /docs).
+func (r *ProductRoutes) Docs() []apidoc.Route {
+    item := v1dto.ProductResponse{}
+
+    return []apidoc.Route{
+        {Method: http.MethodPost, Path: "/products", Summary: "Create a product", Body: v1dto.CreateProductRequest{}, Status: http.StatusCreated, Response: item},
+        {Method: http.MethodGet, Path: "/products", Summary: "List products", Query: v1dto.ListProductsRequest{}, Response: item, Paginated: true},
+        {Method: http.MethodGet, Path: "/products/:uuid", Summary: "Get a product", Response: item},
+        {Method: http.MethodPatch, Path: "/products/:uuid", Summary: "Update a product", Body: v1dto.UpdateProductRequest{}, Response: item},
+        {Method: http.MethodDelete, Path: "/products/:uuid", Summary: "Delete a product"},
+    }
 }
 </pre></div>
         <p class="jd-hint" style="margin-top:10px" lang="en">Need a public endpoint? Register it outside the protected group, wrapped in <code>r.guard.Public(…)</code>, the way <code>auth_router.go</code> opens <code>/auth/login</code>. Want "only the owner"? Use <code>r.guard.Authenticated(…)</code> and check in the service — see <a href="access.html#inside">Permissions &amp; roles</a>. Inside a protected handler you can read the logged-in user — see "Integrate" on the <a href="auth.html#client">Authentication</a> page.</p>
@@ -668,6 +685,8 @@ $ make vet
         <h2><span lang="en">Call it, and read every response</span><span lang="vi">Gọi thử API và giải mã từng mã phản hồi (Response)</span></h2>
         <p class="jd-sub" lang="en">Every generated route needs a token, so log in with a seeded demo account first (development only). All outputs below are real.</p>
         <p class="jd-sub" lang="vi">Mọi route được sinh ra đều bắt buộc đăng nhập (cần token xác thực), do đó trước tiên ta sẽ đăng nhập bằng tài khoản admin demo có sẵn (chỉ có trong môi trường development). Toàn bộ dữ liệu kết quả bên dưới đều là chạy thực tế.</p>
+        <p class="jd-sub" lang="en">Prefer clicking to curl? Open <code>http://localhost:$API_SERVER_PORT/docs</code>: every route with its fields and rules, and a <b>Test Request</b> button — paste the access token under <b>Authentication</b> first.</p>
+        <p class="jd-sub" lang="vi">Thích bấm hơn gõ curl? Mở <code>http://localhost:$API_SERVER_PORT/docs</code>: mọi route kèm field và luật kiểm tra, có nút <b>Test Request</b> — dán access token vào mục <b>Authentication</b> trước.</p>
       </div>
     </div>
 
@@ -832,8 +851,8 @@ $ curl -s -X PATCH localhost:$API_SERVER_PORT/api/v1/products/$UUID \
           <tr><td>sql</td><td><code>storage/logs/sql.log</code> · <span lang="en"><code>SQL_EXECUTION</code> for every query with its values filled in, only when <code>DB_QUERY_LOGGING=true</code> (off by default, on in <code>.env.example</code>); <code>SLOW_QUERY_DETECTION</code> (WARN) over <code>DB_SLOW_QUERY_THRESHOLD</code> (200ms)</span><span lang="vi"><code>SQL_EXECUTION</code>: Ghi lại mọi câu query SQL đã được điền sẵn giá trị thực tế, chỉ khi <code>DB_QUERY_LOGGING=true</code> (mặc định tắt, <code>.env.example</code> bật); cảnh báo <code>SLOW_QUERY_DETECTION</code> (WARN) khi thời gian chạy vượt ngưỡng <code>DB_SLOW_QUERY_THRESHOLD</code> (mặc định 200ms)</span></td></tr>
           <tr><td>limiter</td><td><code>storage/logs/limiter.log</code> · <span lang="en">rate-limit hits</span><span lang="vi">Ghi nhận các trường hợp bị hệ thống giới hạn tốc độ truy cập (Rate Limit)</span></td></tr>
         </table></div>
-        <p class="jd-hint" style="margin-top:10px" lang="en">Level per channel: <code>LOG_APP_LEVEL</code>, <code>LOG_HTTP_LEVEL</code>, <code>LOG_SQL_LEVEL</code>, <code>LOG_LIMITER_LEVEL</code> (debug · info · warn · error; default info — but <code>.env.example</code> sets <code>LOG_APP_LEVEL=debug</code>). <code>LOG_APP_LEVEL=debug</code> also shows every Fx step at startup. <code>DB_QUERY_LOGGING=false</code> turns SQL logging off.</p>
-        <p class="jd-hint" style="margin-top:10px" lang="vi">Cấu hình Log Level độc lập cho từng kênh qua: <code>LOG_APP_LEVEL</code>, <code>LOG_HTTP_LEVEL</code>, <code>LOG_SQL_LEVEL</code>, <code>LOG_LIMITER_LEVEL</code> (các mức: debug · info · warn · error; mặc định là info — nhưng <code>.env.example</code> đặt sẵn <code>LOG_APP_LEVEL=debug</code>). Đặt <code>LOG_APP_LEVEL=debug</code> sẽ hiển thị chi tiết từng bước Fx liên kết dependency khi khởi động. Đặt <code>DB_QUERY_LOGGING=false</code> để tắt hoàn toàn log câu lệnh SQL.</p>
+        <p class="jd-hint" style="margin-top:10px" lang="en">Level per channel: <code>LOG_APP_LEVEL</code>, <code>LOG_HTTP_LEVEL</code>, <code>LOG_SQL_LEVEL</code>, <code>LOG_LIMITER_LEVEL</code> (debug · info · warn · error; default info — but <code>.env.example</code> sets <code>LOG_APP_LEVEL=debug</code>). <code>LOG_APP_LEVEL=debug</code> also shows every Fx step at startup. <code>DB_QUERY_LOGGING=false</code> turns SQL logging off. The folder follows <code>STORAGE_DIR</code> (default <code>./storage</code>): logs live in <code>$STORAGE_DIR/logs</code>.</p>
+        <p class="jd-hint" style="margin-top:10px" lang="vi">Cấu hình Log Level độc lập cho từng kênh qua: <code>LOG_APP_LEVEL</code>, <code>LOG_HTTP_LEVEL</code>, <code>LOG_SQL_LEVEL</code>, <code>LOG_LIMITER_LEVEL</code> (các mức: debug · info · warn · error; mặc định là info — nhưng <code>.env.example</code> đặt sẵn <code>LOG_APP_LEVEL=debug</code>). Đặt <code>LOG_APP_LEVEL=debug</code> sẽ hiển thị chi tiết từng bước Fx liên kết dependency khi khởi động. Đặt <code>DB_QUERY_LOGGING=false</code> để tắt hoàn toàn log câu lệnh SQL. Thư mục log đi theo <code>STORAGE_DIR</code> (mặc định <code>./storage</code>): log nằm ở <code>$STORAGE_DIR/logs</code>.</p>
       </div>
       <div>
         <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
@@ -939,10 +958,10 @@ $ curl -s -X PATCH "localhost:$API_SERVER_PORT/api/v1/products/$UUID?t_debug=$TR
       <div>
         <div class="jd-tablewrap"><table class="jd-params">
           <tr><th><span lang="en">call</span><span lang="vi">lệnh</span></th><th><span lang="en">shows in the report</span><span lang="vi">hiển thị trong báo cáo</span></th></tr>
-          <tr><td>tracer.V(ctx, "label", v…)</td><td><span lang="en">the value(s), as JSON</span><span lang="vi">In giá trị của biến ra báo cáo dưới dạng JSON</span></td></tr>
-          <tr><td>tracer.C(ctx, "text")</td><td><span lang="en">a plain note</span><span lang="vi">Ghi một dòng chú thích (note) thông thường</span></td></tr>
-          <tr><td>tracer.W(ctx, "label", err)</td><td><span lang="en">a warning with file:line</span><span lang="vi">Ghi cảnh báo (warning) kèm vị trí file:dòng</span></td></tr>
-          <tr><td>tracer.E(ctx, "label", err)</td><td><span lang="en">an error with file:line and stack trace</span><span lang="vi">Ghi lỗi (error) kèm vị trí file:dòng và toàn bộ stack trace</span></td></tr>
+          <tr><td>tracer.Var(ctx, "label", v…)</td><td><span lang="en">the value(s), as JSON</span><span lang="vi">In giá trị của biến ra báo cáo dưới dạng JSON</span></td></tr>
+          <tr><td>tracer.Comment(ctx, "text")</td><td><span lang="en">a plain note</span><span lang="vi">Ghi một dòng chú thích (note) thông thường</span></td></tr>
+          <tr><td>tracer.Warn(ctx, "label", err)</td><td><span lang="en">a warning with file:line</span><span lang="vi">Ghi cảnh báo (warning) kèm vị trí file:dòng</span></td></tr>
+          <tr><td>tracer.Error(ctx, "label", err)</td><td><span lang="en">an error with file:line and stack trace</span><span lang="vi">Ghi lỗi (error) kèm vị trí file:dòng và toàn bộ stack trace</span></td></tr>
           <tr><td>defer tracer.Span(ctx, "label")()</td><td><span lang="en">how long the block took, on the timeline</span><span lang="vi">Đo thời gian thực thi của một khối code và hiển thị trên timeline</span></td></tr>
           <tr><td>tracer.Measure(ctx, "label", fn)</td><td><span lang="en">same, for a function</span><span lang="vi">Đo thời gian thực thi cho một hàm</span></td></tr>
           <tr><td>tracer.Stop(ctx, "label", v…)</td><td><span lang="en">records the values, then <b>stops the request right there</b> — nothing after it runs</span><span lang="vi">Ghi lại các giá trị cần kiểm tra, sau đó <b>dừng ngay lập tức request tại dòng này</b> — mọi code phía sau sẽ không được chạy</span></td></tr>
@@ -954,7 +973,7 @@ $ curl -s -X PATCH "localhost:$API_SERVER_PORT/api/v1/products/$UUID?t_debug=$TR
         <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>service — temporary, while debugging</span></div>
 <pre data-hl="go" data-lines="2-3">
 func (s *ProductService) UpdateProduct(ctx context.Context, uid uuid.UUID, input domain.UpdateProductInput) (*domain.Product, error) {
-    tracer.V(ctx, "update input", input)
+    tracer.Var(ctx, "update input", input)
     tracer.Stop(ctx, "uuid", uid.String()) // stop BEFORE the write: the DB is not touched
 
     updated, err := s.repo.Update(ctx, uid, input)
@@ -1054,6 +1073,7 @@ INFO  service/product_service.go:61  product: updated
         <div class="jd-rule"><span class="n" style="background:var(--blue)">✓</span><p lang="en"><code>make sqlc</code> run and the generated files committed.</p><p lang="vi">Đã chạy <code>make sqlc</code> và commit đầy đủ các file Go được sinh tự động.</p></div>
         <div class="jd-rule"><span class="n" style="background:var(--purple)">✓</span><p lang="en">Rules live in the service; the handler only translates HTTP.</p><p lang="vi">Mọi quy tắc nghiệp vụ nằm gọn trong Service; Handler chỉ làm nhiệm vụ tiếp nhận và điều phối HTTP.</p></div>
         <div class="jd-rule"><span class="n" style="background:var(--purple)">✓</span><p lang="en">Routes stay inside the <code>BearerAuth</code> group, each wrapped by the Guard with its own permission (in the feature's <code>domain/permission.go</code> and in a migration); any <code>guard.Public</code> one is deliberate and reviewed.</p><p lang="vi">Các endpoint đều nằm trong nhóm có <code>BearerAuth</code>, mỗi cái bọc bằng Guard với permission riêng (có trong <code>domain/permission.go</code> của feature và trong một migration); endpoint <code>guard.Public</code> nào cũng phải có lý do rõ ràng và được review kỹ.</p></div>
+        <div class="jd-rule"><span class="n" style="background:var(--purple)">✓</span><p lang="en">Every new route has its line in <code>Docs()</code>, and its DTO fields carry <code>binding</code> and <code>example</code> tags, so <code>/docs</code> shows them.</p><p lang="vi">Mỗi route mới có dòng tương ứng trong <code>Docs()</code>, và field của DTO có tag <code>binding</code> và <code>example</code>, để <code>/docs</code> hiển thị đủ.</p></div>
       </div>
       <div class="jd-rules" style="grid-template-columns:minmax(0,1fr)">
         <div class="jd-rule"><span class="n" style="background:var(--pink)">✓</span><p lang="en">Every new message key has its text in <code>registerTranslations</code>.</p><p lang="vi">Mọi key thông báo mới đều được khai báo bản dịch đầy đủ trong <code>registerTranslations</code>.</p></div>

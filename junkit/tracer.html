@@ -68,7 +68,7 @@
               vào context.</div>
           </div>
           <div class="jd-node is-tint c-orange" data-node="t2"><span class="k">2 · your code</span><span class="t mono"
-              style="font-size:15px">Span · V · E · Stop</span>
+              style="font-size:15px">Span · Var · Error · Stop</span>
             <div class="d" lang="en">Handlers and services record spans, notes, values, errors.</div>
             <div class="d" lang="vi">Handler và service ghi span, ghi chú, giá trị, lỗi.</div>
           </div>
@@ -201,11 +201,11 @@ debug := middleware.TracerDebugOptions{
 
 p.Router.Use(
     middleware.TracerDebug(debug),
-    middleware.Security(),
+    middleware.Security(middleware.SecurityOptions{ForceHSTS: cfg.Security.ForceHSTS}),
     // ... Trace, CORS, Gzip, AccessLog (SkipIf: debug.Matches) ...
     // a panic in a debug request becomes a "PANIC RECOVERED" error entry
-    middleware.Recover(p.HTTPLogger, p.Notifier, p.Responder, middleware.RecoverOptions{Debug: debug}),
-    // ... Payload, Limiter, RoutePatterns ...
+    middleware.Recover(middleware.RecoverOptions{Debug: debug}, p.HTTPLogger, p.Notifier, p.Responder),
+    // ... Banner, Limiter, Payload, RoutePatterns ...
 )
 </pre>
             </div>
@@ -219,7 +219,7 @@ if err != nil {
     log.Fatal(err)
 }
 
-// Anything with Exec / Query / QueryRow works: *pgxpool.Pool, pgx.Tx, postgres.DBTX.
+// Any tracer.DBTX (Exec / Query / QueryRow) works: *pgxpool.Pool, pgx.Tx, postgres.DBTX.
 queries := sqlc.New(tracer.NewPgxWrapper(pool))
 
 r := gin.New()
@@ -310,20 +310,20 @@ r.GET("/users/:id", userHandler.Get) // handlers pass ctx down to queries
 func (s *OrderService) Checkout(ctx context.Context, order Order) error {
     defer tracer.Span(ctx, "Checkout")()
 
-    tracer.C(ctx, "starting checkout")
-    tracer.V(ctx, "order", order)
+    tracer.Comment(ctx, "starting checkout")
+    tracer.Var(ctx, "order", order)
 
     var err error
     tracer.Measure(ctx, "Charge payment provider", func() {
         err = s.payments.Charge(ctx, order.Total)
     })
     if err != nil {
-        tracer.E(ctx, "charge failed", err)
+        tracer.Error(ctx, "charge failed", err)
         return err
     }
 
     if tracer.Enabled(ctx) {
-        tracer.V(ctx, "cart snapshot", s.buildSnapshot(order))
+        tracer.Var(ctx, "cart snapshot", s.buildSnapshot(order))
     }
 
     tracer.Stop(ctx, "state before save", order)
@@ -355,8 +355,8 @@ $ curl -s "http://localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_
                 the trailing <code>()</code> makes <code>defer</code> call it when the method returns.</span><span
                 class="x" lang="vi">Span bắt đầu bấm giờ và trả về hàm stop; cặp <code>()</code> ở cuối để
                 <code>defer</code> gọi nó khi method kết thúc.</span></div>
-            <div class="jd-ex c-green" data-code="#code-quick" data-show="4-5"><span class="n">2</span><span class="w">C
-                · V</span><span class="x" lang="en">A note, and a value shown as indented JSON. Several values → one
+            <div class="jd-ex c-green" data-code="#code-quick" data-show="4-5"><span class="n">2</span><span class="w">Comment
+                · Var</span><span class="x" lang="en">A note, and a value shown as indented JSON. Several values → one
                 entry each, same label.</span><span class="x" lang="vi">Một ghi chú, và một giá trị hiển thị dạng JSON
                 thụt lề. Nhiều giá trị → mỗi giá trị một entry, cùng label.</span></div>
             <div class="jd-ex c-green" data-code="#code-quick" data-show="7-10"><span class="n">3</span><span
@@ -364,9 +364,9 @@ $ curl -s "http://localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_
                 runs, debugging or not.</span><span class="x" lang="vi">Giống Span nhưng bọc một closure.
                 <code>fn</code> luôn chạy, dù có debug hay không.</span></div>
             <div class="jd-ex c-green" data-code="#code-quick" data-show="11-14"><span class="n">4</span><span
-                class="w">E</span><span class="x" lang="en">Error card with file, line, function and full stack.
-                <code>W</code> is the same without the stack.</span><span class="x" lang="vi">Thẻ lỗi kèm file, dòng,
-                hàm và toàn bộ stack. <code>W</code> giống vậy nhưng không có stack.</span></div>
+                class="w">Error</span><span class="x" lang="en">Error card with file, line, function and full stack.
+                <code>Warn</code> is the same without the stack.</span><span class="x" lang="vi">Thẻ lỗi kèm file, dòng,
+                hàm và toàn bộ stack. <code>Warn</code> giống vậy nhưng không có stack.</span></div>
             <div class="jd-ex c-green" data-code="#code-quick" data-show="16-18"><span class="n">5</span><span
                 class="w">Enabled</span><span class="x" lang="en">Skip work that only exists for debugging when nobody
                 is looking.</span><span class="x" lang="vi">Bỏ qua phần việc chỉ phục vụ debug khi không ai xem.</span>
@@ -453,39 +453,39 @@ func Measure(ctx context.Context, label string, fn func())
           </div>
 
           <div class="jd-sym c-green">
-            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">C · V</span></div>
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Comment · Var</span></div>
             <div class="jd-term">
               <pre data-hl="go">
-func C(ctx context.Context, message string)
-func V(ctx context.Context, label string, values ...any)
+func Comment(ctx context.Context, message string)
+func Var(ctx context.Context, label string, values ...any)
 </pre>
             </div>
             <ul>
-              <li lang="en"><code>C</code> records a <code>comment</code> (the message is the label, no data).</li>
-              <li lang="vi"><code>C</code> ghi một <code>comment</code> (message chính là label, không có data).</li>
-              <li lang="en"><code>V</code> records one <code>variable</code> entry <b>per value</b>, all with
+              <li lang="en"><code>Comment</code> records a <code>comment</code> (the message is the label, no data).</li>
+              <li lang="vi"><code>Comment</code> ghi một <code>comment</code> (message chính là label, không có data).</li>
+              <li lang="en"><code>Var</code> records one <code>variable</code> entry <b>per value</b>, all with
                 <code>label</code>. An <code>error</code> value is stored as <code>err.Error()</code> (errors usually
                 marshal to <code>{}</code>).</li>
-              <li lang="vi"><code>V</code> ghi một entry <code>variable</code> <b>cho mỗi giá trị</b>, cùng
+              <li lang="vi"><code>Var</code> ghi một entry <code>variable</code> <b>cho mỗi giá trị</b>, cùng
                 <code>label</code>. Giá trị kiểu <code>error</code> được lưu thành <code>err.Error()</code> (error
                 thường marshal ra <code>{}</code>).</li>
             </ul>
           </div>
 
           <div class="jd-sym c-red">
-            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">W · E</span></div>
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Warn · Error</span></div>
             <div class="jd-term">
               <pre data-hl="go">
-func W(ctx context.Context, label string, err any)
-func E(ctx context.Context, label string, err any)
+func Warn(ctx context.Context, label string, err any)
+func Error(ctx context.Context, label string, err any)
 </pre>
             </div>
             <ul>
               <li lang="en">Record a <code>warning</code> / <code>error</code> whose data is an <code>IssueData</code>:
                 <code>fmt.Sprintf("%v", err)</code>, the file / line / function of your call site, and a timestamp.
-                <code>E</code> also stores <code>debug.Stack()</code>.</li>
+                <code>Error</code> also stores <code>debug.Stack()</code>.</li>
               <li lang="vi">Ghi một <code>warning</code> / <code>error</code> với data là <code>IssueData</code>:
-                <code>fmt.Sprintf("%v", err)</code>, file / dòng / hàm tại chỗ bạn gọi, và thời điểm. <code>E</code> lưu
+                <code>fmt.Sprintf("%v", err)</code>, file / dòng / hàm tại chỗ bạn gọi, và thời điểm. <code>Error</code> lưu
                 thêm <code>debug.Stack()</code>.</li>
               <li lang="en">Empty <code>label</code> → <code>"WARNING"</code> / <code>"ERROR"</code>. <code>err</code>
                 may be anything (string, error, struct).</li>
@@ -506,11 +506,11 @@ type BreakpointSignal struct{}
 </pre>
             </div>
             <ul>
-              <li lang="en">With a Debugger: <code>V(ctx, label, values...)</code>, then
+              <li lang="en">With a Debugger: <code>Var(ctx, label, values...)</code>, then
                 <code>panic(BreakpointSignal{})</code>. <code>middleware.TracerDebug</code> recovers it, adds
                 <code>⏸ Stopped by tracer.Stop() after …</code> and renders the report. <code>middleware.Recover</code>
                 re-panics it so it reaches <code>TracerDebug</code>.</li>
-              <li lang="vi">Có Debugger: gọi <code>V(ctx, label, values...)</code> rồi
+              <li lang="vi">Có Debugger: gọi <code>Var(ctx, label, values...)</code> rồi
                 <code>panic(BreakpointSignal{})</code>. <code>middleware.TracerDebug</code> recover, thêm
                 <code>⏸ Stopped by tracer.Stop() after …</code> và render báo cáo. <code>middleware.Recover</code> panic
                 lại để tín hiệu tới được <code>TracerDebug</code>.</li>
@@ -544,15 +544,19 @@ func ServerInfo(r *http.Request) map[string]any
               <li lang="vi"><code>ServerInfo</code> trả về: timestamp, method, full_url, path, query_string, protocol,
                 host, host_port, server_name, server_ip, client_ip, client_port, x_forwarded_for, x_real_ip, user_agent,
                 referer, content_type, authorization, cookie, headers, go_version, pid, goroutines.</li>
-              <li lang="en">Masking: <code>Authorization: Bearer xyz</code> → <code>Bearer ****</code>; cookies →
-                <code>name=****</code>; any header whose name contains token, secret, password, api-key, apikey,
-                signature or session → <code>****</code>. <code>client_ip</code> = the RemoteAddr host
+              <li lang="en">Masking, with <code>security.MaskHeader</code>: <code>Authorization: Bearer xyz</code> →
+                <code>Bearer ****</code>; cookies → <code>name=****</code>; any other header whose name
+                <code>security.IsSecretName</code> flags (contains password, passwd, pwd, secret, token, api key,
+                authorization, signature, session or cookie) → <code>****</code>. Query parameters with such names are
+                masked in <code>full_url</code> and <code>query_string</code> too. <code>client_ip</code> = the RemoteAddr host
                 (proxy headers are not trusted; <code>x_forwarded_for</code> / <code>x_real_ip</code> are shown raw).
                 <code>HTTPInfo</code> with a <code>*gin.Context</code> as ctx overrides it with
                 <code>c.ClientIP()</code>, which honours Gin's trusted proxies.</li>
-              <li lang="vi">Che dữ liệu: <code>Authorization: Bearer xyz</code> → <code>Bearer ****</code>; cookie →
-                <code>name=****</code>; header có tên chứa token, secret, password, api-key, apikey, signature hoặc
-                session → <code>****</code>. <code>client_ip</code> = host trong RemoteAddr
+              <li lang="vi">Che dữ liệu, bằng <code>security.MaskHeader</code>: <code>Authorization: Bearer xyz</code> →
+                <code>Bearer ****</code>; cookie → <code>name=****</code>; header khác có tên mà
+                <code>security.IsSecretName</code> nhận ra (chứa password, passwd, pwd, secret, token, api key,
+                authorization, signature, session hoặc cookie) → <code>****</code>. Tham số query mang tên như vậy cũng
+                bị che trong <code>full_url</code> và <code>query_string</code>. <code>client_ip</code> = host trong RemoteAddr
                 (không tin header proxy; <code>x_forwarded_for</code> / <code>x_real_ip</code> hiện nguyên văn).
                 <code>HTTPInfo</code> nhận ctx là <code>*gin.Context</code> thì thay nó bằng <code>c.ClientIP()</code>,
                 tôn trọng cấu hình trusted proxy của Gin.</li>
@@ -574,15 +578,15 @@ func ServerInfo(r *http.Request) map[string]any
             <p lang="en">Returns file, line, function of the first stack frame outside the Go runtime and outside
               <code>github.com/jun-develop/junkit/tracer.</code>, skipping one extra frame (it is meant to be called from
               a helper). Called while panicking (from a deferred handler such as
-              <code>middleware.Recover</code>, or <code>W</code> / <code>E</code> inside a deferred func), it skips past
+              <code>middleware.Recover</code>, or <code>Warn</code> / <code>Error</code> inside a deferred func), it skips past
               <code>runtime.gopanic</code> and reports the frame that panicked. Falls back to
-              <code>"unknown", 0, "unknown"</code>. Used by W / E and by <code>middleware.Recover</code>.</p>
+              <code>"unknown", 0, "unknown"</code>. Used by Warn / Error and by <code>middleware.Recover</code>.</p>
             <p lang="vi">Trả về file, dòng, hàm của frame đầu tiên nằm ngoài Go runtime và ngoài
               <code>github.com/jun-develop/junkit/tracer.</code>, bỏ qua thêm một frame (vì được thiết kế để gọi từ một
               hàm helper). Khi được gọi lúc đang panic (từ hàm defer như
-              <code>middleware.Recover</code>, hoặc <code>W</code> / <code>E</code> trong một hàm defer), nó bỏ qua phần
+              <code>middleware.Recover</code>, hoặc <code>Warn</code> / <code>Error</code> trong một hàm defer), nó bỏ qua phần
               trên <code>runtime.gopanic</code> và trả về frame đã gây panic. Không tìm được thì trả
-              <code>"unknown", 0, "unknown"</code>. Được W / E và <code>middleware.Recover</code> dùng.</p>
+              <code>"unknown", 0, "unknown"</code>. Được Warn / Error và <code>middleware.Recover</code> dùng.</p>
           </div>
         </div>
 
@@ -590,10 +594,16 @@ func ServerInfo(r *http.Request) map[string]any
         <div class="jd-syms" style="margin-top:10px">
           <div class="jd-sym c-blue">
             <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NewPgxWrapper ·
-                PgxWrapper</span></div>
+                PgxWrapper · DBTX</span></div>
             <div class="jd-term">
               <pre data-hl="go">
-func NewPgxWrapper(inner dbtx) *PgxWrapper
+type DBTX interface {
+    Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+    Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+    QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+func NewPgxWrapper(inner DBTX) *PgxWrapper
 
 func (w *PgxWrapper) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 func (w *PgxWrapper) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
@@ -601,10 +611,11 @@ func (w *PgxWrapper) QueryRow(ctx context.Context, sql string, args ...any) pgx.
 </pre>
             </div>
             <ul>
-              <li lang="en"><code>dbtx</code> is unexported but is just Exec / Query / QueryRow with the pgx signatures
-                — a pool, a <code>pgx.Tx</code> or <code>postgres.DBTX</code> fit.</li>
-              <li lang="vi"><code>dbtx</code> không được export nhưng chỉ là Exec / Query / QueryRow theo chữ ký của pgx
-                — pool, <code>pgx.Tx</code> hay <code>postgres.DBTX</code> đều dùng được.</li>
+              <li lang="en"><code>DBTX</code> is just Exec / Query / QueryRow with the pgx signatures — a pool, a
+                <code>pgx.Tx</code> or <code>postgres.DBTX</code> fit. <code>PgxWrapper</code> implements it too.</li>
+              <li lang="vi"><code>DBTX</code> chỉ là Exec / Query / QueryRow theo chữ ký của pgx — pool,
+                <code>pgx.Tx</code> hay <code>postgres.DBTX</code> đều dùng được. <code>PgxWrapper</code> cũng implement
+                nó.</li>
               <li lang="en">Installed through <code>postgres.Options.Decorate</code>, it wraps the executor itself — the pool
                 and every transaction — not sqlc, so hand-written SQL run through <code>Executor(ctx)</code> is
                 captured too.</li>
@@ -872,7 +883,7 @@ type IssueData struct {
     Location  string `json:"location"`
     Line      int    `json:"line"`
     Function  string `json:"function"`
-    Stack     string `json:"stack,omitempty"` // E only
+    Stack     string `json:"stack,omitempty"` // Error only
     Timestamp string `json:"timestamp"`       // "2006-01-02 15:04:05.000 -0700"
 }
 </pre>
@@ -992,12 +1003,12 @@ type IssueData struct {
               chứa curl, httpie hoặc wget mới nhận JSON. Công cụ khác nhận trang HTML (không có JS nên preview vẫn xem
               được).</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">Secrets in the
-              report</span><span class="x" lang="en">Auth/cookie/secret-looking headers are masked, but SQL parameter
-              values, row data and <code>full_url</code> (including your <code>t_debug</code> value) are shown
-              as-is — that includes credential material such as <code>password_hash</code>, session hash columns and
-              the bound arguments of <code>INSERT</code>s.</span><span class="x" lang="vi">Header auth/cookie/có vẻ bí mật được che, nhưng giá trị tham số
-              SQL, dữ liệu các dòng và <code>full_url</code> (gồm cả giá trị <code>t_debug</code> của bạn) hiện nguyên
-              văn — kể cả dữ liệu nhạy cảm như <code>password_hash</code>, các cột hash session và tham số bind của các
+              report</span><span class="x" lang="en">Auth/cookie/secret-looking headers and query parameters are
+              masked, but SQL parameter values, row data and the rest of <code>full_url</code> (including your
+              <code>t_debug</code> value) are shown as-is — that includes credential material such as <code>password_hash</code>, session hash columns and
+              the bound arguments of <code>INSERT</code>s.</span><span class="x" lang="vi">Header và tham số query auth/cookie/có vẻ bí mật được che, nhưng giá
+              trị tham số SQL, dữ liệu các dòng và phần còn lại của <code>full_url</code> (gồm cả giá trị
+              <code>t_debug</code> của bạn) hiện nguyên văn — kể cả dữ liệu nhạy cảm như <code>password_hash</code>, các cột hash session và tham số bind của các
               câu <code>INSERT</code>.</span></div>
         </div>
       </section>

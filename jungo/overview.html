@@ -290,7 +290,7 @@ $ cd jungo
           {"from":"app","to":"mail","color":"muted","dashed":true,"delay":1200}]'>
           <div class="jd-node is-tint c-blue" data-node="app">
             <span class="t mono">app</span>
-            <div class="d"><span lang="en">Go API on :$API_SERVER_PORT — hot reload with Air: save a .go file, it restarts by itself.</span><span lang="vi">Go API ở :$API_SERVER_PORT — hot reload bằng Air: lưu file .go là app tự khởi động lại.</span></div>
+            <div class="d"><span lang="en">Go API on :$API_SERVER_PORT — hot reload with Air: save a .go file, it restarts by itself. If it exits (database not ready or not migrated yet), Air starts it again 3 seconds later.</span><span lang="vi">Go API ở :$API_SERVER_PORT — hot reload bằng Air: lưu file .go là app tự khởi động lại. Nếu app thoát (database chưa sẵn sàng hoặc chưa migrate), Air chạy lại sau 3 giây.</span></div>
           </div>
           <div class="jd-node is-tint c-blue" data-node="pg">
             <span class="t mono">postgresql</span>
@@ -370,6 +370,8 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/users \
         </div>
         <p class="jd-sub" style="margin-top:10px" lang="en">Other demo users: manager@, member@, user@jungo.com — same password, fewer permissions (admin has them all). Who can do what: <a href="access.html#catalog">Permissions &amp; roles</a>.</p>
         <p class="jd-sub" style="margin-top:10px" lang="vi">User demo khác: manager@, member@, user@jungo.com — cùng mật khẩu, ít quyền hơn (admin có tất cả). Ai làm được gì: <a href="access.html#catalog">Phân quyền</a>.</p>
+        <p class="jd-sub" style="margin-top:10px" lang="en"><b>Every endpoint, its fields and responses:</b> open <code>http://localhost:$API_SERVER_PORT/docs</code> (development only). Paste the access token under <b>Authentication</b> and call any route with <b>Test Request</b>. See <a href="../junkit/apidoc.html">apidoc</a>.</p>
+        <p class="jd-sub" style="margin-top:10px" lang="vi"><b>Toàn bộ endpoint, field và response:</b> mở <code>http://localhost:$API_SERVER_PORT/docs</code> (chỉ ở development). Dán access token vào mục <b>Authentication</b> rồi gọi bất kỳ route nào bằng <b>Test Request</b>. Xem <a href="../junkit/apidoc.html">apidoc</a>.</p>
       </div>
     </div>
   </section>

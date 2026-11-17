@@ -32,8 +32,8 @@
           Redis, in-memory map, hoặc chế độ No-op, chuyển đổi linh hoạt chỉ qua một dòng cấu hình.</p>
         <div class="jd-chips">
           <span class="jd-chip">github.com/jun-develop/junkit/cache</span>
-          <span class="jd-chip"><span lang="en">Fx: cache.Module → provides cache.Cache[any]</span><span lang="vi">Fx:
-              cache.Module → cung cấp cache.Cache[any]</span></span>
+          <span class="jd-chip"><span lang="en">Fx: cache.Module → provides *cache.Store</span><span lang="vi">Fx:
+              cache.Module → cung cấp *cache.Store</span></span>
           <span class="jd-chip">github.com/redis/go-redis/v9 · go.uber.org/fx</span>
         </div>
       </header>
@@ -56,15 +56,16 @@
       {"from":"c3","to":"c4","color":"orange","dashed":true}]'>
           <div class="jd-node is-tint c-red" data-node="c1"><span class="k">1 · service</span><span class="t mono"
               style="font-size:15px">cache.Cache[T]</span>
-            <div class="d" lang="en">Injected or built with <code>cache.New[T](opts)</code> — one cache per value type.
+            <div class="d" lang="en">Built with <code>cache.New[T](s)</code> — one cache per value type, all on one
+              shared <code>*cache.Store</code>.
             </div>
-            <div class="d" lang="vi">Được inject hoặc tạo bằng <code>cache.New[T](opts)</code> — mỗi kiểu giá trị một
-              cache.</div>
+            <div class="d" lang="vi">Tạo bằng <code>cache.New[T](s)</code> — mỗi kiểu giá trị một cache, cùng dùng
+              chung một <code>*cache.Store</code>.</div>
           </div>
           <div class="jd-node is-tint c-red" data-node="c2"><span class="k">2 · New[T]</span><span class="t mono"
               style="font-size:15px">redis | memory | noop</span>
-            <div class="d" lang="en"><code>New</code> switches on the driver; empty or unknown → no-op.</div>
-            <div class="d" lang="vi"><code>New</code> chọn theo driver; rỗng hoặc lạ → no-op.</div>
+            <div class="d" lang="en"><code>New</code> switches on the Store's driver; empty or unknown → no-op.</div>
+            <div class="d" lang="vi"><code>New</code> chọn theo driver của Store; rỗng hoặc lạ → no-op.</div>
           </div>
           <div class="jd-node is-tint c-red" data-node="c3"><span class="k">3 · store</span><span class="t mono"
               style="font-size:15px">JSON · map · ∅</span>
@@ -126,15 +127,17 @@ func provideCacheOptions(cfg *config.Config) cache.Options {
 </pre>
             </div>
             <p lang="en" style="margin-top:12px"><code>cache.Module</code> turns the <code>cache.Options</code> in the
-              graph into a <code>cache.Cache[any]</code>. For typed caches, ask Fx for <code>cache.Options</code> and
-              call <code>cache.New[T](opts)</code> yourself — that is what Jungo's features do.
+              graph into one shared <code>*cache.Store</code> (one Redis connection pool for the whole app), closed
+              when the app stops. For typed caches, ask Fx for the <code>*cache.Store</code> and call
+              <code>cache.New[T](s)</code> yourself — that is what Jungo's features do.
               <code>cfg.Redis.Enabled</code> is the env var <code>CACHE_REDIS_ENABLE</code> (default <code>false</code>), so
               out of the box Jungo runs with the <b>no-op</b> driver: nothing is cached and every lookup reads the
               database. Why not memory? Each process would hold its own copy, so with several instances a logout or
               a removed permission would reach the others only when their copy expires.</p>
             <p lang="vi" style="margin-top:12px"><code>cache.Module</code> biến <code>cache.Options</code> có trong
-              graph thành một <code>cache.Cache[any]</code>. Muốn cache có kiểu, hãy xin Fx <code>cache.Options</code>
-              rồi tự gọi <code>cache.New[T](opts)</code> — các feature của Jungo làm đúng như vậy.
+              graph thành một <code>*cache.Store</code> dùng chung (một pool kết nối Redis cho cả app), được đóng khi
+              app dừng. Muốn cache có kiểu, hãy xin Fx <code>*cache.Store</code> rồi tự gọi
+              <code>cache.New[T](s)</code> — các feature của Jungo làm đúng như vậy.
               <code>cfg.Redis.Enabled</code> là biến môi trường <code>CACHE_REDIS_ENABLE</code> (mặc định
               <code>false</code>), nên mặc định Jungo chạy với driver <b>no-op</b>: không cache gì, mọi lần tra đều đọc database. Vì sao không dùng memory? Mỗi process sẽ giữ một bản riêng, nên khi chạy nhiều instance, logout hay một permission bị gỡ chỉ tới các instance khác khi bản của chúng hết hạn.</p>
           </div>
@@ -142,26 +145,30 @@ func provideCacheOptions(cfg *config.Config) cache.Options {
             <div class="jd-term">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
               <pre data-hl="go">
-users := cache.New[*User](cache.Options{
+s := cache.NewStore(cache.Options{
     Driver: cache.DriverRedis,
     Redis:  cache.RedisOptions{Addr: "localhost:6379"},
 })
-defer users.Close()
+defer s.Close()
+
+users := cache.New[*User](s)        // every Redis cache shares s's client
+counters := cache.New[int64](s)
 
 // or pick a driver directly:
-mem := cache.NewMemoryCache[string]()  // *MemoryCache[string]
-off := cache.NewNoopCache[*User]()     // *NoopCache[*User]
-rc := cache.NewRedisCache[int64](cache.RedisOptions{Addr: "localhost:6379"})
+mem := cache.NewMemory[string](cache.MemoryOptions{}) // *Memory[string]
+off := cache.NewNoop[*User]()                         // *Noop[*User]
+rc := cache.NewRedis[int64](redisClient)              // you own and close redisClient
 </pre>
             </div>
             <p lang="en" style="margin-top:12px">The concrete constructors return the struct type, so you can reach
-              driver-only methods such as <code>RedisCache.SetNX</code>. Creating a Redis cache does not wait for a
-              connection: it starts dialing <code>MinIdleConns</code> connections in the background and never reports
-              their errors — call <code>Ping</code> if you want to fail fast.</p>
+              driver-only methods such as <code>Redis.Ping</code>. <code>NewStore</code> does not wait for a
+              connection: the Redis client connects lazily and never reports background dial errors — call
+              <code>Ping</code> on a Redis cache if you want to fail fast. <code>Close</code> the Store once, after
+              every cache on it is done.</p>
             <p lang="vi" style="margin-top:12px">Các constructor cụ thể trả về kiểu struct, nên bạn dùng được method
-              riêng của driver như <code>RedisCache.SetNX</code>. Tạo Redis cache không chờ kết nối: nó bắt đầu mở
-              <code>MinIdleConns</code> kết nối ở nền và không bao giờ báo lỗi của chúng — gọi <code>Ping</code> nếu
-              muốn phát hiện lỗi sớm.</p>
+              riêng của driver như <code>Redis.Ping</code>. <code>NewStore</code> không chờ kết nối: client Redis kết
+              nối lười và không báo lỗi dial ở nền — gọi <code>Ping</code> trên một Redis cache nếu muốn phát hiện lỗi
+              sớm. Gọi <code>Close</code> trên Store một lần, sau khi mọi cache trên nó đã xong.</p>
           </div>
         </div>
 
@@ -179,8 +186,8 @@ rc := cache.NewRedisCache[int64](cache.RedisOptions{Addr: "localhost:6379"})
               <td>Driver</td>
               <td><span lang="en"><code>""</code> → no-op (so does any unknown value)</span><span
                   lang="vi"><code>""</code> → no-op (giá trị lạ cũng vậy)</span></td>
-              <td><span lang="en">Which backend <code>New</code> builds.</span><span lang="vi">Backend mà
-                  <code>New</code> tạo ra.</span></td>
+              <td><span lang="en">Which backend <code>NewStore</code> builds.</span><span lang="vi">Backend mà
+                  <code>NewStore</code> tạo ra.</span></td>
             </tr>
             <tr>
               <td>Redis</td>
@@ -189,6 +196,15 @@ rc := cache.NewRedisCache[int64](cache.RedisOptions{Addr: "localhost:6379"})
                   khi Driver là <code>DriverRedis</code></span></td>
               <td><span lang="en">Connection settings, below.</span><span lang="vi">Cấu hình kết nối, xem bên
                   dưới.</span></td>
+            </tr>
+            <tr>
+              <td>Memory</td>
+              <td>MemoryOptions</td>
+              <td><span lang="en"><code>MaxEntries</code> 100,000</span><span lang="vi"><code>MaxEntries</code>
+                  100.000</span></td>
+              <td><span lang="en">Size cap of each memory cache (DriverMemory or after <code>OrMemory</code>); a full
+                  cache evicts another key.</span><span lang="vi">Giới hạn kích thước mỗi memory cache (DriverMemory
+                  hoặc sau <code>OrMemory</code>); cache đầy sẽ loại một key khác.</span></td>
             </tr>
           </table>
         </div>
@@ -252,13 +268,6 @@ rc := cache.NewRedisCache[int64](cache.RedisOptions{Addr: "localhost:6379"})
               <td>3s</td>
               <td><span lang="en">Timeout of one write.</span><span lang="vi">Timeout cho một lần ghi.</span></td>
             </tr>
-            <tr>
-              <td>Logger</td>
-              <td>Logger</td>
-              <td><span lang="en">nil = errors are not logged</span><span lang="vi">nil = không log lỗi</span></td>
-              <td><span lang="en">Receives non-fatal errors (failed get/set/delete, JSON errors).</span><span
-                  lang="vi">Nhận các lỗi không nghiêm trọng (get/set/delete lỗi, lỗi JSON).</span></td>
-            </tr>
           </table>
         </div>
       </section>
@@ -287,11 +296,11 @@ type ProductService struct {
     counters cache.Cache[int64]
 }
 
-func NewProductService(repo domain.ProductRepository, opts cache.Options) *ProductService {
+func NewProductService(repo domain.ProductRepository, s *cache.Store) *ProductService {
     return &amp;ProductService{
         repo:     repo,
-        products: cache.New[*domain.Product](opts),
-        counters: cache.New[int64](opts),
+        products: cache.New[*domain.Product](s),
+        counters: cache.New[int64](s),
     }
 }
 
@@ -321,11 +330,11 @@ func (s *ProductService) AllowExport(ctx context.Context, userID string) (bool, 
           </div>
           <div class="jd-explain">
             <div class="jd-ex c-green" data-code="#code-quick" data-show="7-13"><span class="n">1</span><span
-                class="w">cache.New[T](opts)</span><span class="x" lang="en">One cache per value type, all sharing the
-                app's <code>cache.Options</code> (Fx injects them). Counters use <code>Cache[int64]</code> here: it works
+                class="w">cache.New[T](s)</span><span class="x" lang="en">One cache per value type, all sharing the
+                app's <code>*cache.Store</code> (Fx injects it). Counters use <code>Cache[int64]</code> here: it works
                 on every driver (memory also accepts <code>Cache[any]</code>; Redis <code>Incr</code> works for any
                 <code>T</code>).</span><span class="x" lang="vi">Mỗi kiểu giá trị một cache, cùng dùng
-                <code>cache.Options</code> của app (Fx inject sẵn). Bộ đếm ở đây dùng <code>Cache[int64]</code>: chạy
+                <code>*cache.Store</code> của app (Fx inject sẵn). Bộ đếm ở đây dùng <code>Cache[int64]</code>: chạy
                 được trên mọi driver (memory cũng nhận <code>Cache[any]</code>; <code>Incr</code> của Redis chạy với mọi
                 <code>T</code>).</span>
             </div>
@@ -354,9 +363,9 @@ func (s *ProductService) AllowExport(ctx context.Context, userID string) (bool, 
           <span class="jd-badge">4</span>
           <div>
             <h2><span lang="en">Try it: the fixed window</span><span lang="vi">Thử ngay: cửa sổ cố định</span></h2>
-            <p class="jd-sub" lang="en">Mirrors <code>MemoryCache.Incr</code> / <code>Get</code> on a fake clock. Watch
+            <p class="jd-sub" lang="en">Mirrors <code>Memory.Incr</code> / <code>Get</code> on a fake clock. Watch
               the expiry stay put while you increment.</p>
-            <p class="jd-sub" lang="vi">Mô phỏng <code>MemoryCache.Incr</code> / <code>Get</code> trên một đồng hồ giả.
+            <p class="jd-sub" lang="vi">Mô phỏng <code>Memory.Incr</code> / <code>Get</code> trên một đồng hồ giả.
               Để ý thời điểm hết hạn không đổi khi bạn tăng đếm.</p>
           </div>
         </div>
@@ -399,13 +408,13 @@ func (s *ProductService) AllowExport(ctx context.Context, userID string) (bool, 
             <div class="jd-term">
               <pre data-hl="go">
 type Cache[T any] interface {
+    Lookup(ctx context.Context, key string) (T, bool, error)
     Get(ctx context.Context, key string) (T, bool)
     Set(ctx context.Context, key string, value T, ttl time.Duration) error
     Delete(ctx context.Context, key string) error
     Exists(ctx context.Context, key string) (bool, error)
     Incr(ctx context.Context, key string, ttl time.Duration) (int64, error)
     GetOrSet(ctx context.Context, key string, ttl time.Duration, fetchFn func() (T, error)) (T, error)
-    Close() error
 }
 </pre>
             </div>
@@ -416,9 +425,16 @@ type Cache[T any] interface {
                   <th><span lang="en">contract</span><span lang="vi">hợp đồng</span></th>
                 </tr>
                 <tr>
+                  <td>Lookup</td>
+                  <td><span lang="en">Like <code>Get</code>, but also returns a backend error, so a failed read can be
+                      told apart from a miss.</span><span lang="vi">Giống <code>Get</code>, nhưng trả thêm lỗi backend,
+                      để phân biệt lần đọc lỗi với miss.</span></td>
+                </tr>
+                <tr>
                   <td>Get</td>
                   <td><span lang="en">Returns <code>(value, true)</code> on a hit, <code>(zero value of T, false)</code>
-                      on a miss. No error: backend failures also look like a miss.</span><span lang="vi">Hit trả
+                      on a miss. No error: backend failures also look like a miss (use <code>Lookup</code> to see
+                      them).</span><span lang="vi">Hit trả
                       <code>(value, true)</code>, miss trả <code>(zero value của T, false)</code>. Không có error: lỗi
                       backend cũng trông như miss.</span></td>
                 </tr>
@@ -457,11 +473,6 @@ type Cache[T any] interface {
                       <code>fetchFn()</code>, lưu kết quả trong <code>ttl</code> rồi trả về. <code>fetchFn</code> lỗi
                       thì trả đúng lỗi đó và không lưu gì.</span></td>
                 </tr>
-                <tr>
-                  <td>Close</td>
-                  <td><span lang="en">Releases resources (the Redis connection pool).</span><span lang="vi">Giải phóng
-                      tài nguyên (pool kết nối Redis).</span></td>
-                </tr>
               </table>
             </div>
           </div>
@@ -473,24 +484,24 @@ type Cache[T any] interface {
               <table class="jd-params">
                 <tr>
                   <th>method</th>
-                  <th>RedisCache</th>
-                  <th>MemoryCache</th>
-                  <th>NoopCache</th>
+                  <th>Redis</th>
+                  <th>Memory</th>
+                  <th>Noop</th>
                 </tr>
                 <tr>
                   <td>Get</td>
-                  <td><span lang="en">GET + <code>json.Unmarshal</code>. Not found → miss. Redis or JSON error → logged,
-                      miss.</span><span lang="vi">GET + <code>json.Unmarshal</code>. Không có → miss. Lỗi Redis hoặc
-                      JSON → log, miss.</span></td>
+                  <td><span lang="en">GET + <code>json.Unmarshal</code>. Not found → miss. Redis or JSON error → miss
+                      (<code>Lookup</code> returns it).</span><span lang="vi">GET + <code>json.Unmarshal</code>. Không
+                      có → miss. Lỗi Redis hoặc JSON → miss (<code>Lookup</code> trả lỗi đó).</span></td>
                   <td><span lang="en">Map lookup; an expired entry is deleted and reported as a miss.</span><span
                       lang="vi">Tra map; entry hết hạn bị xoá và báo miss.</span></td>
                   <td><span lang="en">always miss</span><span lang="vi">luôn miss</span></td>
                 </tr>
                 <tr>
                   <td>Set</td>
-                  <td><span lang="en"><code>json.Marshal</code> + SET with ttl. Marshal / Redis errors are logged and
+                  <td><span lang="en"><code>json.Marshal</code> + SET with ttl. Marshal / Redis errors are
                       returned.</span><span lang="vi"><code>json.Marshal</code> + SET kèm ttl. Lỗi marshal / Redis được
-                      log và trả về.</span></td>
+                      trả về.</span></td>
                   <td><span lang="en">Stores the Go value; <code>ttl &lt;= 0</code> = no expiry. Always
                       <code>nil</code>.</span><span lang="vi">Lưu nguyên giá trị Go; <code>ttl &lt;= 0</code> = không
                       hết hạn. Luôn <code>nil</code>.</span></td>
@@ -499,15 +510,13 @@ type Cache[T any] interface {
                 </tr>
                 <tr>
                   <td>Delete</td>
-                  <td><span lang="en">DEL; errors logged and returned.</span><span lang="vi">DEL; lỗi được log và trả
-                      về.</span></td>
+                  <td><span lang="en">DEL; errors returned.</span><span lang="vi">DEL; lỗi được trả về.</span></td>
                   <td><code>nil</code></td>
                   <td><code>nil</code></td>
                 </tr>
                 <tr>
                   <td>Exists</td>
-                  <td><span lang="en">EXISTS; errors returned (not logged).</span><span lang="vi">EXISTS; lỗi được trả
-                      về (không log).</span></td>
+                  <td><span lang="en">EXISTS; errors returned.</span><span lang="vi">EXISTS; lỗi được trả về.</span></td>
                   <td><span lang="en">same as <code>Get</code> (expired = false), err always
                       <code>nil</code></span><span lang="vi">giống <code>Get</code> (hết hạn = false), err luôn
                       <code>nil</code></span></td>
@@ -528,18 +537,12 @@ type Cache[T any] interface {
                 </tr>
                 <tr>
                   <td>GetOrSet</td>
-                  <td><span lang="en">A failed Set is logged (<code>"cache: redis set in GetOrSet failed"</code>) but
-                      the fetched value is still returned.</span><span lang="vi">Set lỗi thì được log
-                      (<code>"cache: redis set in GetOrSet failed"</code>) nhưng vẫn trả giá trị đã fetch.</span></td>
+                  <td><span lang="en">A failed read counts as a miss and a failed store is ignored: the fetched
+                      value is still returned.</span><span lang="vi">Đọc lỗi tính là miss, lưu lỗi thì bỏ qua: vẫn trả
+                      giá trị đã fetch.</span></td>
                   <td><span lang="en">as the contract</span><span lang="vi">đúng như hợp đồng</span></td>
                   <td><span lang="en">always calls <code>fetchFn</code>, stores nothing</span><span lang="vi">luôn gọi
                       <code>fetchFn</code>, không lưu gì</span></td>
-                </tr>
-                <tr>
-                  <td>Close</td>
-                  <td><span lang="en">closes the pool</span><span lang="vi">đóng pool</span></td>
-                  <td><code>nil</code></td>
-                  <td><code>nil</code></td>
                 </tr>
               </table>
             </div>
@@ -568,7 +571,12 @@ const (
               <pre data-hl="go">
 type Options struct {
     Driver Driver
-    Redis RedisOptions
+    Redis  RedisOptions
+    Memory MemoryOptions
+}
+
+type MemoryOptions struct {
+    MaxEntries int // default 100,000
 }
 </pre>
             </div>
@@ -577,14 +585,28 @@ type Options struct {
           </div>
 
           <div class="jd-sym c-blue">
-            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">Options.OrMemory</span></div>
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Store</span><span
+                class="jd-kind">func</span><span class="jd-sym-name">NewStore · OrMemory · Close</span></div>
             <div class="jd-term">
-              <pre data-hl="go">func (o Options) OrMemory() Options</pre>
+              <pre data-hl="go">
+type Store struct { /* unexported */ }
+
+func NewStore(opts Options) *Store
+func (s *Store) OrMemory() *Store
+func (s *Store) Close() error
+</pre>
             </div>
-            <p lang="en">Keeps <code>DriverRedis</code>; any other driver becomes <code>DriverMemory</code>. Use it
+            <p lang="en">The shared storage caches are built on: one lazily connecting Redis client per app, or none for
+              the memory and no-op drivers. <code>Close</code> releases the Redis client; caches built on the Store
+              must not be used afterwards.</p>
+            <p lang="vi">Kho dùng chung mà các cache được dựng trên đó: một client Redis kết nối lười cho cả app, hoặc
+              không có gì với driver memory và no-op. <code>Close</code> giải phóng client Redis; các cache dựng trên
+              Store không được dùng sau đó nữa.</p>
+            <p lang="en"><code>OrMemory</code> returns the Store itself when it uses Redis; otherwise a memory
+              Store. Use it
               for counters and blocks that must work without Redis (a no-op cache would never block), accepting that
               each instance then keeps its own. Jungo's login guard and <code>middleware.Banner</code> use it.</p>
-            <p lang="vi">Giữ nguyên <code>DriverRedis</code>; driver khác thành <code>DriverMemory</code>. Dùng cho bộ
+            <p lang="vi"><code>OrMemory</code> trả về chính Store khi nó dùng Redis; ngược lại trả một Store memory. Dùng cho bộ
               đếm và lệnh chặn phải chạy được cả khi không có Redis (cache no-op sẽ không bao giờ chặn), chấp nhận mỗi
               instance giữ bản riêng. Bộ chặn login của Jungo và <code>middleware.Banner</code> dùng nó.</p>
           </div>
@@ -594,7 +616,7 @@ type Options struct {
                 class="jd-pill">invalidatable.go</span></div>
             <div class="jd-term">
               <pre data-hl="go">
-func NewInvalidatable[T any](opts Options, ttl time.Duration) *Invalidatable[T]
+func NewInvalidatable[T any](s *Store, ttl time.Duration) *Invalidatable[T]
 
 func (c *Invalidatable[T]) GetOrLoad(ctx context.Context, key string,
     markers func(T) []string, load func() (T, error)) (value T, hit bool, err error)
@@ -630,19 +652,19 @@ func (c *Invalidatable[T]) Invalidate(ctx context.Context, marker string) error
           <div class="jd-sym c-blue">
             <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">New</span></div>
             <div class="jd-term">
-              <pre data-hl="go">func New[T any](opts Options) Cache[T]</pre>
+              <pre data-hl="go">func New[T any](s *Store) Cache[T]</pre>
             </div>
             <ul>
-              <li lang="en"><code>DriverRedis</code> → <code>*RedisCache[T]</code> (returns without waiting for a connection),
-                <code>DriverMemory</code> → <code>*MemoryCache[T]</code>, anything else (including <code>""</code>) →
-                <code>*NoopCache[T]</code>.</li>
-              <li lang="vi"><code>DriverRedis</code> → <code>*RedisCache[T]</code> (trả về ngay, không chờ kết nối),
-                <code>DriverMemory</code> → <code>*MemoryCache[T]</code>, mọi giá trị khác (kể cả <code>""</code>) →
-                <code>*NoopCache[T]</code>.</li>
-              <li lang="en">Never returns an error. Each call with <code>DriverRedis</code> creates a new connection
-                pool.</li>
-              <li lang="vi">Không bao giờ trả lỗi. Mỗi lần gọi với <code>DriverRedis</code> tạo một pool kết nối mới.
-              </li>
+              <li lang="en"><code>DriverRedis</code> → <code>*Redis[T]</code> on the Store's shared client,
+                <code>DriverMemory</code> → a new <code>*Memory[T]</code> (its own map), anything else (including
+                <code>""</code>) → <code>*Noop[T]</code>.</li>
+              <li lang="vi"><code>DriverRedis</code> → <code>*Redis[T]</code> trên client dùng chung của Store,
+                <code>DriverMemory</code> → một <code>*Memory[T]</code> mới (map riêng), mọi giá trị khác (kể cả
+                <code>""</code>) → <code>*Noop[T]</code>.</li>
+              <li lang="en">Never returns an error and opens no connection: every Redis cache shares the Store's
+                single pool.</li>
+              <li lang="vi">Không bao giờ trả lỗi và không mở kết nối: mọi Redis cache dùng chung pool duy nhất của
+                Store.</li>
             </ul>
           </div>
 
@@ -651,18 +673,14 @@ func (c *Invalidatable[T]) Invalidate(ctx context.Context, marker string) error
             <div class="jd-term">
               <pre data-hl="go">
 var Module = fx.Module("cache",
-    fx.Provide(func(opts Options) Cache[any] {
-        return New[any](opts)
-    }),
+    fx.Provide(newModuleStore), // NewStore(opts) + OnStop Close
 )
 </pre>
             </div>
-            <p lang="en" style="margin-top:12px">Needs a <code>cache.Options</code> in the graph; provides
-              <code>cache.Cache[any]</code>. It registers no lifecycle hook, so <code>Close</code> is not called on
-              shutdown.</p>
-            <p lang="vi" style="margin-top:12px">Cần có <code>cache.Options</code> trong graph; cung cấp
-              <code>cache.Cache[any]</code>. Module không đăng ký lifecycle hook, nên <code>Close</code> không được gọi
-              khi tắt app.</p>
+            <p lang="en" style="margin-top:12px">Needs a <code>cache.Options</code> in the graph; provides one shared
+              <code>*cache.Store</code> and closes it when the app stops.</p>
+            <p lang="vi" style="margin-top:12px">Cần có <code>cache.Options</code> trong graph; cung cấp một
+              <code>*cache.Store</code> dùng chung và đóng nó khi app dừng.</p>
           </div>
 
           <div class="jd-sym c-orange">
@@ -671,39 +689,12 @@ var Module = fx.Module("cache",
             <div class="jd-term">
               <pre data-hl="go">var ErrNotInteger = errors.New("cache: Incr requires Cache[int64] or Cache[any]")</pre>
             </div>
-            <p lang="en" style="margin-top:12px">Returned by <code>MemoryCache.Incr</code> only (check with
+            <p lang="en" style="margin-top:12px">Returned by <code>Memory.Incr</code> only (check with
               <code>errors.Is</code>). There is no "not found" error in this package: a miss is the <code>false</code>
               from <code>Get</code>.</p>
-            <p lang="vi" style="margin-top:12px">Chỉ <code>MemoryCache.Incr</code> trả lỗi này (kiểm tra bằng
+            <p lang="vi" style="margin-top:12px">Chỉ <code>Memory.Incr</code> trả lỗi này (kiểm tra bằng
               <code>errors.Is</code>). Package không có lỗi "not found": miss chính là giá trị <code>false</code> từ
               <code>Get</code>.</p>
-          </div>
-
-          <div class="jd-sym c-orange">
-            <div class="jd-sym-head"><span class="jd-kind">interface</span><span class="jd-sym-name">Logger</span></div>
-            <div class="jd-term">
-              <pre data-hl="go">
-type Logger interface {
-    Error(msg string, keysAndValues ...any)
-}
-</pre>
-            </div>
-            <p lang="en" style="margin-top:12px">Plug into <code>RedisOptions.Logger</code>. Messages it receives, each
-              with <code>"key", key, "error", err</code> (<code>"keys"</code> for MGet):</p>
-            <p lang="vi" style="margin-top:12px">Gắn vào <code>RedisOptions.Logger</code>. Các message nó nhận, kèm
-              <code>"key", key, "error", err</code> (<code>"keys"</code> với MGet):</p>
-            <div class="jd-term">
-              <pre>"cache: redis get failed"            "cache: redis unmarshal failed"
-"cache: redis marshal failed"        "cache: redis set failed"
-"cache: redis delete failed"         "cache: redis set in GetOrSet failed"
-"cache: redis mget failed"           "cache: redis mget unmarshal failed"</pre>
-            </div>
-            <p lang="en" style="margin-top:12px">Note: <code>*zap.SugaredLogger</code> does not satisfy it (its
-              <code>Error</code> is <code>Error(args ...any)</code>) — wrap its <code>Errorw</code> in a tiny adapter.
-            </p>
-            <p lang="vi" style="margin-top:12px">Lưu ý: <code>*zap.SugaredLogger</code> không thoả interface này
-              (<code>Error</code> của nó là <code>Error(args ...any)</code>) — hãy bọc <code>Errorw</code> của nó trong
-              một adapter nhỏ.</p>
           </div>
 
           <div class="jd-sym c-red">
@@ -720,7 +711,6 @@ type RedisOptions struct {
     DialTimeout time.Duration
     ReadTimeout time.Duration
     WriteTimeout time.Duration
-    Logger Logger
 }
 </pre>
             </div>
@@ -730,141 +720,56 @@ type RedisOptions struct {
 
           <div class="jd-sym c-red">
             <div class="jd-sym-head"><span class="jd-kind">type</span><span
-                class="jd-sym-name">RedisCache[T]</span><span class="jd-kind">func</span><span
-                class="jd-sym-name">NewRedisCache</span></div>
+                class="jd-sym-name">Redis[T]</span><span class="jd-kind">func</span><span
+                class="jd-sym-name">NewRedis</span></div>
             <div class="jd-term">
               <pre data-hl="go">
-type RedisCache[T any] struct { /* unexported */ }
+type Redis[T any] struct { /* unexported */ }
 
-func NewRedisCache[T any](opts RedisOptions) *RedisCache[T]
+func NewRedis[T any](client *redis.Client) *Redis[T]
 
 // Cache[T] methods
-func (c *RedisCache[T]) Get(ctx context.Context, key string) (T, bool)
-func (c *RedisCache[T]) Set(ctx context.Context, key string, value T, ttl time.Duration) error
-func (c *RedisCache[T]) Incr(ctx context.Context, key string, ttl time.Duration) (int64, error)
-func (c *RedisCache[T]) Delete(ctx context.Context, key string) error
-func (c *RedisCache[T]) Exists(ctx context.Context, key string) (bool, error)
-func (c *RedisCache[T]) GetOrSet(ctx context.Context, key string, ttl time.Duration, fetchFn func() (T, error)) (T, error)
-func (c *RedisCache[T]) Close() error
-</pre>
-            </div>
-            <p lang="en" style="margin-top:12px">Values are stored as JSON (<code>encoding/json</code>), so
-              <code>T</code> must round-trip through JSON: only exported struct fields survive, and in a
-              <code>RedisCache[any]</code> numbers come back as <code>float64</code> and objects as
-              <code>map[string]any</code>.</p>
-            <p lang="vi" style="margin-top:12px">Giá trị được lưu dạng JSON (<code>encoding/json</code>), nên
-              <code>T</code> phải đi qua JSON được trọn vẹn: chỉ field struct được export mới giữ lại, và với
-              <code>RedisCache[any]</code> số trả về là <code>float64</code>, object là <code>map[string]any</code>.</p>
-          </div>
+func (c *Redis[T]) Lookup(ctx context.Context, key string) (T, bool, error)
+func (c *Redis[T]) Get(ctx context.Context, key string) (T, bool)
+func (c *Redis[T]) Set(ctx context.Context, key string, value T, ttl time.Duration) error
+func (c *Redis[T]) Incr(ctx context.Context, key string, ttl time.Duration) (int64, error)
+func (c *Redis[T]) Delete(ctx context.Context, key string) error
+func (c *Redis[T]) Exists(ctx context.Context, key string) (bool, error)
+func (c *Redis[T]) GetOrSet(ctx context.Context, key string, ttl time.Duration, fetchFn func() (T, error)) (T, error)
 
-          <div class="jd-sym c-red">
-            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name"><span
-                  lang="en">RedisCache extras</span><span lang="vi">Method riêng của RedisCache</span></span></div>
-            <div class="jd-term">
-              <pre data-hl="go">
-func (c *RedisCache[T]) Ping(ctx context.Context) error
-func (c *RedisCache[T]) IncrBy(ctx context.Context, key string, value int64) (int64, error)
-func (c *RedisCache[T]) Expire(ctx context.Context, key string, ttl time.Duration) error
-func (c *RedisCache[T]) SetNX(ctx context.Context, key string, value T, ttl time.Duration) (bool, error)
-func (c *RedisCache[T]) MGet(ctx context.Context, keys ...string) ([]T, []bool)
-func (c *RedisCache[T]) MSet(ctx context.Context, items map[string]T, ttl time.Duration) error
-func (c *RedisCache[T]) DeleteByPattern(ctx context.Context, pattern string) error
-func (c *RedisCache[T]) Clear(ctx context.Context) error
-func (c *RedisCache[T]) GetClient() *redis.Client
+// extra
+func (c *Redis[T]) Ping(ctx context.Context) error
 </pre>
             </div>
-            <div class="jd-tablewrap">
-              <table class="jd-params">
-                <tr>
-                  <th>method</th>
-                  <th><span lang="en">behaviour</span><span lang="vi">hành vi</span></th>
-                </tr>
-                <tr>
-                  <td>Ping</td>
-                  <td><span lang="en">PING; error if the server is unreachable.</span><span lang="vi">PING; lỗi nếu
-                      không tới được server.</span></td>
-                </tr>
-                <tr>
-                  <td>IncrBy</td>
-                  <td><span lang="en">Plain INCRBY by <code>value</code>; no TTL handling. The stored value must be an
-                      integer string.</span><span lang="vi">INCRBY thuần với <code>value</code>; không xử lý TTL. Giá
-                      trị đang lưu phải là chuỗi số nguyên.</span></td>
-                </tr>
-                <tr>
-                  <td>Expire</td>
-                  <td><span lang="en">Sets a TTL on an existing key.</span><span lang="vi">Đặt TTL cho key đã tồn
-                      tại.</span></td>
-                </tr>
-                <tr>
-                  <td>SetNX</td>
-                  <td><span lang="en">JSON-encodes and sets only if the key is absent; <code>true</code> = you set it.
-                      The building block for a lock (see below).</span><span lang="vi">Mã hoá JSON và chỉ set khi key
-                      chưa có; <code>true</code> = bạn đã set. Nền tảng để làm lock (xem bên dưới).</span></td>
-                </tr>
-                <tr>
-                  <td>MGet</td>
-                  <td><span lang="en">One round-trip. Returns values and found-flags aligned with <code>keys</code>. No
-                      keys → <code>nil, nil</code>. A Redis error is logged and every flag is <code>false</code>; a
-                      value that fails to decode is logged and skipped.</span><span lang="vi">Một round-trip. Trả về giá
-                      trị và cờ found đúng thứ tự <code>keys</code>. Không có key → <code>nil, nil</code>. Lỗi Redis
-                      được log và mọi cờ là <code>false</code>; giá trị giải mã lỗi được log và bỏ qua.</span></td>
-                </tr>
-                <tr>
-                  <td>MSet</td>
-                  <td><span lang="en">Pipelined SETs, same <code>ttl</code> for all. Empty map → <code>nil</code>. A
-                      marshal error aborts before anything is sent.</span><span lang="vi">Các lệnh SET qua pipeline,
-                      cùng một <code>ttl</code>. Map rỗng → <code>nil</code>. Lỗi marshal dừng lại trước khi gửi
-                      gì.</span></td>
-                </tr>
-                <tr>
-                  <td>DeleteByPattern</td>
-                  <td><span lang="en">SCAN with the glob <code>pattern</code> (100 per batch) and pipelined DELs. Not
-                      atomic.</span><span lang="vi">SCAN theo glob <code>pattern</code> (100 key mỗi lô) rồi DEL qua
-                      pipeline. Không nguyên tử.</span></td>
-                </tr>
-                <tr>
-                  <td>Clear</td>
-                  <td><span lang="en"><b>FLUSHDB</b> — wipes every key in the logical DB, not only this
-                      cache's.</span><span lang="vi"><b>FLUSHDB</b> — xoá mọi key trong database logic, không chỉ của
-                      cache này.</span></td>
-                </tr>
-                <tr>
-                  <td>GetClient</td>
-                  <td><span lang="en">The underlying <code>*redis.Client</code> for anything else.</span><span
-                      lang="vi"><code>*redis.Client</code> bên dưới để làm mọi thứ khác.</span></td>
-                </tr>
-              </table>
-            </div>
-            <div class="jd-term" style="margin-top:10px">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span><span lang="en">lock with SetNX</span><span
-                    lang="vi">lock bằng SetNX</span></span></div>
-              <pre data-hl="go">
-rc := cache.NewRedisCache[bool](cache.RedisOptions{Addr: "localhost:6379"})
-if locked, _ := rc.SetNX(ctx, "lock:order:456", true, 30*time.Second); locked {
-    defer rc.Delete(ctx, "lock:order:456")
-    // ... only one instance gets here
-}
-</pre>
-            </div>
+            <p lang="en" style="margin-top:12px">Does not own its client: the caller (usually the Store) closes it.
+              Values are stored as JSON (<code>encoding/json</code>), so <code>T</code> must round-trip through JSON:
+              only exported struct fields survive, and in a <code>Redis[any]</code> numbers come back as
+              <code>float64</code> and objects as <code>map[string]any</code>. Errors are wrapped as
+              <code>cache: &lt;op&gt;: …</code>; the package never logs.</p>
+            <p lang="vi" style="margin-top:12px">Không sở hữu client: bên gọi (thường là Store) đóng nó. Giá trị được
+              lưu dạng JSON (<code>encoding/json</code>), nên <code>T</code> phải đi qua JSON được trọn vẹn: chỉ field
+              struct được export mới giữ lại, và với <code>Redis[any]</code> số trả về là <code>float64</code>, object
+              là <code>map[string]any</code>. Lỗi được bọc dạng <code>cache: &lt;op&gt;: …</code>; package không tự
+              log.</p>
           </div>
 
           <div class="jd-sym c-green">
             <div class="jd-sym-head"><span class="jd-kind">type</span><span
-                class="jd-sym-name">MemoryCache[T]</span><span class="jd-kind">func</span><span
-                class="jd-sym-name">NewMemoryCache</span></div>
+                class="jd-sym-name">Memory[T]</span><span class="jd-kind">func</span><span
+                class="jd-sym-name">NewMemory</span></div>
             <div class="jd-term">
               <pre data-hl="go">
-type MemoryCache[T any] struct { /* unexported */ }
+type Memory[T any] struct { /* unexported */ }
 
-func NewMemoryCache[T any]() *MemoryCache[T]
+func NewMemory[T any](opts MemoryOptions) *Memory[T]
 
-func (c *MemoryCache[T]) Get(_ context.Context, key string) (T, bool)
-func (c *MemoryCache[T]) Set(_ context.Context, key string, value T, ttl time.Duration) error
-func (c *MemoryCache[T]) Incr(_ context.Context, key string, ttl time.Duration) (int64, error)
-func (c *MemoryCache[T]) Delete(_ context.Context, key string) error
-func (c *MemoryCache[T]) Exists(ctx context.Context, key string) (bool, error)
-func (c *MemoryCache[T]) GetOrSet(ctx context.Context, key string, ttl time.Duration, fetchFn func() (T, error)) (T, error)
-func (c *MemoryCache[T]) Close() error
+func (c *Memory[T]) Lookup(_ context.Context, key string) (T, bool, error)
+func (c *Memory[T]) Get(ctx context.Context, key string) (T, bool)
+func (c *Memory[T]) Set(_ context.Context, key string, value T, ttl time.Duration) error
+func (c *Memory[T]) Incr(_ context.Context, key string, ttl time.Duration) (int64, error)
+func (c *Memory[T]) Delete(_ context.Context, key string) error
+func (c *Memory[T]) Exists(ctx context.Context, key string) (bool, error)
+func (c *Memory[T]) GetOrSet(ctx context.Context, key string, ttl time.Duration, fetchFn func() (T, error)) (T, error)
 </pre>
             </div>
             <ul>
@@ -875,9 +780,11 @@ func (c *MemoryCache[T]) Close() error
                 process. <code>Get</code> gặp entry hết hạn sẽ kiểm tra lại dưới write lock trước khi xoá, nên một
                 <code>Set</code> / <code>Incr</code> chạy đồng thời không bao giờ bị mất.</li>
               <li lang="en">Expired entries are removed lazily by <code>Get</code>, and by a sweep that runs on
-                <code>Set</code> / <code>Incr</code> at most once per minute.</li>
+                <code>Set</code> / <code>Incr</code> at most once per minute. At most <code>MaxEntries</code> (default
+                100,000) entries: storing a new key in a full cache evicts another.</li>
               <li lang="vi">Entry hết hạn bị xoá lười bởi <code>Get</code>, và bởi một lượt quét chạy trong
-                <code>Set</code> / <code>Incr</code> tối đa mỗi phút một lần.</li>
+                <code>Set</code> / <code>Incr</code> tối đa mỗi phút một lần. Tối đa <code>MaxEntries</code> (mặc định
+                100.000) entry: lưu key mới vào cache đầy sẽ loại một key khác.</li>
               <li lang="en">Values are stored as-is (no copy): a pointer you get back is the same pointer that is
                 cached.</li>
               <li lang="vi">Giá trị được lưu nguyên (không copy): con trỏ bạn nhận về chính là con trỏ đang nằm trong
@@ -886,21 +793,21 @@ func (c *MemoryCache[T]) Close() error
           </div>
 
           <div class="jd-sym c-muted">
-            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">NoopCache[T]</span><span
-                class="jd-kind">func</span><span class="jd-sym-name">NewNoopCache</span></div>
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Noop[T]</span><span
+                class="jd-kind">func</span><span class="jd-sym-name">NewNoop</span></div>
             <div class="jd-term">
               <pre data-hl="go">
-type NoopCache[T any] struct{}
+type Noop[T any] struct{}
 
-func NewNoopCache[T any]() *NoopCache[T]
+func NewNoop[T any]() *Noop[T]
 
-func (c *NoopCache[T]) Get(context.Context, string) (T, bool)
-func (c *NoopCache[T]) Set(context.Context, string, T, time.Duration) error
-func (c *NoopCache[T]) Incr(context.Context, string, time.Duration) (int64, error)
-func (c *NoopCache[T]) Delete(context.Context, string) error
-func (c *NoopCache[T]) Exists(context.Context, string) (bool, error)
-func (c *NoopCache[T]) GetOrSet(_ context.Context, _ string, _ time.Duration, fetchFn func() (T, error)) (T, error)
-func (c *NoopCache[T]) Close() error
+func (c *Noop[T]) Lookup(context.Context, string) (T, bool, error)
+func (c *Noop[T]) Get(context.Context, string) (T, bool)
+func (c *Noop[T]) Set(context.Context, string, T, time.Duration) error
+func (c *Noop[T]) Incr(context.Context, string, time.Duration) (int64, error)
+func (c *Noop[T]) Delete(context.Context, string) error
+func (c *Noop[T]) Exists(context.Context, string) (bool, error)
+func (c *Noop[T]) GetOrSet(_ context.Context, _ string, _ time.Duration, fetchFn func() (T, error)) (T, error)
 </pre>
             </div>
             <p lang="en" style="margin-top:12px">Turns caching off without touching code: reads miss, writes succeed and
@@ -949,12 +856,12 @@ func (c *NoopCache[T]) Close() error
             </tr>
             <tr>
               <td>features/auth/infrastructure/session_cache.go</td>
-              <td><span lang="en"><code>cache.NewInvalidatable[*domain.Session](opts, ttl)</code> caches sessions for
+              <td><span lang="en"><code>cache.NewInvalidatable[*domain.Session](s, ttl)</code> caches sessions for
                   <code>AUTH_SESSION_CACHE_TTL</code> (default 3m), with the session's family as its marker, kept for
                   2× the TTL. Keys: <code>auth:session:&lt;hash&gt;:entry</code>,
                   <code>auth:family:&lt;uuid&gt;:invalidated_at</code>. Without Redis (<code>CACHE_REDIS_ENABLE=false</code>, the default) the driver is no-op, so every
                   lookup hits the DB; <code>AUTH_SESSION_CACHE_TTL=0</code> does the same with Redis. Entries loaded
-                  up to 2 s after an invalidation also count as stale, in case instances' clocks differ.</span><span lang="vi"><code>cache.NewInvalidatable[*domain.Session](opts, ttl)</code> cache session trong
+                  up to 2 s after an invalidation also count as stale, in case instances' clocks differ.</span><span lang="vi"><code>cache.NewInvalidatable[*domain.Session](s, ttl)</code> cache session trong
                   <code>AUTH_SESSION_CACHE_TTL</code> (mặc định 3m), dùng family của session làm marker, giữ trong 2×
                   TTL. Key: <code>auth:session:&lt;hash&gt;:entry</code>,
                   <code>auth:family:&lt;uuid&gt;:invalidated_at</code>. Không bật Redis (<code>CACHE_REDIS_ENABLE=false</code>, mặc định)
@@ -965,23 +872,23 @@ func (c *NoopCache[T]) Close() error
               <td>features/auth/infrastructure/login_guard.go</td>
               <td><span lang="en"><code>cache.New[int64]</code> with fixed-window <code>Incr</code> counters
                   <code>auth:login:ip:short:&lt;ip&gt;</code>, <code>auth:login:ip:long:&lt;ip&gt;</code>,
-                  <code>auth:login:email:&lt;hash&gt;</code>, built with <code>opts.OrMemory()</code>: a driver other than
-                  Redis becomes <code>DriverMemory</code> — a no-op counter would never block. An IPv6 <code>&lt;ip&gt;</code> is its
+                  <code>auth:login:email:&lt;hash&gt;</code>, built with <code>p.Cache.OrMemory()</code>: a Store other than
+                  Redis becomes a memory one — a no-op counter would never block. An IPv6 <code>&lt;ip&gt;</code> is its
                   <code>/64</code> block. If <code>Incr</code> fails (Redis down), the login is refused.</span><span
                   lang="vi"><code>cache.New[int64]</code> với các bộ đếm <code>Incr</code> cửa sổ cố định
                   <code>auth:login:ip:short:&lt;ip&gt;</code>, <code>auth:login:ip:long:&lt;ip&gt;</code>,
-                  <code>auth:login:email:&lt;hash&gt;</code>, tạo bằng <code>opts.OrMemory()</code>: driver khác Redis bị
-                  chuyển sang <code>DriverMemory</code> — bộ đếm no-op sẽ không bao giờ chặn. Với IPv6, <code>&lt;ip&gt;</code> là cả
+                  <code>auth:login:email:&lt;hash&gt;</code>, tạo bằng <code>p.Cache.OrMemory()</code>: Store không phải Redis bị
+                  chuyển sang memory — bộ đếm no-op sẽ không bao giờ chặn. Với IPv6, <code>&lt;ip&gt;</code> là cả
                   khối <code>/64</code>. Nếu <code>Incr</code> lỗi (Redis sập), login bị từ chối.</span></td>
             </tr>
             <tr>
               <td>router/router.go</td>
-              <td><span lang="en"><code>cache.New[int64](p.CacheOptions.OrMemory())</code> for
+              <td><span lang="en"><code>cache.New[int64](p.Cache.OrMemory())</code> for
                   <code>middleware.Banner</code>, memory without Redis for the same reason.
                   Keys: <code>banner:ban:&lt;client&gt;</code> (ban end, Unix seconds),
                   <code>banner:strikes:&lt;client&gt;</code>, <code>banner:level:&lt;client&gt;</code>. Unlike the
                   login guard, a failing <code>Incr</code> lets the request through.</span><span
-                  lang="vi"><code>cache.New[int64](p.CacheOptions.OrMemory())</code> cho
+                  lang="vi"><code>cache.New[int64](p.Cache.OrMemory())</code> cho
                   <code>middleware.Banner</code>, dùng memory khi không có Redis vì cùng lý do.
                   Key: <code>banner:ban:&lt;client&gt;</code> (thời điểm hết ban, Unix giây),
                   <code>banner:strikes:&lt;client&gt;</code>, <code>banner:level:&lt;client&gt;</code>. Khác bộ chặn
@@ -990,8 +897,8 @@ func (c *NoopCache[T]) Close() error
             <tr>
               <td>features/auth/module.go</td>
               <td><span lang="en">Provides <code>NewSessionCache</code> and <code>NewLoginGuard</code>, which take
-                  <code>cache.Options</code> from the graph.</span><span lang="vi">Cung cấp <code>NewSessionCache</code>
-                  và <code>NewLoginGuard</code>, cả hai lấy <code>cache.Options</code> từ graph.</span></td>
+                  the shared <code>*cache.Store</code> from the graph.</span><span lang="vi">Cung cấp <code>NewSessionCache</code>
+                  và <code>NewLoginGuard</code>, cả hai lấy <code>*cache.Store</code> dùng chung từ graph.</span></td>
             </tr>
             <tr>
               <td>features/access/infrastructure/permission_cache.go</td>
@@ -1004,21 +911,14 @@ func (c *NoopCache[T]) Close() error
                   <code>access:user:&lt;id&gt;:invalidated_at</code>, <code>access:invalidated_at</code>. Vô hiệu hoá một
                   user cũng xóa luôn entry của họ. Xem <a href="../jungo/access.html#inside">Phân quyền</a>.</span></td>
             </tr>
-            <tr>
-              <td>../cmd/scaffold/templates.go</td>
-              <td><span lang="en">Generated features get
-                  <code>fx.Provide(func(opts cache.Options) cache.Cache[*domain.X] { return cache.New[*domain.X](opts) })</code>
-                  and a <code>GetOrSet</code> / <code>Delete</code> service.</span><span lang="vi">Feature được sinh ra
-                  có sẵn
-                  <code>fx.Provide(func(opts cache.Options) cache.Cache[*domain.X] { return cache.New[*domain.X](opts) })</code>
-                  và service dùng <code>GetOrSet</code> / <code>Delete</code>.</span></td>
-            </tr>
-          </table>
+                      </table>
         </div>
-        <p lang="en" style="margin-top:12px">Nothing in Jungo injects the <code>cache.Cache[any]</code> that
-          <code>cache.Module</code> provides. To run with Redis (from <code>.env.example</code>):</p>
-        <p lang="vi" style="margin-top:12px">Trong Jungo không chỗ nào inject <code>cache.Cache[any]</code> mà
-          <code>cache.Module</code> cung cấp. Để chạy với Redis (theo <code>.env.example</code>):</p>
+        <p lang="en" style="margin-top:12px">Every cache above is built on the one <code>*cache.Store</code> that
+          <code>cache.Module</code> provides, so the app holds a single Redis pool. To run with Redis (from
+          <code>.env.example</code>):</p>
+        <p lang="vi" style="margin-top:12px">Mọi cache ở trên đều dựng trên một <code>*cache.Store</code> duy nhất do
+          <code>cache.Module</code> cung cấp, nên app chỉ giữ một pool Redis. Để chạy với Redis (theo
+          <code>.env.example</code>):</p>
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
           <pre data-hl="bash">
@@ -1044,21 +944,20 @@ $ make app-dev WITH=cache
               âm thầm cho ra cache no-op. Bộ đếm dựa trên nó luôn trả 0.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Errors look like
               misses</span><span class="x" lang="en">If Redis is down, <code>Get</code> returns a miss and
-              <code>GetOrSet</code> keeps calling your loader. Without <code>RedisOptions.Logger</code> (Jungo sets
-              none) you will not see it.</span><span class="x" lang="vi">Khi Redis bị mất kết nối (down),
+              <code>GetOrSet</code> keeps calling your loader; the package never logs. Call <code>Lookup</code> when
+              you need to see the error.</span><span class="x" lang="vi">Khi Redis bị mất kết nối (down),
               <code>Get</code> sẽ coi như cache miss và <code>GetOrSet</code> vẫn tiếp tục gọi loader để lấy dữ liệu từ
-              DB. Nếu không cấu hình <code>RedisOptions.Logger</code> (mặc định Jungo không cấu hình), bạn sẽ không nhận
-              được log cảnh báo lỗi này.</span></div>
+              DB; package không tự log. Gọi <code>Lookup</code> khi cần thấy lỗi.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Memory is per
-              process</span><span class="x" lang="en">Each replica has its own <code>MemoryCache</code>: counters and
+              process</span><span class="x" lang="en">Each replica has its own <code>Memory</code> cache: counters and
               invalidations are not shared. Use Redis when you run more than one instance.</span><span class="x"
-              lang="vi">Mỗi replica có <code>MemoryCache</code> riêng: bộ đếm và việc xoá cache không được chia sẻ. Chạy
+              lang="vi">Mỗi replica có <code>Memory</code> cache riêng: bộ đếm và việc xoá cache không được chia sẻ. Chạy
               nhiều instance thì dùng Redis.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Shared pointers in
-              memory</span><span class="x" lang="en"><code>MemoryCache[*T]</code> hands back the cached pointer itself —
+              memory</span><span class="x" lang="en"><code>Memory[*T]</code> hands back the cached pointer itself —
               mutating it changes the cache. Copy before modifying (Jungo's session cache does
               <code>session := *entry.Session</code>). Redis always gives you a fresh copy.</span><span class="x"
-              lang="vi"><code>MemoryCache[*T]</code> trả về chính con trỏ đang được cache — sửa nó là sửa cache. Hãy
+              lang="vi"><code>Memory[*T]</code> trả về chính con trỏ đang được cache — sửa nó là sửa cache. Hãy
               copy trước khi sửa (session cache của Jungo làm <code>session := *entry.Session</code>). Redis luôn trả
               bản copy mới.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">nil is a
@@ -1079,18 +978,14 @@ $ make app-dev WITH=cache
               đó <code>Set</code> với ttl 0 sẽ nhận TTL ở lần <code>Incr</code> tiếp theo) và làm tròn theo mili giây
               (ttl dưới 1ms = không hết hạn). <code>ErrNotInteger</code> chỉ có ở memory; Redis trả lỗi của riêng
               nó.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">8</span><span class="w">One pool per
-              New</span><span class="x" lang="en">Every <code>cache.New</code> / <code>NewRedisCache</code> opens its
-              own Redis pool (up to 10 × GOMAXPROCS connections), and Fx never calls <code>Close</code>. Jungo opens
-              three this way when Redis is on (session cache × 2, login guard × 1).</span><span class="x" lang="vi">Mỗi
-              lần <code>cache.New</code> / <code>NewRedisCache</code> mở một pool Redis riêng (tối đa 10 × GOMAXPROCS
-              kết nối), và Fx không bao giờ gọi <code>Close</code>. Khi bật Redis, Jungo mở ba pool như vậy (session
-              cache × 2, login guard × 1).</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">9</span><span class="w">Clear is
-              FLUSHDB</span><span class="x" lang="en">It deletes every key in the Redis DB, including other caches and
-              other apps sharing it. Prefer <code>DeleteByPattern("product:*")</code>.</span><span class="x"
-              lang="vi">Nó xoá mọi key trong DB Redis, kể cả của cache khác và app khác dùng chung. Nên dùng
-              <code>DeleteByPattern("product:*")</code>.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">8</span><span class="w">One Store per
+              app</span><span class="x" lang="en">Build one <code>*cache.Store</code> and every cache on it shares
+              its Redis pool. Each extra <code>NewStore</code> with <code>DriverRedis</code> opens another pool (up to
+              10 × GOMAXPROCS connections) that you must <code>Close</code>; <code>cache.Module</code> closes its own on
+              stop.</span><span class="x" lang="vi">Tạo một <code>*cache.Store</code> và mọi cache trên nó dùng chung
+              pool Redis. Mỗi lần gọi thêm <code>NewStore</code> với <code>DriverRedis</code> mở thêm một pool (tối đa
+              10 × GOMAXPROCS kết nối) mà bạn phải <code>Close</code>; <code>cache.Module</code> tự đóng pool của nó khi
+              dừng.</span></div>
         </div>
       </section>
 
@@ -1104,7 +999,7 @@ $ make app-dev WITH=cache
 
   <script>
     document.addEventListener("jd:ready", function () {
-      // Mirrors MemoryCache.Incr / Get: ttl only set when Incr creates the key; expired = now strictly after expireAt.
+      // Mirrors Memory.Incr / Get: ttl only set when Incr creates the key; expired = now strictly after expireAt.
       function expired(e, now) { return e.expireAt !== null && now > e.expireAt; }
       function incr(store, key, now, ttl) {
         var e = store[key], count = 0;

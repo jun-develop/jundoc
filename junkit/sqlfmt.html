@@ -381,8 +381,12 @@ sqlfmt.Parse("SELECT *\n  -- this is a comment\n  FROM   users\nWHERE  id = 1")
                 <code>$n</code> and a <code>$</code> not followed by a digit are left as-is.</li>
               <li lang="vi"><code>args</code> rỗng → trả nguyên <code>sql</code>. <code>$0</code>, <code>$n</code> ngoài
                 phạm vi và <code>$</code> không theo sau bởi chữ số được giữ nguyên.</li>
-              <li lang="en">Simple text scan: it does not know about string literals or comments.</li>
-              <li lang="vi">Chỉ quét chuỗi đơn giản: nó không biết gì về string literal hay comment.</li>
+              <li lang="en">A <code>$n</code> inside a single-quoted string or a dollar-quoted body
+                (<code>$$…$$</code>, <code>$tag$…$tag$</code>) is left as-is. Backslash escapes in
+                <code>E'…'</code> strings are not tracked.</li>
+              <li lang="vi"><code>$n</code> nằm trong chuỗi nháy đơn hoặc thân dollar-quoted (<code>$$…$$</code>,
+                <code>$tag$…$tag$</code>) được giữ nguyên. Escape bằng backslash trong chuỗi <code>E'…'</code> không
+                được xử lý.</li>
             </ul>
             <div class="jd-term">
               <pre data-hl="go">
@@ -409,8 +413,8 @@ sqlfmt.Bind("SELECT $1, $5", []any{"only one arg"})
                 <code>len(args)</code> are left as-is.</li>
               <li lang="vi"><code>args</code> rỗng → trả nguyên <code>sql</code>. Các <code>?</code> dư ra ngoài
                 <code>len(args)</code> được giữ nguyên.</li>
-              <li lang="en">Unlike <code>Bind</code>, a <code>?</code> inside a single-quoted string is skipped.</li>
-              <li lang="vi">Khác với <code>Bind</code>, dấu <code>?</code> nằm trong chuỗi nháy đơn được bỏ qua.</li>
+              <li lang="en">Like <code>Bind</code>, a <code>?</code> inside a single-quoted string is skipped.</li>
+              <li lang="vi">Giống <code>Bind</code>, dấu <code>?</code> nằm trong chuỗi nháy đơn được bỏ qua.</li>
             </ul>
             <div class="jd-term">
               <pre data-hl="go">
@@ -550,15 +554,13 @@ sqlfmt.BindQuestion("SELECT * FROM users WHERE email = ? AND note = '?'", []any{
             <tr>
               <td>junkit/database/postgres/query_tracer.go</td>
               <td lang="en">pgx query log (<code>QueryLogging: true</code>): <code>Parse</code> →
-                <code>query_name</code>, <code>operation</code>; <code>Bind(info.SQL, args)</code> → <code>sql</code>;
-                <code>Origin()</code> → <code>location</code>, <code>function</code> on failed queries. Also
-                <code>postgres.FormatValue</code> / <code>postgres.BindArgsToSQL</code> are thin aliases of
-                <code>FormatValue</code> / <code>Bind</code>.</td>
+                <code>query_name</code>, <code>operation</code>, <code>sql</code> (placeholders kept, plus
+                <code>arg_count</code>); <code>Bind(info.SQL, args)</code> only with <code>LogQueryArgs: true</code>;
+                <code>Origin()</code> → <code>location</code>, <code>function</code> on failed queries.</td>
               <td lang="vi">Log query của pgx (<code>QueryLogging: true</code>): <code>Parse</code> →
-                <code>query_name</code>, <code>operation</code>; <code>Bind(info.SQL, args)</code> → <code>sql</code>;
-                <code>Origin()</code> → <code>location</code>, <code>function</code> khi query lỗi. Ngoài ra
-                <code>postgres.FormatValue</code> / <code>postgres.BindArgsToSQL</code> là bí danh mỏng của
-                <code>FormatValue</code> / <code>Bind</code>.</td>
+                <code>query_name</code>, <code>operation</code>, <code>sql</code> (giữ placeholder, kèm
+                <code>arg_count</code>); <code>Bind(info.SQL, args)</code> chỉ khi <code>LogQueryArgs: true</code>;
+                <code>Origin()</code> → <code>location</code>, <code>function</code> khi query lỗi.</td>
             </tr>
             <tr>
               <td>junkit/tracer/db.go</td>
@@ -583,7 +585,7 @@ sqlfmt.BindQuestion("SELECT * FROM users WHERE email = ? AND note = '?'", []any{
         <div class="jd-term" data-copy="commands" style="margin-top:14px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
           <pre data-hl="bash">
-# every query of a request, formatted by sqlfmt (DB_QUERY_LOGGING=true, LOG_SQL_LEVEL=info)
+# every query of a request, formatted by sqlfmt (DB_QUERY_LOGGING=true, LOG_SQL_LEVEL=info); placeholders, not values
 # API_ENVIRONMENT=development → the lines are on stdout; otherwise in the file:
 $ tail -f storage/logs/sql.log
 </pre>
@@ -609,12 +611,11 @@ $ tail -f storage/logs/sql.log
               built with <code>Bind</code> as sensitive.</span><span class="x" lang="vi">SQL đã bind chứa dữ liệu thật —
               email, hash, token. Hãy coi mọi thứ tạo bởi <code>Bind</code> là nhạy cảm.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Text-only
-              cleaning</span><span class="x" lang="en"><code>Parse</code> and <code>Bind</code> don't understand SQL:
-              <code>'$1'</code> or <code>'a -- b'</code> inside a string literal is replaced / cut too, spaces inside
-              literals are collapsed, and <code>--comment</code> without a space after the dashes is <b>not</b> removed.
+              cleaning</span><span class="x" lang="en"><code>Parse</code> doesn't understand SQL:
+              <code>'a -- b'</code> inside a string literal is cut too, spaces inside literals are collapsed, and <code>--comment</code> without a space after the dashes is <b>not</b> removed.
               The logged SQL may therefore differ slightly from what ran.</span><span class="x"
-              lang="vi"><code>Parse</code> và <code>Bind</code> không hiểu SQL: <code>'$1'</code> hay
-              <code>'a -- b'</code> nằm trong string literal cũng bị thay / cắt, khoảng trắng trong literal bị gộp, và
+              lang="vi"><code>Parse</code> không hiểu SQL:
+              <code>'a -- b'</code> nằm trong string literal cũng bị cắt, khoảng trắng trong literal bị gộp, và
               <code>--comment</code> không có dấu cách sau hai gạch thì <b>không</b> bị xoá. Vì vậy SQL được log có thể
               hơi khác so với SQL đã chạy.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Lossy

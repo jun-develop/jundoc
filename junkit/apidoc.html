@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit apidoc · Jundoc</title>
+  <meta name="description" content="junkit/apidoc: an OpenAPI 3 document built from your request and response structs, served with Scalar.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+<body>
+<div id="jd-app" data-root="..">
+<article class="jd-content">
+
+  <!-- ============================================================ HERO -->
+  <header class="jd-hero" style="background:radial-gradient(1000px 380px at 0% 0%, rgba(167,139,250,.5), transparent 60%),linear-gradient(135deg,#2e1065,#5b21b6 55%,#1e3a8a)">
+    <div class="jd-eyebrow">Junkit · apidoc</div>
+    <h1>apidoc</h1>
+    <p lang="en">API docs that cannot drift from the code: the OpenAPI 3 document is built from the request and response structs you already have, and served as an interactive page with <a href="https://scalar.com">Scalar</a>.</p>
+    <p lang="vi">Tài liệu API không thể lệch khỏi code: tài liệu OpenAPI 3 được sinh từ chính các struct request và response bạn đã có, rồi hiển thị thành trang tương tác bằng <a href="https://scalar.com">Scalar</a>.</p>
+    <div class="jd-chips">
+      <span class="jd-chip">github.com/jun-develop/junkit/apidoc</span>
+      <span class="jd-chip"><span lang="en">no Fx Module — plain structs &amp; functions</span><span lang="vi">không có Fx Module — chỉ struct &amp; hàm</span></span>
+      <span class="jd-chip">OpenAPI 3.0.3</span>
+    </div>
+  </header>
+
+  <!-- ============================================================ 1. WHAT -->
+  <section id="what" class="jd-section c-purple">
+    <div class="jd-section-head">
+      <span class="jd-badge">1</span>
+      <div>
+        <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
+        <p class="jd-sub" lang="en">You describe each route in one line. Everything else is read from code that already exists.</p>
+        <p class="jd-sub" lang="vi">Bạn mô tả mỗi route bằng một dòng. Mọi thứ còn lại được đọc từ code đã có sẵn.</p>
+      </div>
+    </div>
+    <div class="jd-flow" style="margin-top:22px" data-wires='[
+      {"from":"a1","to":"a2","color":"purple","label":"Route"},
+      {"from":"a2","to":"a3","color":"purple","label":"openapi.json"},
+      {"from":"a3","to":"a4","color":"purple","label":"/docs"}]'>
+      <div class="jd-node is-tint c-purple" data-node="a1"><span class="k">1 · describe</span><span class="t mono" style="font-size:15px">apidoc.Route{…}</span><div class="d" lang="en">Method, path, summary, and which struct is the body, query and response.</div><div class="d" lang="vi">Method, path, tóm tắt, và struct nào là body, query, response.</div></div>
+      <div class="jd-node is-tint c-purple" data-node="a2"><span class="k">2 · read structs</span><span class="t mono" style="font-size:15px">json · form · binding · example</span><div class="d" lang="en">Field names, types, required, min/max, enums, formats and samples come from the tags.</div><div class="d" lang="vi">Tên field, kiểu, bắt buộc, min/max, enum, định dạng và giá trị mẫu lấy từ tag.</div></div>
+      <div class="jd-node is-tint c-purple" data-node="a3"><span class="k">3 · build</span><span class="t mono" style="font-size:15px">apidoc.Spec(info, ops)</span><div class="d" lang="en">OpenAPI 3 JSON, with your response envelope and error responses.</div><div class="d" lang="vi">JSON OpenAPI 3, kèm khung response và các response lỗi của app.</div></div>
+      <div class="jd-node is-tint c-blue" data-node="a4"><span class="k">4 · serve</span><span class="t mono" style="font-size:15px">apidoc.Register(r, "/docs", …)</span><div class="d" lang="en">Scalar page at <code>/docs</code>, raw document at <code>/docs/openapi.json</code>.</div><div class="d" lang="vi">Trang Scalar ở <code>/docs</code>, tài liệu thô ở <code>/docs/openapi.json</code>.</div></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 2. QUICK START -->
+  <section id="quick" class="jd-section c-blue">
+    <div class="jd-section-head">
+      <span class="jd-badge">2</span>
+      <div>
+        <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+        <p class="jd-sub" lang="en">A DTO you already have, one Route per endpoint, then build and serve. Hover an explanation to light up its lines.</p>
+        <p class="jd-sub" lang="vi">Một DTO bạn đã có, mỗi endpoint một Route, rồi build và phục vụ. Rê chuột vào giải thích để làm sáng các dòng tương ứng.</p>
+      </div>
+    </div>
+    <div class="jd-grid-2" style="margin-top:18px">
+      <div><div class="jd-sticky">
+        <div class="jd-term" data-copy><div class="jd-term-bar"><i></i><i></i><i></i><span>product_dto.go</span></div>
+<pre data-hl="go" id="code-ad-dto">
+type CreateProductRequest struct {
+    Name  string `json:"name" binding:"required,min=2,max=100" example:"Coffee"`
+    Price int64  `json:"price" binding:"required,min=0"`
+    Kind  string `json:"kind" binding:"omitempty,oneof=food drink"`
+}
+</pre></div>
+        <div class="jd-term" data-copy style="margin-top:12px"><div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
+<pre data-hl="go" id="code-ad-main">
+ops := []apidoc.Operation{{
+    Route: apidoc.Route{
+        Method: http.MethodPost, Path: "/api/v1/products",
+        Summary:  "Create a product",
+        Body:     CreateProductRequest{},
+        Status:   http.StatusCreated,
+        Response: ProductResponse{},
+    },
+    Tag:      "products",
+    Security: apidoc.Security{Bearer: true, Permissions: []string{"products:create"}},
+}}
+
+spec, err := apidoc.Spec(apidoc.Info{Title: "API", Version: "v1"}, ops)
+if err != nil {
+    return err
+}
+apidoc.Register(router, "/docs", "API docs", spec)
+</pre></div>
+      </div></div>
+      <div class="jd-explain">
+        <div class="jd-ex c-blue" data-code="#code-ad-dto" data-show="1-5"><span class="n">1</span><span class="w">tags are the source</span><span class="x" lang="en">Nothing new to write in the DTO: <code>name</code> becomes a required string of 2–100 chars with sample <code>"Coffee"</code>, <code>kind</code> an optional enum <code>food | drink</code>.</span><span class="x" lang="vi">Không phải viết thêm gì trong DTO: <code>name</code> thành string bắt buộc dài 2–100 ký tự với mẫu <code>"Coffee"</code>, <code>kind</code> thành enum tùy chọn <code>food | drink</code>.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-ad-main" data-show="2-9"><span class="n">2</span><span class="w">Route</span><span class="x" lang="en">Pass zero values (<code>CreateProductRequest{}</code>): only their type is read. <code>Status</code> 0 means 200; leave <code>Response</code> nil when the route answers with a message only.</span><span class="x" lang="vi">Truyền giá trị rỗng (<code>CreateProductRequest{}</code>): chỉ kiểu của nó được đọc. <code>Status</code> bằng 0 nghĩa là 200; để <code>Response</code> là nil khi route chỉ trả về message.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-ad-main" data-show="10-11"><span class="n">3</span><span class="w">Operation</span><span class="x" lang="en">Adds the group (<code>Tag</code>) and how the route is protected. Jungo fills both automatically from the route path and the Guard.</span><span class="x" lang="vi">Thêm nhóm (<code>Tag</code>) và cách route được bảo vệ. Jungo tự điền cả hai từ path của route và Guard.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-ad-main" data-show="14-18"><span class="n">4</span><span class="w">Spec + Register</span><span class="x" lang="en">Build the document once at startup, then serve it. Open <code>/docs</code> in a browser.</span><span class="x" lang="vi">Build tài liệu một lần lúc khởi động, rồi phục vụ nó. Mở <code>/docs</code> trên trình duyệt.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 3. TAGS -->
+  <section id="tags" class="jd-section c-green">
+    <div class="jd-section-head">
+      <span class="jd-badge">3</span>
+      <div>
+        <h2><span lang="en">What each tag becomes</span><span lang="vi">Mỗi tag thành gì</span></h2>
+        <p class="jd-sub" lang="en">The same tags Gin and the validator already use, so a rule changed in code is changed in the docs.</p>
+        <p class="jd-sub" lang="vi">Chính các tag mà Gin và validator đang dùng, nên đổi luật trong code là tài liệu đổi theo.</p>
+      </div>
+    </div>
+    <div class="jd-tablewrap" style="margin-top:16px"><table class="jd-params c-green">
+      <tr><th>tag</th><th>OpenAPI</th><th><span lang="en">note</span><span lang="vi">ghi chú</span></th></tr>
+      <tr><td>json:"name"</td><td>property name</td><td lang="en">Body and response fields. <code>json:"-"</code> is hidden; embedded structs are flattened.</td><td lang="vi">Field của body và response. <code>json:"-"</code> bị ẩn; struct nhúng được trải phẳng.</td></tr>
+      <tr><td>form:"page"</td><td>query parameter</td><td lang="en">Fields of <code>Route.Query</code>.</td><td lang="vi">Field của <code>Route.Query</code>.</td></tr>
+      <tr><td>binding:"required"</td><td>required</td><td></td><td></td></tr>
+      <tr><td>min · max · len · gte · lte</td><td>minLength / maxLength · minimum / maximum · minItems / maxItems</td><td lang="en">Picked by the field's type: string, number or array.</td><td lang="vi">Chọn theo kiểu field: string, số hay mảng.</td></tr>
+      <tr><td>oneof=a b</td><td>enum</td><td lang="en">Typed: <code>oneof=1 2</code> on an int gives numbers.</td><td lang="vi">Đúng kiểu: <code>oneof=1 2</code> trên field int cho ra số.</td></tr>
+      <tr><td>email · uuid · url</td><td>format</td><td></td><td></td></tr>
+      <tr><td>dive,…</td><td>items</td><td lang="en">Rules after <code>dive</code> apply to each element of a slice.</td><td lang="vi">Luật sau <code>dive</code> áp dụng cho từng phần tử của slice.</td></tr>
+      <tr><td><span lang="en">custom rules</span><span lang="vi">luật tự viết</span></td><td>description</td><td lang="en">OpenAPI has no keyword for them, so they are listed by name: "Validated by: password_strong".</td><td lang="vi">OpenAPI không có từ khóa tương ứng, nên chúng được liệt kê theo tên: "Validated by: password_strong".</td></tr>
+      <tr><td>example:"Coffee"</td><td>example</td><td lang="en">Converted to the field's type, so <code>example:"10"</code> on an int shows <code>10</code>, not <code>"10"</code>.</td><td lang="vi">Đổi sang kiểu của field, nên <code>example:"10"</code> trên field int hiện <code>10</code>, không phải <code>"10"</code>.</td></tr>
+      <tr><td>*T</td><td>nullable</td><td lang="en"><code>time.Time</code> → date-time, <code>uuid.UUID</code> → uuid.</td><td lang="vi"><code>time.Time</code> → date-time, <code>uuid.UUID</code> → uuid.</td></tr>
+      <tr><td>/users/:uuid</td><td>/users/{uuid}</td><td lang="en">A param named <code>uuid</code> is a uuid, <code>id</code> an integer, as junkit's route patterns enforce.</td><td lang="vi">Tham số tên <code>uuid</code> là uuid, <code>id</code> là số nguyên, đúng như route pattern của junkit kiểm tra.</td></tr>
+    </table></div>
+  </section>
+
+  <!-- ============================================================ 4. API -->
+  <section id="api" class="jd-section c-purple">
+    <div class="jd-section-head">
+      <span class="jd-badge">4</span>
+      <div>
+        <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+        <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/apidoc/apidoc.go</code>.</p>
+        <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/apidoc/apidoc.go</code>.</p>
+      </div>
+    </div>
+    <div class="jd-syms" style="margin-top:18px">
+
+      <div class="jd-sym c-purple">
+        <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Route</span></div>
+        <div class="jd-tablewrap"><table class="jd-params">
+          <tr><th>field</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+          <tr><td>Method · Path</td><td lang="en">As passed to <code>group.GET/POST/…</code>, relative to that group.</td><td lang="vi">Như khi truyền vào <code>group.GET/POST/…</code>, tính từ group đó.</td></tr>
+          <tr><td>Summary · Description</td><td lang="en">One line shown in the list; longer text shown in the route.</td><td lang="vi">Một dòng hiện trong danh sách; đoạn dài hơn hiện trong trang của route.</td></tr>
+          <tr><td>Query</td><td lang="en">Struct bound from the query string (<code>form</code> tags).</td><td lang="vi">Struct bind từ query string (tag <code>form</code>).</td></tr>
+          <tr><td>Body</td><td lang="en">Struct bound from a JSON body (<code>json</code> tags).</td><td lang="vi">Struct bind từ body JSON (tag <code>json</code>).</td></tr>
+          <tr><td>Files</td><td lang="en">Multipart file fields, e.g. <code>[]string{"avatar"}</code>; the body becomes <code>multipart/form-data</code>.</td><td lang="vi">Các field file multipart, vd. <code>[]string{"avatar"}</code>; body thành <code>multipart/form-data</code>.</td></tr>
+          <tr><td>Status</td><td lang="en">Success status; 0 means 200.</td><td lang="vi">Status khi thành công; 0 nghĩa là 200.</td></tr>
+          <tr><td>Response</td><td lang="en">The value under <code>data</code>; nil when the response carries only a message. A slice documents a list.</td><td lang="vi">Giá trị nằm trong <code>data</code>; nil khi response chỉ có message. Truyền slice để mô tả một danh sách.</td></tr>
+          <tr><td>Paginated</td><td lang="en"><code>Response</code> is one item of a paginated list: <code>data</code> becomes <code>{ items, pagination }</code>.</td><td lang="vi"><code>Response</code> là một phần tử của danh sách phân trang: <code>data</code> thành <code>{ items, pagination }</code>.</td></tr>
+        </table></div>
+      </div>
+
+      <div class="jd-sym c-purple">
+        <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Security · Operation · Info</span></div>
+        <div class="jd-term"><pre data-hl="go">
+type Security struct {
+    Bearer       bool     // needs "Authorization: Bearer &lt;token&gt;"
+    APIKeyHeader string   // needs this header holding a shared secret
+    Permissions  []string // permission codes the caller must hold
+}
+
+type Operation struct {
+    Route           // Path here is the full path
+    Tag      string // the group the route is listed under
+    Security Security
+}
+
+type Info struct {
+    Title   string
+    Version string
+}
+</pre></div>
+        <p lang="en">Bearer adds 401 and 403 responses; permissions are listed at the top of the route's description.</p>
+        <p lang="vi">Bearer thêm response 401 và 403; các permission được liệt kê ở đầu phần mô tả của route.</p>
+      </div>
+
+      <div class="jd-sym c-green">
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Spec</span></div>
+        <div class="jd-term"><pre data-hl="go">func Spec(info Info, ops []Operation) ([]byte, error)</pre></div>
+        <ul>
+          <li lang="en">Paths use Gin's syntax (<code>/users/:uuid</code>) and come out as <code>/users/{uuid}</code>.</li><li lang="vi">Path dùng cú pháp Gin (<code>/users/:uuid</code>) và được đổi thành <code>/users/{uuid}</code>.</li>
+          <li lang="en">Every success response uses junkit's envelope: <code>status</code>, <code>message</code>, <code>data</code>, <code>api_info</code>.</li><li lang="vi">Mọi response thành công dùng khung của junkit: <code>status</code>, <code>message</code>, <code>data</code>, <code>api_info</code>.</li>
+          <li lang="en">Errors the route can answer are added: 400 (bad body or path), 401/403 (protected), 422 (validation, with <code>error</code> = field → message).</li><li lang="vi">Các lỗi route có thể trả được thêm vào: 400 (body hoặc path sai), 401/403 (route được bảo vệ), 422 (validation, với <code>error</code> = field → message).</li>
+        </ul>
+      </div>
+
+      <div class="jd-sym c-blue">
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Register</span></div>
+        <div class="jd-term"><pre data-hl="go">func Register(r gin.IRoutes, path, title string, spec []byte)</pre></div>
+        <p lang="en">Serves the Scalar page at <code>path</code> and the document at <code>path + "/openapi.json"</code>. Import the JSON into Postman or Insomnia, or generate a frontend client from it.</p>
+        <p lang="vi">Phục vụ trang Scalar ở <code>path</code> và tài liệu ở <code>path + "/openapi.json"</code>. Có thể import file JSON vào Postman, Insomnia, hoặc dùng để sinh client cho frontend.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 5. IN JUNGO -->
+  <section id="jungo" class="jd-section c-orange">
+    <div class="jd-section-head">
+      <span class="jd-badge">5</span>
+      <div>
+        <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+        <p class="jd-sub" lang="en">A feature only writes <code>Docs()</code>; the router does the rest and refuses to start on a missing doc.</p>
+        <p class="jd-sub" lang="vi">Feature chỉ cần viết <code>Docs()</code>; router lo phần còn lại và không cho app khởi động khi thiếu docs.</p>
+      </div>
+    </div>
+    <div class="jd-tablewrap" style="margin-top:16px"><table class="jd-params c-orange">
+      <tr><th>file</th><th><span lang="en">what it does</span><span lang="vi">làm gì</span></th></tr>
+      <tr><td>features/*/router/v1/*_router.go</td><td lang="en"><code>Docs() []apidoc.Route</code> next to <code>Register</code>: one line per route, path relative to the group, like <code>BodyLimits</code>.</td><td lang="vi"><code>Docs() []apidoc.Route</code> nằm cạnh <code>Register</code>: mỗi route một dòng, path tính từ group, giống <code>BodyLimits</code>.</td></tr>
+      <tr><td>internal/middleware/permission.go</td><td lang="en">The Guard records each route's policy (<code>Can</code> + permissions, <code>Authenticated</code>, <code>Public</code>, <code>Internal</code>), so the docs never restate it.</td><td lang="vi">Guard ghi lại chính sách của từng route (<code>Can</code> + permission, <code>Authenticated</code>, <code>Public</code>, <code>Internal</code>), nên docs không bao giờ phải khai báo lại.</td></tr>
+      <tr><td>internal/router/router.go</td><td lang="en">Collects every <code>Docs()</code>, fails startup when an <code>/api</code> route has no doc or a doc names no route, tags each route by its first path segment, and serves <code>/docs</code> in development only.</td><td lang="vi">Gom mọi <code>Docs()</code>, dừng khởi động khi route <code>/api</code> thiếu docs hoặc docs trỏ tới route không tồn tại, nhóm route theo đoạn path đầu tiên, và chỉ phục vụ <code>/docs</code> ở môi trường development.</td></tr>
+      <tr><td>cmd/scaffold/templates.go</td><td lang="en"><code>make feature</code> writes <code>Docs()</code> for the five generated routes.</td><td lang="vi"><code>make feature</code> sinh sẵn <code>Docs()</code> cho năm route được tạo.</td></tr>
+    </table></div>
+    <div class="jd-term" data-copy="commands" style="margin-top:14px"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="bash">
+$ open http://localhost:$API_SERVER_PORT/docs
+$ curl -s localhost:$API_SERVER_PORT/docs/openapi.json | jq '.paths | keys'
+</pre></div>
+  </section>
+
+  <!-- ============================================================ 6. GOTCHAS -->
+  <section id="gotchas" class="jd-section c-red">
+    <div class="jd-section-head">
+      <span class="jd-badge">!</span>
+      <div><h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2></div>
+    </div>
+    <div class="jd-explain" style="margin-top:16px">
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w"><span lang="en">Development only in Jungo</span><span lang="vi">Jungo chỉ bật ở development</span></span><span class="x" lang="en">The docs list every route, internal ones included. Production answers <code>/docs</code> with 404.</span><span class="x" lang="vi">Docs liệt kê mọi route, kể cả route internal. Ở production, <code>/docs</code> trả 404.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">The page needs the internet</span><span lang="vi">Trang cần có internet</span></span><span class="x" lang="en">Scalar is loaded from the jsDelivr CDN; <code>/docs/openapi.json</code> works offline.</span><span class="x" lang="vi">Scalar được tải từ CDN jsDelivr; <code>/docs/openapi.json</code> vẫn dùng được khi offline.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">Headers are free text</span><span lang="vi">Header chỉ là mô tả</span></span><span class="x" lang="en">A header such as <code>X-Device-ID</code> is mentioned in <code>Description</code>; there is no field for it.</span><span class="x" lang="vi">Header như <code>X-Device-ID</code> được ghi trong <code>Description</code>; chưa có field riêng cho nó.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">Errors are generic</span><span lang="vi">Lỗi được mô tả chung</span></span><span class="x" lang="en">Error responses show the envelope, not each route's error codes (<code>user_not_found</code>, …).</span><span class="x" lang="vi">Response lỗi chỉ thể hiện khung chung, chưa liệt kê mã lỗi riêng của từng route (<code>user_not_found</code>, …).</span></div>
+    </div>
+  </section>
+
+  <footer class="jd-footer">
+    <span>Jundoc · Junkit · apidoc</span>
+    <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package Junkit</span></a></span>
+  </footer>
+</article>
+</div>
+</body>
+</html>

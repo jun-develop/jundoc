@@ -115,17 +115,12 @@
                 <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go</span></div>
                 <pre data-hl="go">
 // CoreModules(cfg) …
-fx.Provide(provideResponseOptions),
 i18n.Module,
+fx.Invoke(func(t *i18n.Translator) { t.SetDefaultLang(cfg.Language) }),
 response.Module,
 
 fx.Provide(provideValidationOptions),
 validation.Module,
-
-// provideResponseOptions builds response.Options from cfg.
-func provideResponseOptions(cfg *config.Config) response.Options {
-    return response.Options{Language: cfg.Language}
-}
 </pre>
               </div>
               <div class="jd-term">
@@ -197,12 +192,12 @@ fmt.Println(t.GetMessage("required", i18n.LangVI, "email")) // email là bắt b
               <td lang="en"><code>lang</code> argument of <code>GetMessage</code></td>
               <td lang="vi">tham số <code>lang</code> của <code>GetMessage</code></td>
               <td>—</td>
-              <td lang="en">In Jungo it is fixed at start-up: <code>response.Options.Language</code> and
-                <code>validation.Options.Language</code> both come from <code>API_LANGUAGE</code> (default
-                <code>en</code>).</td>
-              <td lang="vi">Trong Jungo nó cố định lúc khởi động: <code>response.Options.Language</code> và
-                <code>validation.Options.Language</code> đều lấy từ <code>API_LANGUAGE</code> (mặc định
-                <code>en</code>).</td>
+              <td lang="en">In Jungo it is fixed at start-up: <code>response</code> and <code>validation</code> both use
+                the translator's default language, set by <code>SetDefaultLang(cfg.Language)</code> from
+                <code>API_LANGUAGE</code> (default <code>en</code>).</td>
+              <td lang="vi">Trong Jungo nó cố định lúc khởi động: <code>response</code> và <code>validation</code> đều
+                dùng ngôn ngữ mặc định của translator, đặt bởi <code>SetDefaultLang(cfg.Language)</code> từ
+                <code>API_LANGUAGE</code> (mặc định <code>en</code>).</td>
             </tr>
           </table>
         </div>
@@ -393,12 +388,14 @@ type Translator struct {
           <div class="jd-sym c-pink">
             <div class="jd-sym-head"><span class="jd-kind">var</span><span class="jd-sym-name">Module</span></div>
             <div class="jd-term">
-              <pre data-hl="go">var Module = fx.Provide(NewTranslator)</pre>
+              <pre data-hl="go">
+var Module = fx.Module("i18n",
+    fx.Provide(NewTranslator),
+)
+</pre>
             </div>
-            <p lang="en">A plain <code>fx.Provide</code> (not an <code>fx.Module</code>): provides one shared
-              <code>*i18n.Translator</code>. Needs nothing from the container.</p>
-            <p lang="vi">Chỉ là <code>fx.Provide</code> (không phải <code>fx.Module</code>): cung cấp một
-              <code>*i18n.Translator</code> dùng chung. Không cần gì từ container.</p>
+            <p lang="en">Provides one shared <code>*i18n.Translator</code>. Needs nothing from the container.</p>
+            <p lang="vi">Cung cấp một <code>*i18n.Translator</code> dùng chung. Không cần gì từ container.</p>
           </div>
         </div>
 
@@ -770,9 +767,11 @@ type Translator struct {
             <tr>
               <td>app/fx.go</td>
               <td lang="en"><code>i18n.Module</code> next to <code>response.Module</code> and
-                <code>validation.Module</code>; their <code>Options.Language</code> = <code>cfg.Language</code>.</td>
+                <code>validation.Module</code>; <code>fx.Invoke</code> sets the translator's default language to
+                <code>cfg.Language</code>, which both use.</td>
               <td lang="vi"><code>i18n.Module</code> đặt cạnh <code>response.Module</code> và
-                <code>validation.Module</code>; <code>Options.Language</code> của chúng = <code>cfg.Language</code>.
+                <code>validation.Module</code>; <code>fx.Invoke</code> đặt ngôn ngữ mặc định của translator là
+                <code>cfg.Language</code>, cả hai đều dùng nó.
               </td>
             </tr>
             <tr>

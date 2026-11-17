@@ -39,7 +39,7 @@
           <span class="jd-chip"><span lang="en">needs <code>validation.Options</code> +
               <code>*i18n.Translator</code></span><span lang="vi">cần <code>validation.Options</code> +
               <code>*i18n.Translator</code></span></span>
-          <span class="jd-chip">go-playground/validator/v10 · gin binding · junkit/i18n · junkit/console</span>
+          <span class="jd-chip">go-playground/validator/v10 · gin binding · junkit/i18n</span>
         </div>
       </header>
 
@@ -210,20 +210,24 @@ i18n.Module, // provided once, shared with response
 fx.Provide(provideValidationOptions),
 validation.Module,
 
-// provideValidationOptions builds validation.Options from cfg.
-func provideValidationOptions(cfg *config.Config) validation.Options {
-    return validation.Options{Language: cfg.Language}
+// provideValidationOptions returns validation.Options; the zero value uses the built-in
+// disposable-email list and a 3s MX timeout.
+func provideValidationOptions() validation.Options {
+    return validation.Options{}
 }
+
+// Messages use the translator's default language:
+fx.Invoke(func(t *i18n.Translator) { t.SetDefaultLang(cfg.Language) }),
 </pre>
             </div>
             <p class="jd-sub" style="margin-top:10px" lang="en"><code>cfg.Language</code> = env
-              <code>API_LANGUAGE</code> (default <code>en</code>). Fx builds the Validator lazily — in Jungo the
+              <code>API_LANGUAGE</code> (default <code>en</code>), set once on the shared translator. Fx builds the Validator lazily — in Jungo the
               handlers ask for <code>*validation.Validator</code> (reached through <code>fx.Invoke(router.RegisterAll)</code>),
               so it exists before the server starts. If nothing requests it, it is never built, the custom tags are
               never registered, and the first bind using one panics with <code>Undefined validation function
               '…'</code> — force it with e.g. <code>fx.Invoke(func(*validation.Validator) {})</code>.</p>
             <p class="jd-sub" style="margin-top:10px" lang="vi"><code>cfg.Language</code> = env
-              <code>API_LANGUAGE</code> (mặc định <code>en</code>). Fx tạo Validator khi có nơi cần — ở Jungo các
+              <code>API_LANGUAGE</code> (mặc định <code>en</code>), đặt một lần trên translator dùng chung. Fx tạo Validator khi có nơi cần — ở Jungo các
               handler xin <code>*validation.Validator</code> (thông qua <code>fx.Invoke(router.RegisterAll)</code>), nên nó
               có trước khi server chạy. Nếu không nơi nào xin, nó không bao giờ được tạo, các tag tùy chỉnh không được
               đăng ký, và lần bind đầu tiên dùng tag đó sẽ panic với <code>Undefined validation function
@@ -234,17 +238,18 @@ func provideValidationOptions(cfg *config.Config) validation.Options {
               <div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
               <pre data-hl="go">
 translator := i18n.NewTranslator() // built-in English messages
-v := validation.NewValidator(validation.Options{Language: "en"}, translator)
+v, err := validation.NewValidator(validation.Options{}, translator)
+if err != nil {
+    log.Fatal(err) // unreadable BlocklistPath or a failed rule registration
+}
 </pre>
             </div>
-            <p class="jd-sub" style="margin-top:10px" lang="en">Every call (each <code>NewValidator</code> /
-              <code>RegisterCustomValidation</code>) also creates / reloads the
-              disposable-email blocklist at <code>storage/bootstrap/email_blocklist.conf</code> (relative to the working
-              directory) and prints <code>⚡ Validation: loaded disposable email blocklist from …</code> to stdout.</p>
-            <p class="jd-sub" style="margin-top:10px" lang="vi">Mỗi lần gọi (mỗi <code>NewValidator</code> /
-              <code>RegisterCustomValidation</code>) nó cũng tạo / nạp lại blocklist email dùng một lần tại
-              <code>storage/bootstrap/email_blocklist.conf</code> (tương đối theo thư mục làm việc) và in ra stdout
-              <code>⚡ Validation: loaded disposable email blocklist from …</code>.</p>
+            <p class="jd-sub" style="margin-top:10px" lang="en">Each Validator holds its own disposable-email blocklist
+              in memory: the built-in seed list, or the file at <code>BlocklistPath</code> (only read, never written).
+              Nothing is printed and nothing is created on disk.</p>
+            <p class="jd-sub" style="margin-top:10px" lang="vi">Mỗi Validator giữ blocklist email dùng một lần riêng
+              trong bộ nhớ: danh sách seed có sẵn, hoặc file tại <code>BlocklistPath</code> (chỉ đọc, không bao giờ
+              ghi). Không in gì ra và không tạo gì trên đĩa.</p>
           </div>
         </div>
         <div class="jd-tablewrap" style="margin-top:16px">
@@ -256,12 +261,24 @@ v := validation.NewValidator(validation.Options{Language: "en"}, translator)
               <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
             </tr>
             <tr>
-              <td>Language</td>
+              <td>BlocklistPath</td>
               <td>string</td>
-              <td><span lang="en"><code>""</code> → the translator's default language (<code>en</code>).</span><span
-                  lang="vi"><code>""</code> → ngôn ngữ mặc định của translator (<code>en</code>).</span></td>
-              <td><span lang="en">Locale for every validation message. Fixed for the process.</span><span
-                  lang="vi">Locale cho mọi message validation. Cố định cho cả process.</span></td>
+              <td><span lang="en"><code>""</code> → the built-in seed list of disposable domains.</span><span
+                  lang="vi"><code>""</code> → danh sách seed domain dùng một lần có sẵn.</span></td>
+              <td><span lang="en">A newline-delimited file of disposable email domains for
+                  <code>email_advanced</code> (trimmed, lowercased, blanks skipped). It <b>replaces</b> the seed list. A
+                  missing or unreadable file makes <code>NewValidator</code> fail.</span><span lang="vi">File mỗi dòng
+                  một domain email dùng một lần cho <code>email_advanced</code> (đã trim, chuyển thường, bỏ dòng trống).
+                  Nó <b>thay thế</b> danh sách seed. File không có hoặc không đọc được làm <code>NewValidator</code>
+                  lỗi.</span></td>
+            </tr>
+            <tr>
+              <td>MXTimeout</td>
+              <td>time.Duration</td>
+              <td><span lang="en"><code>&lt;= 0</code> → 3s.</span><span lang="vi"><code>&lt;= 0</code> → 3s.</span></td>
+              <td><span lang="en">Bounds the DNS lookups <code>email_advanced</code> makes per domain.</span><span
+                  lang="vi">Giới hạn thời gian các truy vấn DNS mà <code>email_advanced</code> thực hiện cho mỗi
+                  domain.</span></td>
             </tr>
           </table>
         </div>
@@ -413,10 +430,12 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
             </tr>
             <tr>
               <td>email_advanced</td>
-              <td lang="en">valid syntax, domain not in the disposable blocklist, and the domain has DNS MX records
-                (live lookup)</td>
-              <td lang="vi">cú pháp hợp lệ, domain không nằm trong blocklist email dùng một lần, và domain có bản ghi
-                DNS MX (tra cứu thật)</td>
+              <td lang="en">valid syntax; the domain has a dot and is not an IP literal; it is not in the disposable
+                blocklist; and it can receive mail: MX records, or else A/AAAA records (live lookup, cached 10 min). A
+                DNS failure (timeout, SERVFAIL) accepts the address.</td>
+              <td lang="vi">cú pháp hợp lệ; domain có dấu chấm và không phải địa chỉ IP; không nằm trong blocklist
+                email dùng một lần; và nhận được mail: có bản ghi MX, không thì A/AAAA (tra cứu thật, cache 10 phút).
+                DNS lỗi (timeout, SERVFAIL) thì chấp nhận địa chỉ.</td>
               <td>%[1]s is invalid or in the forbidden list</td>
             </tr>
             <tr>
@@ -628,10 +647,13 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
             <div class="jd-term-bar"><i></i><i></i><i></i><span>custom rule</span></div>
             <pre data-hl="go">
 // 1. register on gin's validator (same engine NewValidator uses)
-if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-    _ = v.RegisterValidation("sku", func(fl validator.FieldLevel) bool {
+if engine, ok := binding.Validator.Engine().(*validator.Validate); ok {
+    err := engine.RegisterValidation("sku", func(fl validator.FieldLevel) bool {
         return strings.HasPrefix(fl.Field().String(), "SKU-")
     })
+    if err != nil {
+        return err
+    }
 }
 
 // 2. the message key is the tag name
@@ -649,7 +671,7 @@ type CreateProductRequest struct {
           <div class="jd-term">
             <div class="jd-term-bar"><i></i><i></i><i></i><span>Vietnamese messages</span></div>
             <pre data-hl="go">
-// API_LANGUAGE=vi  →  Options{Language: "vi"}
+// API_LANGUAGE=vi  →  translator.SetDefaultLang("vi")
 translator.AddTranslations(map[string]map[string]string{
     i18n.LangVI: {
         "validation_error": "Dữ liệu không hợp lệ",
@@ -686,8 +708,12 @@ translator.AddTranslations(map[string]map[string]string{
             <div class="jd-term">
               <pre data-hl="go">
 type Options struct {
-    // Language is the default locale used to resolve validation message keys, e.g. "en".
-    Language string
+    // BlocklistPath is a newline-delimited file of disposable email domains for the
+    // email_advanced rule. Empty uses the built-in seed list; the file is only read, never written.
+    BlocklistPath string
+
+    // MXTimeout bounds the DNS lookups the email_advanced rule makes per domain. Defaults to 3s.
+    MXTimeout time.Duration
 }
 </pre>
             </div>
@@ -697,26 +723,32 @@ type Options struct {
             <div class="jd-term">
               <pre data-hl="go">
 type Validator struct {
-    // unexported: translator *i18n.Translator, lang string
+    // unexported: translator *i18n.Translator, email checker (blocklist + MX cache)
 }
 </pre>
             </div>
-            <p lang="en">Holds the translator and language. Safe to share between goroutines (it only reads).</p>
-            <p lang="vi">Giữ translator và ngôn ngữ. Dùng chung giữa các goroutine an toàn (chỉ đọc).</p>
+            <p lang="en">Holds the translator and the <code>email_advanced</code> checker. Messages use the
+              translator's default language. Safe to share between goroutines.</p>
+            <p lang="vi">Giữ translator và bộ kiểm tra <code>email_advanced</code>. Message dùng ngôn ngữ mặc định của
+              translator. Dùng chung giữa các goroutine an toàn.</p>
           </div>
           <div class="jd-sym c-blue">
             <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NewValidator</span>
             </div>
             <div class="jd-term">
-              <pre data-hl="go">func NewValidator(opts Options, translator *i18n.Translator) *Validator</pre>
+              <pre data-hl="go">func NewValidator(opts Options, translator *i18n.Translator) (*Validator, error)</pre>
             </div>
-            <p lang="en">If gin's <code>binding.Validator.Engine()</code> is a <code>*validator.Validate</code> (the
-              default), calls <code>RegisterCustomValidation</code> on it — a <b>global</b> side effect. A
+            <p lang="en">Loads the blocklist (an error if <code>BlocklistPath</code> can't be read), then, if gin's
+              <code>binding.Validator.Engine()</code> is a <code>*validator.Validate</code> (the default), calls
+              <code>RegisterCustomValidation</code> on it — a <b>global</b> side effect: the most recently created
+              Validator's rules are the ones gin runs. A
               <code>nil</code> translator is allowed: messages then fall back to raw tag names
               (<code>{"name":"required"}</code>), <code>"invalid json syntax"</code> and <code>"invalid request"</code>.
             </p>
-            <p lang="vi">Nếu <code>binding.Validator.Engine()</code> của gin là <code>*validator.Validate</code> (mặc
-              định), gọi <code>RegisterCustomValidation</code> lên nó — side effect <b>toàn cục</b>. Translator
+            <p lang="vi">Nạp blocklist (lỗi nếu không đọc được <code>BlocklistPath</code>), rồi nếu
+              <code>binding.Validator.Engine()</code> của gin là <code>*validator.Validate</code> (mặc định), gọi
+              <code>RegisterCustomValidation</code> lên nó — side effect <b>toàn cục</b>: rule của Validator tạo sau
+              cùng là rule gin chạy. Translator
               <code>nil</code> được phép: message khi đó là tên tag thô (<code>{"name":"required"}</code>),
               <code>"invalid json syntax"</code> và <code>"invalid request"</code>.</p>
           </div>
@@ -787,76 +819,23 @@ func BindQuery(ctx *gin.Context, responder response.Responder, validator *Valida
           </div>
         </div>
 
-        <h3 style="margin-top:22px"><span lang="en">Rules &amp; email helpers</span><span lang="vi">Rule &amp; hàm hỗ
-            trợ email</span></h3>
+        <h3 style="margin-top:22px"><span lang="en">Registering the rules elsewhere</span><span lang="vi">Đăng ký
+            rule ở nơi khác</span></h3>
         <div class="jd-syms">
           <div class="jd-sym c-purple">
-            <div class="jd-sym-head"><span class="jd-kind">func</span><span
-                class="jd-sym-name">RegisterCustomValidation</span></div>
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">(*Validator)
+                RegisterCustomValidation</span></div>
             <div class="jd-term">
-              <pre data-hl="go">func RegisterCustomValidation(v *validator.Validate)</pre>
+              <pre data-hl="go">func (v *Validator) RegisterCustomValidation(engine *validator.Validate) error</pre>
             </div>
-            <p lang="en">Loads the default blocklist (creating it from a built-in seed of 100 domains if missing), then
-              registers the 11 custom tags on <code>v</code>. Registration errors are only logged
-              (<code>"validation: register %s rule: %v"</code>). Use it directly for a standalone
+            <p lang="en">Registers the 11 custom tags on <code>engine</code>, backed by this Validator's blocklist
+              and MX cache. Returns <code>validation: register &lt;tag&gt; rule: …</code> on failure.
+              <code>NewValidator</code> already does this for gin's engine; call it for a standalone
               <code>validator.New()</code> with <code>validate:"…"</code> tags.</p>
-            <p lang="vi">Nạp blocklist mặc định (tạo từ danh sách seed 100 domain nếu chưa có), rồi đăng ký 11 tag tùy
-              chỉnh lên <code>v</code>. Lỗi đăng ký chỉ được log (<code>"validation: register %s rule: %v"</code>). Dùng
-              trực tiếp cho một <code>validator.New()</code> riêng với tag <code>validate:"…"</code>.</p>
-          </div>
-          <div class="jd-sym c-purple">
-            <div class="jd-sym-head"><span class="jd-kind">const</span><span
-                class="jd-sym-name">DefaultBlocklistPath</span></div>
-            <div class="jd-term">
-              <pre data-hl="go">const DefaultBlocklistPath = "storage/bootstrap/email_blocklist.conf"</pre>
-            </div>
-            <p lang="en">Relative to the process working directory. One domain per line.</p>
-            <p lang="vi">Tương đối theo thư mục làm việc của process. Mỗi dòng một domain.</p>
-          </div>
-          <div class="jd-sym c-purple">
-            <div class="jd-sym-head"><span class="jd-kind">func</span><span
-                class="jd-sym-name">LoadDisposableEmailsFromFile</span></div>
-            <div class="jd-term">
-              <pre data-hl="go">func LoadDisposableEmailsFromFile(path string) error</pre>
-            </div>
-            <p lang="en"><b>Replaces</b> the whole blocklist with the file's lines (trimmed, lowercased, blanks
-              skipped). Returns the open / scan error; the old list stays on error. Thread-safe (RWMutex).</p>
-            <p lang="vi"><b>Thay thế</b> toàn bộ blocklist bằng các dòng trong file (đã trim, chuyển thường, bỏ dòng
-              trống). Trả lỗi mở / đọc file; khi lỗi danh sách cũ được giữ nguyên. An toàn đa luồng (RWMutex).</p>
-          </div>
-          <div class="jd-sym c-purple">
-            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">IsDisposableEmail</span>
-            </div>
-            <div class="jd-term">
-              <pre data-hl="go">func IsDisposableEmail(domain string) bool</pre>
-            </div>
-            <p lang="en">Takes a <b>domain</b>, not an address. Case-insensitive:
-              <code>IsDisposableEmail("MAILINATOR.COM")</code> → <code>true</code>.</p>
-            <p lang="vi">Nhận một <b>domain</b>, không phải địa chỉ email. Không phân biệt hoa thường:
-              <code>IsDisposableEmail("MAILINATOR.COM")</code> → <code>true</code>.</p>
-          </div>
-          <div class="jd-sym c-purple">
-            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">CheckMXRecord</span>
-            </div>
-            <div class="jd-term">
-              <pre data-hl="go">func CheckMXRecord(domain string) bool</pre>
-            </div>
-            <p lang="en"><code>net.LookupMX</code>; false on lookup error or zero records (logged as a warning). Blocks
-              for the DNS round-trip.</p>
-            <p lang="vi"><code>net.LookupMX</code>; false khi tra cứu lỗi hoặc không có bản ghi (log cảnh báo). Chặn
-              trong suốt thời gian truy vấn DNS.</p>
-          </div>
-          <div class="jd-sym c-purple">
-            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">ValidateEmail</span>
-            </div>
-            <div class="jd-term">
-              <pre data-hl="go">func ValidateEmail(email string) bool</pre>
-            </div>
-            <p lang="en">What <code>email_advanced</code> runs: syntax regex → not disposable →
-              <code>CheckMXRecord</code>. Stops at the first failure, so a disposable domain never hits DNS.</p>
-            <p lang="vi">Chính là thứ <code>email_advanced</code> chạy: regex cú pháp → không phải domain dùng một lần →
-              <code>CheckMXRecord</code>. Dừng ở bước sai đầu tiên, nên domain dùng một lần không bao giờ phải tra DNS.
-            </p>
+            <p lang="vi">Đăng ký 11 tag tùy chỉnh lên <code>engine</code>, dùng blocklist và cache MX của Validator
+              này. Trả <code>validation: register &lt;tag&gt; rule: …</code> khi lỗi. <code>NewValidator</code> đã làm
+              việc này cho engine của gin; gọi nó cho một <code>validator.New()</code> riêng với tag
+              <code>validate:"…"</code>.</p>
           </div>
         </div>
       </section>
@@ -904,11 +883,6 @@ func BindQuery(ctx *gin.Context, responder response.Responder, validator *Valida
                 every request — a failed bind answers 422 by itself.</td>
               <td lang="vi"><code>validation.BindJSON</code>, <code>BindQuery</code> và <code>ParseUUID</code> ở mọi
                 request — bind lỗi thì tự trả 422.</td>
-            </tr>
-            <tr>
-              <td>.gitignore (repo root)</td>
-              <td lang="en">Ignores the generated <code>storage/bootstrap/email_blocklist.conf</code>.</td>
-              <td lang="vi">Bỏ qua file sinh ra <code>storage/bootstrap/email_blocklist.conf</code>.</td>
             </tr>
           </table>
         </div>
@@ -982,13 +956,12 @@ $ curl -s 'localhost:$API_SERVER_PORT/api/v1/users?page_size=500' -H 'Authorizat
               <code>"password must be longer than 8 characters"</code>; <code>max=100</code> trên số nguyên báo
               <code>"page_size must be less than 100"</code> dù 100 vẫn đạt. Ghi đè văn bản nếu cần.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">email_advanced hits
-              DNS</span><span class="x" lang="en">Every validation does a live MX lookup — slow, and it fails offline or
-              when DNS is down. Each rejection prints a warning to stdout via <code>console.Warnf</code> (not zap, so
-              the log level doesn't silence it). An invalid format prints no address, but the disposable / MX warnings
-              still print the domain.</span><span class="x" lang="vi">Mỗi lần validate là một lần tra MX thật — chậm,
-              và thất bại khi offline hoặc DNS lỗi. Mỗi lần từ chối in cảnh báo ra stdout qua
-              <code>console.Warnf</code> (không qua zap, nên log level không tắt được). Sai định dạng thì không in địa
-              chỉ, nhưng cảnh báo disposable / MX vẫn in domain.</span></div>
+              DNS</span><span class="x" lang="en">A new domain costs a live MX (then A/AAAA) lookup, bounded by
+              <code>MXTimeout</code> (3s); answers are cached per Validator for 10 minutes. When DNS itself fails
+              (offline, timeout) the address is accepted rather than blocking sign-ups. Nothing is logged.</span><span
+              class="x" lang="vi">Domain mới tốn một lần tra MX (rồi A/AAAA) thật, giới hạn bởi <code>MXTimeout</code>
+              (3s); kết quả được cache theo Validator trong 10 phút. Khi chính DNS lỗi (offline, timeout) địa chỉ được
+              chấp nhận thay vì chặn đăng ký. Không log gì.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Keys come from Go
               names</span><span class="x" lang="en">Gin's validator reports Go field names, so
               <code>Phone string `json:"tel"`</code> yields the key <code>"phone"</code> for a rule error — but a JSON
@@ -1021,16 +994,13 @@ $ curl -s 'localhost:$API_SERVER_PORT/api/v1/users?page_size=500' -H 'Authorizat
               lang="vi"><code>strconv.NumError</code> không có tên field, nên query/form key đầu tiên chứa giá trị đó
               được chọn. <code>?page=x&amp;page_size=x</code> có thể báo key nào cũng được; giá trị từ
               <code>ShouldBindUri</code> không được tìm (bạn nhận dạng string).</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">8</span><span class="w">Writes a file at
-              startup</span><span class="x" lang="en"><code>NewValidator</code> creates <code>storage/bootstrap/</code>
-              in the working directory if the blocklist is missing. In a read-only container it just logs a warning and
-              the blocklist stays empty. <code>go test</code> runs each package in its own folder, so a test that
-              calls <code>NewValidator</code> leaves a <code>storage/</code> folder next to that package's files —
-              delete it, don't commit it.</span><span class="x" lang="vi"><code>NewValidator</code> tạo
-              <code>storage/bootstrap/</code> trong thư mục làm việc nếu chưa có blocklist. Trong container chỉ đọc, nó
-              chỉ log cảnh báo và blocklist rỗng. <code>go test</code> chạy mỗi package trong thư mục của nó, nên test
-              nào gọi <code>NewValidator</code> sẽ để lại thư mục <code>storage/</code> cạnh file của package đó — xóa
-              nó đi, đừng commit.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">8</span><span class="w">One Validator per
+              process</span><span class="x" lang="en">gin's binding engine is process-global: every
+              <code>NewValidator</code> re-registers the custom tags on it, so the most recently created Validator's
+              blocklist and MX settings are the ones <code>ShouldBind…</code> uses.</span><span class="x"
+              lang="vi">Engine binding của gin là toàn cục cho process: mỗi <code>NewValidator</code> đăng ký lại các
+              tag tùy chỉnh lên nó, nên blocklist và cấu hình MX của Validator tạo sau cùng là thứ
+              <code>ShouldBind…</code> dùng.</span></div>
         </div>
       </section>
 

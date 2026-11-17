@@ -183,14 +183,6 @@ func main() {
               <td><span lang="en">upper</span><span lang="vi">hoa</span></td>
               <td>—</td>
             </tr>
-            <tr>
-              <td>NewError</td>
-              <td>—</td>
-              <td>—</td>
-              <td><span lang="en">unchanged</span><span lang="vi">giữ nguyên</span></td>
-              <td><span lang="en">prints nothing, returns <code>error</code></span><span lang="vi">không in gì, trả
-                  <code>error</code></span></td>
-            </tr>
           </table>
         </div>
         <p class="jd-sub" lang="en">Every printed line ends with the reset code <code>\033[0m</code> and a newline —
@@ -235,7 +227,7 @@ func main() {
 func generate(name string) error {
     tmpl, err := os.ReadFile("templates/feature.tmpl")
     if err != nil {
-        return console.NewError("template %q: %w", name, err)
+        return fmt.Errorf("template %q: %w", name, err)
     }
     return os.WriteFile(name+".go", tmpl, 0o644)
 }
@@ -273,10 +265,11 @@ func generate(name string) error {
                 letter of the format.</span><span class="x" lang="vi">Xanh lá và xanh lơ; cả hai viết hoa chữ đầu của
                 format.</span></div>
             <div class="jd-ex c-blue" data-code="#code-quick" data-show="17-23"><span class="n">5</span><span
-                class="w">NewError</span><span class="x" lang="en">Exactly <code>fmt.Errorf</code>: prints nothing,
-                keeps your casing, supports <code>%w</code> so <code>errors.Is</code> still works.</span><span class="x"
-                lang="vi">Chính là <code>fmt.Errorf</code>: không in gì, giữ nguyên chữ hoa/thường, hỗ trợ
-                <code>%w</code> nên <code>errors.Is</code> vẫn hoạt động.</span></div>
+                class="w">fmt.Errorf</span><span class="x" lang="en">Library code returns errors and lets the
+                top level print them; console has no error constructor — plain <code>fmt.Errorf</code> with
+                <code>%w</code> keeps <code>errors.Is</code> working.</span><span class="x"
+                lang="vi">Code thư viện trả lỗi và để tầng ngoài cùng in ra; console không có hàm tạo lỗi — dùng
+                <code>fmt.Errorf</code> với <code>%w</code> để <code>errors.Is</code> vẫn hoạt động.</span></div>
           </div>
         </div>
       </section>
@@ -381,24 +374,6 @@ func generate(name string) error {
               nguyên văn (chuỗi bất kỳ).</p>
           </div>
         </div>
-
-        <h3 style="margin-top:18px"><span lang="en">Errors</span><span lang="vi">Lỗi</span></h3>
-        <div class="jd-syms">
-          <div class="jd-sym c-muted">
-            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NewError</span></div>
-            <div class="jd-term">
-              <pre data-hl="go">func NewError(format string, a ...any) error</pre>
-            </div>
-            <p lang="en">Returns <code>fmt.Errorf(format, a...)</code> — no printing, no colour, no casing.
-              <code>%w</code> wraps:
-              <code>errors.Is(console.NewError("read %q: %w", "config.yaml", cause), cause)</code> is true and the
-              message is <code>read "config.yaml": connection refused</code> (from the tests).</p>
-            <p lang="vi">Trả về <code>fmt.Errorf(format, a...)</code> — không in, không màu, không đổi hoa/thường.
-              <code>%w</code> bọc lỗi:
-              <code>errors.Is(console.NewError("read %q: %w", "config.yaml", cause), cause)</code> là true và thông điệp
-              là <code>read "config.yaml": connection refused</code> (theo test).</p>
-          </div>
-        </div>
       </section>
 
       <!-- ============================================================ 6. IN JUNGO -->
@@ -490,9 +465,9 @@ $ make console CMD="nope"
           <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Fatalf =
               os.Exit(1)</span><span class="x" lang="en">Defers, Fx <code>OnStop</code> hooks and log flushing are
               skipped. Use it in <code>main</code> / CLI entry points, never in library or request code — return an
-              error (e.g. <code>NewError</code>) instead.</span><span class="x" lang="vi">Defer, hook
+              error (<code>fmt.Errorf</code>) instead.</span><span class="x" lang="vi">Defer, hook
               <code>OnStop</code> của Fx và việc flush log đều bị bỏ qua. Chỉ dùng trong <code>main</code> / điểm vào
-              CLI, không bao giờ trong code thư viện hay xử lý request — hãy trả lỗi (vd. <code>NewError</code>).</span>
+              CLI, không bao giờ trong code thư viện hay xử lý request — hãy trả lỗi (<code>fmt.Errorf</code>).</span>
           </div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Everything goes to
               stdout, always coloured</span><span class="x" lang="en">Errors and warnings are not on stderr, and ANSI

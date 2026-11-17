@@ -144,8 +144,8 @@ var Module = fx.Module("user",
 var Module = fx.Module("product",
     fx.Provide(fx.Annotate(repository.NewProductRepository, // Fx injects DB
         fx.As(new(domain.ProductRepository)))),
-    fx.Provide(func(opts cache.Options) cache.Cache[*domain.Product] {
-        return cache.New[*domain.Product](opts)
+    fx.Provide(func(s *cache.Store) cache.Cache[*domain.Product] {
+        return cache.New[*domain.Product](s)
     }),
     fx.Provide(fx.Annotate(service.NewProductService,       // Fx injects ProductRepo & cache
         fx.As(new(domain.ProductService)))),
@@ -198,8 +198,8 @@ var Module = fx.Module("user",
 var Module = fx.Module("product",
     fx.Provide(fx.Annotate(repository.NewProductRepository, // Fx tự tìm DB đưa vào
         fx.As(new(domain.ProductRepository)))),
-    fx.Provide(func(opts cache.Options) cache.Cache[*domain.Product] {
-        return cache.New[*domain.Product](opts)
+    fx.Provide(func(s *cache.Store) cache.Cache[*domain.Product] {
+        return cache.New[*domain.Product](s)
     }),
     fx.Provide(fx.Annotate(service.NewProductService,       // Fx tự tìm ProductRepo & cache
         fx.As(new(domain.ProductService)))),
@@ -763,7 +763,7 @@ func NewConsoleFx() *fx.App {
           <span class="x"><span lang="en">Supplies an already-constructed value into the container as-is. This is how <code>*config.Config</code> (loaded from .env) is made available to every constructor.</span><span lang="vi">Nạp đồ có sẵn vào kho: Cấu hình <code>cfg</code> đã được đọc sẵn từ file .env trước khi Fx chạy. Dùng <code>fx.Supply</code> để Fx cất vào kho và sẵn sàng cấp phát ngay cho bất kỳ hàm nào cần <code>*config.Config</code>.</span></span></div>
         <div class="jd-ex c-blue" data-code="#code-fx" data-show="8,10-11"><span class="n">4</span>
           <span class="w">provideXOptions + x.Module</span>
-          <span class="x"><span lang="en">Standard Junkit integration pattern: Jungo transforms app config into the package's <code>Options</code>, and the Junkit Module automatically instantiates the client using those Options. The database does the same inside its own package: <code>primary.Module</code> provides <code>*primary.DB</code>, built by <code>primary.New</code>, which turns <code>cfg.DB</code> into <code>postgres.Options</code> and calls <code>postgres.NewDatabase</code>. Each database gets its own Go type instead of a <code>name:</code> tag on a shared <code>*postgres.DB</code>: a repository that asks for <code>*primary.DB</code> can only ever receive that database — the compiler and Fx guarantee it, and a forgotten tag cannot silently hand it the wrong one.</span><span lang="vi">Mô hình tích hợp thư viện Junkit: Jungo lấy các giá trị cấu hình tương ứng chuyển thành <code>Options</code> của thư viện, sau đó Junkit Module sẽ tự động tạo kết nối Database, Redis, Cache... từ Options đó. Database cũng làm y như vậy nhưng nằm trong package riêng: <code>primary.Module</code> cung cấp <code>*primary.DB</code>, được tạo bởi <code>primary.New</code> — hàm này chuyển <code>cfg.DB</code> thành <code>postgres.Options</code> rồi gọi <code>postgres.NewDatabase</code>. Mỗi database có một kiểu Go riêng thay vì dán tag <code>name:</code> lên một <code>*postgres.DB</code> dùng chung: repository nào khai báo <code>*primary.DB</code> thì chắc chắn chỉ nhận đúng database đó — compiler và Fx đảm bảo điều này, không có chuyện quên ghi tag rồi bị truyền nhầm database.</span></span></div>
+          <span class="x"><span lang="en">Standard Junkit integration pattern: Jungo transforms app config into the package's <code>Options</code>, and the Junkit Module automatically instantiates the client using those Options. The database does the same inside its own package: <code>primary.Module</code> provides <code>*primary.DB</code>, built by <code>primary.New</code>, which turns <code>cfg.DB</code> into <code>postgres.Options</code> and calls <code>postgres.New</code>. Each database gets its own Go type instead of a <code>name:</code> tag on a shared <code>*postgres.DB</code>: a repository that asks for <code>*primary.DB</code> can only ever receive that database — the compiler and Fx guarantee it, and a forgotten tag cannot silently hand it the wrong one.</span><span lang="vi">Mô hình tích hợp thư viện Junkit: Jungo lấy các giá trị cấu hình tương ứng chuyển thành <code>Options</code> của thư viện, sau đó Junkit Module sẽ tự động tạo kết nối Database, Redis, Cache... từ Options đó. Database cũng làm y như vậy nhưng nằm trong package riêng: <code>primary.Module</code> cung cấp <code>*primary.DB</code>, được tạo bởi <code>primary.New</code> — hàm này chuyển <code>cfg.DB</code> thành <code>postgres.Options</code> rồi gọi <code>postgres.New</code>. Mỗi database có một kiểu Go riêng thay vì dán tag <code>name:</code> lên một <code>*postgres.DB</code> dùng chung: repository nào khai báo <code>*primary.DB</code> thì chắc chắn chỉ nhận đúng database đó — compiler và Fx đảm bảo điều này, không có chuyện quên ghi tag rồi bị truyền nhầm database.</span></span></div>
         <div class="jd-ex c-blue" data-code="#code-fx" data-show="6-9"><span class="n">5</span>
           <span class="w">fx.Decorate + `name:"sql"`</span>
           <span class="x"><span lang="en">Local override (Module scope): By default, the entire app shares a global logger. Inside the database module only, <code>fx.Decorate</code> swaps that default with the specialized <code>"sql"</code> logger. Outside development this routes all database query logs to a dedicated file (<code>storage/logs/sql.log</code>) without cluttering the main application log; in development every channel, <code>sql</code> included, prints to the console.</span><span lang="vi">Thay thế linh kiện cục bộ (Chỉ riêng module này): Bình thường toàn bộ app dùng chung Logger mặc định. Nhưng riêng bên trong module Database, <code>fx.Decorate</code> sẽ "tráo" Logger mặc định bằng Logger chuyên biệt (<code>name:"sql"</code>). Nhờ đó, ngoài môi trường development, mọi câu lệnh truy vấn SQL được ghi ra file log riêng (<code>storage/logs/sql.log</code>) mà không làm ngập rác file log chính của ứng dụng; còn ở development, mọi kênh log (kể cả <code>sql</code>) đều in ra console.</span></span></div>
@@ -862,7 +862,7 @@ type Params struct {
     Responder     response.Responder
 }
 
-func RegisterAll(p Params) { … }
+func RegisterAll(p Params) error { … }
 </pre></div>
       </div></div>
       <div class="jd-explain">
@@ -1123,8 +1123,8 @@ document.addEventListener("jd:ready", function () {
       text: { en: "<b>fx.Supply</b> already holds <code>*config.Config</code> (loaded from .env). <b>Ground level reached!</b> Now Fx turns around and builds everything bottom-up.",
               vi: "<b>fx.Supply</b> đã nạp sẵn <code>*config.Config</code> (đọc từ file .env). <b>Đã chạm đến gốc rễ!</b> Giờ Fx bắt đầu quay ngược lại để khởi tạo từng món từ dưới lên trên." } },
     { node: "db", token: "*primary.DB", color: build, set: { db: "built" }, pill: "pill-db",
-      text: { en: "<code>primary.New</code> builds <code>postgres.Options</code> from <code>cfg</code> and calls <code>postgres.NewDatabase</code> to open the connection pool → <b>provides *primary.DB to NewUserRepository</b>.",
-              vi: "<code>primary.New</code> dựng <code>postgres.Options</code> từ <code>cfg</code> rồi gọi <code>postgres.NewDatabase</code> mở kết nối Database ➔ <b>Cung cấp *primary.DB</b> gửi sang cho <b>NewUserRepository</b>." } },
+      text: { en: "<code>primary.New</code> builds <code>postgres.Options</code> from <code>cfg</code> and calls <code>postgres.New</code> to open the connection pool → <b>provides *primary.DB to NewUserRepository</b>.",
+              vi: "<code>primary.New</code> dựng <code>postgres.Options</code> từ <code>cfg</code> rồi gọi <code>postgres.New</code> mở kết nối Database ➔ <b>Cung cấp *primary.DB</b> gửi sang cho <b>NewUserRepository</b>." } },
     { node: "repo", token: "UserRepository", color: build, set: { repo: "built" }, pill: "pill-repo",
       text: { en: "<code>NewUserRepository(db)</code> receives DB from Tier 1 ➔ <b>provides domain.UserRepository down to Tier 2 (NewUserService)</b>.",
               vi: "<code>NewUserRepository(db)</code> nhận DB từ Tầng 1 ➔ <b>Cung cấp domain.UserRepository</b> chuyển xuống Tầng 2 cho <b>NewUserService</b>." } },

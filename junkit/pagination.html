@@ -163,11 +163,11 @@ func (h *ProductHandler) List(ctx *gin.Context) {
       <div class="jd-sym c-blue">
         <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">(*Request) GetOffset · GetLimit</span></div>
         <div class="jd-term"><pre data-hl="go">
-func (r *Request) GetOffset() int32 // (Page - 1) * PageSize, clamped to math.MaxInt32
-func (r *Request) GetLimit() int32  // PageSize
+func (r *Request) GetOffset() int32 // (Page - 1) * GetLimit(), never negative, clamped to math.MaxInt32
+func (r *Request) GetLimit() int32  // PageSize clamped to [1, 100]
 </pre></div>
-        <p lang="en">Call <b>after</b> <code>SetDefaults</code>, otherwise page 0 gives a negative offset.</p>
-        <p lang="vi">Gọi <b>sau</b> <code>SetDefaults</code>, nếu không page 0 sẽ cho offset âm.</p>
+        <p lang="en">Both are safe on a Request you built by hand, without binding: <code>GetLimit</code> clamps the page size to 1–100 and <code>GetOffset</code> uses it, returning 0 for page ≤ 1. Call <code>SetDefaults</code> first anyway so the default page size is 10, not 1.</p>
+        <p lang="vi">Cả hai an toàn với Request tự dựng, không qua bind: <code>GetLimit</code> kẹp page size trong 1–100 và <code>GetOffset</code> dùng nó, trả 0 khi page ≤ 1. Vẫn nên gọi <code>SetDefaults</code> trước để page size mặc định là 10 chứ không phải 1.</p>
         <p lang="en"><code>page</code> has no upper bound, so a huge one (<code>?page=3000000000</code>) would overflow <code>int32</code> into a negative OFFSET and a 500. <code>GetOffset</code> clamps it to <code>math.MaxInt32</code> instead: the client just gets an empty page.</p>
         <p lang="vi"><code>page</code> không có giới hạn trên, nên một giá trị rất lớn (<code>?page=3000000000</code>) sẽ tràn <code>int32</code> thành OFFSET âm và gây lỗi 500. <code>GetOffset</code> chặn nó ở <code>math.MaxInt32</code>: client chỉ nhận về một trang rỗng.</p>
       </div>
@@ -179,6 +179,7 @@ func (r *Request) GetLimit() int32  // PageSize
           <li lang="en"><code>page &lt;= 0</code> → 1, <code>pageSize &lt;= 0</code> → 1.</li><li lang="vi"><code>page &lt;= 0</code> → 1, <code>pageSize &lt;= 0</code> → 1.</li>
           <li lang="en"><code>TotalPages = ceil(total / pageSize)</code>, but never 0 — an empty list still reports 1 page.</li><li lang="vi"><code>TotalPages = ceil(total / pageSize)</code>, nhưng không bao giờ bằng 0 — danh sách rỗng vẫn báo 1 trang.</li>
           <li lang="en"><code>NextPage</code> / <code>PrevPage</code> are <code>nil</code> (JSON <code>null</code>) when there is none.</li><li lang="vi"><code>NextPage</code> / <code>PrevPage</code> là <code>nil</code> (JSON <code>null</code>) khi không có.</li>
+          <li lang="en">A page past the last one keeps its <code>Page</code> but gets <code>PrevPage = TotalPages</code>, so the client can step back to real data.</li><li lang="vi">Trang vượt quá trang cuối giữ nguyên <code>Page</code> nhưng có <code>PrevPage = TotalPages</code>, để client lùi về dữ liệu thật.</li>
         </ul>
       </div>
 
@@ -193,18 +194,6 @@ func (r *Request) GetLimit() int32  // PageSize
           <tr><td>HasNext · has_next / HasPrev · has_prev</td><td lang="en">Show / hide the next / previous buttons.</td><td lang="vi">Hiện / ẩn nút trang sau / trang trước.</td></tr>
           <tr><td>NextPage · next_page / PrevPage · prev_page</td><td lang="en"><code>*int</code> — the page number to request, or null.</td><td lang="vi"><code>*int</code> — số trang cần gọi, hoặc null.</td></tr>
         </table></div>
-      </div>
-
-      <div class="jd-sym c-muted">
-        <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">PaginatedResponse[T]</span></div>
-        <div class="jd-term"><pre data-hl="go">
-type PaginatedResponse[T any] struct {
-    Items      []T        `json:"items"`
-    Pagination Pagination `json:"pagination"`
-}
-</pre></div>
-        <p lang="en">A typed version of the <code>{ items, pagination }</code> shape — handy for API docs or clients. <code>responder.Pagination</code> builds the same JSON itself, so you don't need it there.</p>
-        <p lang="vi">Phiên bản có kiểu của dạng <code>{ items, pagination }</code> — tiện cho tài liệu API hoặc client. <code>responder.Pagination</code> tự tạo ra đúng JSON này, nên ở đó bạn không cần nó.</p>
       </div>
     </div>
   </section>
@@ -254,16 +243,16 @@ $ curl -s 'localhost:$API_SERVER_PORT/api/v1/users?page=1&amp;page_size=2&amp;se
 
 <script>
 document.addEventListener("jd:ready", function () {
-  // Mirrors SetDefaults + GetOffset/GetLimit + NewPagination.
+  // Mirrors SetDefaults + GetOffset/GetLimit (limit clamped to [1, 100]) + NewPagination.
   function calc(page, size, total) {
     var np = page > 0 ? page : 1, ns = size > 0 ? size : 10; // SetDefaults ran first, as in the handler
     var p = np, s = ns;
     var pages = Math.max(1, Math.ceil(total / ns));
     return {
-      sql: { limit: s, offset: Math.min((p - 1) * s, 2147483647) },
+      sql: { limit: Math.min(Math.max(s, 1), 100), offset: p <= 1 ? 0 : Math.min((p - 1) * Math.min(Math.max(s, 1), 100), 2147483647) },
       meta: { page: np, page_size: ns, total_items: total, total_pages: pages,
         has_next: np < pages, has_prev: np > 1,
-        next_page: np < pages ? np + 1 : null, prev_page: np > 1 ? np - 1 : null }
+        next_page: np < pages ? np + 1 : null, prev_page: np > 1 ? Math.min(np - 1, pages) : null }
     };
   }
   console.assert(JSON.stringify(calc(2, 10, 35).meta) === JSON.stringify({ page: 2, page_size: 10, total_items: 35, total_pages: 4, has_next: true, has_prev: true, next_page: 3, prev_page: 1 }), "pagination calc");

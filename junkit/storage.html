@@ -64,8 +64,10 @@
           </div>
           <div class="jd-node is-tint c-orange" data-node="s2"><span class="k">2 · upload</span><span class="t mono"
               style="font-size:15px">UploadFile(ctx, f, name)</span>
-            <div class="d" lang="en">Keeps only the extension of <code>name</code>.</div>
-            <div class="d" lang="vi">Chỉ giữ lại phần mở rộng của <code>name</code>.</div>
+            <div class="d" lang="en">Keeps only the lowercased extension of <code>name</code>; refuses none or an
+              active-content one (<code>.html</code>, <code>.svg</code>, <code>.js</code>…).</div>
+            <div class="d" lang="vi">Chỉ giữ phần mở rộng (chữ thường) của <code>name</code>; từ chối khi không có hoặc
+              là loại chạy được (<code>.html</code>, <code>.svg</code>, <code>.js</code>…).</div>
           </div>
           <div class="jd-node is-tint c-orange" data-node="s3"><span class="k">3 · disk</span><span class="t mono"
               style="font-size:15px">&lt;uuid&gt;_&lt;unix&gt;.png</span>
@@ -108,14 +110,14 @@ storage.Module,
 
 // provideStorageOptions builds storage.Options from cfg.Storage.
 func provideStorageOptions(cfg *config.Config) storage.Options {
-    return storage.Options{BaseDir: cfg.Storage.BaseDir, BaseURL: cfg.Storage.BaseURL}
+    return storage.Options{BaseDir: cfg.StoragePath("uploads"), BaseURL: cfg.Storage.BaseURL}
 }
 </pre>
             </div>
             <div class="jd-term" style="margin-top:12px">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/router/router.go</span></div>
               <pre data-hl="go">
-p.Router.Static("/uploads", p.Config.Storage.BaseDir)
+p.Router.Static("/uploads", p.Config.StoragePath("uploads"))
 </pre>
             </div>
             <p lang="en" style="margin-top:12px">Any constructor can now take a <code>storage.Service</code>. If the
@@ -127,9 +129,12 @@ p.Router.Static("/uploads", p.Config.Storage.BaseDir)
             <div class="jd-term">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
               <pre data-hl="go">
-svc, err := storage.NewLocalService("./uploads", "http://localhost:$API_SERVER_PORT/uploads")
+svc, err := storage.NewLocalService(storage.Options{
+    BaseDir: "./uploads",
+    BaseURL: "http://localhost:8080/uploads",
+})
 if err != nil {
-    log.Fatal(err) // create storage directory "./uploads": …
+    log.Fatal(err) // storage: create base dir: …
 }
 
 r := gin.New()
@@ -169,9 +174,10 @@ r.Static("/uploads", "./uploads") // must match BaseDir and the path in BaseURL
               <td><span lang="en">no default; <code>""</code> gives URLs like <code>"/&lt;name&gt;"</code></span><span
                   lang="vi">không có mặc định; <code>""</code> cho ra URL dạng <code>"/&lt;name&gt;"</code></span></td>
               <td><span lang="en">Public prefix where <code>BaseDir</code> is served, e.g.
-                  <code>"http://localhost:$API_SERVER_PORT/uploads"</code>. No trailing slash — one is added.</span><span
-                  lang="vi">Tiền tố công khai nơi <code>BaseDir</code> được phục vụ, vd.
-                  <code>"http://localhost:$API_SERVER_PORT/uploads"</code>. Không có dấu / cuối — thư viện tự thêm.</span></td>
+                  <code>"http://localhost:$API_SERVER_PORT/uploads"</code>. A trailing slash is trimmed. Also the prefix
+                  <code>DeleteFile</code> requires.</span><span lang="vi">Tiền tố công khai nơi <code>BaseDir</code> được
+                  phục vụ, vd. <code>"http://localhost:$API_SERVER_PORT/uploads"</code>. Dấu / cuối bị cắt bỏ. Cũng là
+                  tiền tố mà <code>DeleteFile</code> yêu cầu.</span></td>
             </tr>
           </table>
         </div>
@@ -235,9 +241,10 @@ func (s *DocumentService) ReplaceFile(ctx context.Context, id uuid.UUID,
                 bản giả.</span></div>
             <div class="jd-ex c-green" data-code="#code-quick" data-show="13-16"><span class="n">2</span><span
                 class="w">UploadFile</span><span class="x" lang="en">Pass the open file and the client's filename (only
-                its extension is used). You get back the full public URL, e.g.
+                its extension is used; none or an active-content one → <code>ErrUnsafeExtension</code>). You get back the full public URL, e.g.
                 <code>http://localhost:$API_SERVER_PORT/uploads/3f2b…_1760600000.pdf</code>.</span><span class="x" lang="vi">Truyền
-                file đã mở và tên file của client (chỉ dùng phần mở rộng). Bạn nhận lại URL công khai đầy đủ, vd.
+                file đã mở và tên file của client (chỉ dùng phần mở rộng; không có hoặc là loại chạy được →
+                <code>ErrUnsafeExtension</code>). Bạn nhận lại URL công khai đầy đủ, vd.
                 <code>http://localhost:$API_SERVER_PORT/uploads/3f2b…_1760600000.pdf</code>.</span></div>
             <div class="jd-ex c-green" data-code="#code-quick" data-show="18-21"><span class="n">3</span><span
                 class="w">roll back on DB failure</span><span class="x" lang="en">If saving the URL fails, delete the
@@ -245,8 +252,10 @@ func (s *DocumentService) ReplaceFile(ctx context.Context, id uuid.UUID,
                 để không để lại file mồ côi trên đĩa.</span></div>
             <div class="jd-ex c-green" data-code="#code-quick" data-show="23-25"><span class="n">4</span><span
                 class="w">DeleteFile(oldURL)</span><span class="x" lang="en">Delete by the URL you stored. Best-effort:
-                a file that is already gone is not an error.</span><span class="x" lang="vi">Xoá bằng URL bạn đã lưu.
-                Kiểu cố gắng hết mức: file đã mất rồi thì không tính là lỗi.</span></div>
+                a file that is already gone is not an error; a URL outside <code>BaseURL</code> is
+                <code>ErrInvalidURL</code>.</span><span class="x" lang="vi">Xoá bằng URL bạn đã lưu. Kiểu cố gắng hết
+                mức: file đã mất rồi thì không tính là lỗi; URL nằm ngoài <code>BaseURL</code> là
+                <code>ErrInvalidURL</code>.</span></div>
           </div>
         </div>
       </section>
@@ -309,10 +318,10 @@ var Module = fx.Module("storage",
 func NewService(opts Options) (Service, error)
 </pre>
             </div>
-            <p lang="en"><code>NewService</code> is <code>NewLocalService(opts.BaseDir, opts.BaseURL)</code> returned as
+            <p lang="en"><code>NewService</code> is <code>NewLocalService(opts)</code> returned as
               the interface. <code>Module</code> needs a <code>storage.Options</code> in the graph and provides
               <code>storage.Service</code>.</p>
-            <p lang="vi"><code>NewService</code> chính là <code>NewLocalService(opts.BaseDir, opts.BaseURL)</code> trả
+            <p lang="vi"><code>NewService</code> chính là <code>NewLocalService(opts)</code> trả
               về dưới dạng interface. <code>Module</code> cần <code>storage.Options</code> trong graph và cung cấp
               <code>storage.Service</code>.</p>
           </div>
@@ -324,15 +333,17 @@ func NewService(opts Options) (Service, error)
               <pre data-hl="go">
 type LocalService struct { /* baseDir, baseURL — unexported */ }
 
-func NewLocalService(baseDir, baseURL string) (*LocalService, error)
+func NewLocalService(opts Options) (*LocalService, error)
 </pre>
             </div>
             <ul>
-              <li lang="en">Runs <code>os.MkdirAll(baseDir, os.ModePerm)</code> immediately.</li>
-              <li lang="vi">Chạy <code>os.MkdirAll(baseDir, os.ModePerm)</code> ngay lập tức.</li>
-              <li lang="en">Error: <code>create storage directory "&lt;baseDir&gt;": &lt;cause&gt;</code> (wrapped, use
+              <li lang="en">Runs <code>os.MkdirAll(opts.BaseDir, os.ModePerm)</code> immediately and trims a trailing
+                <code>/</code> from <code>opts.BaseURL</code>.</li>
+              <li lang="vi">Chạy <code>os.MkdirAll(opts.BaseDir, os.ModePerm)</code> ngay lập tức và cắt dấu
+                <code>/</code> cuối của <code>opts.BaseURL</code>.</li>
+              <li lang="en">Error: <code>storage: create base dir: &lt;cause&gt;</code> (wrapped, use
                 <code>errors.Is</code> / <code>errors.As</code>).</li>
-              <li lang="vi">Lỗi: <code>create storage directory "&lt;baseDir&gt;": &lt;cause&gt;</code> (được wrap, dùng
+              <li lang="vi">Lỗi: <code>storage: create base dir: &lt;cause&gt;</code> (được wrap, dùng
                 <code>errors.Is</code> / <code>errors.As</code>).</li>
               <li lang="en">Holds no lock and no open files — safe to share between goroutines.</li>
               <li lang="vi">Không giữ lock hay file nào mở — dùng chung giữa các goroutine an toàn.</li>
@@ -344,23 +355,31 @@ func NewLocalService(baseDir, baseURL string) (*LocalService, error)
                 UploadFile</span></div>
             <div class="jd-term">
               <pre
-                data-hl="go">func (s *LocalService) UploadFile(_ context.Context, file io.Reader, originalFilename string) (string, error)</pre>
+                data-hl="go">func (s *LocalService) UploadFile(ctx context.Context, file io.Reader, originalFilename string) (string, error)</pre>
             </div>
             <ul>
               <li lang="en">Stored name: <code>&lt;uuid v4&gt;_&lt;unix seconds&gt;&lt;ext&gt;</code>, where
-                <code>ext = filepath.Ext(originalFilename)</code> kept exactly (case included; no extension → no
-                suffix). Two uploads with the same name never collide.</li>
-              <li lang="vi">Tên lưu: <code>&lt;uuid v4&gt;_&lt;unix giây&gt;&lt;ext&gt;</code>, với
-                <code>ext = filepath.Ext(originalFilename)</code> giữ nguyên (kể cả hoa/thường; không có phần mở rộng →
-                không có hậu tố). Hai lần upload cùng tên không bao giờ đụng nhau.</li>
+                <code>ext</code> is <code>filepath.Ext(originalFilename)</code> lowercased. Two uploads with the same
+                name never collide.</li>
+              <li lang="vi">Tên lưu: <code>&lt;uuid v4&gt;_&lt;unix giây&gt;&lt;ext&gt;</code>, với <code>ext</code> là
+                <code>filepath.Ext(originalFilename)</code> chuyển chữ thường. Hai lần upload cùng tên không bao giờ
+                đụng nhau.</li>
+              <li lang="en">No extension, or one a browser could run when served back (<code>.html .htm .xhtml .xht
+                .shtml .svg .svgz .js .mjs .xml .xsl .xslt .swf</code>) → <code>ErrUnsafeExtension</code>, nothing
+                written.</li>
+              <li lang="vi">Không có phần mở rộng, hoặc là loại trình duyệt có thể chạy khi phục vụ lại (<code>.html
+                .htm .xhtml .xht .shtml .svg .svgz .js .mjs .xml .xsl .xslt .swf</code>) →
+                <code>ErrUnsafeExtension</code>, không ghi gì.</li>
               <li lang="en">Returns <code>baseURL + "/" + name</code>.</li>
               <li lang="vi">Trả về <code>baseURL + "/" + name</code>.</li>
-              <li lang="en">Errors: <code>create destination file: …</code>, <code>copy file contents: …</code>,
-                <code>close destination file: …</code>. On a copy or close error the partial file is removed.</li>
-              <li lang="vi">Lỗi: <code>create destination file: …</code>, <code>copy file contents: …</code>,
-                <code>close destination file: …</code>. Khi copy hoặc close lỗi, file ghi dở được xoá.</li>
-              <li lang="en"><code>ctx</code> is ignored; the copy runs until the reader is drained.</li>
-              <li lang="vi"><code>ctx</code> bị bỏ qua; việc copy chạy tới khi đọc hết reader.</li>
+              <li lang="en">Errors: <code>storage: create file: …</code>, <code>storage: copy file: …</code>,
+                <code>storage: close file: …</code>. On a copy or close error the partial file is removed.</li>
+              <li lang="vi">Lỗi: <code>storage: create file: …</code>, <code>storage: copy file: …</code>,
+                <code>storage: close file: …</code>. Khi copy hoặc close lỗi, file ghi dở được xoá.</li>
+              <li lang="en"><code>ctx</code> is checked before every read, so a cancelled request stops the copy
+                (<code>storage: copy file: context canceled</code>) and the partial file is removed.</li>
+              <li lang="vi"><code>ctx</code> được kiểm tra trước mỗi lần đọc, nên request bị huỷ sẽ dừng việc copy
+                (<code>storage: copy file: context canceled</code>) và file ghi dở được xoá.</li>
             </ul>
           </div>
 
@@ -371,22 +390,38 @@ func NewLocalService(baseDir, baseURL string) (*LocalService, error)
               <pre data-hl="go">func (s *LocalService) DeleteFile(_ context.Context, fileURL string) error</pre>
             </div>
             <ul>
-              <li lang="en">Takes the text after the last <code>/</code> of <code>fileURL</code> and removes
-                <code>baseDir/&lt;that name&gt;</code>. Only a plain file name directly inside <code>BaseDir</code> is
+              <li lang="en"><code>fileURL</code> must be <code>BaseURL + "/" + name</code>; it removes
+                <code>BaseDir/&lt;name&gt;</code>. Only a plain file name directly inside <code>BaseDir</code> is
                 accepted, so the delete can never leave <code>BaseDir</code>.</li>
-              <li lang="vi">Lấy phần chữ sau dấu <code>/</code> cuối cùng của <code>fileURL</code> rồi xoá
-                <code>baseDir/&lt;tên đó&gt;</code>. Chỉ chấp nhận một tên file thuần nằm ngay trong <code>BaseDir</code>,
+              <li lang="vi"><code>fileURL</code> phải là <code>BaseURL + "/" + tên</code>; nó xoá
+                <code>BaseDir/&lt;tên&gt;</code>. Chỉ chấp nhận một tên file thuần nằm ngay trong <code>BaseDir</code>,
                 nên lệnh xoá không bao giờ ra khỏi <code>BaseDir</code>.</li>
               <li lang="en">A file that does not exist → <code>nil</code>.</li>
               <li lang="vi">File không tồn tại → <code>nil</code>.</li>
-              <li lang="en">A name that is <code>""</code> (e.g. a URL ending in <code>/</code>), <code>"."</code>,
-                <code>".."</code> or still contains the OS path separator (e.g. <code>\</code> on Windows) →
-                <code>invalid file URL: &lt;fileURL&gt;</code>. Any other removal failure → <code>delete file: …</code>.
-              </li>
-              <li lang="vi">Tên là <code>""</code> (vd. URL kết thúc bằng <code>/</code>), <code>"."</code>,
-                <code>".."</code> hoặc vẫn chứa ký tự phân cách đường dẫn của OS (vd. <code>\</code> trên Windows) →
-                <code>invalid file URL: &lt;fileURL&gt;</code>. Lỗi xoá khác → <code>delete file: …</code>.</li>
+              <li lang="en">A URL without the <code>BaseURL + "/"</code> prefix, or a name that is <code>""</code>,
+                <code>"."</code>, <code>".."</code> or contains <code>/</code> or <code>\</code> →
+                <code>ErrInvalidURL</code>. Any other removal failure → <code>storage: delete file: …</code>.</li>
+              <li lang="vi">URL không có tiền tố <code>BaseURL + "/"</code>, hoặc tên là <code>""</code>,
+                <code>"."</code>, <code>".."</code> hay chứa <code>/</code> hoặc <code>\</code> →
+                <code>ErrInvalidURL</code>. Lỗi xoá khác → <code>storage: delete file: …</code>.</li>
             </ul>
+          </div>
+
+          <div class="jd-sym c-red">
+            <div class="jd-sym-head"><span class="jd-kind">var</span><span class="jd-sym-name">ErrUnsafeExtension ·
+                ErrInvalidURL</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+var (
+    // ErrUnsafeExtension is returned by UploadFile for a missing extension or one a browser could
+    // run as active content (HTML, SVG, scripts) when the file is served back.
+    ErrUnsafeExtension = errors.New("storage: unsafe file extension")
+
+    // ErrInvalidURL is returned by DeleteFile for a URL that does not name a file under BaseURL.
+    ErrInvalidURL = errors.New("storage: invalid file url")
+)
+</pre>
+            </div>
           </div>
 
           <div class="jd-sym c-green">
@@ -409,18 +444,22 @@ func Extension(filename string) string
 </pre>
             </div>
             <p lang="en">Checks an uploaded file before you hand it to <code>UploadFile</code> — <code>storage</code>
-              itself stores any bytes under any extension.</p>
+              itself only refuses active-content extensions and never looks at the bytes. Full page: <a
+                href="upload.html">upload</a>.</p>
             <p lang="vi">Kiểm tra file upload trước khi đưa cho <code>UploadFile</code> — bản thân
-              <code>storage</code> lưu mọi loại byte với mọi phần mở rộng.</p>
+              <code>storage</code> chỉ từ chối phần mở rộng chạy được và không xem nội dung byte. Trang đầy đủ: <a
+                href="upload.html">upload</a>.</p>
             <ul>
               <li lang="en"><code>Open(fh, rule)</code> refuses with <code>ErrInvalidFile</code> a file over
                 <code>rule.MaxSize</code>, with an extension outside <code>rule.Extensions</code> (compared lower-cased),
                 or whose first 512 bytes are not one of <code>rule.Types</code> (e.g. HTML or PHP renamed to
-                <code>.png</code>). It then rewinds the file so the whole of it is stored. The caller closes it.</li>
+                <code>.png</code>). It then rewinds the file so the whole of it is stored. The caller closes it. Failing to
+                open the upload is a wrapped I/O error, not <code>ErrInvalidFile</code>.</li>
               <li lang="vi"><code>Open(fh, rule)</code> từ chối bằng <code>ErrInvalidFile</code> file lớn hơn
                 <code>rule.MaxSize</code>, có phần mở rộng ngoài <code>rule.Extensions</code> (so sánh dạng chữ thường),
                 hoặc có 512 byte đầu không thuộc <code>rule.Types</code> (vd. file HTML hay PHP đổi tên thành
-                <code>.png</code>). Sau đó nó tua lại đầu file để lưu được trọn vẹn. Bên gọi tự đóng file.</li>
+                <code>.png</code>). Sau đó nó tua lại đầu file để lưu được trọn vẹn. Bên gọi tự đóng file. Không mở được file
+                upload là lỗi I/O được wrap, không phải <code>ErrInvalidFile</code>.</li>
               <li lang="en"><code>Image(maxSize)</code> is the rule for JPEG, PNG and WebP. For another kind of file
                 (PDF, CSV…) write your own <code>Rule</code>.</li>
               <li lang="vi"><code>Image(maxSize)</code> là rule cho JPEG, PNG và WebP. Loại file khác (PDF, CSV…) thì
@@ -446,7 +485,7 @@ if err != nil {
 }
 defer file.Close()
 
-url, err := storageService.UploadFile(ctx, file, fileHeader.Filename)
+url, err := storageService.UploadFile(ctx.Request.Context(), file, fileHeader.Filename)
 </pre>
             </div>
           </div>
@@ -478,17 +517,17 @@ url, err := storageService.UploadFile(ctx, file, fileHeader.Filename)
             </tr>
             <tr>
               <td>config/config.go</td>
-              <td><span lang="en"><code>STORAGE_BASE_DIR</code> (default <code>./storage/uploads</code>),
+              <td><span lang="en"><code>STORAGE_DIR</code> (default <code>./storage</code>; files go to <code>$STORAGE_DIR/uploads</code>),
                   <code>STORAGE_BASE_URL</code> (empty = <code>http://localhost:&lt;API_SERVER_PORT&gt;/uploads</code>,
                   so it follows the port).</span><span
-                  lang="vi"><code>STORAGE_BASE_DIR</code> (mặc định <code>./storage/uploads</code>),
+                  lang="vi"><code>STORAGE_DIR</code> (mặc định <code>./storage</code>; file nằm ở <code>$STORAGE_DIR/uploads</code>),
                   <code>STORAGE_BASE_URL</code> (để trống = <code>http://localhost:&lt;API_SERVER_PORT&gt;/uploads</code>,
                   nên đi theo port).</span></td>
             </tr>
             <tr>
               <td>router/router.go</td>
-              <td><span lang="en"><code>p.Router.Static("/uploads", p.Config.Storage.BaseDir)</code> — public, no
-                  auth.</span><span lang="vi"><code>p.Router.Static("/uploads", p.Config.Storage.BaseDir)</code> — công
+              <td><span lang="en"><code>p.Router.Static("/uploads", p.Config.StoragePath("uploads"))</code> — public, no
+                  auth.</span><span lang="vi"><code>p.Router.Static("/uploads", p.Config.StoragePath("uploads"))</code> — công
                   khai, không cần auth.</span></td>
             </tr>
             <tr>
@@ -556,16 +595,14 @@ $ curl -s -X DELETE 'localhost:$API_SERVER_PORT/api/v1/users/&lt;uuid&gt;/avatar
         </div>
         <div class="jd-explain" style="margin-top:16px">
           <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">No content
-              checks</span><span class="x" lang="en">The package stores any bytes under any extension. Validate size,
-              extension and ideally the real content type before calling <code>UploadFile</code> — files under
-              <code>/uploads</code> are public. Stored XSS: the extension is kept and <code>/uploads</code> is served on
-              the API origin, so an uploaded <code>.html</code> or <code>.svg</code> runs script there. Allow-list
-              extensions and check the first bytes (<code>upload.Open</code> does both).</span><span class="x" lang="vi">Package lưu mọi loại byte với mọi phần
-              mở rộng. Hãy kiểm tra kích thước, phần mở rộng và tốt nhất là content type thật trước khi gọi
-              <code>UploadFile</code> — file trong <code>/uploads</code> là công khai. Stored XSS: phần mở rộng được giữ
-              nguyên và <code>/uploads</code> được phục vụ trên chính origin của API, nên file <code>.html</code> hay
-              <code>.svg</code> tải lên sẽ chạy script ở đó. Hãy giới hạn phần mở rộng theo danh sách cho phép và kiểm
-              tra các byte đầu (<code>upload.Open</code> làm cả hai).</span></div>
+              checks</span><span class="x" lang="en"><code>UploadFile</code> only refuses missing and active-content
+              extensions (HTML, SVG, scripts — stored XSS on the API origin); it stores any bytes under any other
+              extension. Files under <code>/uploads</code> are public, so allow-list extensions, cap the size and check
+              the first bytes before calling it (<code>upload.Open</code> does all three).</span><span class="x"
+              lang="vi"><code>UploadFile</code> chỉ từ chối khi không có phần mở rộng hoặc là loại chạy được (HTML, SVG,
+              script — stored XSS trên origin của API); với phần mở rộng khác nó lưu mọi loại byte. File trong
+              <code>/uploads</code> là công khai, nên hãy giới hạn phần mở rộng theo danh sách cho phép, giới hạn kích
+              thước và kiểm tra các byte đầu trước khi gọi (<code>upload.Open</code> làm cả ba).</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Body limit comes
               first</span><span class="x" lang="en">In Jungo the global <code>Payload</code> middleware caps every
               body at <code>SECURITY_MAX_BODY_SIZE</code> (default <code>2097152</code> = 2 MiB) and answers 413
@@ -584,19 +621,23 @@ $ curl -s -X DELETE 'localhost:$API_SERVER_PORT/api/v1/users/&lt;uuid&gt;/avatar
               <code>UploadFile</code> xoá file ghi dở và trả lỗi.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Full URLs are
               stored</span><span class="x" lang="en">The DB keeps <code>BaseURL/&lt;name&gt;</code>. Changing
-              <code>STORAGE_BASE_URL</code> later does not rewrite old rows. Deleting still works because only the file
-              name is used.</span><span class="x" lang="vi">DB lưu <code>BaseURL/&lt;name&gt;</code>. Đổi
-              <code>STORAGE_BASE_URL</code> sau này không sửa các dòng cũ. Xoá vẫn chạy vì chỉ dùng tên file.</span>
+              <code>STORAGE_BASE_URL</code> later does not rewrite old rows, and <code>DeleteFile</code> then refuses
+              those old URLs with <code>ErrInvalidURL</code> — migrate the rows when you change it.</span><span
+              class="x" lang="vi">DB lưu <code>BaseURL/&lt;name&gt;</code>. Đổi <code>STORAGE_BASE_URL</code> sau này
+              không sửa các dòng cũ, và <code>DeleteFile</code> khi đó từ chối các URL cũ với
+              <code>ErrInvalidURL</code> — hãy cập nhật các dòng khi đổi.</span>
           </div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">DeleteFile trusts the
-              name</span><span class="x" lang="en">Any string whose last segment matches a file in <code>BaseDir</code>
-              deletes it — the URL's host or prefix is not checked. Only pass URLs you stored yourself.</span><span
-              class="x" lang="vi">Bất kỳ chuỗi nào có đoạn cuối trùng tên một file trong <code>BaseDir</code> đều xoá
-              được file đó — host hay tiền tố của URL không được kiểm tra. Chỉ truyền URL do chính bạn lưu.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">DeleteFile checks the
+              prefix</span><span class="x" lang="en">Only <code>BaseURL + "/" + name</code> deletes; anything else is
+              <code>ErrInvalidURL</code>. Any such URL still deletes that file, so only pass URLs you stored
+              yourself.</span><span class="x" lang="vi">Chỉ <code>BaseURL + "/" + tên</code> mới xoá được; còn lại là
+              <code>ErrInvalidURL</code>. URL đúng dạng đó vẫn xoá được file tương ứng, nên chỉ truyền URL do chính bạn
+              lưu.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Trailing
-              slash</span><span class="x" lang="en"><code>BaseURL</code> ending in <code>/</code> produces
-              <code>…/uploads//&lt;name&gt;</code>.</span><span class="x" lang="vi"><code>BaseURL</code> kết thúc bằng
-              <code>/</code> sẽ cho ra <code>…/uploads//&lt;name&gt;</code>.</span></div>
+              slash</span><span class="x" lang="en">A trailing <code>/</code> on <code>BaseURL</code> is trimmed, so
+              <code>…/uploads/</code> and <code>…/uploads</code> give the same URLs.</span><span class="x"
+              lang="vi">Dấu <code>/</code> cuối của <code>BaseURL</code> bị cắt, nên <code>…/uploads/</code> và
+              <code>…/uploads</code> cho ra cùng URL.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">Local disk
               only</span><span class="x" lang="en">With several replicas each has its own <code>BaseDir</code> — use a
               shared volume or write another <code>Service</code> (S3, GCS).</span><span class="x" lang="vi">Chạy nhiều

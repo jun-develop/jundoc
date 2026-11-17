@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit upload · Jundoc</title>
+  <meta name="description" content="junkit/upload: check an uploaded file's size, extension and sniffed content type before it is stored.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+<body>
+<div id="jd-app" data-root="..">
+<article class="jd-content">
+
+  <!-- ============================================================ HERO -->
+  <header class="jd-hero" style="background:radial-gradient(1000px 380px at 0% 0%, rgba(52,211,153,.5), transparent 60%),linear-gradient(135deg,#064e3b,#047857 55%,#0e7490)">
+    <div class="jd-eyebrow">Junkit · upload</div>
+    <h1>upload</h1>
+    <p lang="en">Checks an uploaded file — size, extension and the content type sniffed from its first bytes — before you hand it to <a href="storage.html">storage</a>. A <code>.png</code> that is really an HTML page is refused.</p>
+    <p lang="vi">Kiểm tra file upload — kích thước, phần mở rộng và content type đoán từ các byte đầu — trước khi đưa cho <a href="storage.html">storage</a>. Một file <code>.png</code> mà thực chất là trang HTML sẽ bị từ chối.</p>
+    <div class="jd-chips">
+      <span class="jd-chip">github.com/jun-develop/junkit/upload</span>
+      <span class="jd-chip"><span lang="en">no Fx Module — plain functions</span><span lang="vi">không có Fx Module — chỉ hàm</span></span>
+      <span class="jd-chip"><span lang="en">stdlib only</span><span lang="vi">chỉ dùng thư viện chuẩn</span></span>
+    </div>
+  </header>
+
+  <!-- ============================================================ 1. WHAT -->
+  <section id="what" class="jd-section c-green">
+    <div class="jd-section-head">
+      <span class="jd-badge">1</span>
+      <div>
+        <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
+        <p class="jd-sub" lang="en"><code>upload.Open</code> runs three checks in order; the cheap ones first, so an oversized or wrongly named file is never opened.</p>
+        <p class="jd-sub" lang="vi"><code>upload.Open</code> chạy ba bước kiểm tra theo thứ tự; bước rẻ chạy trước, nên file quá lớn hoặc sai tên không bao giờ bị mở.</p>
+      </div>
+    </div>
+    <div class="jd-flow" style="margin-top:22px" data-wires='[
+      {"from":"u1","to":"u2","color":"blue","label":"size ok"},
+      {"from":"u2","to":"u3","color":"blue","label":".png"},
+      {"from":"u3","to":"u4","color":"blue","label":"image/png"}]'>
+      <div class="jd-node is-tint c-green" data-node="u1"><span class="k">1 · size</span><span class="t mono" style="font-size:15px">fh.Size ≤ MaxSize</span><div class="d" lang="en">From the multipart header; nothing read yet.</div><div class="d" lang="vi">Lấy từ header multipart; chưa đọc gì.</div></div>
+      <div class="jd-node is-tint c-green" data-node="u2"><span class="k">2 · extension</span><span class="t mono" style="font-size:15px">Extension(fh.Filename)</span><div class="d" lang="en">Lowercased, must be in <code>Rule.Extensions</code>.</div><div class="d" lang="vi">Đổi sang chữ thường, phải nằm trong <code>Rule.Extensions</code>.</div></div>
+      <div class="jd-node is-tint c-green" data-node="u3"><span class="k">3 · content</span><span class="t mono" style="font-size:15px">HasType(file, Types…)</span><div class="d" lang="en">Sniffs the first 512 bytes, then rewinds.</div><div class="d" lang="vi">Đoán từ 512 byte đầu, rồi tua lại đầu file.</div></div>
+      <div class="jd-node is-tint c-blue" data-node="u4"><span class="k">4 · store</span><span class="t mono" style="font-size:15px">storage.UploadFile</span><div class="d" lang="en">The open file is ready to save; you close it.</div><div class="d" lang="vi">File đã mở sẵn sàng để lưu; bạn tự đóng nó.</div></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 2. QUICK START -->
+  <section id="quick" class="jd-section c-blue">
+    <div class="jd-section-head">
+      <span class="jd-badge">2</span>
+      <div>
+        <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+        <p class="jd-sub" lang="en">An avatar upload handler. Hover an explanation to light up its lines.</p>
+        <p class="jd-sub" lang="vi">Một handler upload avatar. Rê chuột vào giải thích để làm sáng các dòng tương ứng.</p>
+      </div>
+    </div>
+    <div class="jd-grid-2" style="margin-top:18px">
+      <div><div class="jd-sticky">
+        <div class="jd-term" data-copy><div class="jd-term-bar"><i></i><i></i><i></i><span>avatar_handler.go</span></div>
+<pre data-hl="go" id="code-quick">
+var avatarRule = upload.Image(5 &lt;&lt; 20) // JPEG, PNG, WebP up to 5 MB
+
+func (h *Handler) UploadAvatar(c *gin.Context) {
+    fh, err := c.FormFile("avatar")
+    if err != nil {
+        h.responder.Send(c, http.StatusBadRequest, "invalid_avatar_file")
+        return
+    }
+
+    file, err := upload.Open(fh, avatarRule)
+    if errors.Is(err, upload.ErrInvalidFile) {
+        h.responder.Send(c, http.StatusBadRequest, "invalid_avatar_file")
+        return
+    }
+    if err != nil {
+        h.responder.Error(c, err) // I/O failure, not the client's fault
+        return
+    }
+    defer file.Close()
+
+    url, err := h.storage.UploadFile(c.Request.Context(), file, fh.Filename)
+    if err != nil {
+        h.responder.Error(c, err)
+        return
+    }
+
+    h.responder.SendWithData(c, http.StatusOK, "avatar_uploaded", gin.H{"url": url})
+}
+</pre></div>
+      </div></div>
+      <div class="jd-explain">
+        <div class="jd-ex c-blue" data-code="#code-quick" data-show="1"><span class="n">1</span><span class="w">upload.Image</span><span class="x" lang="en">A ready-made <code>Rule</code>: <code>.jpg .jpeg .png .webp</code> and <code>image/jpeg image/png image/webp</code>. Build your own <code>Rule</code> for other kinds.</span><span class="x" lang="vi"><code>Rule</code> dựng sẵn: <code>.jpg .jpeg .png .webp</code> và <code>image/jpeg image/png image/webp</code>. Tự tạo <code>Rule</code> cho loại file khác.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick" data-show="10-14"><span class="n">2</span><span class="w">ErrInvalidFile → 400</span><span class="x" lang="en">Too big, wrong extension, or bytes that are not one of <code>Types</code>. Always the same sentinel, so the client learns nothing about which check failed.</span><span class="x" lang="vi">Quá lớn, sai phần mở rộng, hoặc nội dung không thuộc <code>Types</code>. Luôn cùng một lỗi sentinel, nên client không biết bước nào thất bại.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick" data-show="15-18"><span class="n">3</span><span class="w">other errors → 500</span><span class="x" lang="en">Failing to open the upload's temp file is a wrapped I/O error (<code>upload: open: …</code>), not <code>ErrInvalidFile</code>.</span><span class="x" lang="vi">Lỗi mở file tạm của upload là lỗi I/O được bọc (<code>upload: open: …</code>), không phải <code>ErrInvalidFile</code>.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick" data-show="19-21"><span class="n">4</span><span class="w">close, then store</span><span class="x" lang="en">The file is rewound to byte 0 after sniffing; pass it straight to <a href="storage.html">storage</a>.</span><span class="x" lang="vi">File đã được tua về byte 0 sau khi đoán kiểu; đưa thẳng cho <a href="storage.html">storage</a>.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 3. API -->
+  <section id="api" class="jd-section c-green">
+    <div class="jd-section-head">
+      <span class="jd-badge">3</span>
+      <div>
+        <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+        <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/upload</code>.</p>
+        <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/upload</code>.</p>
+      </div>
+    </div>
+    <div class="jd-syms" style="margin-top:18px">
+
+      <div class="jd-sym c-blue">
+        <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Rule</span></div>
+        <div class="jd-tablewrap"><table class="jd-params">
+          <tr><th>field</th><th><span lang="en">type</span><span lang="vi">kiểu</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+          <tr><td>MaxSize</td><td>int64</td><td lang="en">Largest allowed size in bytes.</td><td lang="vi">Kích thước tối đa, tính bằng byte.</td></tr>
+          <tr><td>Extensions</td><td>[]string</td><td lang="en">Allowed lowercase extensions with the dot, e.g. <code>".pdf"</code>.</td><td lang="vi">Phần mở rộng cho phép, chữ thường, có dấu chấm, vd. <code>".pdf"</code>.</td></tr>
+          <tr><td>Types</td><td>[]string</td><td lang="en">Allowed content types exactly as <code>http.DetectContentType</code> reports them (e.g. <code>"application/pdf"</code>).</td><td lang="vi">Content type cho phép, đúng như <code>http.DetectContentType</code> trả về (vd. <code>"application/pdf"</code>).</td></tr>
+        </table></div>
+      </div>
+
+      <div class="jd-sym c-blue">
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Image</span></div>
+        <div class="jd-term"><pre data-hl="go">func Image(maxSize int64) Rule</pre></div>
+        <p lang="en">JPEG, PNG and WebP up to <code>maxSize</code> bytes. SVG is deliberately absent: it can carry scripts.</p>
+        <p lang="vi">JPEG, PNG và WebP tối đa <code>maxSize</code> byte. Cố ý không có SVG: nó có thể chứa script.</p>
+      </div>
+
+      <div class="jd-sym c-green">
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Open</span></div>
+        <div class="jd-term"><pre data-hl="go">func Open(fh *multipart.FileHeader, rule Rule) (multipart.File, error)</pre></div>
+        <ul>
+          <li lang="en">Rule violation → <code>ErrInvalidFile</code> (the file is closed for you).</li><li lang="vi">Vi phạm Rule → <code>ErrInvalidFile</code> (file được đóng giúp bạn).</li>
+          <li lang="en"><code>fh.Open</code> failure → wrapped I/O error.</li><li lang="vi"><code>fh.Open</code> lỗi → lỗi I/O được bọc.</li>
+          <li lang="en">Success → an open file rewound to the start; the caller closes it.</li><li lang="vi">Thành công → file đang mở, đã tua về đầu; người gọi tự đóng.</li>
+        </ul>
+      </div>
+
+      <div class="jd-sym c-green">
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">HasType · Extension</span></div>
+        <div class="jd-term"><pre data-hl="go">
+func HasType(file io.ReadSeeker, types ...string) bool
+func Extension(filename string) string
+</pre></div>
+        <p lang="en"><code>HasType</code> sniffs up to 512 bytes, rewinds, and reports whether the type is one of <code>types</code> (a read or seek error → false). <code>Extension</code> is the lowercased <code>filepath.Ext</code>, dot included (<code>"A.PNG"</code> → <code>".png"</code>).</p>
+        <p lang="vi"><code>HasType</code> đọc tối đa 512 byte, tua lại, và báo kiểu có nằm trong <code>types</code> không (lỗi đọc hoặc seek → false). <code>Extension</code> là <code>filepath.Ext</code> đổi sang chữ thường, có dấu chấm (<code>"A.PNG"</code> → <code>".png"</code>).</p>
+      </div>
+
+      <div class="jd-sym c-red">
+        <div class="jd-sym-head"><span class="jd-kind">var</span><span class="jd-sym-name">ErrInvalidFile</span></div>
+        <div class="jd-term"><pre data-hl="go">var ErrInvalidFile = errors.New("upload: invalid file")</pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 4. IN JUNGO -->
+  <section id="jungo" class="jd-section c-orange">
+    <div class="jd-section-head">
+      <span class="jd-badge">4</span>
+      <div>
+        <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+      </div>
+    </div>
+    <div class="jd-tablewrap" style="margin-top:16px"><table class="jd-params c-orange">
+      <tr><th>file</th><th><span lang="en">what it does</span><span lang="vi">làm gì</span></th></tr>
+      <tr><td>features/user/handler/v1/user_handler.go</td><td lang="en"><code>avatarRule = upload.Image(MaxAvatarFileSize)</code> (5 MB); <code>UploadAvatar</code> calls <code>upload.Open</code> and answers 400 <code>invalid_avatar_file</code> on any error, then passes the file to the service, which stores it through <a href="storage.html">storage</a>. The route's body limit is derived from the same constant (<a href="middleware.html">middleware.Payload</a> <code>RouteLimits</code>).</td><td lang="vi"><code>avatarRule = upload.Image(MaxAvatarFileSize)</code> (5 MB); <code>UploadAvatar</code> gọi <code>upload.Open</code> và trả 400 <code>invalid_avatar_file</code> khi có lỗi, rồi chuyển file cho service lưu qua <a href="storage.html">storage</a>. Giới hạn body của route lấy từ cùng hằng số (<a href="middleware.html">middleware.Payload</a> <code>RouteLimits</code>).</td></tr>
+    </table></div>
+  </section>
+
+  <!-- ============================================================ 5. GOTCHAS -->
+  <section id="gotchas" class="jd-section c-red">
+    <div class="jd-section-head">
+      <span class="jd-badge">!</span>
+      <div><h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2></div>
+    </div>
+    <div class="jd-explain" style="margin-top:16px">
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">Size is the header's claim</span><span class="x" lang="en"><code>fh.Size</code> comes from the parsed multipart form; the real cap on bytes read is the request body limit (<code>middleware.Payload</code>). Set both.</span><span class="x" lang="vi"><code>fh.Size</code> lấy từ form multipart đã parse; giới hạn thực sự số byte đọc vào là giới hạn body của request (<code>middleware.Payload</code>). Hãy đặt cả hai.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Sniffing is not a virus scan</span><span class="x" lang="en"><code>http.DetectContentType</code> only reads magic bytes. It stops renamed HTML or scripts, not a malicious but valid image.</span><span class="x" lang="vi"><code>http.DetectContentType</code> chỉ đọc magic byte. Nó chặn HTML hay script bị đổi tên, không chặn một ảnh hợp lệ nhưng độc hại.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Types must match exactly</span><span class="x" lang="en">Text types come back with a charset (<code>"text/plain; charset=utf-8"</code>); list that full string in <code>Types</code>.</span><span class="x" lang="vi">Kiểu text trả về kèm charset (<code>"text/plain; charset=utf-8"</code>); ghi đủ chuỗi đó vào <code>Types</code>.</span></div>
+    </div>
+  </section>
+
+  <footer class="jd-footer">
+    <span>Jundoc · Junkit · upload</span>
+    <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package Junkit</span></a></span>
+  </footer>
+</article>
+</div>
+</body>
+</html>

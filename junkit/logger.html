@@ -67,10 +67,10 @@
             <div class="d" lang="vi">Environment, Level, Filename và các thiết lập xoay vòng file.</div>
           </div>
           <div class="jd-node is-tint c-blue" data-node="l2"><span class="k">2 · build</span><span class="t mono"
-              style="font-size:15px">New(lc, opts)</span>
-            <div class="d" lang="en">Parses <code>Level</code> (invalid → info), adds caller info and stack traces from
+              style="font-size:15px">New(opts, lc)</span>
+            <div class="d" lang="en">Parses <code>Level</code> (invalid → error), adds caller info and stack traces from
               error level up.</div>
-            <div class="d" lang="vi">Đọc <code>Level</code> (sai → info), thêm vị trí gọi (caller) và stack trace từ mức
+            <div class="d" lang="vi">Đọc <code>Level</code> (sai → trả lỗi), thêm vị trí gọi (caller) và stack trace từ mức
               error trở lên.</div>
           </div>
           <div class="jd-node is-tint c-purple" data-node="l3"><span class="k">3 · output</span><span class="t mono"
@@ -169,10 +169,10 @@ func provideLoggers(cfg *config.Config) []fx.Option {
     }
 
     defs := []logger.Definition{
-        {Name: "app", Level: cfg.Logger.AppLevel, Filename: cfg.Logger.AppFilename},
-        {Name: "http", Level: cfg.Logger.HTTPLevel, Filename: cfg.Logger.HTTPFilename},
-        {Name: "sql", Level: cfg.Logger.SQLLevel, Filename: cfg.Logger.SQLFilename},
-        {Name: "limiter", Level: cfg.Logger.LimiterLevel, Filename: cfg.Logger.LimiterFilename},
+        {Name: "app", Level: cfg.Logger.AppLevel, Filename: cfg.StoragePath("logs", "app.log")},
+        {Name: "http", Level: cfg.Logger.HTTPLevel, Filename: cfg.StoragePath("logs", "http.log")},
+        {Name: "sql", Level: cfg.Logger.SQLLevel, Filename: cfg.StoragePath("logs", "sql.log")},
+        {Name: "limiter", Level: cfg.Logger.LimiterLevel, Filename: cfg.StoragePath("logs", "limiter.log")},
     }
 
     return logger.ProvideNamed(defs, shared)
@@ -223,10 +223,10 @@ type noLifecycle struct{}
 func (noLifecycle) Append(fx.Hook) {} // hooks ignored; we flush below
 
 func main() {
-    log, err := logger.New(noLifecycle{}, logger.Options{
+    log, err := logger.New(logger.Options{
         Environment: "development",
         Level:       "debug",
-    })
+    }, noLifecycle{})
     if err != nil {
         panic(err)
     }
@@ -276,10 +276,10 @@ func main() {
               <td><code>""</code> → info</td>
               <td lang="en">Minimum level: <code>debug</code>, <code>info</code>, <code>warn</code> (or
                 <code>warning</code>), <code>error</code>, <code>dpanic</code>, <code>panic</code>, <code>fatal</code>;
-                case-insensitive (zap parsing). Anything else → info.</td>
+                case-insensitive (zap parsing). Anything else → <code>New</code> fails.</td>
               <td lang="vi">Mức tối thiểu: <code>debug</code>, <code>info</code>, <code>warn</code> (hoặc
                 <code>warning</code>), <code>error</code>, <code>dpanic</code>, <code>panic</code>, <code>fatal</code>;
-                không phân biệt hoa thường (cách zap đọc). Giá trị khác → info.</td>
+                không phân biệt hoa thường (cách zap đọc). Giá trị khác → <code>New</code> trả lỗi.</td>
             </tr>
             <tr>
               <td>Filename</td>
@@ -485,7 +485,7 @@ type Options struct {
           <div class="jd-sym c-blue">
             <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">New</span></div>
             <div class="jd-term">
-              <pre data-hl="go">func New(lc fx.Lifecycle, opts Options) (*zap.Logger, error)</pre>
+              <pre data-hl="go">func New(opts Options, lc fx.Lifecycle) (*zap.Logger, error)</pre>
             </div>
             <ul>
               <li lang="en">The output is console when <code>Output</code> is <code>OutputConsole</code>, file when
@@ -512,17 +512,17 @@ type Options struct {
                 entry Panic/Fatal: không có nó, mỗi dòng là một syscall ghi phải chờ khoá file — chiếm ~17% CPU của một
                 API bận trong profile. App crash có thể mất dòng log của giây cuối.</li>
               <li lang="en">Both: <code>zap.AddCaller()</code> and <code>zap.AddStacktrace(zapcore.ErrorLevel)</code>.
-                An invalid <code>Level</code> silently becomes info.</li>
+
               <li lang="vi">Cả hai: <code>zap.AddCaller()</code> và <code>zap.AddStacktrace(zapcore.ErrorLevel)</code>.
-                <code>Level</code> không hợp lệ âm thầm trở thành info.</li>
+
               <li lang="en">Appends one <code>OnStop</code> hook to <code>lc</code> that calls <code>Sync()</code> (its
                 error is ignored).</li>
               <li lang="vi">Thêm một hook <code>OnStop</code> vào <code>lc</code> để gọi <code>Sync()</code> (lỗi của nó
                 bị bỏ qua).</li>
-              <li lang="en"><b>Errors:</b> the current code always returns <code>nil</code>. The log file is opened
-                lazily on the first write, so a bad path is not reported here.</li>
-              <li lang="vi"><b>Lỗi:</b> code hiện tại luôn trả <code>nil</code>. File log chỉ được mở ở lần ghi đầu
-                tiên, nên đường dẫn sai không bị báo ở đây.</li>
+              <li lang="en"><b>Errors:</b> an invalid <code>Level</code> (<code>logger: parse level "inof": …</code>).
+                The log file is opened lazily on the first write, so a bad path is not reported here.</li>
+              <li lang="vi"><b>Lỗi:</b> <code>Level</code> không hợp lệ (<code>logger: parse level "inof": …</code>).
+                File log chỉ được mở ở lần ghi đầu tiên, nên đường dẫn sai không bị báo ở đây.</li>
             </ul>
           </div>
 
@@ -650,10 +650,12 @@ type Definition struct {
             <ul>
               <li lang="en"><code>nil</code> context → <code>""</code> (no panic).</li>
               <li lang="vi">Context <code>nil</code> → <code>""</code> (không panic).</li>
-              <li lang="en">Looks up <code>TraceIDKey</code> first, then falls back to the raw string key
-                <code>"trace_id"</code> (for middlewares that store it that way). Non-string values are ignored.</li>
-              <li lang="vi">Tìm <code>TraceIDKey</code> trước, rồi thử khoá chuỗi thô <code>"trace_id"</code> (cho
-                middleware lưu theo kiểu đó). Giá trị không phải string bị bỏ qua.</li>
+              <li lang="en">Reads only <code>TraceIDKey</code>, i.e. what <code>WithTraceID</code> stored; there is no
+                fallback to a raw <code>"trace_id"</code> key. For a request, pass <code>c.Request.Context()</code>,
+                where <code>middleware.Trace</code> puts it.</li>
+              <li lang="vi">Chỉ đọc <code>TraceIDKey</code>, tức giá trị do <code>WithTraceID</code> lưu; không còn thử
+                khoá chuỗi thô <code>"trace_id"</code>. Với request, truyền <code>c.Request.Context()</code>, nơi
+                <code>middleware.Trace</code> đặt nó.</li>
               <li lang="en">Nothing found → <code>""</code>.</li>
               <li lang="vi">Không tìm thấy → <code>""</code>.</li>
             </ul>
@@ -694,12 +696,14 @@ type Definition struct {
               <td lang="en"><code>LoggerConfig</code>: <code>LOG_MAX_SIZE</code>=10, <code>LOG_MAX_BACKUPS</code>=5,
                 <code>LOG_MAX_AGE</code>=7, <code>LOG_COMPRESS</code>=true,
                 <code>LOG_&lt;APP|HTTP|SQL|LIMITER&gt;_LEVEL</code>=info,
-                <code>LOG_…_FILENAME</code>=<code>storage/logs/&lt;app|http|sql|limiter&gt;.log</code>.
+                files are fixed at <code>$STORAGE_DIR/logs/&lt;app|http|sql|limiter&gt;.log</code>
+                (<code>STORAGE_DIR</code> default <code>./storage</code>, via <code>cfg.StoragePath</code>).
                 <code>API_ENVIRONMENT</code> defaults to <code>production</code> (<code>.env.example</code> sets <code>development</code>).</td>
               <td lang="vi"><code>LoggerConfig</code>: <code>LOG_MAX_SIZE</code>=10, <code>LOG_MAX_BACKUPS</code>=5,
                 <code>LOG_MAX_AGE</code>=7, <code>LOG_COMPRESS</code>=true,
                 <code>LOG_&lt;APP|HTTP|SQL|LIMITER&gt;_LEVEL</code>=info,
-                <code>LOG_…_FILENAME</code>=<code>storage/logs/&lt;app|http|sql|limiter&gt;.log</code>.
+                file cố định tại <code>$STORAGE_DIR/logs/&lt;app|http|sql|limiter&gt;.log</code>
+                (<code>STORAGE_DIR</code> mặc định <code>./storage</code>, qua <code>cfg.StoragePath</code>).
                 <code>API_ENVIRONMENT</code> mặc định là <code>production</code> (<code>.env.example</code> đặt <code>development</code>).</td>
             </tr>
             <tr>
@@ -775,10 +779,10 @@ $ grep demo-123 storage/logs/http.log
               in the temp dir.</span><span class="x" lang="vi"><code>"dev"</code>, <code>"local"</code> hay
               <code>"Development"</code> đều chuyển sang chế độ file — và nếu <code>Filename</code> rỗng thì log nằm
               trong thư mục tạm.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Typos in Level are
-              silent</span><span class="x" lang="en"><code>"inof"</code> becomes info without any error or
-              warning.</span><span class="x" lang="vi"><code>"inof"</code> thành info mà không có lỗi hay cảnh báo
-              nào.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Typos in Level fail
+              startup</span><span class="x" lang="en"><code>"inof"</code> makes <code>New</code> return an error, so
+              the Fx app does not start. An empty <code>Level</code> is info.</span><span class="x" lang="vi"><code>"inof"</code>
+              làm <code>New</code> trả lỗi, nên app Fx không khởi động. <code>Level</code> rỗng là info.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Trace ID is not
               automatic</span><span class="x" lang="en">The logger does not read the context. Add
               <code>zap.String("trace_id", logger.GetTraceID(ctx))</code> yourself, or create a child logger with
@@ -822,7 +826,7 @@ $ grep demo-123 storage/logs/http.log
 
   <script>
     document.addEventListener("jd:ready", function () {
-      // Mirrors zapcore.Level.Set (exact, then lower-cased) + New's fallback to info.
+      // Mirrors zapcore.Level.Set (exact, then lower-cased); New returns an error for anything else.
       var LEVELS = { debug: -1, info: 0, "": 0, warn: 1, warning: 1, error: 2, dpanic: 3, panic: 4, fatal: 5 };
       var has = function (k) { return Object.prototype.hasOwnProperty.call(LEVELS, k); };
       function parseLevel(s) {
@@ -830,7 +834,7 @@ $ grep demo-123 storage/logs/http.log
         if (has(s.toLowerCase())) return { lvl: LEVELS[s.toLowerCase()], ok: true };
         return { lvl: 0, ok: false };
       }
-      console.assert(parseLevel("not-a-real-level").lvl === 0 && !parseLevel("not-a-real-level").ok, "invalid → info");
+      console.assert(parseLevel("not-a-real-level").lvl === 0 && !parseLevel("not-a-real-level").ok, "invalid → not ok");
       console.assert(parseLevel("DEBUG").lvl === -1, "case-insensitive");
       console.assert(parseLevel("").lvl === 0 && parseLevel("warning").lvl === 1, "empty → info, warning → warn");
       console.assert(parseLevel("constructor").ok === false, "no prototype keys");
@@ -844,7 +848,8 @@ $ grep demo-123 storage/logs/http.log
         var dev = env === "development";
         var p = parseLevel(lvlIn);
         var lines = [];
-        NAMES.forEach(function (n, i) {
+        if (!p.ok) lines.push("logger: parse level " + JSON.stringify(lvlIn) + ": unrecognized level: " + JSON.stringify(lvlIn));
+        else NAMES.forEach(function (n, i) {
           var lvl = i - 1;
           if (lvl < p.lvl) return;
           if (dev) {
@@ -857,8 +862,8 @@ $ grep demo-123 storage/logs/http.log
         var dest = dev ? "stdout" : (file || "<processname>-lumberjack.log (os.TempDir)");
         document.getElementById("lg-dest").textContent = dest;
         document.getElementById("lg-out").innerHTML = lines.length ? JD.highlight(lines.join("\n"), dev ? "" : "json") : JD.highlight("(nothing at or above " + levelName + ")", "");
-        var en = "<b>" + (dev ? "console → stdout" : "JSON → " + dest.replace(/</g, "&lt;")) + "</b> · level <b>" + levelName + "</b>" + (p.ok ? "" : " (\"" + lvlIn.replace(/</g, "&lt;") + "\" is invalid → info)");
-        var vi = "<b>" + (dev ? "console → stdout" : "JSON → " + dest.replace(/</g, "&lt;")) + "</b> · level <b>" + levelName + "</b>" + (p.ok ? "" : " (\"" + lvlIn.replace(/</g, "&lt;") + "\" không hợp lệ → info)");
+        var en = "<b>" + (dev ? "console → stdout" : "JSON → " + dest.replace(/</g, "&lt;")) + "</b> · level <b>" + levelName + "</b>" + (p.ok ? "" : " (\"" + lvlIn.replace(/</g, "&lt;") + "\" is invalid → New returns an error)");
+        var vi = "<b>" + (dev ? "console → stdout" : "JSON → " + dest.replace(/</g, "&lt;")) + "</b> · level <b>" + levelName + "</b>" + (p.ok ? "" : " (\"" + lvlIn.replace(/</g, "&lt;") + "\" không hợp lệ → New trả lỗi)");
         document.getElementById("lg-summary").innerHTML = '<span lang="en">' + en + '</span><span lang="vi">' + vi + '</span>';
       }
       ["lg-env", "lg-level", "lg-file"].forEach(function (id) { document.getElementById(id).addEventListener("input", paint); });

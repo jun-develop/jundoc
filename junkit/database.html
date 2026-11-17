@@ -305,10 +305,18 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
             <tr>
               <td>QueryLogging · SlowQueryThreshold</td>
               <td>DB_QUERY_LOGGING=false · DB_SLOW_QUERY_THRESHOLD=200ms</td>
-              <td lang="en">Off by default, because the log holds real values (emails, password hashes); <code>.env.example</code> turns it on for development. When on: log every query to <code>storage/logs/sql.log</code> (stdout in development); slower than the threshold → WARN
+              <td lang="en">Off by default; <code>.env.example</code> turns it on for development. When on: log every query (with its <code>$N</code> placeholders and an arg count, never the values) to <code>storage/logs/sql.log</code> (stdout in development); slower than the threshold → WARN
                 <code>SLOW_QUERY_DETECTION</code>.</td>
-              <td lang="vi">Mặc định tắt, vì log chứa giá trị thật (email, hash mật khẩu); <code>.env.example</code> bật nó cho development. Khi bật: log mọi query vào <code>storage/logs/sql.log</code> (stdout ở development); chậm hơn ngưỡng → WARN
+              <td lang="vi">Mặc định tắt; <code>.env.example</code> bật nó cho development. Khi bật: log mọi query (giữ placeholder <code>$N</code> và số lượng arg, không bao giờ log giá trị) vào <code>storage/logs/sql.log</code> (stdout ở development); chậm hơn ngưỡng → WARN
                 <code>SLOW_QUERY_DETECTION</code>.</td>
+            </tr>
+            <tr>
+              <td>LogQueryArgs</td>
+              <td><span lang="en">not set (false)</span><span lang="vi">không đặt (false)</span></td>
+              <td lang="en">Inlines argument values into the logged SQL. Local debugging only: arguments include password
+                hashes, token hashes, emails and OTPs.</td>
+              <td lang="vi">Chèn giá trị argument vào SQL được log. Chỉ để debug ở máy local: argument gồm hash mật
+                khẩu, hash token, email và OTP.</td>
             </tr>
             <tr>
               <td>Decorate</td>
@@ -318,10 +326,12 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
             </tr>
           </table>
         </div>
-        <p class="jd-sub" style="margin-top:10px" lang="en">On start the pool is pinged — the app refuses to start if
-          the database is unreachable. On stop it is closed.</p>
-        <p class="jd-sub" style="margin-top:10px" lang="vi">Khi khởi động, pool được ping — app không chạy nếu không kết
-          nối được database. Khi dừng, pool được đóng.</p>
+        <p class="jd-sub" style="margin-top:10px" lang="en"><code>postgres.New</code> does not connect. Jungo's
+          <code>primary.New</code> pings in an <code>OnStart</code> hook — the app refuses to start if the database is
+          unreachable — and calls <code>Close</code> in <code>OnStop</code>.</p>
+        <p class="jd-sub" style="margin-top:10px" lang="vi"><code>postgres.New</code> không kết nối. <code>primary.New</code>
+          của Jungo ping trong hook <code>OnStart</code> — app không chạy nếu không kết nối được database — và gọi
+          <code>Close</code> trong <code>OnStop</code>.</p>
       </section>
 
       <!-- ============================================================ 5. API -->
@@ -341,20 +351,24 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
               <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
             </tr>
             <tr>
-              <td>NewDatabase(p Params) (*DB, error)</td>
-              <td lang="en">Opens the pool from <code>Options</code> and registers the ping / close lifecycle hooks.
-                Meant for Fx.</td>
-              <td lang="vi">Mở pool từ <code>Options</code> và đăng ký hook ping / đóng. Dùng với Fx.</td>
+              <td>New(opts Options, log *zap.Logger) (*DB, error)</td>
+              <td lang="en">Builds the pool from <code>Options</code> without connecting. Call <code>Ping</code> to
+                verify the database, <code>Close</code> when done. <code>log</code> is used only for query logging;
+                <code>nil</code> disables it.</td>
+              <td lang="vi">Dựng pool từ <code>Options</code> mà không kết nối. Gọi <code>Ping</code> để kiểm tra
+                database, <code>Close</code> khi xong. <code>log</code> chỉ dùng để log query; <code>nil</code> thì tắt.</td>
             </tr>
             <tr>
               <td>Module</td>
-              <td lang="en"><code>fx.Provide(NewDatabase)</code> for an app with a single database. Jungo calls
-                <code>NewDatabase</code> from <code>primary.New</code> instead.</td>
-              <td lang="vi"><code>fx.Provide(NewDatabase)</code> cho app chỉ có một database. Jungo thì gọi
-                <code>NewDatabase</code> từ <code>primary.New</code>.</td>
+              <td lang="en"><code>fx.Module("postgres", …)</code> for an app with a single database: provides
+                <code>*DB</code> from <code>Options</code> + <code>*zap.Logger</code>, pings on start, closes on stop.
+                Jungo calls <code>New</code> from <code>primary.New</code> instead.</td>
+              <td lang="vi"><code>fx.Module("postgres", …)</code> cho app chỉ có một database: cung cấp <code>*DB</code>
+                từ <code>Options</code> + <code>*zap.Logger</code>, ping khi khởi động, đóng khi dừng. Jungo thì gọi
+                <code>New</code> từ <code>primary.New</code>.</td>
             </tr>
             <tr>
-              <td>NewDB(pool DBPool) *DB</td>
+              <td>FromPool(pool DBPool) *DB</td>
               <td lang="en">Wraps a pool you already have, without logging or <code>Decorate</code>. For tests and code
                 outside Fx.</td>
               <td lang="vi">Bọc một pool bạn đã có, không log và không <code>Decorate</code>. Dùng cho test và code
@@ -376,9 +390,9 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
                 <code>fn(ctx)</code> bên trong nó.</td>
             </tr>
             <tr>
-              <td>(*DB) Ping(ctx) error</td>
-              <td lang="en">Health check.</td>
-              <td lang="vi">Kiểm tra kết nối.</td>
+              <td>(*DB) Ping(ctx) error · (*DB) Close()</td>
+              <td lang="en">Health check · close every pooled connection, waiting for in-use ones.</td>
+              <td lang="vi">Kiểm tra kết nối · đóng mọi connection trong pool, chờ các connection đang dùng.</td>
             </tr>
             <tr>
               <td>DBTX · DBPool</td>
@@ -386,11 +400,6 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
                 <code>Begin</code> / <code>Ping</code> / <code>Close</code> (<code>*pgxpool.Pool</code>).</td>
               <td lang="vi"><code>Exec</code> / <code>Query</code> / <code>QueryRow</code> (pool hoặc tx) · thêm
                 <code>Begin</code> / <code>Ping</code> / <code>Close</code> (<code>*pgxpool.Pool</code>).</td>
-            </tr>
-            <tr>
-              <td>FormatValue · BindArgsToSQL</td>
-              <td lang="en">Render a value / replace <code>$1…</code> with literals. For logs only.</td>
-              <td lang="vi">Hiển thị giá trị / thay <code>$1…</code> bằng literal. Chỉ để log.</td>
             </tr>
           </table>
         </div>
@@ -416,6 +425,19 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
               <td lang="vi">Cách viết gọn cho trường hợp <code>Match</code> hay gặp nhất: not found →
                 <code>notFound</code>, lỗi khác giữ nguyên, <code>nil</code> vẫn là <code>nil</code>.
                 <code>return nil, database.MatchNotFound(err, domain.ErrUserNotFound)</code>.</td>
+            </tr>
+            <tr>
+              <td>Wrapper(prefix string) func(op string, err error) error</td>
+              <td lang="en">Returns a <code>wrap</code> that prefixes an error with <code>"&lt;prefix&gt;: &lt;op&gt;: "</code> and
+                keeps it matchable with <code>errors.Is/As</code>; <code>nil</code> stays <code>nil</code>. One line per
+                repository: <code>var wrap = database.Wrapper("user repository")</code>, then
+                <code>return nil, wrap("get user", database.MatchNotFound(err, domain.ErrUserNotFound))</code>. The
+                prefix and op show up in the 500's log line, so you know which query failed.</td>
+              <td lang="vi">Trả về một hàm <code>wrap</code> gắn tiền tố <code>"&lt;prefix&gt;: &lt;op&gt;: "</code> vào lỗi mà
+                vẫn giữ được <code>errors.Is/As</code>; <code>nil</code> vẫn là <code>nil</code>. Mỗi repository một dòng:
+                <code>var wrap = database.Wrapper("user repository")</code>, rồi
+                <code>return nil, wrap("get user", database.MatchNotFound(err, domain.ErrUserNotFound))</code>. Tiền tố
+                và op hiện trong dòng log của lỗi 500, nên biết ngay query nào lỗi.</td>
             </tr>
             <tr>
               <td>EscapeLike(s string) string</td>
@@ -445,8 +467,10 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
             </tr>
             <tr>
               <td>MaskDSN(dsn) string</td>
-              <td lang="en">Hides <code>password=…</code>-style values for logs.</td>
-              <td lang="vi">Che các giá trị kiểu <code>password=…</code> khi log.</td>
+              <td lang="en">Replaces secrets with <code>********</code> for logs, in both the <code>password=…</code>
+                form and the URL form (<code>postgres://user:secret@host/db</code>).</td>
+              <td lang="vi">Thay bí mật bằng <code>********</code> khi log, cả dạng <code>password=…</code> lẫn dạng URL
+                (<code>postgres://user:secret@host/db</code>).</td>
             </tr>
           </table>
         </div>
@@ -518,27 +542,24 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
               <code>fn</code>, lời gọi dùng <code>ctx</code> bên ngoài sẽ chạy ngoài transaction và không được
               rollback.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Zero Options
-              aren't defaults</span><span class="x" lang="en"><code>MaxConnection: 0</code> fails to start,
-              <code>HealthCheckPeriod: 0</code> crashes the process, <code>MaxConnLifetime: 0</code> recycles connections
-              constantly. Set every pool field.</span><span class="x" lang="vi"><code>MaxConnection: 0</code> không
-              khởi động được, <code>HealthCheckPeriod: 0</code> làm sập process, <code>MaxConnLifetime: 0</code> thay
-              connection liên tục. Hãy đặt đủ mọi field của pool.</span></div>
+              aren't defaults</span><span class="x" lang="en">A zero pool field is not junkit's default: it keeps the value
+              from the DSN (<code>pool_max_conns</code>, …) or, failing that, pgxpool's own default. Set the fields you
+              care about.</span><span class="x" lang="vi">Field pool bằng 0 không phải mặc định của junkit: nó giữ giá
+              trị từ DSN (<code>pool_max_conns</code>, …) hoặc, nếu không có, mặc định của pgxpool. Hãy đặt các field
+              bạn quan tâm.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Don't leak the
               tx</span><span class="x" lang="en">No goroutine may use <code>txCtx</code> after <code>fn</code> returns,
               and a transaction is not safe for concurrent use.</span><span class="x" lang="vi">Không goroutine nào được
               dùng <code>txCtx</code> sau khi <code>fn</code> kết thúc, và transaction không an toàn khi dùng đồng
               thời.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">The sql log holds real
-              data</span><span class="x" lang="en">Logged SQL contains the real values (emails, hashes). Treat the log
-              as sensitive, or set its level to <code>warn</code> to keep only slow and failed queries.</span><span
-              class="x" lang="vi">SQL được log chứa giá trị thật (email, hash). Hãy coi log là dữ liệu nhạy cảm, hoặc
-              đặt level <code>warn</code> để chỉ giữ query chậm và lỗi.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">MaskDSN misses URL
-              passwords</span><span class="x" lang="en"><code>postgres://user:pass@host</code> is logged as is. Jungo
-              uses the <code>key=value</code> form, so it is masked.</span><span class="x" lang="vi">
-              <code>postgres://user:pass@host</code> bị log nguyên văn. Jungo dùng dạng <code>key=value</code> nên vẫn
-              được che.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Match drops the
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">LogQueryArgs puts real
+              data in the log</span><span class="x" lang="en">By default the sql log keeps placeholders, not values.
+              With <code>LogQueryArgs</code> on, logged SQL contains the real values (emails, hashes, OTPs) — keep it
+              off outside your machine. The tracer dashboard still binds values, so guard it too.</span><span
+              class="x" lang="vi">Mặc định log sql giữ placeholder, không giữ giá trị. Bật <code>LogQueryArgs</code>
+              thì SQL được log chứa giá trị thật (email, hash, OTP) — chỉ bật trên máy mình. Dashboard tracer vẫn chèn
+              giá trị, nên cũng phải bảo vệ nó.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">Match drops the
               original</span><span class="x" lang="en">Log the original error first if you need the constraint name,
               and map every type the caller should see as a 4xx — unmapped ones become a 500.</span><span class="x"
               lang="vi">Hãy log lỗi gốc trước nếu cần tên constraint, và map mọi loại lỗi mà caller cần thấy dưới dạng

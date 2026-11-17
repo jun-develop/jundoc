@@ -87,7 +87,7 @@ import (
 </pre></div>
     </div>
 
-    <h3 style="margin-top:22px">GenerateConfig</h3>
+    <h3 style="margin-top:22px">GenerateOptions</h3>
     <div class="jd-tablewrap"><table class="jd-params c-blue">
       <tr><th>field</th><th><span lang="en">type</span><span lang="vi">kiểu</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
       <tr><td>Data</td><td>FeatureData</td><td><span lang="en">Passed to every template as the dot (<code>{{.Pascal}}</code>, <code>{{.Table}}</code>…). <code>Data.Module</code> also anchors the import insertion — must not be empty.</span><span lang="vi">Truyền vào mọi template làm dấu chấm (<code>{{.Pascal}}</code>, <code>{{.Table}}</code>…). <code>Data.Module</code> còn dùng làm mốc chèn import — không được rỗng.</span></td></tr>
@@ -98,7 +98,7 @@ import (
       <tr><td>ModuleLine</td><td>string</td><td><span lang="en">The line inserted (with two tabs), e.g. <code>"product.Module,"</code>.</span><span lang="vi">Dòng được chèn (thụt hai tab), vd. <code>"product.Module,"</code>.</span></td></tr>
     </table></div>
 
-    <h3 style="margin-top:22px">RemoveConfig</h3>
+    <h3 style="margin-top:22px">RemoveOptions</h3>
     <div class="jd-tablewrap"><table class="jd-params c-blue">
       <tr><th>field</th><th><span lang="en">type</span><span lang="vi">kiểu</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
       <tr><td>Dirs</td><td>[]string</td><td><span lang="en">Deleted with <code>os.RemoveAll</code>. Missing → warning, not an error.</span><span lang="vi">Xoá bằng <code>os.RemoveAll</code>. Không tồn tại → cảnh báo, không lỗi.</span></td></tr>
@@ -152,7 +152,7 @@ func main() {
         console.Fatalf("%v", err)
     }
 
-    err = scaffold.Generate(scaffold.GenerateConfig{
+    err = scaffold.Generate(scaffold.GenerateOptions{
         Data: data,
         Files: []scaffold.File{
             {Path: filepath.Join("internal/features", data.Name, "module.go"), Template: moduleTmpl},
@@ -251,17 +251,17 @@ type FeatureData struct {
       </div>
 
       <div class="jd-sym c-green">
-        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Generate · File · GenerateConfig</span></div>
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Generate · File · GenerateOptions</span></div>
         <div class="jd-term"><pre data-hl="go">
-func Generate(cfg GenerateConfig) error
+func Generate(cfg GenerateOptions) error
 
 type File struct {
     Path     string
     Template string
 }
 </pre></div>
-        <p lang="en">Steps, in order (fields of <code>GenerateConfig</code> are in <a href="#setup">Wire it up</a>):</p>
-        <p lang="vi">Các bước, theo thứ tự (các field của <code>GenerateConfig</code> ở mục <a href="#setup">Kết nối</a>):</p>
+        <p lang="en">Steps, in order (fields of <code>GenerateOptions</code> are in <a href="#setup">Wire it up</a>):</p>
+        <p lang="vi">Các bước, theo thứ tự (các field của <code>GenerateOptions</code> ở mục <a href="#setup">Kết nối</a>):</p>
         <ol>
           <li lang="en">If any <code>File.Path</code> exists → <code>&lt;path&gt; already exists — refusing to overwrite</code>, nothing written.</li>
           <li lang="vi">Nếu có <code>File.Path</code> nào đã tồn tại → <code>&lt;path&gt; already exists — refusing to overwrite</code>, không ghi gì.</li>
@@ -281,8 +281,8 @@ type File struct {
       </div>
 
       <div class="jd-sym c-red">
-        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Remove · RemoveConfig</span></div>
-        <div class="jd-term"><pre data-hl="go">func Remove(cfg RemoveConfig) error</pre></div>
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Remove · RemoveOptions</span></div>
+        <div class="jd-term"><pre data-hl="go">func Remove(cfg RemoveOptions) error</pre></div>
         <ol>
           <li lang="en">Delete lines containing <code>ModuleLine</code>, then lines containing <code>"ImportPath"</code> from <code>FxFile</code>; <code>gofmt -w</code>. Errors: <code>remove module line: …</code>, <code>remove import: …</code> (e.g. FxFile unreadable — then nothing is deleted).</li>
           <li lang="vi">Xoá các dòng chứa <code>ModuleLine</code>, rồi các dòng chứa <code>"ImportPath"</code> trong <code>FxFile</code>; <code>gofmt -w</code>. Lỗi: <code>remove module line: …</code>, <code>remove import: …</code> (vd. không đọc được FxFile — khi đó chưa có gì bị xoá).</li>

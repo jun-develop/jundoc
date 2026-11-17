@@ -35,8 +35,8 @@
           <span class="jd-chip"><span lang="en">Fx Module → provides <code>recaptcha.Verifier</code> (real or
               mock)</span><span lang="vi">Fx Module → cung cấp <code>recaptcha.Verifier</code> (thật hoặc
               mock)</span></span>
-          <span class="jd-chip"><span lang="en">needs <code>*http.Client</code></span><span lang="vi">cần
-              <code>*http.Client</code></span></span>
+          <span class="jd-chip"><span lang="en">optional <code>*http.Client</code></span><span lang="vi">
+              <code>*http.Client</code> tuỳ chọn</span></span>
           <span class="jd-chip"><span lang="en">stdlib only</span><span lang="vi">chỉ dùng stdlib</span></span>
         </div>
       </header>
@@ -71,24 +71,24 @@
             <div class="d" lang="vi">Đã cấu hình secret key chưa?</div>
           </div>
           <div class="jd-node is-tint c-red" data-node="x2" style="grid-column:2;grid-row:2"><span class="k">✗ error</span>
-            <div class="d" lang="en"><code>recaptcha secret key not configured</code> — Google is never called.</div>
-            <div class="d" lang="vi"><code>recaptcha secret key not configured</code> — không hề gọi Google.</div>
+            <div class="d" lang="en"><code>ErrUnavailable</code>: secret key not configured — Google is never called.</div>
+            <div class="d" lang="vi"><code>ErrUnavailable</code>: secret key not configured — không hề gọi Google.</div>
           </div>
           <div class="jd-node is-tint c-pink" data-node="r3" style="grid-column:3;grid-row:1"><span class="k">3 · Google</span><span class="t mono" style="font-size:15px">siteverify</span>
             <div class="d" lang="en"><code>POST https://www.google.com/recaptcha/api/siteverify</code> — did it answer 200 with valid JSON?</div>
             <div class="d" lang="vi"><code>POST https://www.google.com/recaptcha/api/siteverify</code> — có trả 200 kèm JSON hợp lệ không?</div>
           </div>
           <div class="jd-node is-tint c-red" data-node="x3" style="grid-column:3;grid-row:2"><span class="k">✗ error</span>
-            <div class="d" lang="en">Network error, non-200 status or unreadable JSON.</div>
-            <div class="d" lang="vi">Lỗi mạng, status khác 200 hoặc JSON không đọc được.</div>
+            <div class="d" lang="en"><code>ErrUnavailable</code>: network error, non-200 status or unreadable JSON.</div>
+            <div class="d" lang="vi"><code>ErrUnavailable</code>: lỗi mạng, status khác 200 hoặc JSON không đọc được.</div>
           </div>
-          <div class="jd-node is-tint c-green" data-node="r4" style="grid-column:4;grid-row:1"><span class="k">4 · verdict</span><span class="t mono" style="font-size:15px">success &amp;&amp; score ≥ MinScore ?</span>
-            <div class="d" lang="en">Both true → <code>nil</code>: the request goes on.</div>
-            <div class="d" lang="vi">Cả hai đúng → <code>nil</code>: request đi tiếp.</div>
+          <div class="jd-node is-tint c-green" data-node="r4" style="grid-column:4;grid-row:1"><span class="k">4 · verdict</span><span class="t mono" style="font-size:15px">success · action · host · score ?</span>
+            <div class="d" lang="en">All pass → <code>nil</code>: the request goes on.</div>
+            <div class="d" lang="vi">Tất cả đạt → <code>nil</code>: request đi tiếp.</div>
           </div>
           <div class="jd-node is-tint c-red" data-node="x4" style="grid-column:4;grid-row:2"><span class="k">✗ error</span>
-            <div class="d" lang="en"><code>recaptcha verification failed</code> or <code>recaptcha score too low</code>.</div>
-            <div class="d" lang="vi"><code>recaptcha verification failed</code> hoặc <code>recaptcha score too low</code>.</div>
+            <div class="d" lang="en"><code>ErrVerificationFailed</code> (rejected, wrong action or hostname) or <code>ErrLowScore</code>.</div>
+            <div class="d" lang="vi"><code>ErrVerificationFailed</code> (bị từ chối, sai action hoặc hostname) hoặc <code>ErrLowScore</code>.</div>
           </div>
         </div>
         <p class="jd-sub" style="text-align:center;margin:10px 0 0" lang="en">Each ✗ makes <code>Verify</code> return that error right away; only ✓ goes on to the next step.</p>
@@ -121,7 +121,7 @@
               <div class="jd-term-bar"><i></i><i></i><i></i><span>jungo/internal/app/fx.go</span></div>
               <pre data-hl="go">
 // inside CoreModules(cfg):
-fx.Provide(httpclient.NewDefaultClient), // *http.Client — required even in Mock mode
+fx.Provide(httpclient.NewDefaultClient), // *http.Client — optional; without it a 10s client is used
 
 fx.Provide(provideRecaptchaOptions),
 recaptcha.Module,
@@ -159,9 +159,11 @@ var verifier recaptcha.Verifier
 if os.Getenv("APP_ENV") == "production" {
 	// func NewClient(opts Options, httpClient *http.Client) *Client
 	verifier = recaptcha.NewClient(recaptcha.Options{
-		SecretKey: os.Getenv("RECAPTCHA_SECRET_KEY"),
-		MinScore:  0.7,
-	}, nil) // nil → http.DefaultClient (no timeout!)
+		SecretKey:      os.Getenv("RECAPTCHA_SECRET_KEY"),
+		MinScore:       0.7,
+		ExpectedAction: "signup",
+		Hostnames:      []string{"app.example.com"},
+	}, nil) // nil → &amp;http.Client{Timeout: 10 * time.Second}
 } else {
 	verifier = recaptcha.NewMockVerifier()
 }
@@ -185,9 +187,9 @@ if os.Getenv("APP_ENV") == "production" {
               <td>SecretKey</td>
               <td>string</td>
               <td lang="en"><code>""</code> → every <code>Client.Verify</code> returns
-                <code>recaptcha secret key not configured</code></td>
+                <code>ErrUnavailable</code> (<code>secret key not configured</code>)</td>
               <td lang="vi"><code>""</code> → mọi <code>Client.Verify</code> trả
-                <code>recaptcha secret key not configured</code></td>
+                <code>ErrUnavailable</code> (<code>secret key not configured</code>)</td>
               <td lang="en">The server-side secret Google gives you for your site (not the public site key).</td>
               <td lang="vi">Secret phía server Google cấp cho site của bạn (không phải site key công khai).</td>
             </tr>
@@ -200,6 +202,24 @@ if os.Getenv("APP_ENV") == "production" {
                 not clamped (everything would fail).</td>
               <td lang="vi">Điểm v3 thấp nhất được chấp nhận (0.0 = bot … 1.0 = người). Điểm thấp hơn bị từ chối. Giá
                 trị trên 1 không bị chặn lại (mọi token sẽ bị từ chối).</td>
+            </tr>
+            <tr>
+              <td>ExpectedAction</td>
+              <td>string</td>
+              <td lang="en"><code>""</code> → action not checked</td>
+              <td lang="vi"><code>""</code> → không kiểm tra action</td>
+              <td lang="en">When set, the token's action (from <code>grecaptcha.execute(…, {action})</code>) must equal
+                it, so a token minted for another form is refused.</td>
+              <td lang="vi">Khi đặt, action của token (từ <code>grecaptcha.execute(…, {action})</code>) phải bằng giá
+                trị này, nên token tạo cho form khác bị từ chối.</td>
+            </tr>
+            <tr>
+              <td>Hostnames</td>
+              <td>[]string</td>
+              <td lang="en"><code>nil</code> → hostname not checked</td>
+              <td lang="vi"><code>nil</code> → không kiểm tra hostname</td>
+              <td lang="en">When non-empty, the site hostname Google reports must be one of them.</td>
+              <td lang="vi">Khi khác rỗng, hostname Google báo về phải nằm trong danh sách.</td>
             </tr>
             <tr>
               <td>Mock</td>
@@ -250,11 +270,11 @@ func (h *SignupHandler) Signup(c *gin.Context) {
 
     err := h.verifier.Verify(c.Request.Context(), req.RecaptchaToken, c.ClientIP())
     if err != nil {
-        var uerr *url.Error
-        if errors.As(err, &amp;uerr) {
-            err = uerr.Err // drop the URL: it carries the secret
+        if errors.Is(err, recaptcha.ErrUnavailable) {
+            h.logger.Warn("recaptcha unavailable", zap.Error(err))
+        } else {
+            h.logger.Info("recaptcha rejected", zap.Error(err))
         }
-        h.logger.Info("recaptcha rejected", zap.Error(err))
         h.responder.Error(c, ErrBot)
         return
     }
@@ -266,10 +286,10 @@ func (h *SignupHandler) Signup(c *gin.Context) {
           </div>
           <div class="jd-explain">
             <div class="jd-ex c-purple" data-code="#code-quick" data-show="1-2"><span class="n">1</span><span
-                class="w">your own AppError</span><span class="x" lang="en">Verify returns plain <code>fmt</code>
-                errors. Passing those to <code>responder.Error</code> gives a generic 500 — map them to an <a
+                class="w">your own AppError</span><span class="x" lang="en">Verify returns errors wrapping the package's
+                sentinels, not AppErrors. Passing those to <code>responder.Error</code> gives a generic 500 — map them to an <a
                   href="response.html">AppError</a> (Jungo uses this exact one).</span><span class="x" lang="vi">Verify
-                trả error <code>fmt</code> thường. Đưa chúng vào <code>responder.Error</code> sẽ ra 500 chung chung —
+                trả error bọc sentinel của package, không phải AppError. Đưa chúng vào <code>responder.Error</code> sẽ ra 500 chung chung —
                 hãy ánh xạ sang một <a href="response.html">AppError</a> (Jungo dùng đúng cái này).</span></div>
             <div class="jd-ex c-purple" data-code="#code-quick" data-show="6"><span class="n">2</span><span
                 class="w">token field</span><span class="x" lang="en">v3 tokens are long; Jungo caps the field at 4096.
@@ -283,12 +303,11 @@ func (h *SignupHandler) Signup(c *gin.Context) {
                 cần).</span></div>
             <div class="jd-ex c-purple" data-code="#code-quick" data-show="18-25"><span class="n">4</span><span
                 class="w">log, don't leak</span><span class="x" lang="en">The error says why (score, Google error codes)
-                — useful in logs, not for the client. Every error means "reject". A network error wraps a
-                <code>*url.Error</code> whose URL holds the secret, so unwrap it before logging (gotcha 3).</span><span
-                class="x" lang="vi">Error
-                cho biết lý do (điểm, mã lỗi của Google) — hữu ích trong log, không nên trả cho client. Mọi error đều
-                nghĩa là "từ chối". Lỗi mạng bọc một <code>*url.Error</code> có URL chứa secret, nên hãy gỡ nó ra trước
-                khi log (lưu ý 3).</span></div>
+                — useful in logs, not for the client. <code>errors.Is(err, recaptcha.ErrUnavailable)</code> tells an
+                outage from a bad token, so you can choose to fail open or closed. Error texts never contain the
+                secret.</span><span class="x" lang="vi">Error cho biết lý do (điểm, mã lỗi của Google) — hữu ích trong log,
+                không nên trả cho client. <code>errors.Is(err, recaptcha.ErrUnavailable)</code> phân biệt sự cố dịch vụ
+                với token xấu, để bạn chọn cho qua hay chặn. Chuỗi lỗi không bao giờ chứa secret.</span></div>
           </div>
         </div>
         <div class="jd-term" style="margin-top:14px">
@@ -389,11 +408,41 @@ type Options struct {
 	// MinScore is the minimum acceptable reCAPTCHA v3 score (0.0-1.0, defaults to 0.5 when &lt;= 0).
 	MinScore float64
 
+	// ExpectedAction, when set, must equal the action the token was issued for.
+	ExpectedAction string
+
+	// Hostnames, when non-empty, lists the site hostnames a token may come from.
+	Hostnames []string
+
 	// Mock, when true, enables MockVerifier for local development and tests.
 	Mock bool
 }
 </pre>
             </div>
+          </div>
+
+          <div class="jd-sym c-red">
+            <div class="jd-sym-head"><span class="jd-kind">var</span><span class="jd-sym-name">ErrVerificationFailed ·
+                ErrLowScore · ErrUnavailable</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+var (
+	// ErrVerificationFailed means Google rejected the token, or its action or hostname did not match.
+	ErrVerificationFailed = errors.New("recaptcha: verification failed")
+
+	// ErrLowScore means the token was valid but its score is below Options.MinScore.
+	ErrLowScore = errors.New("recaptcha: score too low")
+
+	// ErrUnavailable means the siteverify API could not be reached or returned an unusable answer;
+	// callers may choose to fail open or closed on it.
+	ErrUnavailable = errors.New("recaptcha: verification service unavailable")
+)
+</pre>
+            </div>
+            <p lang="en">Every error <code>Verify</code> returns wraps exactly one of these; match with
+              <code>errors.Is</code>.</p>
+            <p lang="vi">Mọi error <code>Verify</code> trả về đều bọc đúng một trong số này; so khớp bằng
+              <code>errors.Is</code>.</p>
           </div>
 
           <div class="jd-sym c-blue">
@@ -413,10 +462,8 @@ type Options struct {
             <ul>
               <li lang="en"><code>opts.MinScore &lt;= 0</code> → 0.5. <code>opts.Mock</code> is ignored.</li>
               <li lang="vi"><code>opts.MinScore &lt;= 0</code> → 0.5. <code>opts.Mock</code> bị bỏ qua.</li>
-              <li lang="en"><code>httpClient == nil</code> → <code>http.DefaultClient</code> (which has no timeout —
-                pass a context deadline or your own client).</li>
-              <li lang="vi"><code>httpClient == nil</code> → <code>http.DefaultClient</code> (không có timeout — hãy
-                dùng context có deadline hoặc client riêng).</li>
+              <li lang="en"><code>httpClient == nil</code> → <code>&amp;http.Client{Timeout: 10 * time.Second}</code>.</li>
+              <li lang="vi"><code>httpClient == nil</code> → <code>&amp;http.Client{Timeout: 10 * time.Second}</code>.</li>
               <li lang="en">Never fails; an empty secret only shows up when <code>Verify</code> is called.</li>
               <li lang="vi">Không bao giờ lỗi; secret rỗng chỉ lộ ra khi gọi <code>Verify</code>.</li>
             </ul>
@@ -429,11 +476,11 @@ type Options struct {
               <pre data-hl="go">func (c *Client) Verify(ctx context.Context, token string, remoteIP string) error</pre>
             </div>
             <p lang="en">Sends <code>POST https://www.google.com/recaptcha/api/siteverify</code> with
-              <code>secret</code>, <code>response</code> (= token) and, if non-empty, <code>remoteip</code> as <b>URL
-                query parameters</b> (empty body). Errors, in the order they are checked:</p>
+              <code>secret</code>, <code>response</code> (= token) and, if non-empty, <code>remoteip</code> in a
+              <b>form-urlencoded body</b> (the URL carries no secret). Errors, in the order they are checked:</p>
             <p lang="vi">Gửi <code>POST https://www.google.com/recaptcha/api/siteverify</code> với <code>secret</code>,
-              <code>response</code> (= token) và, nếu khác rỗng, <code>remoteip</code> dưới dạng <b>query parameter trên
-                URL</b> (body rỗng). Các lỗi, theo thứ tự kiểm tra:</p>
+              <code>response</code> (= token) và, nếu khác rỗng, <code>remoteip</code> trong <b>body form-urlencoded</b>
+              (URL không chứa secret). Các lỗi, theo thứ tự kiểm tra:</p>
             <div class="jd-tablewrap">
               <table class="jd-params c-blue">
                 <tr>
@@ -441,55 +488,50 @@ type Options struct {
                   <th><span lang="en">when</span><span lang="vi">khi nào</span></th>
                 </tr>
                 <tr>
-                  <td>recaptcha secret key not configured</td>
+                  <td>ErrUnavailable: secret key not configured</td>
                   <td lang="en">empty <code>SecretKey</code> (no request is made)</td>
                   <td lang="vi"><code>SecretKey</code> rỗng (không gửi request)</td>
                 </tr>
                 <tr>
-                  <td>create request: %w</td>
-                  <td lang="en">building the request failed (e.g. nil ctx)</td>
-                  <td lang="vi">tạo request thất bại (vd. ctx nil)</td>
+                  <td>ErrUnavailable: create request · send request: %w · status %d · read response: %w · decode
+                    response: %w</td>
+                  <td lang="en">building the request failed; network error, timeout or cancelled ctx (the
+                    <code>*url.Error</code> is unwrapped, so no URL in the text); Google answered non-200; the body is
+                    unreadable or not the expected JSON</td>
+                  <td lang="vi">tạo request thất bại; lỗi mạng, timeout hoặc ctx bị huỷ (<code>*url.Error</code> được
+                    bóc ra, nên không có URL trong chuỗi lỗi); Google trả status khác 200; body không đọc được hoặc không
+                    phải JSON như mong đợi</td>
                 </tr>
                 <tr>
-                  <td>send recaptcha request: %w</td>
-                  <td lang="en">network error, timeout, cancelled ctx</td>
-                  <td lang="vi">lỗi mạng, timeout, ctx bị huỷ</td>
-                </tr>
-                <tr>
-                  <td>recaptcha api returned non-200 status: %d</td>
-                  <td lang="en">Google answered something other than 200</td>
-                  <td lang="vi">Google trả status khác 200</td>
-                </tr>
-                <tr>
-                  <td>read response body: %w</td>
-                  <td lang="en">reading the body failed</td>
-                  <td lang="vi">đọc body thất bại</td>
-                </tr>
-                <tr>
-                  <td>unmarshal response: %w</td>
-                  <td lang="en">body is not the expected JSON</td>
-                  <td lang="vi">body không phải JSON như mong đợi</td>
-                </tr>
-                <tr>
-                  <td>recaptcha verification failed: %v</td>
+                  <td>ErrVerificationFailed: %v</td>
                   <td lang="en"><code>success: false</code>; <code>%v</code> is Google's <code>error-codes</code>, e.g.
                     <code>[invalid-input-response]</code></td>
                   <td lang="vi"><code>success: false</code>; <code>%v</code> là <code>error-codes</code> của Google, vd.
                     <code>[invalid-input-response]</code></td>
                 </tr>
                 <tr>
-                  <td>recaptcha score too low: %f &lt; %f</td>
-                  <td lang="en">score below the minimum, e.g. <code>0.100000 &lt; 0.500000</code></td>
-                  <td lang="vi">điểm dưới mức tối thiểu, vd. <code>0.100000 &lt; 0.500000</code></td>
+                  <td>ErrVerificationFailed: action %q, want %q</td>
+                  <td lang="en"><code>ExpectedAction</code> set and the token's action differs</td>
+                  <td lang="vi">Đặt <code>ExpectedAction</code> và action của token khác</td>
+                </tr>
+                <tr>
+                  <td>ErrVerificationFailed: unexpected hostname %q</td>
+                  <td lang="en"><code>Hostnames</code> set and the token's hostname is not in it</td>
+                  <td lang="vi">Đặt <code>Hostnames</code> và hostname của token không nằm trong đó</td>
+                </tr>
+                <tr>
+                  <td>ErrLowScore: %.2f &lt; %.2f</td>
+                  <td lang="en">score below the minimum, e.g. <code>recaptcha: score too low: 0.10 &lt; 0.50</code></td>
+                  <td lang="vi">điểm dưới mức tối thiểu, vd. <code>recaptcha: score too low: 0.10 &lt; 0.50</code></td>
                 </tr>
               </table>
             </div>
-            <p lang="en">None of these are exported sentinel errors; match on <code>err != nil</code>, not on the text.
-              <code>action</code>, <code>hostname</code> and <code>challenge_ts</code> from Google are parsed but not
-              checked.</p>
-            <p lang="vi">Không lỗi nào là sentinel error được export; hãy dựa vào <code>err != nil</code>, đừng so
-              chuỗi. <code>action</code>, <code>hostname</code> và <code>challenge_ts</code> từ Google được parse nhưng
-              không được kiểm tra.</p>
+            <p lang="en">Match with <code>errors.Is</code> on the sentinels, not on the text. <code>action</code> and
+              <code>hostname</code> are checked only when <code>ExpectedAction</code> / <code>Hostnames</code> are set;
+              <code>challenge_ts</code> is not checked (Google already refuses stale tokens).</p>
+            <p lang="vi">So khớp bằng <code>errors.Is</code> trên sentinel, đừng so chuỗi. <code>action</code> và
+              <code>hostname</code> chỉ được kiểm tra khi đặt <code>ExpectedAction</code> / <code>Hostnames</code>;
+              <code>challenge_ts</code> không được kiểm tra (Google đã tự từ chối token cũ).</p>
           </div>
 
           <div class="jd-sym c-green">
@@ -518,14 +560,15 @@ var Module = fx.Module("recaptcha",
 	fx.Provide(newVerifier),
 )
 
-// newVerifier returns a MockVerifier when opts.Mock is set, otherwise a Client.
-func newVerifier(opts Options, httpClient *http.Client) Verifier
+// newVerifier returns a MockVerifier when Options.Mock is set, otherwise a Client;
+// verifierParams holds Options and an optional *http.Client.
+func newVerifier(p verifierParams) Verifier
 </pre>
             </div>
-            <p lang="en">Provides <code>recaptcha.Verifier</code>. Requires <code>recaptcha.Options</code> and
-              <code>*http.Client</code> in the graph — the client is required even when <code>Mock</code> is true.</p>
-            <p lang="vi">Cung cấp <code>recaptcha.Verifier</code>. Cần <code>recaptcha.Options</code> và
-              <code>*http.Client</code> trong graph — client vẫn bắt buộc kể cả khi <code>Mock</code> là true.</p>
+            <p lang="en">Provides <code>recaptcha.Verifier</code>. Requires <code>recaptcha.Options</code>; an
+              <code>*http.Client</code> in the graph is used when present (<code>optional:"true"</code>).</p>
+            <p lang="vi">Cung cấp <code>recaptcha.Verifier</code>. Cần <code>recaptcha.Options</code>;
+              <code>*http.Client</code> trong graph được dùng nếu có (<code>optional:"true"</code>).</p>
           </div>
         </div>
       </section>
@@ -645,18 +688,18 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
               nên đặt tên môi trường khác đi cũng không vô tình cho mọi token qua.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">v3
                 only</span><span lang="vi">chỉ dùng v3</span></span><span class="x" lang="en">A v2 checkbox token has no
-              score, so it decodes as 0 and fails with "score too low". The <code>action</code> and
-              <code>hostname</code> Google returns are not compared — a token minted for another action on your site is
-              accepted.</span><span class="x" lang="vi">Token v2 (checkbox) không có điểm, nên bị đọc là 0 và lỗi "score
-              too low". <code>action</code> và <code>hostname</code> Google trả về không được so sánh — token tạo cho
-              action khác trên site của bạn vẫn được chấp nhận.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">secret
-                in the URL</span><span lang="vi">secret nằm trên URL</span></span><span class="x" lang="en">The secret
-              is sent as a query parameter. On a network failure the returned <code>send recaptcha request: …</code>
-              error contains the full URL, secret included — don't log it as-is; unwrap the <code>*url.Error</code>
-              as in the quick start. (Jungo's login discards it.)</span><span class="x" lang="vi">Secret được gửi dạng query parameter. Khi lỗi mạng, error
-              <code>send recaptcha request: …</code> trả về chứa nguyên URL, kể cả secret — đừng log nguyên văn; hãy gỡ
-              <code>*url.Error</code> ra như ở phần quick start. (Login của Jungo bỏ error này đi.)</span></div>
+              score, so it decodes as 0 and fails with <code>ErrLowScore</code>. Set <code>ExpectedAction</code> (and
+              <code>Hostnames</code>), or a token minted for another action on your site is accepted.</span><span class="x" lang="vi">Token v2 (checkbox) không có điểm, nên bị đọc là 0 và lỗi "score
+              too low" (<code>ErrLowScore</code>). Hãy đặt <code>ExpectedAction</code> (và <code>Hostnames</code>), nếu
+              không token tạo cho action khác trên site của bạn vẫn được chấp nhận.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">an
+                outage is your call</span><span lang="vi">sự cố dịch vụ do bạn quyết</span></span><span class="x"
+              lang="en">When Google is unreachable, <code>Verify</code> returns <code>ErrUnavailable</code>. Rejecting
+              then (fail closed, as Jungo's login does) blocks every user during an outage; letting it pass (fail
+              open) lets bots through meanwhile. Pick per form with <code>errors.Is</code>.</span><span class="x"
+              lang="vi">Khi không gọi được Google, <code>Verify</code> trả <code>ErrUnavailable</code>. Từ chối lúc đó
+              (fail closed, như login của Jungo) chặn mọi user trong thời gian sự cố; cho qua (fail open) thì bot cũng
+              qua. Chọn theo từng form bằng <code>errors.Is</code>.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">tokens
                 are single-use</span><span lang="vi">token chỉ dùng một lần</span></span><span class="x"
               lang="en">Google rejects a token verified twice or older than about two minutes
@@ -686,19 +729,19 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
   <script>
     document.addEventListener("jd:ready", function () {
       // Mirrors newVerifier (Module) + NewClient's MinScore default + Client.Verify's checks.
-      function f(x) { return x.toFixed(6); } // Go %f
+      function f(x) { return x.toFixed(2); } // Go %.2f
       function verify(o) {
         if (o.mock) return null;
         var min = o.minScore > 0 ? o.minScore : 0.5;
-        if (!o.secret) return "recaptcha secret key not configured";
-        if (!o.success) return "recaptcha verification failed: [" + o.codes.join(" ") + "]";
-        if (o.score < min) return "recaptcha score too low: " + f(o.score) + " < " + f(min);
+        if (!o.secret) return "recaptcha: verification service unavailable: secret key not configured";
+        if (!o.success) return "recaptcha: verification failed: [" + o.codes.join(" ") + "]";
+        if (o.score < min) return "recaptcha: score too low: " + f(o.score) + " < " + f(min);
         return null;
       }
       console.assert(verify({ mock: true, secret: false }) === null, "mock accepts all");
-      console.assert(verify({ secret: false, success: true, score: 1 }) === "recaptcha secret key not configured", "no secret");
-      console.assert(verify({ secret: true, success: false, codes: ["invalid-input-response"], score: 0 }) === "recaptcha verification failed: [invalid-input-response]", "failed");
-      console.assert(verify({ secret: true, success: true, score: 0.1, minScore: 0 }) === "recaptcha score too low: 0.100000 < 0.500000", "default min 0.5");
+      console.assert(verify({ secret: false, success: true, score: 1 }) === "recaptcha: verification service unavailable: secret key not configured", "no secret");
+      console.assert(verify({ secret: true, success: false, codes: ["invalid-input-response"], score: 0 }) === "recaptcha: verification failed: [invalid-input-response]", "failed");
+      console.assert(verify({ secret: true, success: true, score: 0.1, minScore: 0 }) === "recaptcha: score too low: 0.10 < 0.50", "default min 0.5");
       console.assert(verify({ secret: true, success: true, score: 0.5, minScore: -1 }) === null, "score == min passes");
 
       var ids = ["rc-mock", "rc-secret", "rc-min", "rc-success", "rc-score", "rc-codes"];

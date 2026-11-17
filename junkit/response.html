@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Junkit response · Jundoc</title>
   <meta name="description"
-    content="junkit/response: one JSON envelope for every endpoint, domain errors mapped to HTTP status codes, translated messages and optional field filtering.">
+    content="junkit/response: one JSON envelope for every endpoint, domain errors mapped to HTTP status codes, and translated messages.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -35,12 +35,9 @@
           <span class="jd-chip">github.com/jun-develop/junkit/response</span>
           <span class="jd-chip"><span lang="en">Fx Module → provides <code>response.Responder</code></span><span
               lang="vi">Fx Module → cung cấp <code>response.Responder</code></span></span>
-          <span class="jd-chip"><span lang="en">needs <code>response.Options</code> +
-              <code>*i18n.Translator</code></span><span lang="vi">cần <code>response.Options</code> +
+          <span class="jd-chip"><span lang="en">needs <code>*i18n.Translator</code></span><span lang="vi">cần
               <code>*i18n.Translator</code></span></span>
           <span class="jd-chip">gin · junkit/i18n · junkit/pagination</span>
-          <span class="jd-chip"><span lang="en">subpackage <code>response/filter</code></span><span lang="vi">subpackage
-              <code>response/filter</code></span></span>
         </div>
       </header>
 
@@ -59,7 +56,7 @@
         <div class="jd-flow" style="margin-top:22px" data-wires='[
       {"from":"r1","to":"r2","color":"blue","label":"key"},
       {"from":"r2","to":"r3","color":"purple","label":"i18n"},
-      {"from":"r3","to":"r4","color":"green","label":"filter"}]'>
+      {"from":"r3","to":"r4","color":"green"}]'>
           <div class="jd-node is-tint c-blue" data-node="r1"><span class="k">1 · handler</span><span class="t mono"
               style="font-size:15px">responder.SendWithData(…)</span>
             <div class="d" lang="en">Or <code>Send</code>, <code>Pagination</code>, <code>Error</code>. Never
@@ -70,9 +67,9 @@
           <div class="jd-node is-tint c-purple" data-node="r2"><span class="k">2 · translate</span><span class="t mono"
               style="font-size:15px">i18n.Translator</span>
             <div class="d" lang="en"><code>"user_created"</code> → <code>"User created successfully"</code> in
-              <code>Options.Language</code>.</div>
+              the translator's default language.</div>
             <div class="d" lang="vi"><code>"user_created"</code> → <code>"User created successfully"</code> theo
-              <code>Options.Language</code>.</div>
+              ngôn ngữ mặc định của translator.</div>
           </div>
           <div class="jd-node is-tint c-orange" data-node="r3"><span class="k">3 · envelope</span><span class="t mono"
               style="font-size:15px">response.Response</span>
@@ -83,9 +80,8 @@
           </div>
           <div class="jd-node is-tint c-green" data-node="r4"><span class="k">4 · JSON</span><span class="t mono"
               style="font-size:15px">ctx.JSON(status, …)</span>
-            <div class="d" lang="en">2xx/3xx responses with data can be trimmed by <code>response/filter</code>.</div>
-            <div class="d" lang="vi">Response 2xx/3xx có data có thể được cắt gọn bởi <code>response/filter</code>.
-            </div>
+            <div class="d" lang="en">Written as-is with the status code; the Responder never aborts the chain.</div>
+            <div class="d" lang="vi">Ghi nguyên văn với status code; Responder không abort chuỗi gin.</div>
           </div>
         </div>
 
@@ -149,11 +145,10 @@
 }
 </pre>
             </div>
-            <p class="jd-sub" lang="en">Pagination lives <b>inside</b> <code>data</code> (<code>PaginatedData</code>).
-              The top-level <code>pagination</code> field of <code>Response</code> is never filled by the Responder.</p>
-            <p class="jd-sub" lang="vi">Pagination nằm <b>bên trong</b> <code>data</code> (<code>PaginatedData</code>).
-              Field <code>pagination</code> ở cấp ngoài cùng của <code>Response</code> không bao giờ được Responder
-              điền.</p>
+            <p class="jd-sub" lang="en">Pagination lives <b>inside</b> <code>data</code> (<code>PaginatedData</code>);
+              <code>Response</code> has no top-level pagination field.</p>
+            <p class="jd-sub" lang="vi">Pagination nằm <b>bên trong</b> <code>data</code> (<code>PaginatedData</code>);
+              <code>Response</code> không có field pagination ở cấp ngoài cùng.</p>
           </div>
           <div class="jd-tabpanel" hidden>
             <div class="jd-term">
@@ -210,9 +205,9 @@
 </pre>
             </div>
             <p class="jd-sub" lang="en">A plain error is never shown to the client. It is recorded with
-              <code>ctx.Error(err)</code> so logging middleware can see it.</p>
+              <code>c.Error(err)</code> so logging middleware can see it.</p>
             <p class="jd-sub" lang="vi">Error thường không bao giờ lộ ra client. Nó được ghi bằng
-              <code>ctx.Error(err)</code> để middleware log nhìn thấy.</p>
+              <code>c.Error(err)</code> để middleware log nhìn thấy.</p>
           </div>
           <div class="jd-tabpanel" hidden>
             <div class="jd-term">
@@ -269,11 +264,6 @@
                   href="validation.html">validation</a>.</td>
             </tr>
             <tr>
-              <td>pagination</td>
-              <td lang="en">Never set by the Responder (kept for your own use).</td>
-              <td lang="vi">Responder không bao giờ điền (để bạn tự dùng nếu cần).</td>
-            </tr>
-            <tr>
               <td>api_info</td>
               <td lang="en">Always. <code>timestamp</code> is always set; <code>trace_id</code>, <code>latency</code>,
                 <code>version</code>, <code>env</code> only when <a
@@ -310,22 +300,17 @@
               <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go</span></div>
               <pre data-hl="go">
 // in CoreModules(cfg)
-fx.Provide(provideResponseOptions),
 i18n.Module,
+fx.Invoke(func(t *i18n.Translator) { t.SetDefaultLang(cfg.Language) }),
 response.Module,
-
-// provideResponseOptions builds response.Options from cfg.
-func provideResponseOptions(cfg *config.Config) response.Options {
-    return response.Options{Language: cfg.Language}
-}
 </pre>
             </div>
-            <p class="jd-sub" style="margin-top:10px" lang="en"><code>cfg.Language</code> comes from
-              <code>API_LANGUAGE</code> (default <code>en</code>). Any constructor can now ask for
-              <code>response.Responder</code>.</p>
-            <p class="jd-sub" style="margin-top:10px" lang="vi"><code>cfg.Language</code> lấy từ
-              <code>API_LANGUAGE</code> (mặc định <code>en</code>). Mọi constructor giờ có thể xin
-              <code>response.Responder</code>.</p>
+            <p class="jd-sub" style="margin-top:10px" lang="en">The Responder has no options: every message uses the
+              translator's default language, which Jungo sets from <code>API_LANGUAGE</code> (default
+              <code>en</code>). Any constructor can now ask for <code>response.Responder</code>.</p>
+            <p class="jd-sub" style="margin-top:10px" lang="vi">Responder không có options: mọi message dùng ngôn ngữ
+              mặc định của translator, mà Jungo đặt từ <code>API_LANGUAGE</code> (mặc định <code>en</code>). Mọi
+              constructor giờ có thể xin <code>response.Responder</code>.</p>
           </div>
           <div class="jd-tabpanel" hidden>
             <div class="jd-term" data-copy>
@@ -336,7 +321,9 @@ translator.AddTranslations(map[string]map[string]string{
     i18n.LangEN: {"user_created": "User created successfully"},
 })
 
-responder := response.NewResponder(response.Options{Language: "en"}, translator)
+translator.SetDefaultLang(i18n.LangEN) // the language of every message ("en" is already the default)
+
+responder := response.NewResponder(translator)
 </pre>
             </div>
             <p class="jd-sub" style="margin-top:10px" lang="en">Without Fx, initialize the translator and pass it into
@@ -345,27 +332,7 @@ responder := response.NewResponder(response.Options{Language: "en"}, translator)
               vào <code>response.NewResponder</code>.</p>
           </div>
         </div>
-        <div class="jd-tablewrap" style="margin-top:16px">
-          <table class="jd-params c-purple">
-            <tr>
-              <th>Options field</th>
-              <th>type</th>
-              <th><span lang="en">zero value</span><span lang="vi">giá trị rỗng</span></th>
-              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-            </tr>
-            <tr>
-              <td>Language</td>
-              <td>string</td>
-              <td><span lang="en"><code>""</code> → the translator's default language (<code>en</code> unless changed
-                  with <code>SetDefaultLang</code>).</span><span lang="vi"><code>""</code> → ngôn ngữ mặc định của
-                  translator (<code>en</code> trừ khi đổi bằng <code>SetDefaultLang</code>).</span></td>
-              <td><span lang="en">Locale used for <b>every</b> message. Fixed at construction — not read per
-                  request.</span><span lang="vi">Locale dùng cho <b>mọi</b> message. Cố định lúc khởi tạo — không đọc
-                  theo từng request.</span></td>
-            </tr>
-          </table>
-        </div>
-      </section>
+              </section>
 
       <!-- ============================================================ 3. QUICK START -->
       <section id="quick" class="jd-section c-green">
@@ -496,33 +463,19 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
           <span class="jd-badge">5</span>
           <div>
             <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
-            <p class="jd-sub" lang="en">Everything exported by <code>junkit/response</code> and
-              <code>junkit/response/filter</code>. Signatures copied from the source.</p>
-            <p class="jd-sub" lang="vi">Mọi thứ <code>junkit/response</code> và <code>junkit/response/filter</code>
-              export. Chữ ký chép từ source.</p>
+            <p class="jd-sub" lang="en">Everything exported by <code>junkit/response</code>. Signatures copied from
+              the source.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ <code>junkit/response</code> export. Chữ ký chép từ source.</p>
           </div>
         </div>
 
         <h3 style="margin-top:18px"><span lang="en">Setup</span><span lang="vi">Khởi tạo</span></h3>
         <div class="jd-syms">
           <div class="jd-sym c-purple">
-            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Options</span></div>
-            <div class="jd-term">
-              <pre data-hl="go">
-type Options struct {
-    // Language is the default locale for i18n messages (e.g. "en").
-    Language string
-}
-</pre>
-            </div>
-            <p lang="en">See the table in <a href="#setup">Wire it up</a>.</p>
-            <p lang="vi">Xem bảng ở phần <a href="#setup">Kết nối</a>.</p>
-          </div>
-          <div class="jd-sym c-purple">
             <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">NewResponder</span>
             </div>
             <div class="jd-term">
-              <pre data-hl="go">func NewResponder(opts Options, translator *i18n.Translator) Responder</pre>
+              <pre data-hl="go">func NewResponder(translator *i18n.Translator) Responder</pre>
             </div>
             <p lang="en">Returns the default implementation. No error, no validation: a <code>nil</code> translator is
               accepted but panics on the first response.</p>
@@ -538,10 +491,10 @@ var Module = fx.Module("response",
 )
 </pre>
             </div>
-            <p lang="en">Provides <code>response.Responder</code>. Requires <code>response.Options</code> and
-              <code>*i18n.Translator</code> in the graph.</p>
-            <p lang="vi">Cung cấp <code>response.Responder</code>. Cần có sẵn <code>response.Options</code> và
-              <code>*i18n.Translator</code> trong graph.</p>
+            <p lang="en">Provides <code>response.Responder</code>. Requires <code>*i18n.Translator</code> in the graph
+              (<code>i18n.Module</code>).</p>
+            <p lang="vi">Cung cấp <code>response.Responder</code>. Cần có sẵn <code>*i18n.Translator</code> trong graph
+              (<code>i18n.Module</code>).</p>
           </div>
         </div>
 
@@ -553,19 +506,19 @@ var Module = fx.Module("response",
             <div class="jd-term">
               <pre data-hl="go">
 type Responder interface {
-    Send(ctx *gin.Context, statusCode int, key string, args ...any)
-    SendWithData(ctx *gin.Context, statusCode int, key string, data any, args ...any)
-    Pagination(ctx *gin.Context, statusCode int, key string, data any, pagination pagination.Pagination, args ...any)
+    Send(c *gin.Context, statusCode int, key string, args ...any)
+    SendWithData(c *gin.Context, statusCode int, key string, data any, args ...any)
+    Pagination(c *gin.Context, statusCode int, key string, data any, page pagination.Pagination, args ...any)
     Translate(key string, args ...any) string
-    Error(ctx *gin.Context, err error)
+    Error(c *gin.Context, err error)
 }
 </pre>
             </div>
-            <p lang="en">In every method, <code>key</code> is an i18n key resolved in <code>Options.Language</code>;
+            <p lang="en">In every method, <code>key</code> is an i18n key resolved in the translator's default language;
               <code>args</code> fill <code>%[1]s</code>-style verbs (only applied if the message contains
               <code>%</code>). Unknown keys are returned unchanged. None of the methods abort the gin chain —
               <code>return</code> after calling them.</p>
-            <p lang="vi">Ở mọi method, <code>key</code> là i18n key được dịch theo <code>Options.Language</code>;
+            <p lang="vi">Ở mọi method, <code>key</code> là i18n key được dịch theo ngôn ngữ mặc định của translator;
               <code>args</code> điền vào các verb kiểu <code>%[1]s</code> (chỉ áp dụng khi message có <code>%</code>).
               Key không tồn tại được trả về nguyên văn. Không method nào abort chuỗi gin — hãy <code>return</code> sau
               khi gọi.</p>
@@ -573,32 +526,28 @@ type Responder interface {
           <div class="jd-sym c-blue">
             <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">Send</span></div>
             <div class="jd-term">
-              <pre data-hl="go">Send(ctx *gin.Context, statusCode int, key string, args ...any)</pre>
+              <pre data-hl="go">Send(c *gin.Context, statusCode int, key string, args ...any)</pre>
             </div>
             <p lang="en">Message-only response: <code>status</code>, <code>message</code>, <code>api_info</code>, plus
-              <code>code</code> derived from the status when it is ≥ 400. Never
-              filtered. Used by Jungo for 404 <code>"api_not_found"</code>, <code>"user_deleted"</code>,
+              <code>code</code> derived from the status when it is ≥ 400. Used by Jungo for 404 <code>"api_not_found"</code>, <code>"user_deleted"</code>,
               <code>"invalid_uuid"</code>…</p>
             <p lang="vi">Response chỉ có message: <code>status</code>, <code>message</code>, <code>api_info</code>, kèm
-              <code>code</code> suy ra từ status khi ≥ 400.
-              Không bao giờ bị filter. Jungo dùng cho 404 <code>"api_not_found"</code>, <code>"user_deleted"</code>,
+              <code>code</code> suy ra từ status khi ≥ 400. Jungo dùng cho 404 <code>"api_not_found"</code>, <code>"user_deleted"</code>,
               <code>"invalid_uuid"</code>…</p>
           </div>
           <div class="jd-sym c-blue">
             <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">SendWithData</span>
             </div>
             <div class="jd-term">
-              <pre data-hl="go">SendWithData(ctx *gin.Context, statusCode int, key string, data any, args ...any)</pre>
+              <pre data-hl="go">SendWithData(c *gin.Context, statusCode int, key string, data any, args ...any)</pre>
             </div>
             <ul>
-              <li lang="en"><code>statusCode &lt; 400</code> → <code>data</code> goes into <code>"data"</code>, and
-                <code>?fields</code>/<code>?omit</code> filtering applies.</li>
-              <li lang="vi"><code>statusCode &lt; 400</code> → <code>data</code> vào <code>"data"</code>, và áp dụng
-                filter <code>?fields</code>/<code>?omit</code>.</li>
+              <li lang="en"><code>statusCode &lt; 400</code> → <code>data</code> goes into <code>"data"</code>.</li>
+              <li lang="vi"><code>statusCode &lt; 400</code> → <code>data</code> vào <code>"data"</code>.</li>
               <li lang="en"><code>statusCode &gt;= 400</code> → <code>data</code> goes into <code>"error"</code>, <code>code</code> is
-                derived from the status, no filtering. This is how 422 validation errors are sent.</li>
+                derived from the status. This is how 422 validation errors are sent.</li>
               <li lang="vi"><code>statusCode &gt;= 400</code> → <code>data</code> vào <code>"error"</code>, <code>code</code> suy
-                ra từ status, không filter. Đây là cách gửi lỗi validation 422.</li>
+                ra từ status. Đây là cách gửi lỗi validation 422.</li>
               <li lang="en"><code>omitempty</code> on <code>Data any</code> drops only a <code>nil</code> interface.
                 Empty values are still sent: <code>[]</code> → <code>"data":[]</code>, <code>{}</code> →
                 <code>"data":{}</code>, <code>""</code> → <code>"data":""</code>, a typed nil pointer →
@@ -614,16 +563,16 @@ type Responder interface {
             </div>
             <div class="jd-term">
               <pre
-                data-hl="go">Pagination(ctx *gin.Context, statusCode int, key string, data any, pagination pagination.Pagination, args ...any)</pre>
+                data-hl="go">Pagination(c *gin.Context, statusCode int, key string, data any, page pagination.Pagination, args ...any)</pre>
             </div>
             <p lang="en">Sends <code>"data": {"items": data, "pagination": …}</code> using <a
                 href="pagination.html"><code>pagination.Pagination</code></a> (build it with
-              <code>pagination.NewPagination</code>). Always puts it in <code>"data"</code>, even for status ≥ 400.
-              Filtering applies when status &lt; 400.</p>
+              <code>pagination.NewPagination</code>). Always puts it in <code>"data"</code>, even for status ≥ 400, and
+              sets no <code>code</code>.</p>
             <p lang="vi">Gửi <code>"data": {"items": data, "pagination": …}</code> với <a
                 href="pagination.html"><code>pagination.Pagination</code></a> (tạo bằng
-              <code>pagination.NewPagination</code>). Luôn đặt vào <code>"data"</code>, kể cả status ≥ 400. Filter áp
-              dụng khi status &lt; 400.</p>
+              <code>pagination.NewPagination</code>). Luôn đặt vào <code>"data"</code>, kể cả status ≥ 400, và không
+              đặt <code>code</code>.</p>
           </div>
           <div class="jd-sym c-blue">
             <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">Translate</span></div>
@@ -638,25 +587,27 @@ type Responder interface {
           <div class="jd-sym c-blue">
             <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">Error</span></div>
             <div class="jd-term">
-              <pre data-hl="go">Error(ctx *gin.Context, err error)</pre>
+              <pre data-hl="go">Error(c *gin.Context, err error)</pre>
             </div>
             <ul>
               <li lang="en"><code>errors.As(err, &amp;*AppError)</code> succeeds → HTTP status from its
                 <code>Code</code> (table below), <code>"code"</code> = the code, <code>"message"</code> = translation of
-                <code>AppError.Message</code> (no args).</li>
+                <code>AppError.Message</code> (no args). When the status is 5xx or the <code>AppError</code> has a
+                <code>Cause</code>, the error is also recorded with <code>c.Error(err)</code> for the access log.</li>
               <li lang="vi"><code>errors.As(err, &amp;*AppError)</code> thành công → HTTP status theo <code>Code</code>
                 (bảng dưới), <code>"code"</code> = code, <code>"message"</code> = bản dịch của
-                <code>AppError.Message</code> (không args).</li>
-              <li lang="en">Otherwise → <code>ctx.Error(err)</code> (recorded for logging) and
-                <code>Send(ctx, 500, "internal_server_error")</code>.</li>
-              <li lang="vi">Ngược lại → <code>ctx.Error(err)</code> (ghi lại để log) và
-                <code>Send(ctx, 500, "internal_server_error")</code>.</li>
-              <li lang="en"><code>err == nil</code> → the same generic 500, without <code>ctx.Error</code> (gin panics
+                <code>AppError.Message</code> (không args). Khi status là 5xx hoặc <code>AppError</code> có
+                <code>Cause</code>, lỗi còn được ghi bằng <code>c.Error(err)</code> cho access log.</li>
+              <li lang="en">Otherwise → <code>c.Error(err)</code> (recorded for logging) and
+                <code>Send(c, 500, "internal_server_error")</code>.</li>
+              <li lang="vi">Ngược lại → <code>c.Error(err)</code> (ghi lại để log) và
+                <code>Send(c, 500, "internal_server_error")</code>.</li>
+              <li lang="en"><code>err == nil</code> → the same generic 500, without <code>c.Error</code> (gin panics
                 on a nil error). No panic.</li>
               <li lang="vi"><code>err == nil</code> → cũng trả 500 chung như trên, nhưng không gọi
-                <code>ctx.Error</code> (gin panic khi nhận error nil). Không panic.</li>
-              <li lang="en">Never filtered. The <code>Cause</code> is never sent to the client.</li>
-              <li lang="vi">Không bao giờ bị filter. <code>Cause</code> không bao giờ gửi cho client.</li>
+                <code>c.Error</code> (gin panic khi nhận error nil). Không panic.</li>
+              <li lang="en">The <code>Cause</code> is never sent to the client.</li>
+              <li lang="vi"><code>Cause</code> không bao giờ gửi cho client.</li>
             </ul>
           </div>
         </div>
@@ -809,13 +760,12 @@ ErrDatabaseConnection = New(Internal, "database_connection_error")
             <div class="jd-term">
               <pre data-hl="go">
 type Response struct {
-    Status     string    `json:"status"`
-    Code       ErrorCode `json:"code,omitempty"`
-    Message    string    `json:"message,omitempty"`
-    Data       any       `json:"data,omitempty"`
-    Error      any       `json:"error,omitempty"`
-    Pagination any       `json:"pagination,omitempty"`
-    APIInfo    *APIInfo  `json:"api_info,omitempty"`
+    Status  string    `json:"status"`
+    Code    ErrorCode `json:"code,omitempty"`
+    Message string    `json:"message,omitempty"`
+    Data    any       `json:"data,omitempty"`
+    Error   any       `json:"error,omitempty"`
+    APIInfo *APIInfo  `json:"api_info,omitempty"`
 }
 </pre>
             </div>
@@ -834,10 +784,12 @@ type Response struct {
                 </tr>
                 <tr>
                   <td>TraceID · trace_id</td>
-                  <td lang="en">gin key <code>"trace_id"</code> — request header <code>X-Trace-Id</code> or a new UUID.
+                  <td lang="en"><code>logger.GetTraceID(c.Request.Context())</code> — set by <code>middleware.Trace</code>
+                    (a new UUID, or a trusted <code>X-Trace-Id</code> with <code>TraceOptions.TrustHeader</code>).
                   </td>
-                  <td lang="vi">gin key <code>"trace_id"</code> — header <code>X-Trace-Id</code> của request hoặc UUID
-                    mới.</td>
+                  <td lang="vi"><code>logger.GetTraceID(c.Request.Context())</code> — do <code>middleware.Trace</code>
+                    đặt (UUID mới, hoặc <code>X-Trace-Id</code> được tin cậy khi bật
+                    <code>TraceOptions.TrustHeader</code>).</td>
                 </tr>
                 <tr>
                   <td>Timestamp · timestamp</td>
@@ -889,7 +841,6 @@ type PaginatedData struct {
               <pre data-hl="go">
 const (
     StartTimeContextKey = "start_time"
-    TraceIDContextKey   = "trace_id"
     VersionContextKey   = "api_version"
     EnvContextKey       = "api_env"
 )
@@ -897,89 +848,12 @@ const (
             </div>
             <p lang="en">Set by <a href="middleware.html"><code>middleware.Trace</code></a>, read to build
               <code>api_info</code>. Set them yourself if you don't use that middleware (start time must be a
-              <code>time.Time</code>, the rest strings).</p>
+              <code>time.Time</code>, the rest strings). The trace ID is not a gin key: it lives in the request
+              context (<code>logger.WithTraceID</code>).</p>
             <p lang="vi"><a href="middleware.html"><code>middleware.Trace</code></a> đặt chúng, Responder đọc để tạo
-              <code>api_info</code>. Tự <code>ctx.Set</code> nếu không dùng middleware đó (start time phải là
-              <code>time.Time</code>, còn lại là string).</p>
-          </div>
-        </div>
-
-        <h3 style="margin-top:22px">response/filter</h3>
-        <div class="jd-syms">
-          <div class="jd-sym c-green">
-            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">filter.Filter</span>
-            </div>
-            <div class="jd-term">
-              <pre data-hl="go">func Filter(data any, fields []string, omit []string) (any, error)</pre>
-            </div>
-            <p lang="en">Returns a copy of <code>data</code> with only <code>fields</code> kept and/or <code>omit</code>
-              removed. Structs become <code>map[string]any</code> keyed by their JSON tag names (<code>json:"-"</code>
-              and unexported fields skipped, empty <code>omitempty</code> fields dropped even if requested).</p>
-            <p lang="vi">Trả về bản sao của <code>data</code> chỉ giữ <code>fields</code> và/hoặc bỏ <code>omit</code>.
-              Struct thành <code>map[string]any</code> theo tên JSON tag (bỏ qua <code>json:"-"</code> và field
-              unexported; field <code>omitempty</code> rỗng bị bỏ dù có yêu cầu).</p>
-            <div class="jd-tablewrap">
-              <table class="jd-params c-green">
-                <tr>
-                  <th>syntax</th>
-                  <th><span lang="en">example → result</span><span lang="vi">ví dụ → kết quả</span></th>
-                </tr>
-                <tr>
-                  <td><span lang="en">dot</span><span lang="vi">chấm</span></td>
-                  <td><code>"address.city"</code> → <code>{"address":{"city":"Hanoi"}}</code></td>
-                </tr>
-                <tr>
-                  <td><span lang="en">projection</span><span lang="vi">projection</span></td>
-                  <td><code>"address{city,street}"</code> → <code>{"address":{"city":…,"street":…}}</code></td>
-                </tr>
-                <tr>
-                  <td><span lang="en">index (fields)</span><span lang="vi">index (fields)</span></td>
-                  <td><span lang="en"><code>"tags[0]"</code> → <code>{"tags":"admin"}</code> — the element itself, not a
-                      1-item list; out of range → <code>null</code></span><span lang="vi"><code>"tags[0]"</code> →
-                      <code>{"tags":"admin"}</code> — chính phần tử, không phải list 1 phần tử; ngoài phạm vi →
-                      <code>null</code></span></td>
-                </tr>
-                <tr>
-                  <td><span lang="en">index (omit)</span><span lang="vi">index (omit)</span></td>
-                  <td><span lang="en"><code>"tags[0]"</code> → <code>{"tags":["beta"]}</code> — drops that
-                      element</span><span lang="vi"><code>"tags[0]"</code> → <code>{"tags":["beta"]}</code> — bỏ phần tử
-                      đó</span></td>
-                </tr>
-                <tr>
-                  <td><span lang="en">both</span><span lang="vi">cả hai</span></td>
-                  <td><span lang="en">fields <code>["id","address"]</code> + omit <code>["address.street"]</code> →
-                      <code>{"id":1,"address":{"city":"Hanoi"}}</code></span><span lang="vi">fields
-                      <code>["id","address"]</code> + omit <code>["address.street"]</code> →
-                      <code>{"id":1,"address":{"city":"Hanoi"}}</code></span></td>
-                </tr>
-              </table>
-            </div>
-            <p lang="en">No fields and no omit → <code>data</code> returned unchanged. <code>nil</code> or a nil pointer
-              → <code>nil, nil</code>. A path step on a slice applies to every element. The current code never returns a
-              non-nil error.</p>
-            <p lang="vi">Không có fields lẫn omit → trả nguyên <code>data</code>. <code>nil</code> hoặc con trỏ nil →
-              <code>nil, nil</code>. Một bước path trên slice áp dụng cho mọi phần tử. Code hiện tại không bao giờ trả
-              error khác nil.</p>
-          </div>
-          <div class="jd-sym c-muted">
-            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">filter.Node ·
-                NewNode</span></div>
-            <div class="jd-term">
-              <pre data-hl="go">
-type Node struct {
-    Name     string
-    Index    *int
-    Children map[string]*Node
-    IsLeaf   bool
-}
-
-func NewNode(name string) *Node
-</pre>
-            </div>
-            <p lang="en">One segment of the selection tree <code>Filter</code> builds from the path strings. Exported
-              but you never need it — call <code>Filter</code>. (<code>IsLeaf</code> is never set by the parser.)</p>
-            <p lang="vi">Một đoạn của cây lựa chọn mà <code>Filter</code> dựng từ các path. Được export nhưng bạn không
-              cần dùng — hãy gọi <code>Filter</code>. (Parser không bao giờ đặt <code>IsLeaf</code>.)</p>
+              <code>api_info</code>. Tự <code>c.Set</code> nếu không dùng middleware đó (start time phải là
+              <code>time.Time</code>, còn lại là string). Trace ID không phải gin key: nó nằm trong request context
+              (<code>logger.WithTraceID</code>).</p>
           </div>
         </div>
       </section>
@@ -1004,9 +878,9 @@ func NewNode(name string) *Node
             </tr>
             <tr>
               <td>app/fx.go</td>
-              <td lang="en"><code>provideResponseOptions</code> + <code>i18n.Module</code> +
+              <td lang="en"><code>i18n.Module</code> + <code>SetDefaultLang(cfg.Language)</code> +
                 <code>response.Module</code>.</td>
-              <td lang="vi"><code>provideResponseOptions</code> + <code>i18n.Module</code> +
+              <td lang="vi"><code>i18n.Module</code> + <code>SetDefaultLang(cfg.Language)</code> +
                 <code>response.Module</code>.</td>
             </tr>
             <tr>
@@ -1117,53 +991,32 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/nothing-here | jq
           </div>
         </div>
         <div class="jd-explain" style="margin-top:16px">
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">?fields= is off until
-              you turn it on</span><span class="x" lang="en">The Responder reads <code>[]string</code> from gin keys
-              <code>"_response_fields"</code> / <code>"_response_omit"</code>, but nothing in Junkit or Jungo sets them.
-              Add your own middleware
-              (<code>c.Set("_response_fields", strings.Split(c.Query("fields"), ","))</code>).</span><span class="x"
-              lang="vi">Responder đọc <code>[]string</code> từ gin key <code>"_response_fields"</code> /
-              <code>"_response_omit"</code>, nhưng Junkit và Jungo không chỗ nào đặt chúng. Tự viết middleware
-              (<code>c.Set("_response_fields", strings.Split(c.Query("fields"), ","))</code>).</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Paths start at the
-              envelope</span><span class="x" lang="en">The filter runs on the whole <code>Response</code>, so paths look
-              like <code>data.email</code> or <code>data.items{uuid,email}</code>. In fields-mode only what you list
-              survives — <code>fields=data.email</code> also drops <code>status</code>, <code>message</code> and
-              <code>api_info</code>. If filtering fails, the unfiltered response is sent.</span><span class="x"
-              lang="vi">Filter chạy trên toàn bộ <code>Response</code>, nên path có dạng <code>data.email</code> hoặc
-              <code>data.items{uuid,email}</code>. Ở chế độ fields chỉ những gì bạn liệt kê còn lại —
-              <code>fields=data.email</code> cũng bỏ luôn <code>status</code>, <code>message</code> và
-              <code>api_info</code>. Nếu filter lỗi, response gốc được gửi.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Wrapped causes are not
-              logged</span><span class="x" lang="en"><code>Error</code> only calls <code>ctx.Error(err)</code> for
-              non-<code>AppError</code> errors. <code>response.Wrap(response.Internal, "…", dbErr)</code> answers 500
-              but the <code>dbErr</code> never reaches the gin error list — log it yourself if you need it.</span><span
-              class="x" lang="vi"><code>Error</code> chỉ gọi <code>ctx.Error(err)</code> với lỗi không phải
-              <code>AppError</code>. <code>response.Wrap(response.Internal, "…", dbErr)</code> trả 500 nhưng
-              <code>dbErr</code> không vào danh sách lỗi của gin — tự log nếu cần.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Register every
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">Plain 4xx AppErrors are not
+              logged</span><span class="x" lang="en"><code>Error</code> calls <code>c.Error(err)</code> for
+              non-<code>AppError</code> errors, 5xx <code>AppError</code>s and any <code>AppError</code> with a
+              <code>Cause</code>. A sentinel like <code>response.New(response.NotFound, "…")</code> is an expected
+              outcome and stays out of the gin error list.</span><span
+              class="x" lang="vi"><code>Error</code> gọi <code>c.Error(err)</code> với lỗi không phải
+              <code>AppError</code>, <code>AppError</code> 5xx và mọi <code>AppError</code> có <code>Cause</code>. Lỗi
+              sentinel như <code>response.New(response.NotFound, "…")</code> là kết quả bình thường nên không vào danh
+              sách lỗi của gin.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Register every
               key</span><span class="x" lang="en">A key missing from the catalog is sent as the message verbatim
               (<code>"failed_to_save_user"</code>). Add texts with <code>translator.AddTranslations</code> (see <a
                 href="i18n.html">i18n</a>).</span><span class="x" lang="vi">Key không có trong catalog được gửi nguyên
               văn làm message (<code>"failed_to_save_user"</code>). Thêm văn bản bằng
               <code>translator.AddTranslations</code> (xem <a href="i18n.html">i18n</a>).</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">One language per
-              process</span><span class="x" lang="en"><code>Options.Language</code> is fixed at startup; there is no
-              <code>Accept-Language</code> handling. Only English texts are built in — with <code>"vi"</code>, every key
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">One language per
+              process</span><span class="x" lang="en">The translator's default language is the language of every
+              response; there is no <code>Accept-Language</code> handling. Only English texts are built in — with <code>"vi"</code>, every key
               you haven't translated falls back to English.</span><span class="x"
-              lang="vi"><code>Options.Language</code> cố định khi khởi động; không xử lý <code>Accept-Language</code>.
+              lang="vi">Ngôn ngữ mặc định của translator là ngôn ngữ của mọi response; không xử lý <code>Accept-Language</code>.
               Chỉ có sẵn tiếng Anh — với <code>"vi"</code>, key nào bạn chưa dịch sẽ dùng bản tiếng Anh.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Call return
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Call return
               yourself</span><span class="x" lang="en">The Responder writes the body but doesn't <code>Abort()</code>.
               In middleware, call <code>c.Abort()</code> after it; in handlers, <code>return</code>.</span><span
               class="x" lang="vi">Responder ghi body nhưng không <code>Abort()</code>. Trong middleware, gọi
               <code>c.Abort()</code> sau đó; trong handler, <code>return</code>.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">Filter ≠ encoding/json
-              for embedded structs</span><span class="x" lang="en">When a filter path walks into a struct, an embedded
-              (anonymous) struct without a JSON tag appears as a nested object named after its type instead of being
-              flattened like <code>encoding/json</code> does.</span><span class="x" lang="vi">Khi path filter đi vào một
-              struct, struct nhúng (anonymous) không có JSON tag sẽ thành object lồng mang tên kiểu thay vì được trải
-              phẳng như <code>encoding/json</code>.</span></div>
         </div>
       </section>
 

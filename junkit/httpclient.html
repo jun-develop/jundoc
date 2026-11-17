@@ -27,9 +27,11 @@
         <div class="jd-eyebrow">Junkit · httpclient</div>
         <h1>httpclient</h1>
         <p lang="en">A standard <code>*http.Client</code> with sane timeouts and connection pooling, plus optional
-          automatic retries (network errors, 429, 5xx) with exponential backoff and jitter.</p>
+          automatic retries (network errors, 429, 5xx) of replay-safe requests with exponential backoff, jitter and
+          <code>Retry-After</code>.</p>
         <p lang="vi">Một <code>*http.Client</code> chuẩn với timeout và connection pool hợp lý, kèm tuỳ chọn tự retry
-          (lỗi mạng, 429, 5xx) với backoff luỹ thừa và jitter.</p>
+          (lỗi mạng, 429, 5xx) cho các request gửi lại an toàn, với backoff luỹ thừa, jitter và
+          <code>Retry-After</code>.</p>
         <div class="jd-chips">
           <span class="jd-chip">github.com/jun-develop/junkit/httpclient</span>
           <span class="jd-chip"><span lang="en">Fx: httpclient.Module → provides *http.Client</span><span lang="vi">Fx:
@@ -63,10 +65,10 @@
           </div>
           <div class="jd-node is-tint c-purple is-opt" data-node="h2"><span class="k">2 · retry (optional)</span><span
               class="t mono" style="font-size:15px">retryTransport</span>
-            <div class="d" lang="en">Buffers the body; on error / 429 / 5xx waits and tries again, up to
-              <code>MaxRetries</code> times.</div>
-            <div class="d" lang="vi">Đệm body; gặp lỗi / 429 / 5xx thì chờ rồi thử lại, tối đa <code>MaxRetries</code>
-              lần.</div>
+            <div class="d" lang="en">Idempotent methods (or an <code>Idempotency-Key</code>) with a replayable body
+              only: on error / 429 / 5xx waits and tries again, up to <code>MaxRetries</code> times.</div>
+            <div class="d" lang="vi">Chỉ method idempotent (hoặc có <code>Idempotency-Key</code>) với body gửi lại
+              được: gặp lỗi / 429 / 5xx thì chờ rồi thử lại, tối đa <code>MaxRetries</code> lần.</div>
           </div>
           <div class="jd-node is-tint c-blue" data-node="h3"><span class="k">3 · transport</span><span class="t mono"
               style="font-size:15px">*http.Transport</span>
@@ -129,9 +131,9 @@ httpclient.Module, // provides *http.Client
 </pre>
             </div>
             <p lang="en" style="margin-top:12px">Use one or the other — providing <code>*http.Client</code> twice makes
-              Fx fail at startup.</p>
+              Fx fail at startup. The Module also closes the client's idle connections OnStop.</p>
             <p lang="vi" style="margin-top:12px">Chỉ dùng một trong hai cách — cung cấp <code>*http.Client</code> hai
-              lần sẽ làm Fx lỗi khi khởi động.</p>
+              lần sẽ làm Fx lỗi khi khởi động. Module còn đóng các kết nối rảnh của client ở OnStop.</p>
           </div>
           <div class="jd-tabpanel" hidden>
             <div class="jd-term">
@@ -213,8 +215,9 @@ plain := httpclient.NewDefaultClient() // same as NewClient(httpclient.Options{}
               <td>int</td>
               <td><span lang="en">0 = no retry layer at all</span><span lang="vi">0 = không có lớp retry</span></td>
               <td><span lang="en">Extra attempts after the first. Total attempts =
-                  <code>MaxRetries + 1</code>.</span><span lang="vi">Số lần thử thêm sau lần đầu. Tổng số lần thử =
-                  <code>MaxRetries + 1</code>.</span></td>
+                  <code>MaxRetries + 1</code>. Only replay-safe requests are retried (see Retry rules).</span><span
+                  lang="vi">Số lần thử thêm sau lần đầu. Tổng số lần thử = <code>MaxRetries + 1</code>. Chỉ request gửi
+                  lại an toàn mới được retry (xem Luật retry).</span></td>
             </tr>
             <tr>
               <td>RetryWaitMin</td>
@@ -227,8 +230,9 @@ plain := httpclient.NewDefaultClient() // same as NewClient(httpclient.Options{}
               <td>RetryWaitMax</td>
               <td>time.Duration</td>
               <td>5s</td>
-              <td><span lang="en">Cap on the doubled wait (jitter can add up to 20% on top).</span><span lang="vi">Trần
-                  cho thời gian chờ nhân đôi (jitter có thể cộng thêm tới 20%).</span></td>
+              <td><span lang="en">Caps every wait between retries, including jitter and a server's
+                  <code>Retry-After</code>.</span><span lang="vi">Trần cho mọi lần chờ giữa các lần retry, tính cả jitter
+                  và <code>Retry-After</code> của server.</span></td>
             </tr>
           </table>
         </div>
@@ -320,12 +324,14 @@ func (c *GeoClient) Lookup(ctx context.Context, ip string) (*Geo, error) {
           <span class="jd-badge">4</span>
           <div>
             <h2><span lang="en">Try it: the backoff schedule</span><span lang="vi">Thử ngay: lịch backoff</span></h2>
-            <p class="jd-sub" lang="en">Same formula as <code>retryTransport.backoff</code>:
+            <p class="jd-sub" lang="en">Same formula as <code>retryTransport.delay</code>:
               <code>wait = RetryWaitMin &lt;&lt; n</code>, capped at <code>RetryWaitMax</code>, plus a random jitter of
-              0–20%.</p>
+              0–20%, the total capped at <code>RetryWaitMax</code> again. A <code>Retry-After</code> header replaces the
+              formula (still capped).</p>
             <p class="jd-sub" lang="vi">Công thức thời gian chờ lũy tiến (Exponential Backoff):
               <code>wait = RetryWaitMin × 2ⁿ</code>, giới hạn tối đa tại <code>RetryWaitMax</code>, kèm độ lệch ngẫu
-              nhiên (jitter) 0–20%.</p>
+              nhiên (jitter) 0–20%, tổng lại bị giới hạn ở <code>RetryWaitMax</code>. Header <code>Retry-After</code>
+              thay cho công thức (vẫn bị giới hạn).</p>
           </div>
         </div>
         <div class="jd-grid-2" style="margin-top:18px">
@@ -374,9 +380,9 @@ type Options struct {
     DialTimeout time.Duration
     TLSHandshakeTimeout time.Duration
     ResponseHeaderTimeout time.Duration
-    MaxRetries int
+    MaxRetries int // idempotent methods or Idempotency-Key, replayable body only
     RetryWaitMin time.Duration
-    RetryWaitMax time.Duration
+    RetryWaitMax time.Duration // caps every wait, including jitter and Retry-After
 }
 </pre>
             </div>
@@ -420,12 +426,14 @@ type Options struct {
             <div class="jd-term">
               <pre data-hl="go">
 var Module = fx.Module("httpclient",
-    fx.Provide(NewClient),
+    fx.Provide(newModuleClient), // NewClient(opts) + OnStop: CloseIdleConnections
 )
 </pre>
             </div>
-            <p lang="en">Needs an <code>httpclient.Options</code> in the graph; provides <code>*http.Client</code>.</p>
-            <p lang="vi">Cần <code>httpclient.Options</code> trong graph; cung cấp <code>*http.Client</code>.</p>
+            <p lang="en">Needs an <code>httpclient.Options</code> in the graph; provides <code>*http.Client</code> and
+              closes its idle connections OnStop.</p>
+            <p lang="vi">Cần <code>httpclient.Options</code> trong graph; cung cấp <code>*http.Client</code> và đóng các
+              kết nối rảnh của nó ở OnStop.</p>
           </div>
 
           <div class="jd-sym c-purple">
@@ -452,8 +460,13 @@ var Module = fx.Module("httpclient",
                 </tr>
                 <tr>
                   <td><span lang="en">methods</span><span lang="vi">method</span></td>
-                  <td><span lang="en">all methods, including <code>POST</code> / <code>PATCH</code>.</span><span
-                      lang="vi">mọi method, kể cả <code>POST</code> / <code>PATCH</code>.</span></td>
+                  <td><span lang="en">only <code>GET</code>, <code>HEAD</code>, <code>OPTIONS</code>,
+                      <code>TRACE</code>, <code>PUT</code>, <code>DELETE</code>, or any method whose request carries an
+                      <code>Idempotency-Key</code> header. Anything else (a plain <code>POST</code> /
+                      <code>PATCH</code>) is sent once.</span><span lang="vi">chỉ <code>GET</code>, <code>HEAD</code>,
+                      <code>OPTIONS</code>, <code>TRACE</code>, <code>PUT</code>, <code>DELETE</code>, hoặc method bất kỳ
+                      có header <code>Idempotency-Key</code>. Còn lại (<code>POST</code> / <code>PATCH</code> thường) chỉ
+                      gửi một lần.</span></td>
                 </tr>
                 <tr>
                   <td><span lang="en">attempts</span><span lang="vi">số lần thử</span></td>
@@ -463,9 +476,11 @@ var Module = fx.Module("httpclient",
                   <td>backoff</td>
                   <td><span lang="en">before retry <code>n</code> (0-based):
                       <code>wait = RetryWaitMin &lt;&lt; n</code>; if it overflows or exceeds <code>RetryWaitMax</code>
-                      → <code>RetryWaitMax</code>; then <code>+ rand[0, wait/5]</code>.</span><span lang="vi">trước lần
-                      retry <code>n</code> (tính từ 0): <code>wait = RetryWaitMin &lt;&lt; n</code>; tràn số hoặc vượt
-                      <code>RetryWaitMax</code> → <code>RetryWaitMax</code>; rồi <code>+ rand[0, wait/5]</code>.</span>
+                      → <code>RetryWaitMax</code>; then <code>+ rand[0, wait/5]</code>, capped at
+                      <code>RetryWaitMax</code>.</span><span lang="vi">trước lần retry <code>n</code> (tính từ 0):
+                      <code>wait = RetryWaitMin &lt;&lt; n</code>; tràn số hoặc vượt <code>RetryWaitMax</code> →
+                      <code>RetryWaitMax</code>; rồi <code>+ rand[0, wait/5]</code>, giới hạn ở
+                      <code>RetryWaitMax</code>.</span>
                   </td>
                 </tr>
                 <tr>
@@ -483,14 +498,20 @@ var Module = fx.Module("httpclient",
                 </tr>
                 <tr>
                   <td>body</td>
-                  <td><span lang="en">read fully into memory before the first attempt and replayed on each retry
-                      (<code>GetBody</code> is set too). A read error is returned without sending anything.</span><span
-                      lang="vi">được đọc hết vào bộ nhớ trước lần thử đầu và phát lại ở mỗi lần retry
-                      (<code>GetBody</code> cũng được đặt). Lỗi đọc body được trả về mà không gửi gì.</span></td>
+                  <td><span lang="en">never buffered by the client. A request with a body is retried only when
+                      <code>Request.GetBody</code> can replay it — <code>http.NewRequest</code> sets it for
+                      <code>*bytes.Buffer</code>, <code>*bytes.Reader</code> and <code>*strings.Reader</code>. A streamed
+                      body is sent once.</span><span lang="vi">client không bao giờ đệm body. Request có body chỉ được
+                      retry khi <code>Request.GetBody</code> phát lại được — <code>http.NewRequest</code> đặt nó cho
+                      <code>*bytes.Buffer</code>, <code>*bytes.Reader</code> và <code>*strings.Reader</code>. Body dạng
+                      stream chỉ gửi một lần.</span></td>
                 </tr>
                 <tr>
                   <td>Retry-After</td>
-                  <td><span lang="en">ignored.</span><span lang="vi">bị bỏ qua.</span></td>
+                  <td><span lang="en">honoured on a retried response, in seconds or as an HTTP date, instead of the
+                      backoff — still capped at <code>RetryWaitMax</code>.</span><span lang="vi">được tôn trọng ở response
+                      được retry, dạng số giây hoặc ngày HTTP, thay cho backoff — vẫn bị giới hạn ở
+                      <code>RetryWaitMax</code>.</span></td>
                 </tr>
               </table>
             </div>
@@ -525,10 +546,10 @@ var Module = fx.Module("httpclient",
             <tr>
               <td>junkit/telegram</td>
               <td><span
-                  lang="en"><code>telegram.NewClient(opts Options, httpClient *http.Client, logger *zap.Logger)</code>
+                  lang="en"><code>telegram.NewClient(opts Options, httpClient *http.Client)</code>
                   receives it. Used by <code>features/auth/infrastructure/login_guard.go</code> for brute-force
                   alerts.</span><span
-                  lang="vi"><code>telegram.NewClient(opts Options, httpClient *http.Client, logger *zap.Logger)</code>
+                  lang="vi"><code>telegram.NewClient(opts Options, httpClient *http.Client)</code>
                   nhận nó. Được <code>features/auth/infrastructure/login_guard.go</code> dùng để gửi cảnh báo
                   brute-force.</span></td>
             </tr>
@@ -542,11 +563,11 @@ var Module = fx.Module("httpclient",
           </table>
         </div>
         <p lang="en" style="margin-top:12px">To turn on retries app-wide, replace the provider with
-          <code>fx.Supply(httpclient.Options{MaxRetries: 2})</code> + <code>httpclient.Module</code> — but read gotcha 1
-          first.</p>
+          <code>fx.Supply(httpclient.Options{MaxRetries: 2})</code> + <code>httpclient.Module</code>; plain POSTs (Telegram,
+          reCAPTCHA) stay single-shot either way (gotcha 1).</p>
         <p lang="vi" style="margin-top:12px">Muốn bật retry cho cả app, thay provider bằng
-          <code>fx.Supply(httpclient.Options{MaxRetries: 2})</code> + <code>httpclient.Module</code> — nhưng hãy đọc lưu
-          ý 1 trước.</p>
+          <code>fx.Supply(httpclient.Options{MaxRetries: 2})</code> + <code>httpclient.Module</code>; các POST thường
+          (Telegram, reCAPTCHA) vẫn chỉ gửi một lần (lưu ý 1).</p>
       </section>
 
       <!-- ============================================================ 7. GOTCHAS -->
@@ -558,13 +579,12 @@ var Module = fx.Module("httpclient",
           </div>
         </div>
         <div class="jd-explain" style="margin-top:16px">
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">POST is retried
-              too</span><span class="x" lang="en">A request that reached the server and then hit a 5xx or a dropped
-              connection is sent again. For non-idempotent calls (payments, sending a message) use an idempotency key,
-              or a client with <code>MaxRetries: 0</code>.</span><span class="x" lang="vi">Request đã tới server rồi gặp
-              lỗi 5xx hoặc rớt kết nối sẽ bị gửi lại. Với các request non-idempotent (thanh toán, gửi tin nhắn, tạo mới
-              đơn hàng), hãy gửi kèm Idempotency-Key hoặc dùng client có <code>MaxRetries: 0</code> để tránh thực hiện
-              trùng lặp.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">POST needs an
+              Idempotency-Key</span><span class="x" lang="en">A plain <code>POST</code> / <code>PATCH</code> is never
+              retried, since it may have reached the server already. Set an <code>Idempotency-Key</code> header (that
+              the server honours) to opt a call in.</span><span class="x" lang="vi"><code>POST</code> /
+              <code>PATCH</code> thường không bao giờ được retry, vì có thể đã tới server. Đặt header
+              <code>Idempotency-Key</code> (mà server hỗ trợ) để cho phép retry request đó.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Default = no
               retries</span><span class="x" lang="en"><code>NewDefaultClient()</code> and <code>Options{}</code> never
               retry. Retries only exist when you set <code>MaxRetries</code>.</span><span class="x"
@@ -575,19 +595,21 @@ var Module = fx.Module("httpclient",
               With defaults, 4 retries already wait 3–3.6s; a slow server can use up the 15s before the retries
               do.</span><span class="x" lang="vi"><code>Timeout</code> tính cả mọi lần thử và mọi lần chờ. Với mặc định,
               4 lần retry đã chờ 3–3,6s; server chậm có thể ăn hết 15s trước khi kịp retry.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Bodies are
-              buffered</span><span class="x" lang="en">With retries on, the whole request body is read into memory
-              first. Avoid it for large uploads or streaming bodies.</span><span class="x" lang="vi">Khi bật retry, toàn
-              bộ body request được đọc vào bộ nhớ trước. Tránh dùng cho upload lớn hoặc body dạng stream.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Streamed bodies
+              go once</span><span class="x" lang="en">A body without <code>GetBody</code> (a file, a pipe) is never
+              replayed, so that request is not retried. Wrap the body in a <code>*bytes.Reader</code> if it must
+              be.</span><span class="x" lang="vi">Body không có <code>GetBody</code> (file, pipe) không bao giờ được phát
+              lại, nên request đó không được retry. Bọc body trong <code>*bytes.Reader</code> nếu cần retry.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">err == nil ≠
               success</span><span class="x" lang="en">As with any <code>*http.Client</code>, a 4xx/5xx is not an error.
               Always check <code>resp.StatusCode</code> and always close <code>resp.Body</code>.</span><span class="x"
               lang="vi">Như mọi <code>*http.Client</code>, 4xx/5xx không phải error. Luôn kiểm tra
               <code>resp.StatusCode</code> và luôn đóng <code>resp.Body</code>.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Retry-After is
-              ignored</span><span class="x" lang="en">A 429 is retried on the normal backoff schedule, which may be
-              sooner than the server asked.</span><span class="x" lang="vi">429 được retry theo lịch backoff thông
-              thường, có thể sớm hơn mức server yêu cầu.</span></div>
+              capped</span><span class="x" lang="en">A server's <code>Retry-After</code> is honoured but never waited
+              longer than <code>RetryWaitMax</code>, so a retry may come sooner than the server asked.</span><span
+              class="x" lang="vi"><code>Retry-After</code> của server được tôn trọng nhưng không bao giờ chờ quá
+              <code>RetryWaitMax</code>, nên retry có thể sớm hơn mức server yêu cầu.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">Proxy from
               environment</span><span class="x" lang="en"><code>HTTP_PROXY</code> / <code>HTTPS_PROXY</code> /
               <code>NO_PROXY</code> are honoured.</span><span class="x" lang="vi"><code>HTTP_PROXY</code> /
@@ -605,7 +627,7 @@ var Module = fx.Module("httpclient",
 
   <script>
     document.addEventListener("jd:ready", function () {
-      // Mirrors withDefaults + retryTransport.backoff, in int64 nanoseconds (BigInt keeps Go's shift overflow).
+      // Mirrors withDefaults + retryTransport.delay (no Retry-After), in int64 nanoseconds (BigInt keeps Go's shift overflow).
       var MS = 1000000n;
       function base(minNs, maxNs, attempt) {
         var w = BigInt.asIntN(64, minNs << BigInt(attempt));
@@ -615,7 +637,7 @@ var Module = fx.Module("httpclient",
       function schedule(retries, minMs, maxMs) {
         var minNs = (minMs > 0 ? BigInt(minMs) : 200n) * MS, maxNs = (maxMs > 0 ? BigInt(maxMs) : 5000n) * MS;
         var out = [];
-        for (var n = 0; n < retries; n++) { var w = base(minNs, maxNs, n); out.push([w, w + w / 5n]); }
+        for (var n = 0; n < retries; n++) { var w = base(minNs, maxNs, n), hi = w + w / 5n; out.push([w, hi > maxNs ? maxNs : hi]); }
         return out;
       }
       var ms = function (ns) { return Number(ns) / 1e6; };

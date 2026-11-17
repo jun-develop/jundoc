@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Junkit security · Jundoc</title>
   <meta name="description"
-    content="junkit/security: sealed opaque tokens (AES-256-GCM + HMAC-SHA256), token hashing, bcrypt passwords and typed identity in the request context.">
+    content="junkit/security: sealed opaque tokens (AES-256-GCM + HMAC-SHA256), token hashing, bcrypt passwords, secret-name detection and typed identity in the request context.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -27,16 +27,16 @@
         <div class="jd-eyebrow">Junkit · security</div>
         <h1>security</h1>
         <p lang="en">Building blocks for authentication: random opaque tokens, sealed (encrypted + signed) for the
-          client and hashed for the database, bcrypt passwords, and a typed identity in the request context.</p>
+          client and hashed for the database, bcrypt passwords, secret-name detection for masking logs, and a typed
+          identity in the request context.</p>
         <p lang="vi">Các thành phần bảo mật cốt lõi: sinh Opaque Token ngẫu nhiên, niêm phong token (mã hóa AES-256-GCM
-          + ký HMAC-SHA256) gửi cho client, lưu mã băm SHA-256 trong database, băm mật khẩu bằng bcrypt và gắn Identity
-          định kiểu vào context của request.</p>
+          + ký HMAC-SHA256) gửi cho client, lưu mã băm SHA-256 trong database, băm mật khẩu bằng bcrypt, nhận diện tên chứa bí
+          mật để che log, và gắn Identity định kiểu vào context của request.</p>
         <div class="jd-chips">
           <span class="jd-chip">github.com/jun-develop/junkit/security</span>
           <span class="jd-chip"><span lang="en">Fx Module → TokenSealer, PasswordHasher (needs an Options)</span><span
               lang="vi">Fx Module → TokenSealer, PasswordHasher (cần một Options)</span></span>
           <span class="jd-chip">golang.org/x/crypto/bcrypt</span>
-          <span class="jd-chip">gin-gonic/gin</span>
           <span class="jd-chip">go.uber.org/fx</span>
         </div>
       </header>
@@ -86,21 +86,23 @@
       {"from":"i1","to":"i2","color":"purple","label":"*gin.Context"},
       {"from":"i2","to":"i3","color":"purple","label":"ctx"}]'>
           <div class="jd-node is-tint c-purple" data-node="i1"><span class="k">middleware</span><span class="t mono"
-              style="font-size:15px">SetIdentity(c, id)</span>
-            <div class="d" lang="en">Called by your app's auth middleware (Jungo: <code>internal/middleware.BearerAuth</code>). Stored in gin keys <b>and</b>
-              the request context.</div>
-            <div class="d" lang="vi">Middleware auth của app gọi nó (Jungo: <code>internal/middleware.BearerAuth</code>). Lưu trong gin keys <b>và</b> request
+              style="font-size:15px">middleware.SetIdentity(c, id)</span>
+            <div class="d" lang="en">Called by your app's auth middleware (Jungo: <code>internal/middleware.BearerAuth</code>). Stored in the request
+              context.</div>
+            <div class="d" lang="vi">Middleware auth của app gọi nó (Jungo: <code>internal/middleware.BearerAuth</code>). Lưu trong request
               context.</div>
           </div>
           <div class="jd-node is-tint c-purple" data-node="i2"><span class="k">handler</span><span class="t mono"
               style="font-size:15px">MustGetIdentity[T](c)</span>
-            <div class="d" lang="en">Typed read; panics if missing.</div>
-            <div class="d" lang="vi">Đọc có kiểu; panic nếu không có.</div>
+            <div class="d" lang="en">Typed read; panics if missing. Passing <code>c</code> needs
+              <code>engine.ContextWithFallback = true</code>.</div>
+            <div class="d" lang="vi">Đọc có kiểu; panic nếu không có. Truyền <code>c</code> cần
+              <code>engine.ContextWithFallback = true</code>.</div>
           </div>
           <div class="jd-node is-tint c-purple" data-node="i3"><span class="k">service</span><span class="t mono"
               style="font-size:15px">GetIdentity[T](ctx)</span>
-            <div class="d" lang="en">Works on <code>c.Request.Context()</code> too.</div>
-            <div class="d" lang="vi">Cũng chạy được trên <code>c.Request.Context()</code>.</div>
+            <div class="d" lang="en">Any <code>context.Context</code> derived from <code>c.Request.Context()</code>.</div>
+            <div class="d" lang="vi">Mọi <code>context.Context</code> sinh ra từ <code>c.Request.Context()</code>.</div>
           </div>
         </div>
       </section>
@@ -332,10 +334,16 @@ func (s *SessionService) Login(ctx context.Context, email, password string) (str
         return "", err
     }
     if user == nil {
-        s.hasher.CompareDummy(password) // same time as a real check
+        if err := s.hasher.CompareDummy(ctx, password); err != nil { // same time as a real check
+            return "", err
+        }
         return "", ErrInvalidCredentials
     }
-    if !s.hasher.Compare(user.PasswordHash, password) {
+    ok, err := s.hasher.Compare(ctx, user.PasswordHash, password)
+    if err != nil {
+        return "", err // ctx ended while waiting for a hashing slot
+    }
+    if !ok {
         return "", ErrInvalidCredentials
     }
 
@@ -359,7 +367,7 @@ func (s *SessionService) Authenticate(ctx context.Context, token string) (*User,
                 <div class="jd-term-bar"><i></i><i></i><i></i><span>handler.go</span></div>
                 <pre data-hl="go" id="code-quick-hdl">
 func (h *Handler) Me(c *gin.Context) {
-    user := security.MustGetIdentity[*User](c)
+    user := security.MustGetIdentity[*User](c.Request.Context())
     c.JSON(200, user)
 }
 </pre>
@@ -372,35 +380,40 @@ func (h *Handler) Me(c *gin.Context) {
                 <code>PasswordHasher</code>, never on the concrete types (they are unexported).</span><span class="x"
                 lang="vi">Phụ thuộc vào <code>TokenSealer</code> / <code>PasswordHasher</code>, không phải kiểu cụ thể
                 (chúng không được export).</span></div>
-            <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="12-15"><span class="n">2</span><span
+            <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="12-17"><span class="n">2</span><span
                 class="w">CompareDummy</span><span class="x" lang="en">Unknown email still burns one bcrypt compare, so
                 response time does not reveal which emails are registered — as long as stored hashes use the current
                 cost; hashes from an older <code>AUTH_PASSWORD_COST</code> remain distinguishable.</span><span class="x" lang="vi">Email không
                 tồn tại vẫn tốn một lần so sánh bcrypt, nên thời gian phản hồi không tiết lộ email nào đã đăng
                 ký — miễn là hash đã lưu dùng cost hiện tại; hash từ <code>AUTH_PASSWORD_COST</code> cũ vẫn phân biệt
                 được.</span></div>
-            <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="16-18"><span class="n">3</span><span
-                class="w">Compare</span><span class="x" lang="en">Returns only <code>bool</code>. A malformed hash or a
-                password over 72 bytes is simply <code>false</code>.</span><span class="x" lang="vi">Chỉ trả
-                <code>bool</code>. Hash hỏng hoặc mật khẩu quá 72 byte đều cho <code>false</code>.</span></div>
-            <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="20-23"><span class="n">4</span><span
+            <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="18-24"><span class="n">3</span><span
+                class="w">Compare</span><span class="x" lang="en">A wrong password, a malformed hash or a password
+                over 72 bytes is <code>false, nil</code>. The error is only for a <code>ctx</code> that ended while
+                waiting for a hashing slot.</span><span class="x" lang="vi">Sai mật khẩu, hash hỏng hoặc mật khẩu quá
+                72 byte đều cho <code>false, nil</code>. Lỗi chỉ xảy ra khi <code>ctx</code> kết thúc lúc đang chờ lượt
+                hash.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="26-29"><span class="n">4</span><span
                 class="w">GenerateToken → HashToken</span><span class="x" lang="en">Store only the 64-char hex hash. A
                 DB leak then exposes no usable token.</span><span class="x" lang="vi">Chỉ lưu hash hex 64 ký tự. Lộ DB
                 cũng không lộ token dùng được.</span></div>
-            <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="24"><span class="n">5</span><span
+            <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="30"><span class="n">5</span><span
                 class="w">Seal</span><span class="x" lang="en">The sealed string is what the client gets. Without your
                 two keys it can be neither read nor forged.</span><span class="x" lang="vi">Chuỗi đã seal là thứ client
                 nhận. Không có hai key của bạn thì không đọc được, cũng không giả mạo được.</span></div>
-            <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="27-32"><span class="n">6</span><span
+            <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="33-38"><span class="n">6</span><span
                 class="w">Open → HashToken → lookup</span><span class="x" lang="en">Map every <code>Open</code> error to
                 one "invalid token" answer, then find the row by hash. Expiry lives in your DB, not in the
                 token.</span><span class="x" lang="vi">Gộp mọi lỗi của <code>Open</code> thành một câu trả lời "invalid
                 token", rồi tìm dòng theo hash. Thời hạn nằm trong DB của bạn, không nằm trong token.</span></div>
             <div class="jd-ex c-green" data-code="#code-quick-hdl" data-show="1-4"><span class="n">7</span><span
                 class="w">MustGetIdentity</span><span class="x" lang="en">The type parameter must be exactly the type
-                the middleware stored (<code>*User</code> here). Panics if missing — only use behind auth.</span><span
+                the middleware stored (<code>*User</code> here). Panics if missing — only use behind auth. Pass
+                <code>c.Request.Context()</code>, or <code>c</code> itself when the engine sets
+                <code>ContextWithFallback = true</code>.</span><span
                 class="x" lang="vi">Tham số kiểu phải đúng y kiểu mà middleware đã lưu (<code>*User</code> ở đây). Panic
-                nếu không có — chỉ dùng sau middleware auth.</span></div>
+                nếu không có — chỉ dùng sau middleware auth. Truyền <code>c.Request.Context()</code>, hoặc chính
+                <code>c</code> khi engine đặt <code>ContextWithFallback = true</code>.</span></div>
           </div>
         </div>
       </section>
@@ -692,6 +705,30 @@ type TokenSealer interface {
               IPv4-mapped thành IPv4 thường; IPv4 giữ nguyên. <code>middleware.Limiter</code>, <code>middleware.Banner</code> và bộ chặn login của Jungo
               dùng nó. Khi ghi log thì dùng IP gốc, không dùng key này.</p>
           </div>
+          <div class="jd-sym c-orange">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">IsSecretName ·
+                MaskHeader</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+func IsSecretName(name string) bool
+func MaskHeader(name, value string) string
+</pre>
+            </div>
+            <p lang="en"><code>IsSecretName</code> reports whether a field, query parameter, header or DSN key likely
+              holds a secret: a case-insensitive substring match against one shared list — password, passwd, pwd,
+              secret, token, apikey, api-key, api_key, authorization, signature, session, cookie (not "pass", which
+              matches too much). <code>MaskHeader</code> hides what a header carries: <code>Authorization</code> keeps
+              only its scheme (<code>Bearer ****</code>), cookies keep only their names (<code>sid=****</code>), any
+              other secret-named header becomes <code>****</code>. <code>middleware.AccessLog</code>, the tracer
+              dashboard and notification's cURL repro all use them, so they mask the same names.</p>
+            <p lang="vi"><code>IsSecretName</code> cho biết một field, tham số query, header hay key DSN có khả năng chứa
+              bí mật không: so khớp chuỗi con không phân biệt hoa thường với một danh sách dùng chung — password,
+              passwd, pwd, secret, token, apikey, api-key, api_key, authorization, signature, session, cookie (không có
+              "pass", vì khớp quá rộng). <code>MaskHeader</code> che nội dung header: <code>Authorization</code> chỉ
+              giữ scheme (<code>Bearer ****</code>), cookie chỉ giữ tên (<code>sid=****</code>), header khác có tên bí
+              mật thành <code>****</code>. <code>middleware.AccessLog</code>, dashboard tracer và bản cURL của
+              notification đều dùng chúng, nên che cùng một bộ tên.</p>
+          </div>
         </div>
 
         <h3 style="margin-top:24px"><span lang="en">Passwords</span><span lang="vi">Mật khẩu</span></h3>
@@ -702,23 +739,27 @@ type TokenSealer interface {
             <div class="jd-term">
               <pre data-hl="go">
 type PasswordHasher interface {
-	Hash(plain string) (string, error)
-	Compare(hash, plain string) bool
-	CompareDummy(plain string)
+	Hash(ctx context.Context, plain string) (string, error)
+	Compare(ctx context.Context, hash, plain string) (bool, error)
+	CompareDummy(ctx context.Context, plain string) error
 }
 </pre>
             </div>
             <ul>
+              <li lang="en">Every method first waits for a free hashing slot (<code>MaxConcurrent</code>); if
+                <code>ctx</code> ends first it returns <code>ctx</code>'s error, wrapped.</li>
+              <li lang="vi">Mọi method đều chờ một lượt hash trống trước (<code>MaxConcurrent</code>); nếu
+                <code>ctx</code> kết thúc trước thì trả về lỗi của <code>ctx</code>, có bọc.</li>
               <li lang="en"><b>Hash</b> — bcrypt hash with the configured cost. Input over 72 <b>bytes</b> →
                 <code>ErrPasswordTooLong</code> (no silent truncation).</li>
               <li lang="vi"><b>Hash</b> — hash bcrypt với cost đã cấu hình. Đầu vào quá 72 <b>byte</b> →
                 <code>ErrPasswordTooLong</code> (không cắt ngầm).</li>
               <li lang="en"><b>Compare</b> — <code>true</code> only if <code>plain</code> matches <code>hash</code>.
-                Wrong password, garbage hash or <code>plain</code> over 72 bytes → <code>false</code> (the long case
-                still spends one dummy compare).</li>
+                Wrong password, garbage hash or <code>plain</code> over 72 bytes → <code>false, nil</code> (the long
+                case still spends one dummy compare).</li>
               <li lang="vi"><b>Compare</b> — <code>true</code> chỉ khi <code>plain</code> khớp <code>hash</code>. Sai
-                mật khẩu, hash rác hoặc <code>plain</code> quá 72 byte → <code>false</code> (trường hợp quá dài vẫn tốn
-                một lần so sánh giả).</li>
+                mật khẩu, hash rác hoặc <code>plain</code> quá 72 byte → <code>false, nil</code> (trường hợp quá dài vẫn
+                tốn một lần so sánh giả).</li>
               <li lang="en"><b>CompareDummy</b> — compares against a hash made at startup with the same cost, so it
                 costs the same time as <code>Compare</code> against hashes made with the <b>current</b> cost. Call it
                 when the user does not exist. Hashes stored under an older <code>AUTH_PASSWORD_COST</code> still take a
@@ -749,16 +790,17 @@ type PasswordHasher interface {
             context</span></h3>
         <div class="jd-syms">
           <div class="jd-sym c-purple">
-            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">SetIdentity</span></div>
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">middleware.SetIdentity</span></div>
             <div class="jd-term">
-              <pre data-hl="go">func SetIdentity[T any](c *gin.Context, identity T)</pre>
+              <pre data-hl="go">func SetIdentity[T any](c *gin.Context, identity T) // package middleware</pre>
             </div>
-            <p lang="en">Stores <code>identity</code> under a private key in the gin keys <b>and</b> replaces
-              <code>c.Request</code> with one whose context carries it (when <code>c.Request</code> is not nil).
-              <code>T</code> is inferred from the argument — that is the type you must read back.</p>
-            <p lang="vi">Lưu <code>identity</code> dưới một key riêng trong gin keys <b>và</b> thay
-              <code>c.Request</code> bằng request có context chứa nó (khi <code>c.Request</code> khác nil).
-              <code>T</code> được suy ra từ đối số — đó là kiểu bạn phải đọc lại.</p>
+            <p lang="en">Lives in <a href="middleware.html">middleware</a>, so this package does not import gin. It
+              replaces <code>c.Request</code> with one whose context carries <code>identity</code> (via
+              <code>WithIdentity</code>). <code>T</code> is inferred from the argument — that is the type you must
+              read back.</p>
+            <p lang="vi">Nằm trong <a href="middleware.html">middleware</a>, để package này không phải import gin. Nó
+              thay <code>c.Request</code> bằng request có context chứa <code>identity</code> (qua
+              <code>WithIdentity</code>). <code>T</code> được suy ra từ đối số — đó là kiểu bạn phải đọc lại.</p>
           </div>
 
           <div class="jd-sym c-purple">
@@ -767,10 +809,11 @@ type PasswordHasher interface {
             <div class="jd-term">
               <pre data-hl="go">func WithIdentity[T any](ctx context.Context, identity T) context.Context</pre>
             </div>
-            <p lang="en">Returns a copy of <code>ctx</code> carrying <code>identity</code> — for tests and background
-              work without gin.</p>
-            <p lang="vi">Trả về bản sao của <code>ctx</code> có chứa <code>identity</code> — cho test và việc chạy nền
-              không có gin.</p>
+            <p lang="en">Returns a copy of <code>ctx</code> carrying <code>identity</code>. <code>middleware.SetIdentity</code>
+              uses it for a request; call it directly in tests and background work without gin.</p>
+            <p lang="vi">Trả về bản sao của <code>ctx</code> có chứa <code>identity</code>.
+              <code>middleware.SetIdentity</code> dùng nó cho request; gọi trực tiếp trong test và việc chạy nền không
+              có gin.</p>
           </div>
 
           <div class="jd-sym c-purple">
@@ -779,10 +822,14 @@ type PasswordHasher interface {
               <pre data-hl="go">func GetIdentity[T any](ctx context.Context) (T, bool)</pre>
             </div>
             <ul>
-              <li lang="en">Accepts a <code>*gin.Context</code> (checks gin keys, then <code>c.Request.Context()</code>)
-                or any <code>context.Context</code>.</li>
-              <li lang="vi">Nhận <code>*gin.Context</code> (xem gin keys, rồi <code>c.Request.Context()</code>) hoặc bất
-                kỳ <code>context.Context</code> nào.</li>
+              <li lang="en">Reads <code>ctx.Value</code> only. A <code>*gin.Context</code> finds the identity only
+                when the engine sets <code>ContextWithFallback = true</code> (Jungo does, in <code>provideGin</code>),
+                since gin then forwards <code>Value</code> to <code>c.Request.Context()</code>; otherwise pass
+                <code>c.Request.Context()</code>.</li>
+              <li lang="vi">Chỉ đọc <code>ctx.Value</code>. <code>*gin.Context</code> chỉ tìm thấy identity khi engine đặt
+                <code>ContextWithFallback = true</code> (Jungo có đặt, trong <code>provideGin</code>), vì khi đó gin
+                chuyển <code>Value</code> sang <code>c.Request.Context()</code>; nếu không hãy truyền
+                <code>c.Request.Context()</code>.</li>
               <li lang="en">Missing or stored with another type → zero value, <code>false</code>. A string key such as
                 <code>c.Set("identityKey", …)</code> never collides.</li>
               <li lang="vi">Không có, hoặc được lưu với kiểu khác → giá trị rỗng, <code>false</code>. Key dạng chuỗi như
@@ -927,9 +974,9 @@ var Module = fx.Module("security",
             <tr>
               <td>middleware/auth.go</td>
               <td lang="en"><code>BearerAuth</code> (Jungo's own, used by the auth and user routers) — it calls
-                <code>security.SetIdentity</code> after authenticating.</td>
+                <code>middleware.SetIdentity</code> (junkit) after authenticating.</td>
               <td lang="vi"><code>BearerAuth</code> (của Jungo, router auth và user dùng) — nó gọi
-                <code>security.SetIdentity</code> sau khi xác thực.</td>
+                <code>middleware.SetIdentity</code> (junkit) sau khi xác thực.</td>
             </tr>
             <tr>
               <td>middleware/auth.go</td>
@@ -947,8 +994,8 @@ var Module = fx.Module("security",
             </tr>
             <tr>
               <td>features/user/service/user_service.go</td>
-              <td lang="en"><code>CreateUser</code>: <code>hasher.Hash(input.Password)</code>.</td>
-              <td lang="vi"><code>CreateUser</code>: <code>hasher.Hash(input.Password)</code>.</td>
+              <td lang="en"><code>CreateUser</code>: <code>hasher.Hash(ctx, input.Password)</code>.</td>
+              <td lang="vi"><code>CreateUser</code>: <code>hasher.Hash(ctx, input.Password)</code>.</td>
             </tr>
           </table>
         </div>
@@ -1011,9 +1058,11 @@ var Module = fx.Module("security",
                 lang="en">Identity type must match exactly</span><span lang="vi">Kiểu identity phải khớp chính
                 xác</span></span><span class="x" lang="en">Stored <code>*Identity</code>, asked for
               <code>Identity</code> → not found (and <code>MustGetIdentity</code> panics). Pick one type for your app
-              and use it everywhere.</span><span class="x" lang="vi">Lưu <code>*Identity</code> mà đọc
+              and use it everywhere. Likewise, a <code>*gin.Context</code> finds nothing unless the engine sets
+              <code>ContextWithFallback = true</code>.</span><span class="x" lang="vi">Lưu <code>*Identity</code> mà đọc
               <code>Identity</code> → không tìm thấy (và <code>MustGetIdentity</code> panic). Chọn một kiểu cho app và
-              dùng thống nhất.</span></div>
+              dùng thống nhất. Tương tự, <code>*gin.Context</code> không tìm thấy gì trừ khi engine đặt
+              <code>ContextWithFallback = true</code>.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">9</span><span class="w"><span
                 lang="en">SecureEqual leaks length</span><span lang="vi">SecureEqual lộ độ dài</span></span><span
               class="x" lang="en"><code>subtle.ConstantTimeCompare</code> returns at once when lengths differ, so only

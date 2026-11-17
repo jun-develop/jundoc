@@ -187,8 +187,8 @@
       <!-- ---------------- login -->
       <div class="jd-tabpanel">
         <div class="jd-ep-head"><span class="jd-method post">POST</span><span class="jd-ep-path">/api/v1/auth/login</span><span class="jd-auth"><span lang="en">public</span><span lang="vi">công khai</span></span></div>
-        <p class="jd-ep-desc" lang="en">Checks email + password and returns a token pair. Same device already logged in → that session is rotated (its old tokens stop working) instead of creating a second one.</p>
-        <p class="jd-ep-desc" lang="vi">Kiểm tra email + mật khẩu và trả về cặp token. Nếu cùng thiết bị đã đăng nhập → session đó được xoay vòng (token cũ ngừng hoạt động) thay vì tạo session thứ hai.</p>
+        <p class="jd-ep-desc" lang="en">Checks email + password and returns a token pair. Same device already logged in → that session gets the new pair and its old tokens stop working, instead of a second session being created.</p>
+        <p class="jd-ep-desc" lang="vi">Kiểm tra email + mật khẩu và trả về cặp token. Nếu cùng thiết bị đã đăng nhập → session đó nhận cặp token mới và token cũ ngừng hoạt động, thay vì tạo session thứ hai.</p>
         <div class="jd-grid-2">
           <div>
             <h3>Request</h3>
@@ -464,8 +464,7 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/auth/sessions \
               <tr><th>field</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
               <tr><td>family_uuid</td><td lang="en">Session ID.</td><td lang="vi">ID của session.</td></tr>
               <tr><td>ip_address, user_agent, device_id</td><td lang="en">Last known client of that session — show them as "iPhone · Hanoi".</td><td lang="vi">Client gần nhất của session đó — hiển thị kiểu "iPhone · Hà Nội".</td></tr>
-              <tr><td>created_at</td><td lang="en">When the session's current refresh-token row was created: the first login or the last refresh. A re-login on the same device updates the row in place, so it does not change <code>created_at</code> (see <code>updated_at</code>).</td><td lang="vi">Thời điểm dòng refresh token hiện tại của session được tạo: lần login đầu tiên hoặc lần refresh gần nhất. Login lại trên cùng thiết bị cập nhật dòng đó tại chỗ, nên không đổi <code>created_at</code> (xem <code>updated_at</code>).</td></tr>
-              <tr><td>updated_at</td><td lang="en">Set when a re-login on that device rotated the tokens; omitted otherwise.</td><td lang="vi">Có khi một lần login lại trên thiết bị đó xoay vòng token; nếu không thì bỏ qua.</td></tr>
+              <tr><td>created_at</td><td lang="en">When the session's current token pair was issued: the first login, the last refresh, or the last re-login on this device — so it shows when the session was last active.</td><td lang="vi">Thời điểm cặp token hiện tại của session được cấp: lần login đầu tiên, lần refresh gần nhất, hoặc lần login lại gần nhất trên thiết bị này — nên nó cho biết session hoạt động lần cuối lúc nào.</td></tr>
               <tr><td>expires_at</td><td lang="en">When the session ends if it is never refreshed.</td><td lang="vi">Thời điểm session kết thúc nếu không bao giờ được refresh.</td></tr>
               <tr><td>current</td><td lang="en"><code>true</code> for the session making this request.</td><td lang="vi"><code>true</code> với session đang gọi request này.</td></tr>
             </table></div>
@@ -844,7 +843,7 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/revoke-all \
         <div class="jd-node is-tint c-red" data-node="b3" style="grid-column:2;grid-row:3"><span class="k">✗ 401</span><span class="t"><span lang="en">No session — invalid token</span><span lang="vi">Không có session — token không hợp lệ</span></span></div>
         <div class="jd-node c-purple" data-node="a4" style="grid-column:1;grid-row:4"><span class="k">AuthenticateAccess</span><span class="t"><span lang="en">Checks, in order — all must pass</span><span lang="vi">Kiểm tra theo thứ tự — phải qua hết</span></span><div class="d" lang="en">① an access token, not a refresh token ② user active ③ the session's current access token ④ not revoked, not expired</div><div class="d" lang="vi">① là access token, không phải refresh token ② user đang hoạt động ③ là access token hiện tại của session ④ chưa bị thu hồi, chưa hết hạn</div></div>
         <div class="jd-node is-tint c-red" data-node="b4" style="grid-column:2;grid-row:4"><span class="k">✗ 401 · 403</span><span class="t"><span lang="en">① invalid type ③④ revoked / expired → 401 · ② user inactive → 403</span><span lang="vi">① sai loại ③④ bị thu hồi / hết hạn → 401 · ② user bị khóa → 403</span></span></div>
-        <div class="jd-node c-green" data-node="a5" style="grid-column:1;grid-row:5"><span class="k">security.SetIdentity</span><span class="t"><span lang="en">Handler runs</span><span lang="vi">Handler chạy</span></span><div class="d" lang="en">With the caller's Identity in the context.</div><div class="d" lang="vi">Gắn Identity của user vào context để handler truy xuất.</div></div>
+        <div class="jd-node c-green" data-node="a5" style="grid-column:1;grid-row:5"><span class="k">middleware.SetIdentity</span><span class="t"><span lang="en">Handler runs</span><span lang="vi">Handler chạy</span></span><div class="d" lang="en">With the caller's Identity in the context.</div><div class="d" lang="vi">Gắn Identity của user vào context để handler truy xuất.</div></div>
       </div>
     <p class="jd-sub" style="text-align:center;margin:10px 0 0" lang="en">Each ✗ ends the request with that response; only ✓ goes on to the next step.</p>
     <p class="jd-sub" style="text-align:center;margin:10px 0 0" lang="vi">Mỗi nhánh ✗ kết thúc request với response đó; chỉ nhánh ✓ mới đi tiếp xuống bước sau.</p>
@@ -852,8 +851,8 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/revoke-all \
     <h3><span lang="en">4.3 · Refresh rotation &amp; reuse detection</span><span lang="vi">4.3 · Xoay vòng refresh &amp; phát hiện token bị dùng lại</span></h3>
     <p class="jd-sub" style="margin-bottom:14px" lang="en">Each refresh token works once. If an already-used refresh token comes back, the server can't tell a thief from a buggy client, so it ends the whole session.</p>
     <p class="jd-sub" style="margin-bottom:14px" lang="vi">Mỗi refresh token chỉ dùng được một lần. Nếu refresh token đã dùng bị gửi lại, server không phân biệt được kẻ trộm hay client lỗi, nên hủy cả session.</p>
-    <p class="jd-sub" style="margin-bottom:14px" lang="en">The whole exchange is one database call, the function <code>f_auth_refresh_session</code>: it locks the refresh token, checks it, retires the old pair and stores the new one. Two refreshes with the same token therefore run one after the other, and the second one is treated as reuse.</p>
-    <p class="jd-sub" style="margin-bottom:14px" lang="vi">Cả lần đổi token chỉ là một lần gọi database, function <code>f_auth_refresh_session</code>: nó khóa refresh token, kiểm tra, hủy cặp cũ và lưu cặp mới. Vì vậy hai lần refresh với cùng một token sẽ chạy lần lượt, và lần thứ hai bị coi là dùng lại.</p>
+    <p class="jd-sub" style="margin-bottom:14px" lang="en">The whole exchange is one database call, the function <code>f_auth_refresh_session</code>: it locks the refresh token, checks it, retires the old pair and stores the new one. Two refreshes with the same token therefore run one after the other, and the second one is treated as reuse — unless it comes within <b>10 seconds</b> of the first (two tabs refreshing at once, or a retry after a lost response): then it only fails with "Token has been revoked" and the session lives on. The new pair gives nothing away in those 10 seconds, so nothing is lost by not ending the session.</p>
+    <p class="jd-sub" style="margin-bottom:14px" lang="vi">Cả lần đổi token chỉ là một lần gọi database, function <code>f_auth_refresh_session</code>: nó khóa refresh token, kiểm tra, hủy cặp cũ và lưu cặp mới. Vì vậy hai lần refresh với cùng một token sẽ chạy lần lượt, và lần thứ hai bị coi là dùng lại — trừ khi nó đến trong vòng <b>10 giây</b> sau lần đầu (hai tab refresh cùng lúc, hoặc thử lại sau khi mất response): khi đó nó chỉ thất bại với "Token has been revoked" và session vẫn sống. Trong 10 giây đó không ai nhận được cặp token mới, nên không kết thúc session cũng không mất gì về bảo mật.</p>
     <div class="jd-player c-purple" id="reuse-player">
       <div class="jd-stage jd-grid3w" data-wires='[
         {"from":"ru-app","to":"ru-r1","color":"blue","dashed":true},
@@ -899,8 +898,8 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/revoke-all \
 
     <h3><span lang="en">4.5 · Same device = same session</span><span lang="vi">4.5 · Cùng thiết bị = cùng session</span></h3>
     <div class="jd-grid-2">
-      <div class="jd-callout c-purple" lang="en">When a user logs in, the database function <code>f_auth_login_session</code> looks for an active session of that user on the <b>same device</b>: same <code>X-Device-ID</code>, or — when no device ID is sent — same IP + User-Agent (an IPv6 address matches any address in its <code>/64</code> block, since phones and laptops change their IPv6 address often). Found → its two tokens are replaced in place (<b>rotated</b>); the old ones stop working and now answer "Invalid token". Not found → a new session (2 rows) is created.</div>
-      <div class="jd-callout c-purple" lang="vi">Khi user đăng nhập, function <code>f_auth_login_session</code> trong database tìm session đang hoạt động của user đó trên <b>cùng thiết bị</b>: cùng <code>X-Device-ID</code>, hoặc — khi không gửi device ID — cùng IP + User-Agent (địa chỉ IPv6 khớp với mọi địa chỉ trong cùng khối <code>/64</code>, vì điện thoại và laptop đổi địa chỉ IPv6 thường xuyên). Có → hai token của nó được thay tại chỗ (<b>xoay vòng</b>); token cũ ngừng hoạt động và giờ trả về "Invalid token". Không có → tạo session mới (2 dòng).</div>
+      <div class="jd-callout c-purple" lang="en">When a user logs in, the database function <code>f_auth_login_session</code> looks for an active session of that user on the <b>same device</b>: same <code>X-Device-ID</code>, or — when no device ID is sent — same IP + User-Agent (an IPv6 address matches any address in its <code>/64</code> block, since phones and laptops change their IPv6 address often). Found → its current pair is revoked as <b>rotated</b> (kept, not deleted) and a new pair is added to the <b>same session</b>. The old refresh token now answers "Token has been revoked", and if it comes back more than 10 seconds later it is treated as stolen: the whole session is ended (<a href="#inside">reuse detection</a>). Not found → a new session (2 rows) is created.</div>
+      <div class="jd-callout c-purple" lang="vi">Khi user đăng nhập, function <code>f_auth_login_session</code> trong database tìm session đang hoạt động của user đó trên <b>cùng thiết bị</b>: cùng <code>X-Device-ID</code>, hoặc — khi không gửi device ID — cùng IP + User-Agent (địa chỉ IPv6 khớp với mọi địa chỉ trong cùng khối <code>/64</code>, vì điện thoại và laptop đổi địa chỉ IPv6 thường xuyên). Có → cặp token hiện tại bị thu hồi với lý do <b>rotated</b> (vẫn giữ lại, không xóa) và một cặp mới được thêm vào <b>cùng session</b>. Refresh token cũ giờ trả về "Token has been revoked", và nếu nó quay lại sau hơn 10 giây thì bị coi là bị đánh cắp: cả session bị kết thúc (<a href="#inside">phát hiện dùng lại</a>). Không có → tạo session mới (2 dòng).</div>
       <div class="jd-callout c-orange" lang="en"><b>Why send X-Device-ID?</b> Without it, a phone that changes Wi-Fi (new IP) looks like a new device → a second session appears in <code>/auth/sessions</code>. With it, the user sees one entry per real device.</div>
       <div class="jd-callout c-orange" lang="vi"><b>Vì sao nên gửi X-Device-ID?</b> Không có nó, điện thoại đổi Wi-Fi (IP mới) sẽ trông như thiết bị mới → thêm một session nữa trong <code>/auth/sessions</code>. Có nó, user thấy mỗi thiết bị thật đúng một dòng.</div>
     </div>
@@ -923,7 +922,7 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/revoke-all \
         <tr><td>logout</td><td lang="en">/auth/logout or /auth/logout-all.</td><td lang="vi">/auth/logout hoặc /auth/logout-all.</td></tr>
         <tr><td>refresh</td><td lang="en">The pair was replaced by /auth/refresh (normal).</td><td lang="vi">Cặp token bị thay bởi /auth/refresh (bình thường).</td></tr>
         <tr><td>reuse</td><td lang="en">A used refresh token came back → whole session ended.</td><td lang="vi">Một refresh token đã dùng xuất hiện lại → kết thúc cả session.</td></tr>
-        <tr><td>rotated</td><td lang="en">Rare: a re-login found this device's session half-ended, so it closed it and opened a new one.</td><td lang="vi">Hiếm: login lại thấy session của thiết bị chỉ còn một nửa, nên đóng nó và mở session mới.</td></tr>
+        <tr><td>rotated</td><td lang="en">The pair was replaced by a new login on the same device. Like <code>refresh</code>, reusing its refresh token ends the session.</td><td lang="vi">Cặp token bị thay bởi một lần đăng nhập mới trên cùng thiết bị. Giống <code>refresh</code>, dùng lại refresh token của nó sẽ kết thúc session.</td></tr>
         <tr><td>admin</td><td lang="en">Internal revoke / revoke-all.</td><td lang="vi">Gọi internal revoke / revoke-all.</td></tr>
         <tr><td>user_disabled</td><td lang="en">The user was deactivated or deleted (user feature).</td><td lang="vi">User bị vô hiệu hóa hoặc bị xóa (feature user).</td></tr>
       </table></div>
@@ -1036,24 +1035,21 @@ export async function api(path, init = {}) {
         <div class="jd-term" lang="en" data-copy><div class="jd-term-bar"><i></i><i></i><i></i><span>features/product/router/v1/product_router.go</span></div>
 <pre data-hl="go" class="code-protect-router">
 import (
-    authdomain "jungo/internal/features/auth/domain"
     "jungo/internal/features/product/domain"
     "jungo/internal/middleware" // not junkit/middleware
 )
 
 func NewProductRoutes(
     handler *v1handler.ProductHandler,
-    authenticator middleware.Authenticator[*authdomain.Identity],
+    authenticate middleware.Authenticate,
     guard *middleware.Guard,
-    responder response.Responder,
 ) *ProductRoutes { … }
 
 // Version nests the group under /api/v1 (without it: /api/products).
 func (r *ProductRoutes) Version() string { return "v1" }
 
 func (r *ProductRoutes) Register(group *gin.RouterGroup) {
-    items := group.Group("/products")
-    items.Use(middleware.BearerAuth(r.authenticator, r.responder, middleware.BearerAuthOptions{}))
+    items := group.Group("/products", gin.HandlerFunc(r.authenticate))
     items.GET("", r.guard.Can(r.handler.ListProducts, domain.ProductsRead))
 }
 </pre></div>
@@ -1065,24 +1061,21 @@ identity := security.MustGetIdentity[*authdomain.Identity](ctx)
         <div class="jd-term" lang="vi" data-copy><div class="jd-term-bar"><i></i><i></i><i></i><span>features/product/router/v1/product_router.go</span></div>
 <pre data-hl="go" class="code-protect-router">
 import (
-    authdomain "jungo/internal/features/auth/domain"
     "jungo/internal/features/product/domain"
     "jungo/internal/middleware" // not junkit/middleware
 )
 
 func NewProductRoutes(
     handler *v1handler.ProductHandler,
-    authenticator middleware.Authenticator[*authdomain.Identity],
+    authenticate middleware.Authenticate,
     guard *middleware.Guard,
-    responder response.Responder,
 ) *ProductRoutes { … }
 
 // Version gắn group vào /api/v1 (thiếu nó: /api/products).
 func (r *ProductRoutes) Version() string { return "v1" }
 
 func (r *ProductRoutes) Register(group *gin.RouterGroup) {
-    items := group.Group("/products")
-    items.Use(middleware.BearerAuth(r.authenticator, r.responder, middleware.BearerAuthOptions{}))
+    items := group.Group("/products", gin.HandlerFunc(r.authenticate))
     items.GET("", r.guard.Can(r.handler.ListProducts, domain.ProductsRead))
 }
 </pre></div>
@@ -1095,9 +1088,9 @@ identity := security.MustGetIdentity[*authdomain.Identity](ctx)
         <p class="jd-sub" style="margin-top:12px" lang="vi"><code>domain.ProductsRead</code> nằm trong <code>domain/permission.go</code> của chính feature và phải có trong danh sách <code>Permissions</code>: <code>Guard.Can</code> làm app dừng khi khởi động nếu gặp permission lạ. <code>make feature</code> sinh sẵn cho bạn. Xem <a href="access.html#integrate">cách thêm permission</a>.</p>
       </div>
       <div class="jd-explain">
-        <div class="jd-ex c-pink" data-code=".code-protect-router" data-show="9"><span class="n">1</span><span class="w">Authenticator</span><span class="x" lang="en">Ask for it in the constructor — the auth module provides it (Fx injects it).</span><span class="x" lang="vi">Xin nó trong constructor — module auth cung cấp sẵn (Fx inject vào).</span></div>
-        <div class="jd-ex c-pink" data-code=".code-protect-router" data-show="19"><span class="n">2</span><span class="w">BearerAuth</span><span class="x" lang="en">Every route in the group now needs a valid access token; errors are the ones in the <code>/auth/me</code> tab.</span><span class="x" lang="vi">Mọi route trong group giờ cần access token hợp lệ; lỗi chính là các lỗi trong tab <code>/auth/me</code>.</span></div>
-        <div class="jd-ex c-pink" data-code=".code-protect-router" data-show="20"><span class="n">+</span><span class="w">Guard</span><span class="x" lang="en">Every versioned route (<code>/api/v1/...</code>) also needs a permission policy — <code>Can</code>, <code>Authenticated</code> or <code>Public</code> — or the app won't start. Import <code>middleware</code> from <code>jungo/internal/middleware</code>. See <a href="access.html">Permissions &amp; roles</a>.</span><span class="x" lang="vi">Mọi route có version (<code>/api/v1/...</code>) còn cần chính sách phân quyền — <code>Can</code>, <code>Authenticated</code> hoặc <code>Public</code> — nếu không app sẽ không khởi động. Import <code>middleware</code> từ <code>jungo/internal/middleware</code>. Xem <a href="access.html">Phân quyền</a>.</span></div>
+        <div class="jd-ex c-pink" data-code=".code-protect-router" data-show="8"><span class="n">1</span><span class="w">Authenticate</span><span class="x" lang="en">Ask for it in the constructor — the auth module provides it (Fx injects it): the bearer-token middleware (<code>BearerAuth</code>) already bound to the auth service.</span><span class="x" lang="vi">Xin nó trong constructor — module auth cung cấp sẵn (Fx inject vào): middleware bearer token (<code>BearerAuth</code>) đã gắn sẵn với auth service.</span></div>
+        <div class="jd-ex c-pink" data-code=".code-protect-router" data-show="16"><span class="n">2</span><span class="w">group.Group(…, authenticate)</span><span class="x" lang="en">Every route in the group now needs a valid access token; errors are the ones in the <code>/auth/me</code> tab.</span><span class="x" lang="vi">Mọi route trong group giờ cần access token hợp lệ; lỗi chính là các lỗi trong tab <code>/auth/me</code>.</span></div>
+        <div class="jd-ex c-pink" data-code=".code-protect-router" data-show="17"><span class="n">+</span><span class="w">Guard</span><span class="x" lang="en">Every versioned route (<code>/api/v1/...</code>) also needs a permission policy — <code>Can</code>, <code>Authenticated</code> or <code>Public</code> — or the app won't start. Import <code>middleware</code> from <code>jungo/internal/middleware</code>. See <a href="access.html">Permissions &amp; roles</a>.</span><span class="x" lang="vi">Mọi route có version (<code>/api/v1/...</code>) còn cần chính sách phân quyền — <code>Can</code>, <code>Authenticated</code> hoặc <code>Public</code> — nếu không app sẽ không khởi động. Import <code>middleware</code> từ <code>jungo/internal/middleware</code>. Xem <a href="access.html">Phân quyền</a>.</span></div>
         <div class="jd-ex c-pink" data-code=".code-protect-hdl" data-show="2"><span class="n">3</span><span class="w">MustGetIdentity</span><span class="x" lang="en">Gives <code>UserID</code>, <code>UserUUID</code>, <code>Email</code>, <code>FamilyUUID</code> (session), <code>TokenUUID</code>, <code>ExpiresAt</code>, <code>Session</code> (the full session, as in <code>/auth/me</code>).</span><span class="x" lang="vi">Trả về <code>UserID</code>, <code>UserUUID</code>, <code>Email</code>, <code>FamilyUUID</code> (session), <code>TokenUUID</code>, <code>ExpiresAt</code>, <code>Session</code> (toàn bộ session, như trong <code>/auth/me</code>).</span></div>
       </div>
     </div>
@@ -1226,7 +1219,7 @@ document.addEventListener("jd:ready", function () {
     { node: "l5", token: "active?", color: "purple", ms: 2400,
       text: { en: "Password OK. <b>Only now</b> is the account status checked — so a guesser can't learn that an account is disabled.", vi: "Mật khẩu chính xác. <b>Đến lúc này</b> server mới kiểm tra tài khoản có bị khóa không — nhằm tránh để lộ trạng thái tài khoản khi kẻ tấn công thử dò mật khẩu." } },
     { node: "l6", token: "device?", color: "purple", ms: 2600,
-      text: { en: "Same device already has an active session? Its two tokens are <b>rotated</b>. Otherwise a new session (2 rows in <code>auth_tokens</code>) is created.", vi: "Cùng thiết bị đã có session đang hoạt động? Hai token của nó được <b>xoay vòng</b>. Nếu không, tạo session mới (2 dòng trong <code>auth_tokens</code>)." } },
+      text: { en: "Same device already has an active session? Its pair is revoked as <b>rotated</b> and a new pair joins the same session. Otherwise a new session (2 rows in <code>auth_tokens</code>) is created.", vi: "Cùng thiết bị đã có session đang hoạt động? Cặp token của nó bị thu hồi (<b>rotated</b>) và một cặp mới được thêm vào cùng session. Nếu không, tạo session mới (2 dòng trong <code>auth_tokens</code>)." } },
     { node: "l7", token: "200 + tokens", color: "green", ms: 2600,
       text: { en: "The IP-15-min and email counters are cleared; the sealed pair goes back to the client.", vi: "Bộ đếm IP-15-phút và email được xóa; cặp token đã niêm phong được trả về client." } }
   ]);

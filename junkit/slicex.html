@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit slicex · Jundoc</title>
+  <meta name="description" content="junkit/slicex: slice helpers the standard slices package lacks — Map, which never returns nil.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+<body>
+<div id="jd-app" data-root="..">
+<article class="jd-content">
+
+  <!-- ============================================================ HERO -->
+  <header class="jd-hero" style="background:radial-gradient(1000px 380px at 0% 0%, rgba(148,163,184,.45), transparent 60%),linear-gradient(135deg,#1e293b,#334155 55%,#0e7490)">
+    <div class="jd-eyebrow">Junkit · slicex</div>
+    <h1>slicex</h1>
+    <p lang="en">Slice helpers the standard <code>slices</code> package lacks. Today that is one function: <code>Map</code>, which turns rows into responses and never returns <code>nil</code>, so an empty JSON list is <code>[]</code>, not <code>null</code>.</p>
+    <p lang="vi">Các hàm cho slice mà package chuẩn <code>slices</code> chưa có. Hiện có một hàm: <code>Map</code>, biến các row thành response và không bao giờ trả <code>nil</code>, nên danh sách JSON rỗng là <code>[]</code> chứ không phải <code>null</code>.</p>
+    <div class="jd-chips">
+      <span class="jd-chip">github.com/jun-develop/junkit/slicex</span>
+      <span class="jd-chip"><span lang="en">no Fx Module — plain functions</span><span lang="vi">không có Fx Module — chỉ hàm</span></span>
+      <span class="jd-chip"><span lang="en">no dependencies</span><span lang="vi">không phụ thuộc gì</span></span>
+    </div>
+  </header>
+
+  <!-- ============================================================ 1. QUICK START -->
+  <section id="quick" class="jd-section c-blue">
+    <div class="jd-section-head">
+      <span class="jd-badge">1</span>
+      <div>
+        <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+        <p class="jd-sub" lang="en">Map database rows to domain values, and domain values to responses.</p>
+        <p class="jd-sub" lang="vi">Ánh xạ row database sang giá trị domain, và giá trị domain sang response.</p>
+      </div>
+    </div>
+    <div class="jd-grid-2" style="margin-top:18px">
+      <div><div class="jd-sticky">
+        <div class="jd-term" data-copy><div class="jd-term-bar"><i></i><i></i><i></i><span>user_dto.go</span></div>
+<pre data-hl="go" id="code-quick">
+type UserResponse struct {
+    Name string `json:"name"`
+}
+
+func NewUserResponse(u *User) UserResponse {
+    return UserResponse{Name: u.Name}
+}
+
+func NewUserListResponse(users []*User) []UserResponse {
+    return slicex.Map(users, NewUserResponse)
+}
+
+ids := slicex.Map(users, func(u *User) int64 { return u.ID })
+</pre></div>
+      </div></div>
+      <div class="jd-explain">
+        <div class="jd-ex c-blue" data-code="#code-quick" data-show="9-11"><span class="n">1</span><span class="w">pass a named func</span><span class="x" lang="en">Any <code>func(E) R</code> works, so an existing constructor is the mapper.</span><span class="x" lang="vi">Mọi <code>func(E) R</code> đều dùng được, nên constructor có sẵn chính là hàm ánh xạ.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick" data-show="13"><span class="n">2</span><span class="w">or a closure</span><span class="x" lang="en">The result type is inferred from the func: here <code>[]int64</code>.</span><span class="x" lang="vi">Kiểu kết quả được suy ra từ hàm: ở đây là <code>[]int64</code>.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 2. API -->
+  <section id="api" class="jd-section c-green">
+    <div class="jd-section-head">
+      <span class="jd-badge">2</span>
+      <div>
+        <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+        <p class="jd-sub" lang="en">Signature copied from <code>junkit/slicex/slicex.go</code>.</p>
+        <p class="jd-sub" lang="vi">Chữ ký chép từ <code>junkit/slicex/slicex.go</code>.</p>
+      </div>
+    </div>
+    <div class="jd-syms" style="margin-top:18px">
+      <div class="jd-sym c-green">
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Map</span></div>
+        <div class="jd-term"><pre data-hl="go">func Map[S ~[]E, E, R any](s S, fn func(E) R) []R</pre></div>
+        <ul>
+          <li lang="en">Returns <code>fn</code> applied to each element, in order.</li><li lang="vi">Trả về kết quả của <code>fn</code> trên từng phần tử, giữ nguyên thứ tự.</li>
+          <li lang="en">A <code>nil</code> or empty input gives an empty, non-nil slice: <code>json.Marshal</code> writes <code>[]</code>.</li><li lang="vi">Đầu vào <code>nil</code> hoặc rỗng cho slice rỗng khác nil: <code>json.Marshal</code> ghi ra <code>[]</code>.</li>
+          <li lang="en"><code>S ~[]E</code> accepts named slice types too (e.g. <code>type Users []*User</code>).</li><li lang="vi"><code>S ~[]E</code> nhận cả kiểu slice có tên (vd. <code>type Users []*User</code>).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 3. IN JUNGO -->
+  <section id="jungo" class="jd-section c-orange">
+    <div class="jd-section-head">
+      <span class="jd-badge">3</span>
+      <div>
+        <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+      </div>
+    </div>
+    <div class="jd-tablewrap" style="margin-top:16px"><table class="jd-params c-orange">
+      <tr><th>file</th><th><span lang="en">what it does</span><span lang="vi">làm gì</span></th></tr>
+      <tr><td>features/*/repository/*.go</td><td lang="en">sqlc rows → domain values (<code>slicex.Map(rows, mapUser)</code>).</td><td lang="vi">Row sqlc → giá trị domain (<code>slicex.Map(rows, mapUser)</code>).</td></tr>
+      <tr><td>features/*/dto/v1/*.go</td><td lang="en">domain values → response DTOs (<code>slicex.Map(users, NewUserResponse)</code>).</td><td lang="vi">Giá trị domain → DTO response (<code>slicex.Map(users, NewUserResponse)</code>).</td></tr>
+      <tr><td>cmd/scaffold/templates.go</td><td lang="en">Generated features use the same two calls.</td><td lang="vi">Feature được sinh ra dùng đúng hai lệnh gọi này.</td></tr>
+    </table></div>
+  </section>
+
+  <footer class="jd-footer">
+    <span>Jundoc · Junkit · slicex</span>
+    <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package Junkit</span></a></span>
+  </footer>
+</article>
+</div>
+</body>
+</html>

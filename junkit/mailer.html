@@ -71,8 +71,8 @@
           </div>
           <div class="jd-node is-tint c-green" data-node="m3"><span class="k">smtp</span><span class="t mono"
               style="font-size:15px">any provider</span>
-            <div class="d" lang="en">Brevo, Resend, SES, Mailgun… STARTTLS, or implicit TLS on port 465.</div>
-            <div class="d" lang="vi">Brevo, Resend, SES, Mailgun… STARTTLS, hoặc TLS ngay từ đầu ở port 465.</div>
+            <div class="d" lang="en">Brevo, Resend, SES, Mailgun… TLS required: STARTTLS, or implicit TLS on port 465.</div>
+            <div class="d" lang="vi">Brevo, Resend, SES, Mailgun… Bắt buộc TLS: STARTTLS, hoặc TLS ngay từ đầu ở port 465.</div>
           </div>
           <div class="jd-node is-tint c-blue" data-node="m4"><span class="k">brevo</span><span class="t mono"
               style="font-size:15px">HTTP API</span>
@@ -127,6 +127,7 @@ func provideMailerOptions(cfg *config.Config, log *zap.Logger) mailer.Options {
 		SMTP: mailer.SMTPOptions{
 			Host: m.SMTPHost, Port: m.SMTPPort,
 			Username: m.SMTPUsername, Password: m.SMTPPassword,
+			AllowPlaintext: m.SMTPAllowPlaintext,
 		},
 		Brevo: mailer.BrevoOptions{APIKey: m.BrevoAPIKey},
 	}
@@ -147,7 +148,7 @@ sender, err := mailer.New(mailer.Options{
 		Username: os.Getenv("MAIL_SMTP_USERNAME"),
 		Password: os.Getenv("MAIL_SMTP_PASSWORD"),
 	},
-}, nil, logger) // nil http client → 30s timeout (brevo driver only)
+}, nil, logger) // nil http client → 10s timeout (brevo driver only)
 </pre>
             </div>
           </div>
@@ -180,18 +181,30 @@ sender, err := mailer.New(mailer.Options{
             <tr>
               <td>SMTP.Host / Port</td>
               <td>string / int</td>
-              <td lang="en">Host is required for <code>smtp</code>. Port defaults to 587 (STARTTLS when offered); 465
-                uses TLS from the first byte.</td>
-              <td lang="vi">Host bắt buộc với <code>smtp</code>. Port mặc định 587 (STARTTLS nếu server hỗ trợ); 465 dùng
-                TLS ngay từ đầu.</td>
+              <td lang="en">Host is required for <code>smtp</code>. Port defaults to 587. 465 uses TLS from the first
+                byte; any other port must upgrade with STARTTLS, or <code>Send</code> fails with
+                <code>ErrTLSRequired</code> (unless <code>AllowPlaintext</code>).</td>
+              <td lang="vi">Host bắt buộc với <code>smtp</code>. Port mặc định 587. 465 dùng TLS ngay từ đầu; port khác
+                phải nâng cấp bằng STARTTLS, không thì <code>Send</code> lỗi <code>ErrTLSRequired</code> (trừ khi đặt
+                <code>AllowPlaintext</code>).</td>
             </tr>
             <tr>
               <td>SMTP.Username / Password</td>
               <td>string</td>
-              <td lang="en">PLAIN auth. Both empty = unauthenticated relay. Credentials are only sent over TLS (or to
-                localhost).</td>
-              <td lang="vi">Xác thực PLAIN. Cả hai trống = relay không xác thực. Thông tin đăng nhập chỉ được gửi qua TLS
+              <td lang="en">PLAIN auth runs only when <code>Username</code> is set (<code>Password</code> alone is
+                ignored); an empty <code>Username</code> means an unauthenticated relay. Credentials are only sent over
+                TLS (or to localhost).</td>
+              <td lang="vi">Xác thực PLAIN chỉ chạy khi có <code>Username</code> (chỉ có <code>Password</code> thì bị bỏ
+                qua); <code>Username</code> trống nghĩa là relay không xác thực. Thông tin đăng nhập chỉ được gửi qua TLS
                 (hoặc tới localhost).</td>
+            </tr>
+            <tr>
+              <td>SMTP.AllowPlaintext</td>
+              <td>bool</td>
+              <td lang="en">Permits sending without TLS when the server offers no STARTTLS. Only for local relays such
+                as Mailpit (Jungo: <code>MAIL_SMTP_ALLOW_PLAINTEXT=true</code>); default <code>false</code>.</td>
+              <td lang="vi">Cho phép gửi không TLS khi server không hỗ trợ STARTTLS. Chỉ dùng cho relay local như
+                Mailpit (Jungo: <code>MAIL_SMTP_ALLOW_PLAINTEXT=true</code>); mặc định <code>false</code>.</td>
             </tr>
             <tr>
               <td>SMTP.Timeout</td>
@@ -319,7 +332,7 @@ type Message struct {
 
 type Attachment struct {
 	Filename    string
-	ContentType string // "" → application/octet-stream
+	ContentType string // "" → application/octet-stream; otherwise must parse as a media type
 	Data        []byte
 }
 </pre>
@@ -340,11 +353,25 @@ type Attachment struct {
               <pre data-hl="go">var ErrInvalidMessage = errors.New("mailer: invalid message")</pre>
             </div>
             <p lang="en">Wrapped by <code>Send</code> when the message fails validation (bad address, no recipient,
-              empty body, line break in the subject, empty attachment name). Check with
+              empty body, line break in the subject, empty attachment name, invalid attachment content type). Check
+              with
               <code>errors.Is(err, mailer.ErrInvalidMessage)</code>. Nothing was sent.</p>
             <p lang="vi"><code>Send</code> bọc lỗi này khi message không hợp lệ (địa chỉ sai, không có người nhận, body
-              trống, xuống dòng trong subject, tên file đính kèm trống). Kiểm tra bằng
+              trống, xuống dòng trong subject, tên file đính kèm trống, content type đính kèm không hợp lệ). Kiểm tra
+              bằng
               <code>errors.Is(err, mailer.ErrInvalidMessage)</code>. Chưa có gì được gửi.</p>
+          </div>
+
+          <div class="jd-sym c-red">
+            <div class="jd-sym-head"><span class="jd-kind">var</span><span class="jd-sym-name">ErrTLSRequired</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">var ErrTLSRequired = errors.New("mailer: smtp server does not offer STARTTLS")</pre>
+            </div>
+            <p lang="en">Wrapped by the <code>smtp</code> driver when the server (on a port other than 465) offers no
+              STARTTLS and <code>SMTPOptions.AllowPlaintext</code> is false. Nothing — credentials included — was sent.
+              </p>
+            <p lang="vi">Driver <code>smtp</code> bọc lỗi này khi server (ở port khác 465) không hỗ trợ STARTTLS và
+              <code>SMTPOptions.AllowPlaintext</code> là false. Chưa có gì — kể cả thông tin đăng nhập — được gửi.</p>
           </div>
 
           <div class="jd-sym c-purple">
@@ -367,10 +394,10 @@ const (
             </div>
             <p lang="en">Checks the config without contacting the provider: unknown driver, invalid <code>From</code>,
               missing SMTP host or Brevo key → error. A wrong password or key shows up on the first <code>Send</code>.
-              A nil <code>httpClient</code> gets a 30s timeout; a nil <code>logger</code> is fine.</p>
+              A nil <code>httpClient</code> gets a 10s timeout; a nil <code>logger</code> is fine.</p>
             <p lang="vi">Kiểm tra cấu hình mà không gọi tới nhà cung cấp: driver lạ, <code>From</code> sai, thiếu SMTP
               host hoặc Brevo key → lỗi. Sai mật khẩu hoặc key chỉ lộ ra ở lần <code>Send</code> đầu tiên.
-              <code>httpClient</code> nil được timeout 30s; <code>logger</code> nil cũng được.</p>
+              <code>httpClient</code> nil được timeout 10s; <code>logger</code> nil cũng được.</p>
           </div>
 
           <div class="jd-sym c-muted">
@@ -378,9 +405,7 @@ const (
             <div class="jd-term">
               <pre data-hl="go">
 var Module = fx.Module("mailer",
-	fx.Provide(func(p params) (Sender, error) {
-		return New(p.Opts, p.HTTPClient, p.Logger)
-	}),
+	fx.Provide(newSender), // New(p.Opts, p.HTTPClient, p.Logger)
 )
 </pre>
             </div>
@@ -416,6 +441,7 @@ MAIL_SMTP_HOST=smtp-relay.brevo.com
 MAIL_SMTP_PORT=587
 MAIL_SMTP_USERNAME=xxxx@smtp-brevo.com
 MAIL_SMTP_PASSWORD=xsmtpsib-…
+MAIL_SMTP_ALLOW_PLAINTEXT=false # true only for a local Mailpit (WITH=mail)
 </pre>
           </div>
           <div class="jd-tablewrap">
