@@ -207,54 +207,47 @@
         </table></div>
         <p class="jd-sub" style="margin-top:12px" lang="en">The table already has <code>id</code>, <code>uuid</code>, <code>name</code>, <code>status</code> (stored as 1 = active, 2 = inactive; the API uses the names), <code>created_at</code>, <code>updated_at</code> (set by a trigger) and <code>deleted_at</code>. A unit test file for the service is generated too: <code>go test ./internal/features/product/...</code> passes out of the box.</p>
         <p class="jd-sub" style="margin-top:12px" lang="vi">Bảng có sẵn các cột <code>id</code>, <code>uuid</code>, <code>name</code>, <code>status</code> (lưu 1 = active, 2 = inactive; API dùng tên), <code>created_at</code>, <code>updated_at</code> (do trigger gán) và <code>deleted_at</code>. File unit test cho service cũng được sinh: <code>go test ./internal/features/product/...</code> pass ngay.</p>
-        <div class="jd-callout c-blue" style="margin-top:14px">
-          <b lang="en">Note:</b><b lang="vi">Ghi chú:</b>
-          <span lang="en">every generated route requires login and a permission. The router puts the auth middleware (<code>middleware.Authenticate</code>, injected by the auth feature) on the whole <code>/products</code> group — no valid access token → <b>401</b> — and wraps each handler in <code>guard.Can(…, domain.Products…)</code> — missing permission → <b>403</b>. The four <code>products:*</code> permissions are declared in the feature's <code>domain/permission.go</code>, labelled in its <code>module.go</code> and inserted by its migration, granted to <code>super_admin</code>. Public routes and owner-only routes: <a href="access.html#integrate">Permissions &amp; roles</a>.</span>
-          <span lang="vi">mọi route sinh ra đều cần đăng nhập và permission. Router gắn middleware xác thực (<code>middleware.Authenticate</code>, do feature auth inject) cho cả group <code>/products</code> — không có access token hợp lệ → <b>401</b> — và bọc từng handler bằng <code>guard.Can(…, domain.Products…)</code> — thiếu permission → <b>403</b>. Bốn permission <code>products:*</code> được khai báo trong <code>domain/permission.go</code> của feature, có nhãn trong <code>module.go</code> và được migration của nó chèn vào, cấp cho <code>super_admin</code>. Route public và route chỉ cho chủ sở hữu: <a href="access.html#integrate">Phân quyền</a>.</span>
-        </div>
+
       </div>
     </div>
 
+    <p lang="en" style="margin-top:20px">Every generated route requires login and a permission. The router puts the auth middleware (<code>middleware.Authenticate</code>, injected by the auth feature) on the whole <code>/products</code> group — no valid access token → <b>401</b> — and wraps each handler in <code>guard.Can(…, domain.Products…)</code> — missing permission → <b>403</b>. The four <code>products:*</code> permissions are declared in the feature's <code>domain/permission.go</code>, labelled in its <code>module.go</code> and inserted by its migration, granted to <code>super_admin</code>. Public routes and owner-only routes: <a href="access.html#integrate">Permissions &amp; roles</a>.</p>
+    <p lang="vi" style="margin-top:20px">Mọi route sinh ra đều cần đăng nhập và permission. Router gắn middleware xác thực (<code>middleware.Authenticate</code>, do feature auth inject) cho cả group <code>/products</code> — không có access token hợp lệ → <b>401</b> — và bọc từng handler bằng <code>guard.Can(…, domain.Products…)</code> — thiếu permission → <b>403</b>. Bốn permission <code>products:*</code> được khai báo trong <code>domain/permission.go</code> của feature, có nhãn trong <code>module.go</code> và được migration của nó chèn vào, cấp cho <code>super_admin</code>. Route public và route chỉ cho chủ sở hữu: <a href="access.html#integrate">Phân quyền</a>.</p>
+
     <h3 style="margin-top:30px"><span lang="en">Options: table name, remove a feature</span><span lang="vi">Tùy chọn: tên bảng, gỡ feature</span></h3>
     <div class="jd-grid-2">
-      <div class="jd-term" data-copy="commands" lang="en"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+      <div>
+        <h4 style="margin:0 0 8px"><span lang="en">Choose the table name</span><span lang="vi">Đặt tên bảng</span></h4>
+        <ul>
+          <li lang="en"><code>NAME</code> is snake_case: lowercase letters and <code>_</code>, starting with a letter, not a Go keyword.</li>
+          <li lang="vi"><code>NAME</code> viết snake_case: chữ thường và <code>_</code>, bắt đầu bằng chữ cái, không trùng từ khóa Go.</li>
+          <li lang="en">The table defaults to the English plural of <code>NAME</code> (<code>product</code> → <code>products</code>, <code>category</code> → <code>categories</code>, <code>box</code> → <code>boxes</code>).</li>
+          <li lang="vi">Tên bảng mặc định là số nhiều tiếng Anh của <code>NAME</code> (<code>product</code> → <code>products</code>, <code>category</code> → <code>categories</code>, <code>box</code> → <code>boxes</code>).</li>
+          <li lang="en"><code>TABLE</code> changes only the table, its migration files and the sqlc model (<code>TABLE=items</code> → <code>sqlc.Item</code>). URLs and permissions always use the plural of <code>NAME</code> (<code>/api/v1/products</code>, <code>products:read</code>).</li>
+          <li lang="vi"><code>TABLE</code> chỉ đổi tên bảng, file migration và model sqlc (<code>TABLE=items</code> → <code>sqlc.Item</code>). URL và permission luôn dùng số nhiều của <code>NAME</code> (<code>/api/v1/products</code>, <code>products:read</code>).</li>
+        </ul>
+        <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
 <pre data-hl="bash">
-# NAME: snake_case, letters and _ only (no digits, not a Go keyword).
-# Table name defaults to the English plural of NAME (product → products,
-# category → categories, box → boxes). URLs and permissions always use
-# the plural of NAME (/api/v1/products, products:read); the sqlc model
-# follows the table (TABLE=items → sqlc.Item).
 $ make feature NAME=product TABLE=items
-
-# Remove: deletes features/product/, queries/product.sql,
-# sqlc/product.sql.go and the fx.go entry. The table and the migration
-# files stay; the command prints what to run next:
-#   make migrate-down   (rolls back the LAST migration only — check it is
-#                        this feature's; drops the table and its permissions)
-#   rm internal/database/primary/migrations/*_products.{up,down}.sql
-#      (*_items.* with TABLE=items: migration files follow the table)
-#   make sqlc
-$ make feature-remove NAME=product
 </pre></div>
-      <div class="jd-term" data-copy="commands" lang="vi"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 8px"><span lang="en">Remove a feature</span><span lang="vi">Gỡ feature</span></h4>
+        <p lang="en"><code>feature-remove</code> deletes <code>features/product/</code>, <code>queries/product.sql</code>, <code>sqlc/product.sql.go</code> and the <code>fx.go</code> entry. The table and the migration files stay; finish by hand:</p>
+        <p lang="vi"><code>feature-remove</code> xóa <code>features/product/</code>, <code>queries/product.sql</code>, <code>sqlc/product.sql.go</code> và dòng trong <code>fx.go</code>. Bảng và file migration vẫn còn; làm tiếp bằng tay:</p>
+        <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
 <pre data-hl="bash">
-# NAME: snake_case, chỉ chữ cái và _ (không số, không trùng từ khóa Go).
-# Tên bảng mặc định là số nhiều tiếng Anh của NAME (product → products,
-# category → categories, box → boxes). URL và permission luôn dùng số
-# nhiều của NAME (/api/v1/products, products:read); model sqlc theo
-# tên bảng (TABLE=items → sqlc.Item).
-$ make feature NAME=product TABLE=items
-
-# Gỡ: xóa features/product/, queries/product.sql, sqlc/product.sql.go
-# và dòng trong fx.go. Bảng và file migration vẫn còn; lệnh in ra
-# các bước tiếp theo:
-#   make migrate-down   (chỉ rollback migration CUỐI CÙNG — kiểm tra
-#                        đúng là của feature này; xóa bảng và permission)
-#   rm internal/database/primary/migrations/*_products.{up,down}.sql
-#      (*_items.* nếu dùng TABLE=items: file migration theo tên bảng)
-#   make sqlc
 $ make feature-remove NAME=product
+$ make migrate-down
+$ rm internal/database/primary/migrations/*_products.{up,down}.sql
+$ make sqlc
 </pre></div>
+        <div class="jd-callout c-red" style="margin-top:12px">
+          <b lang="en">Warning:</b><b lang="vi">Cảnh báo:</b>
+          <span lang="en"><code>make migrate-down</code> rolls back only the <b>last</b> migration and drops its table and permissions. Run it only if that migration is this feature's. With <code>TABLE=items</code> the files are <code>*_items.*</code>: <code>feature-remove</code> does not know the custom table, so the file names it prints are wrong.</span>
+          <span lang="vi"><code>make migrate-down</code> chỉ rollback migration <b>cuối cùng</b> và xóa bảng cùng permission của nó. Chỉ chạy khi migration đó đúng là của feature này. Nếu dùng <code>TABLE=items</code> thì file là <code>*_items.*</code>: <code>feature-remove</code> không biết tên bảng tùy chỉnh, nên tên file nó in ra sẽ sai.</span>
+        </div>
+      </div>
     </div>
   </section>
 
