@@ -24,38 +24,38 @@
     <p lang="vi">Biến <code>?page=2&amp;page_size=10</code> thành <code>OFFSET</code> / <code>LIMIT</code> cho SQL, và biến tổng số bản ghi thành khối <code>pagination</code> trong response dạng danh sách.</p>
     <div class="jd-chips">
       <span class="jd-chip">github.com/jun-develop/junkit/pagination</span>
-      <span class="jd-chip"><span lang="en">no Fx Module — plain structs &amp; functions</span><span lang="vi">không có Fx Module — chỉ struct &amp; hàm</span></span>
-      <span class="jd-chip"><span lang="en">no dependencies</span><span lang="vi">không phụ thuộc gì</span></span>
+      <span class="jd-chip"><span lang="en">No Fx module</span><span lang="vi">Không có Fx module</span></span>
+      <span class="jd-chip"><span lang="en">Depends on: standard library only</span><span lang="vi">Phụ thuộc: chỉ thư viện chuẩn</span></span>
     </div>
   </header>
 
   <!-- ============================================================ 1. WHAT -->
-  <section id="what" class="jd-section c-green">
+  <section id="what" class="jd-section c-blue">
     <div class="jd-section-head">
       <span class="jd-badge">1</span>
       <div>
         <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
-        <p class="jd-sub" lang="en">Four steps, from the URL to the JSON. The blue chips are values moving through your handler.</p>
-        <p class="jd-sub" lang="vi">Bốn bước, từ URL tới JSON. Các chip xanh là giá trị đang di chuyển trong handler của bạn.</p>
+        <p class="jd-sub" lang="en">Four steps, from the URL to the JSON. Nothing to wire: no Fx module, no options. The wire labels are example values moving through your handler.</p>
+        <p class="jd-sub" lang="vi">Bốn bước, từ URL tới JSON. Không cần kết nối gì: không có Fx module, không có options. Nhãn trên đường nối là các giá trị ví dụ đi qua handler của bạn.</p>
       </div>
     </div>
     <div class="jd-flow" style="margin-top:22px" data-wires='[
       {"from":"p1","to":"p2","color":"blue","label":"?page=2"},
       {"from":"p2","to":"p3","color":"blue","label":"OFFSET 10"},
       {"from":"p3","to":"p4","color":"blue","label":"total = 35"}]'>
-      <div class="jd-node is-tint c-green" data-node="p1"><span class="k">1 · bind</span><span class="t mono" style="font-size:15px">pagination.Request</span><div class="d" lang="en"><code>ShouldBindQuery</code> reads page, page_size, search, sort_by, sort_order.</div><div class="d" lang="vi"><code>ShouldBindQuery</code> đọc page, page_size, search, sort_by, sort_order.</div></div>
-      <div class="jd-node is-tint c-green" data-node="p2"><span class="k">2 · defaults</span><span class="t mono" style="font-size:15px">req.SetDefaults(…)</span><div class="d" lang="en">Fills page = 1, page_size = 10 and your default sort.</div><div class="d" lang="vi">Điền page = 1, page_size = 10 và cách sắp xếp mặc định của bạn.</div></div>
-      <div class="jd-node is-tint c-green" data-node="p3"><span class="k">3 · query</span><span class="t mono" style="font-size:15px">GetOffset · GetLimit</span><div class="d" lang="en">Pass to SQL; also COUNT(*) the total.</div><div class="d" lang="vi">Truyền vào SQL; đồng thời COUNT(*) tổng số.</div></div>
-      <div class="jd-node is-tint c-green" data-node="p4"><span class="k">4 · respond</span><span class="t mono" style="font-size:15px">NewPagination(…)</span><div class="d" lang="en">Builds page counts and next / prev for the response.</div><div class="d" lang="vi">Tính số trang và trang kế / trước cho response.</div></div>
+      <div class="jd-node is-tint c-blue" data-node="p1"><span class="k">1 · bind</span><span class="t mono" style="font-size:15px">pagination.Request</span><div class="d" lang="en"><code>ShouldBindQuery</code> reads page, page_size, search, sort_by, sort_order.</div><div class="d" lang="vi"><code>ShouldBindQuery</code> đọc page, page_size, search, sort_by, sort_order.</div></div>
+      <div class="jd-node is-tint c-blue" data-node="p2"><span class="k"><span lang="en">2 · defaults</span><span lang="vi">2 · mặc định</span></span><span class="t mono" style="font-size:15px">req.SetDefaults(…)</span><div class="d" lang="en">Fills page = 1, page_size = 10 and your default sort.</div><div class="d" lang="vi">Điền page = 1, page_size = 10 và cách sắp xếp mặc định của bạn.</div></div>
+      <div class="jd-node is-tint c-green" data-node="p3"><span class="k"><span lang="en">3 · query</span><span lang="vi">3 · truy vấn</span></span><span class="t mono" style="font-size:15px">GetOffset · GetLimit</span><div class="d" lang="en">Pass to SQL; also COUNT(*) the total.</div><div class="d" lang="vi">Truyền vào SQL; đồng thời COUNT(*) tổng số.</div></div>
+      <div class="jd-node is-tint c-blue" data-node="p4"><span class="k"><span lang="en">4 · respond</span><span lang="vi">4 · trả về</span></span><span class="t mono" style="font-size:15px">NewPagination(…)</span><div class="d" lang="en">Builds page counts and next / prev for the response.</div><div class="d" lang="vi">Tính số trang và trang kế / trước cho response.</div></div>
     </div>
   </section>
 
   <!-- ============================================================ 2. QUICK START -->
-  <section id="quick" class="jd-section c-blue">
+  <section id="quick" class="jd-section c-green">
     <div class="jd-section-head">
       <span class="jd-badge">2</span>
       <div>
-        <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+        <h2><span lang="en">Quick start</span><span lang="vi">Dùng nhanh</span></h2>
         <p class="jd-sub" lang="en">A complete list handler. Hover an explanation to light up its lines.</p>
         <p class="jd-sub" lang="vi">Một handler danh sách hoàn chỉnh. Rê chuột vào giải thích để làm sáng các dòng tương ứng.</p>
       </div>
@@ -72,10 +72,8 @@ type ListProductsRequest struct {
 <pre data-hl="go" id="code-quick-hdl">
 func (h *ProductHandler) List(ctx *gin.Context) {
     var req ListProductsRequest
-    if err := ctx.ShouldBindQuery(&amp;req); err != nil {
-        h.responder.SendWithData(ctx, 422, "validation_error",
-            h.validator.GetValidationErrors(ctx, err))
-        return
+    if !validation.BindQuery(ctx, h.responder, h.validator, &amp;req) {
+        return // the 422 with field errors is already sent
     }
     req.SetDefaults("created_at", "desc")
 
@@ -91,17 +89,17 @@ func (h *ProductHandler) List(ctx *gin.Context) {
 </pre></div>
       </div></div>
       <div class="jd-explain">
-        <div class="jd-ex c-blue" data-code="#code-quick-dto" data-show="1-3"><span class="n">1</span><span class="w">embed pagination.Request</span><span class="x" lang="en">Your request struct gets the five query params and their validation rules for free. Add your own filters next to it.</span><span class="x" lang="vi">Struct request của bạn có sẵn năm query param cùng luật kiểm tra. Thêm bộ lọc riêng ngay bên cạnh.</span></div>
-        <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="3-7"><span class="n">2</span><span class="w">ShouldBindQuery</span><span class="x" lang="en">Rejects a negative <code>page</code>, a negative <code>page_size</code> or one above 100, and a <code>sort_order</code> other than asc / desc → answer 422. <code>0</code> passes (<code>omitempty</code>) and becomes the default in the next step.</span><span class="x" lang="vi">Từ chối <code>page</code> âm, <code>page_size</code> âm hoặc lớn hơn 100, và <code>sort_order</code> khác asc / desc → trả 422. Giá trị <code>0</code> vẫn qua (<code>omitempty</code>) và thành giá trị mặc định ở bước sau.</span></div>
-        <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="8"><span class="n">3</span><span class="w">SetDefaults</span><span class="x" lang="en">Missing page → 1, missing page_size → 10, empty sort → the values you pass.</span><span class="x" lang="vi">Thiếu page → 1, thiếu page_size → 10, sort trống → giá trị bạn truyền vào.</span></div>
-        <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="10"><span class="n">4</span><span class="w">GetLimit / GetOffset</span><span class="x" lang="en">Both return <code>int32</code> — the type sqlc generates for LIMIT / OFFSET params. Also count the total rows.</span><span class="x" lang="vi">Cả hai trả <code>int32</code> — đúng kiểu sqlc sinh ra cho tham số LIMIT / OFFSET. Nhớ đếm luôn tổng số dòng.</span></div>
-        <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="16-17"><span class="n">5</span><span class="w">NewPagination + responder.Pagination</span><span class="x" lang="en">Builds the metadata and sends <code>data: { items, pagination }</code> (see <a href="response.html">response</a>).</span><span class="x" lang="vi">Tạo metadata và gửi <code>data: { items, pagination }</code> (xem <a href="response.html">response</a>).</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick-dto" data-show="1-3"><span class="n">1</span><span class="w"><span lang="en">Embed pagination.Request</span><span lang="vi">Nhúng pagination.Request</span></span><span class="x" lang="en">Your request struct gets the five query params and their validation rules for free. Add your own filters next to it.</span><span class="x" lang="vi">Struct request của bạn có sẵn năm query param cùng luật kiểm tra. Thêm bộ lọc riêng ngay bên cạnh.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="3-5"><span class="n">2</span><span class="w">validation.BindQuery</span><span class="x" lang="en"><code>ShouldBindQuery</code> plus the 422 answer (see <a href="validation.html">validation</a>). Rejects a negative <code>page</code>, a negative <code>page_size</code> or one above 100, and a <code>sort_order</code> other than asc / desc → answer 422. <code>0</code> passes (<code>omitempty</code>) and becomes the default in the next step.</span><span class="x" lang="vi"><code>ShouldBindQuery</code> kèm response 422 (xem <a href="validation.html">validation</a>). Từ chối <code>page</code> âm, <code>page_size</code> âm hoặc lớn hơn 100, và <code>sort_order</code> khác asc / desc → trả 422. Giá trị <code>0</code> vẫn qua (<code>omitempty</code>) và thành giá trị mặc định ở bước sau.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="6"><span class="n">3</span><span class="w">SetDefaults</span><span class="x" lang="en">Missing page → 1, missing page_size → 10, empty sort → the values you pass.</span><span class="x" lang="vi">Thiếu page → 1, thiếu page_size → 10, sort trống → giá trị bạn truyền vào.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="8"><span class="n">4</span><span class="w">GetLimit / GetOffset</span><span class="x" lang="en">Both return <code>int32</code> — the type sqlc generates for LIMIT / OFFSET params. Also count the total rows.</span><span class="x" lang="vi">Cả hai trả <code>int32</code> — đúng kiểu sqlc sinh ra cho tham số LIMIT / OFFSET. Nhớ đếm luôn tổng số dòng.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="14-15"><span class="n">5</span><span class="w">NewPagination + responder.Pagination</span><span class="x" lang="en">Builds the metadata and sends <code>data: { items, pagination }</code> (see <a href="response.html">response</a>).</span><span class="x" lang="vi">Tạo metadata và gửi <code>data: { items, pagination }</code> (xem <a href="response.html">response</a>).</span></div>
       </div>
     </div>
   </section>
 
   <!-- ============================================================ 3. TRY IT -->
-  <section id="try" class="jd-section c-purple">
+  <section id="try" class="jd-section c-pink">
     <div class="jd-section-head">
       <span class="jd-badge">3</span>
       <div>
@@ -126,19 +124,28 @@ func (h *ProductHandler) List(ctx *gin.Context) {
   </section>
 
   <!-- ============================================================ 4. API -->
-  <section id="api" class="jd-section c-green">
+  <section id="api" class="jd-section c-blue">
     <div class="jd-section-head">
       <span class="jd-badge">4</span>
       <div>
         <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
-        <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/pagination/pagination.go</code>.</p>
-        <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/pagination/pagination.go</code>.</p>
+        <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/pagination</code>.</p>
+        <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/pagination</code>.</p>
       </div>
     </div>
     <div class="jd-syms" style="margin-top:18px">
 
       <div class="jd-sym c-blue">
         <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Request</span></div>
+        <div class="jd-term"><pre data-hl="go">
+type Request struct {
+    Page      int    `form:"page" binding:"omitempty,min=1" example:"1"`
+    PageSize  int    `form:"page_size" binding:"omitempty,min=1,max=100" example:"10"`
+    Search    string `form:"search" binding:"omitempty" example:"John"`
+    SortBy    string `form:"sort_by" binding:"omitempty" example:"created_at"`
+    SortOrder string `form:"sort_order" binding:"omitempty,oneof=asc desc" example:"desc"`
+}
+</pre></div>
         <p lang="en">Standard list query parameters. Embed it in your own request struct and bind with <code>ShouldBindQuery</code>.</p>
         <p lang="vi">Các query param chuẩn cho danh sách. Nhúng vào struct request của bạn và bind bằng <code>ShouldBindQuery</code>.</p>
         <div class="jd-tablewrap"><table class="jd-params">
@@ -179,12 +186,24 @@ func (r *Request) GetLimit() int32  // PageSize clamped to [1, 100]
           <li lang="en"><code>page &lt;= 0</code> → 1, <code>pageSize &lt;= 0</code> → 1.</li><li lang="vi"><code>page &lt;= 0</code> → 1, <code>pageSize &lt;= 0</code> → 1.</li>
           <li lang="en"><code>TotalPages = ceil(total / pageSize)</code>, but never 0 — an empty list still reports 1 page.</li><li lang="vi"><code>TotalPages = ceil(total / pageSize)</code>, nhưng không bao giờ bằng 0 — danh sách rỗng vẫn báo 1 trang.</li>
           <li lang="en"><code>NextPage</code> / <code>PrevPage</code> are <code>nil</code> (JSON <code>null</code>) when there is none.</li><li lang="vi"><code>NextPage</code> / <code>PrevPage</code> là <code>nil</code> (JSON <code>null</code>) khi không có.</li>
-          <li lang="en">A page past the last one keeps its <code>Page</code> but gets <code>PrevPage = TotalPages</code>, so the client can step back to real data.</li><li lang="vi">Trang vượt quá trang cuối giữ nguyên <code>Page</code> nhưng có <code>PrevPage = TotalPages</code>, để client lùi về dữ liệu thật.</li>
+          <li lang="en">A page past the last one keeps its <code>Page</code> but gets <code>PrevPage = TotalPages</code>, so the client can step back to real data.</li><li lang="vi">Trang vượt quá trang cuối giữ nguyên <code>Page</code> nhưng có <code>PrevPage = TotalPages</code>, để client lùi về dữ liệu thật.</li><li lang="en">It does not clamp <code>pageSize</code> to 100 like <code>GetLimit</code>. Bound requests are already ≤ 100; for a Request you built by hand, pass <code>int(req.GetLimit())</code> so the metadata matches the query.</li><li lang="vi">Hàm không kẹp <code>pageSize</code> về 100 như <code>GetLimit</code>. Request đã bind thì luôn ≤ 100; với Request tự dựng, truyền <code>int(req.GetLimit())</code> để metadata khớp với query.</li>
         </ul>
       </div>
 
       <div class="jd-sym c-green">
         <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Pagination</span></div>
+        <div class="jd-term"><pre data-hl="go">
+type Pagination struct {
+    Page       int   `json:"page" example:"1"`
+    PageSize   int   `json:"page_size" example:"10"`
+    TotalItems int64 `json:"total_items" example:"100"`
+    TotalPages int   `json:"total_pages" example:"10"`
+    HasNext    bool  `json:"has_next" example:"true"`
+    HasPrev    bool  `json:"has_prev" example:"false"`
+    NextPage   *int  `json:"next_page"`
+    PrevPage   *int  `json:"prev_page"`
+}
+</pre></div>
         <div class="jd-tablewrap"><table class="jd-params">
           <tr><th>field · json</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
           <tr><td>Page · page</td><td lang="en">Current page.</td><td lang="vi">Trang hiện tại.</td></tr>
@@ -210,13 +229,13 @@ func (r *Request) GetLimit() int32  // PageSize clamped to [1, 100]
     </div>
     <div class="jd-tablewrap" style="margin-top:16px"><table class="jd-params c-orange">
       <tr><th>file</th><th><span lang="en">what it does</span><span lang="vi">làm gì</span></th></tr>
-      <tr><td>features/user/dto/v1/user_dto.go</td><td lang="en"><code>ListUsersRequest</code> embeds <code>pagination.Request</code>; <code>ToFilter()</code> copies search, limit, offset, sort order into the domain filter.</td><td lang="vi"><code>ListUsersRequest</code> nhúng <code>pagination.Request</code>; <code>ToFilter()</code> chép search, limit, offset, sort order vào filter của domain.</td></tr>
-      <tr><td>features/user/handler/v1/user_handler.go</td><td lang="en"><code>ListUsers</code>: bind → <code>SetDefaults("created_at", "desc")</code> → service → <code>NewPagination</code> → <code>responder.Pagination</code>.</td><td lang="vi"><code>ListUsers</code>: bind → <code>SetDefaults("created_at", "desc")</code> → service → <code>NewPagination</code> → <code>responder.Pagination</code>.</td></tr>
-      <tr><td>features/user/repository/user_repository.go</td><td lang="en">Runs <code>ListUsers</code> (LIMIT/OFFSET, served by the <code>created_at</code> index), then <code>CountUsers</code> for the total. A short page that is not past the end is the last one, so it already gives the total and skips the count. Not <code>count(*) OVER()</code>: it makes Postgres read and sort every matching row to return one page — 48–80 ms against 0.02 ms + 6 ms for 200k users.</td><td lang="vi">Chạy <code>ListUsers</code> (LIMIT/OFFSET, dùng index <code>created_at</code>), rồi <code>CountUsers</code> để lấy tổng. Trang thiếu dòng mà không vượt quá cuối danh sách chính là trang cuối, nên đã biết tổng và bỏ qua lệnh đếm. Không dùng <code>count(*) OVER()</code>: nó bắt Postgres đọc và sort mọi dòng khớp chỉ để trả một trang — 48–80 ms so với 0,02 ms + 6 ms ở 200 nghìn user.</td></tr>
+      <tr><td>internal/features/user/dto/v1/user_dto.go</td><td lang="en"><code>ListUsersRequest</code> embeds <code>pagination.Request</code>; <code>ToUserListFilter(req)</code> copies search, <code>GetLimit()</code>, <code>GetOffset()</code> and sort order into the domain filter.</td><td lang="vi"><code>ListUsersRequest</code> nhúng <code>pagination.Request</code>; <code>ToUserListFilter(req)</code> chép search, <code>GetLimit()</code>, <code>GetOffset()</code> và sort order vào filter của domain.</td></tr>
+      <tr><td>internal/features/user/handler/v1/user_handler.go</td><td lang="en"><code>ListUsers</code>: <code>validation.BindQuery</code> → <code>SetDefaults("created_at", "desc")</code> → service → <code>NewPagination</code> → <code>responder.Pagination</code>.</td><td lang="vi"><code>ListUsers</code>: <code>validation.BindQuery</code> → <code>SetDefaults("created_at", "desc")</code> → service → <code>NewPagination</code> → <code>responder.Pagination</code>.</td></tr>
+      <tr><td>internal/features/user/repository/user_repository.go</td><td lang="en">Runs <code>ListUsersNewest</code> or <code>ListUsersOldest</code> (by <code>sort_order</code>; LIMIT/OFFSET on the <code>(created_at, id)</code> index), then <code>CountUsers</code> for the total. A short page that is not past the end is the last one, so it already gives the total and skips the count. Not <code>count(*) OVER()</code>: that makes PostgreSQL read and sort every matching row to return one page, while with the index the page query can stop after <code>OFFSET + LIMIT</code> rows.</td><td lang="vi">Chạy <code>ListUsersNewest</code> hoặc <code>ListUsersOldest</code> (theo <code>sort_order</code>; LIMIT/OFFSET trên index <code>(created_at, id)</code>), rồi <code>CountUsers</code> để lấy tổng. Trang thiếu dòng mà không vượt quá cuối danh sách chính là trang cuối, nên đã biết tổng và bỏ qua lệnh đếm. Không dùng <code>count(*) OVER()</code>: nó bắt PostgreSQL đọc và sort mọi dòng khớp chỉ để trả một trang, còn nhờ index, query lấy trang có thể dừng sau <code>OFFSET + LIMIT</code> dòng.</td></tr>
     </table></div>
     <div class="jd-term" data-copy="commands" style="margin-top:14px"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
 <pre data-hl="bash">
-$ curl -s 'localhost:$API_SERVER_PORT/api/v1/users?page=1&amp;page_size=2&amp;search=jungo' \
+$ curl -s "localhost:$API_SERVER_PORT/api/v1/users?page=1&amp;page_size=2&amp;search=jungo" \
     -H 'Authorization: Bearer &lt;access_token&gt;' | jq
 </pre></div>
   </section>
@@ -228,15 +247,15 @@ $ curl -s 'localhost:$API_SERVER_PORT/api/v1/users?page=1&amp;page_size=2&amp;se
       <div><h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2></div>
     </div>
     <div class="jd-explain" style="margin-top:16px">
-      <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">page_size, not limit</span><span class="x" lang="en">Unknown params such as <code>?limit=</code> are ignored silently — the client gets the default 10.</span><span class="x" lang="vi">Param lạ như <code>?limit=</code> bị bỏ qua mà không báo lỗi — client nhận mặc định 10.</span></div>
-      <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">sort_by is raw input</span><span class="x" lang="en">Never paste it into SQL. Map allowed values to columns yourself. (The user feature currently ignores <code>sort_by</code> and only uses <code>sort_order</code>.)</span><span class="x" lang="vi">Không bao giờ chèn thẳng vào SQL. Tự ánh xạ các giá trị cho phép sang tên cột. (Feature user hiện bỏ qua <code>sort_by</code>, chỉ dùng <code>sort_order</code>.)</span></div>
-      <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Count with the same filter</span><span class="x" lang="en">The total must use the same <code>search</code> as the page query, or <code>total_pages</code> will be wrong.</span><span class="x" lang="vi">Phép đếm tổng phải dùng cùng <code>search</code> với câu query lấy trang, nếu không <code>total_pages</code> sẽ sai.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w"><span lang="en">page_size, not limit</span><span lang="vi">page_size, không phải limit</span></span><span class="x" lang="en">Unknown params such as <code>?limit=</code> are ignored silently — the client gets the default 10.</span><span class="x" lang="vi">Param lạ như <code>?limit=</code> bị bỏ qua mà không báo lỗi — client nhận mặc định 10.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">sort_by is raw input</span><span lang="vi">sort_by là input thô</span></span><span class="x" lang="en">Never paste it into SQL. Map allowed values to columns yourself. (The user feature currently ignores <code>sort_by</code> and only uses <code>sort_order</code>.)</span><span class="x" lang="vi">Không bao giờ chèn thẳng vào SQL. Tự ánh xạ các giá trị cho phép sang tên cột. (Feature user hiện bỏ qua <code>sort_by</code>, chỉ dùng <code>sort_order</code>.)</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">Count with the same filter</span><span lang="vi">Đếm với cùng bộ lọc</span></span><span class="x" lang="en">The total must use the same <code>search</code> as the page query, or <code>total_pages</code> will be wrong.</span><span class="x" lang="vi">Phép đếm tổng phải dùng cùng <code>search</code> với câu query lấy trang, nếu không <code>total_pages</code> sẽ sai.</span></div>
     </div>
   </section>
 
   <footer class="jd-footer">
     <span>Jundoc · Junkit · pagination</span>
-    <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package Junkit</span></a></span>
+    <span><a href="validation.html">← validation</a> · <a href="database.html">database →</a></span>
   </footer>
 </article>
 </div>

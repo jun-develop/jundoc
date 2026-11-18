@@ -26,23 +26,21 @@
         style="background:radial-gradient(1000px 380px at 0% 0%, rgba(248,113,113,.5), transparent 60%),linear-gradient(135deg,#450a0a,#991b1b 55%,#9d174d)">
         <div class="jd-eyebrow">Junkit · security</div>
         <h1>security</h1>
-        <p lang="en">Building blocks for authentication: random opaque tokens, sealed (encrypted + signed) for the
-          client and hashed for the database, bcrypt passwords, secret-name detection for masking logs, and a typed
+        <p lang="en">Building blocks for authentication: random opaque tokens, sealed for the client (AES-256-GCM
+          encryption + HMAC-SHA256 signature) and stored in the database as a SHA-256 hash, bcrypt passwords, secret-name detection for masking logs, and a typed
           identity in the request context.</p>
-        <p lang="vi">Các thành phần bảo mật cốt lõi: sinh Opaque Token ngẫu nhiên, niêm phong token (mã hóa AES-256-GCM
+        <p lang="vi">Các thành phần bảo mật cốt lõi: sinh opaque token ngẫu nhiên, niêm phong token (mã hóa AES-256-GCM
           + ký HMAC-SHA256) gửi cho client, lưu mã băm SHA-256 trong database, băm mật khẩu bằng bcrypt, nhận diện tên chứa bí
-          mật để che log, và gắn Identity định kiểu vào context của request.</p>
+          mật để che log, và gắn identity định kiểu vào context của request.</p>
         <div class="jd-chips">
-          <span class="jd-chip">github.com/jun-develop/junkit/security</span>
-          <span class="jd-chip"><span lang="en">Fx Module → TokenSealer, PasswordHasher (needs an Options)</span><span
-              lang="vi">Fx Module → TokenSealer, PasswordHasher (cần một Options)</span></span>
-          <span class="jd-chip">golang.org/x/crypto/bcrypt</span>
-          <span class="jd-chip">go.uber.org/fx</span>
-        </div>
-      </header>
+      <span class="jd-chip">github.com/jun-develop/junkit/security</span>
+      <span class="jd-chip"><span lang="en">Fx: <code>security.Module</code> → provides <code>security.TokenSealer, security.PasswordHasher</code></span><span lang="vi">Fx: <code>security.Module</code> → cung cấp <code>security.TokenSealer, security.PasswordHasher</code></span></span>
+      <span class="jd-chip"><span lang="en">Depends on: fx · x/crypto/bcrypt</span><span lang="vi">Phụ thuộc: fx · x/crypto/bcrypt</span></span>
+    </div>
+  </header>
 
       <!-- ============================================================ 1. WHAT -->
-      <section id="what" class="jd-section c-red">
+      <section id="what" class="jd-section c-blue">
         <div class="jd-section-head">
           <span class="jd-badge">1</span>
           <div>
@@ -58,22 +56,22 @@
       {"from":"t1","to":"t2","color":"blue","label":"raw"},
       {"from":"t2","to":"t3","color":"orange","label":"v1.…"},
       {"from":"t3","to":"t4","color":"blue","label":"raw"}]'>
-          <div class="jd-node is-tint c-blue" data-node="t1"><span class="k">1 · issue</span><span class="t mono"
+          <div class="jd-node is-tint c-blue" data-node="t1"><span class="k"><span lang="en">1 · issue</span><span lang="vi">1 · phát hành</span></span><span class="t mono"
               style="font-size:15px">GenerateToken()</span>
             <div class="d" lang="en">32 random bytes, base64url. Store <code>HashToken(raw)</code> in the DB.</div>
             <div class="d" lang="vi">32 byte ngẫu nhiên, base64url. Lưu <code>HashToken(raw)</code> vào DB.</div>
           </div>
-          <div class="jd-node is-tint c-orange" data-node="t2"><span class="k">2 · seal</span><span class="t mono"
+          <div class="jd-node is-tint c-purple" data-node="t2"><span class="k"><span lang="en">2 · seal</span><span lang="vi">2 · niêm phong</span></span><span class="t mono"
               style="font-size:15px">sealer.Seal(raw)</span>
             <div class="d" lang="en">AES-256-GCM encrypt, then HMAC-SHA256 sign → send to the client.</div>
             <div class="d" lang="vi">Mã hóa AES-256-GCM, rồi ký HMAC-SHA256 → gửi cho client.</div>
           </div>
-          <div class="jd-node is-tint c-orange" data-node="t3"><span class="k">3 · open</span><span class="t mono"
+          <div class="jd-node is-tint c-purple" data-node="t3"><span class="k"><span lang="en">3 · open</span><span lang="vi">3 · mở</span></span><span class="t mono"
               style="font-size:15px">sealer.Open(token)</span>
             <div class="d" lang="en">Checks the signature first, then decrypts. Any change → error.</div>
             <div class="d" lang="vi">Kiểm tra chữ ký trước, rồi mới giải mã. Sửa gì cũng → lỗi.</div>
           </div>
-          <div class="jd-node is-tint c-green" data-node="t4"><span class="k">4 · look up</span><span class="t mono"
+          <div class="jd-node is-tint c-green" data-node="t4"><span class="k"><span lang="en">4 · look up</span><span lang="vi">4 · tra cứu</span></span><span class="t mono"
               style="font-size:15px">HashToken(raw)</span>
             <div class="d" lang="en">Hex SHA-256 → find the session row by hash.</div>
             <div class="d" lang="vi">SHA-256 dạng hex → tìm dòng session theo hash.</div>
@@ -108,11 +106,11 @@
       </section>
 
       <!-- ============================================================ 2. SETUP -->
-      <section id="setup" class="jd-section c-blue">
+      <section id="setup" class="jd-section c-purple">
         <div class="jd-section-head">
           <span class="jd-badge">2</span>
           <div>
-            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối</span></h2>
+            <h2><span lang="en">Setup</span><span lang="vi">Cài đặt</span></h2>
             <p class="jd-sub" lang="en"><code>security.Module</code> provides <code>TokenSealer</code> and
               <code>PasswordHasher</code>. You provide one <code>security.Options</code>. Bad keys or cost stop the app
               at startup.</p>
@@ -121,12 +119,10 @@
               ngay lúc khởi động.</p>
           </div>
         </div>
-        <div class="jd-tabs c-blue" style="margin-top:18px">
+        <div class="jd-tabs" style="margin-top:18px">
           <div class="jd-tablist">
-            <button class="jd-tab" type="button" aria-selected="true"><span lang="en">with Fx (as Jungo)</span><span
-                lang="vi">dùng Fx (như Jungo)</span></button>
-            <button class="jd-tab" type="button" aria-selected="false"><span lang="en">without Fx</span><span
-                lang="vi">Không dùng Fx</span></button>
+            <button class="jd-tab" type="button" aria-selected="true"><span lang="en">With Fx (as in Jungo)</span><span lang="vi">Dùng Fx (như Jungo)</span></button>
+            <button class="jd-tab" type="button" aria-selected="false"><span lang="en">Without Fx</span><span lang="vi">Không dùng Fx</span></button>
           </div>
           <div class="jd-tabpanel">
             <div class="jd-term" data-copy>
@@ -207,12 +203,7 @@ if err != nil {
         <h3 style="margin-top:24px">Options</h3>
         <div class="jd-tablewrap">
           <table class="jd-params c-blue">
-            <tr>
-              <th><span lang="en">field</span><span lang="vi">trường</span></th>
-              <th>type</th>
-              <th><span lang="en">zero value / default</span><span lang="vi">giá trị rỗng / mặc định</span></th>
-              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-            </tr>
+            <tr><th>field</th><th><span lang="en">type</span><span lang="vi">kiểu</span></th><th><span lang="en">default</span><span lang="vi">mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
             <tr>
               <td>TokenHMACSecret</td>
               <td>[]byte</td>
@@ -249,13 +240,13 @@ if err != nil {
               <td lang="en">≤ 0 → half of <code>GOMAXPROCS</code>, at least 1.</td>
               <td lang="vi">≤ 0 → một nửa <code>GOMAXPROCS</code>, tối thiểu 1.</td>
               <td lang="en">How many <code>Hash</code> / <code>Compare</code> / <code>CompareDummy</code> calls run at
-                once; the rest wait their turn. One cost-12 compare burns ~190 ms of CPU, so without a cap a login
-                flood from many IPs takes every core and slows every other route. Measured on 10 cores: logins cap at
-                ~25/s while <code>/auth/me</code> keeps its p99.</td>
+                once; the rest wait for a slot (or return the wrapped <code>ctx</code> error if it ends first). Each
+                bcrypt call is CPU-bound and its cost doubles with every +1 of <code>Cost</code>, so the cap keeps a
+                login flood from taking every core away from the other routes.</td>
               <td lang="vi">Số lệnh <code>Hash</code> / <code>Compare</code> / <code>CompareDummy</code> chạy cùng
-                lúc; phần còn lại chờ đến lượt. Một lần compare với cost 12 tốn ~190 ms CPU, nên nếu không giới hạn,
-                một đợt flood login từ nhiều IP sẽ ăn hết mọi core và làm chậm mọi route khác. Đo trên 10 core: login
-                bị giới hạn ở ~25/s trong khi <code>/auth/me</code> giữ nguyên p99.</td>
+                lúc; phần còn lại chờ lượt trống (hoặc trả lỗi của <code>ctx</code>, có bọc, nếu <code>ctx</code> kết thúc
+                trước). Mỗi lần bcrypt tốn CPU và chi phí gấp đôi với mỗi +1 của <code>Cost</code>, nên giới hạn này giữ
+                cho một đợt flood login không chiếm hết mọi core của các route khác.</td>
             </tr>
           </table>
         </div>
@@ -266,7 +257,7 @@ if err != nil {
           <table class="jd-params c-red">
             <tr>
               <th><span lang="en">from</span><span lang="vi">từ</span></th>
-              <th>error</th>
+              <th><span lang="en">error</span><span lang="vi">lỗi</span></th>
               <th><span lang="en">match with</span><span lang="vi">so khớp bằng</span></th>
             </tr>
             <tr>
@@ -309,7 +300,7 @@ if err != nil {
         <div class="jd-section-head">
           <span class="jd-badge">3</span>
           <div>
-            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <h2><span lang="en">Quick start</span><span lang="vi">Dùng nhanh</span></h2>
             <p class="jd-sub" lang="en">A minimal login + authenticate service. <code>Repo</code>, <code>User</code> and
               the <code>Err…</code> values are yours. Hover an explanation to light up its lines.</p>
             <p class="jd-sub" lang="vi">Một service login + xác thực tối giản. <code>Repo</code>, <code>User</code> và
@@ -368,7 +359,7 @@ func (s *SessionService) Authenticate(ctx context.Context, token string) (*User,
                 <pre data-hl="go" id="code-quick-hdl">
 func (h *Handler) Me(c *gin.Context) {
     user := security.MustGetIdentity[*User](c.Request.Context())
-    c.JSON(200, user)
+    h.responder.SendWithData(c, http.StatusOK, "profile_retrieved", user)
 }
 </pre>
               </div>
@@ -376,16 +367,16 @@ func (h *Handler) Me(c *gin.Context) {
           </div>
           <div class="jd-explain">
             <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="1-5"><span class="n">1</span><span
-                class="w">inject the interfaces</span><span class="x" lang="en">Depend on <code>TokenSealer</code> /
+                class="w"><span lang="en">Inject the interfaces</span><span lang="vi">Inject interface</span></span><span class="x" lang="en">Depend on <code>TokenSealer</code> /
                 <code>PasswordHasher</code>, never on the concrete types (they are unexported).</span><span class="x"
                 lang="vi">Phụ thuộc vào <code>TokenSealer</code> / <code>PasswordHasher</code>, không phải kiểu cụ thể
                 (chúng không được export).</span></div>
             <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="12-17"><span class="n">2</span><span
                 class="w">CompareDummy</span><span class="x" lang="en">Unknown email still burns one bcrypt compare, so
                 response time does not reveal which emails are registered — as long as stored hashes use the current
-                cost; hashes from an older <code>AUTH_PASSWORD_COST</code> remain distinguishable.</span><span class="x" lang="vi">Email không
+                cost; hashes made with an older <code>Cost</code> remain distinguishable.</span><span class="x" lang="vi">Email không
                 tồn tại vẫn tốn một lần so sánh bcrypt, nên thời gian phản hồi không tiết lộ email nào đã đăng
-                ký — miễn là hash đã lưu dùng cost hiện tại; hash từ <code>AUTH_PASSWORD_COST</code> cũ vẫn phân biệt
+                ký — miễn là hash đã lưu dùng cost hiện tại; hash tạo bằng <code>Cost</code> cũ vẫn phân biệt
                 được.</span></div>
             <div class="jd-ex c-green" data-code="#code-quick-svc" data-show="18-24"><span class="n">3</span><span
                 class="w">Compare</span><span class="x" lang="en">A wrong password, a malformed hash or a password
@@ -419,11 +410,11 @@ func (h *Handler) Me(c *gin.Context) {
       </section>
 
       <!-- ============================================================ 4. TRY IT -->
-      <section id="try" class="jd-section c-purple">
+      <section id="try" class="jd-section c-pink">
         <div class="jd-section-head">
           <span class="jd-badge">4</span>
           <div>
-            <h2><span lang="en">Try it: token anatomy</span><span lang="vi">Thử ngay: giải phẫu token</span></h2>
+            <h2><span lang="en">Try it</span><span lang="vi">Thử ngay</span></h2>
             <p class="jd-sub" lang="en">A real seal / open in your browser (Web Crypto), byte-for-byte the same format
               as the Go code: 12-byte nonce, AES-256-GCM with additional data <code>"v1"</code>, HMAC-SHA256 over
               <code>"v1.&lt;nonce+ciphertext&gt;"</code>. Keys are random and stay in this page. Edit the token or
@@ -434,7 +425,7 @@ func (h *Handler) Me(c *gin.Context) {
               đổi key rồi xem <code>Open</code> thất bại.</p>
           </div>
         </div>
-        <div id="tk-unsupported" class="jd-callout c-red" style="margin-top:18px" hidden><span lang="en">This browser
+        <div id="tk-unsupported" class="jd-callout c-blue" style="margin-top:18px" hidden><b lang="en">Note:</b><b lang="vi">Ghi chú:</b> <span lang="en">This browser
             does not expose Web Crypto here (try serving the folder over http://localhost).</span><span lang="vi">Trình
             duyệt không cho dùng Web Crypto ở đây (thử chạy thư mục qua http://localhost).</span></div>
         <div id="tk-demo" style="margin-top:18px">
@@ -469,14 +460,13 @@ func (h *Handler) Me(c *gin.Context) {
       </section>
 
       <!-- ============================================================ 5. API -->
-      <section id="api" class="jd-section c-red">
+      <section id="api" class="jd-section c-blue">
         <div class="jd-section-head">
           <span class="jd-badge">5</span>
           <div>
             <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
-            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from
-              <code>junkit/security/*.go</code>.</p>
-            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/security/*.go</code>.</p>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/security</code>.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/security</code>.</p>
           </div>
         </div>
 
@@ -495,7 +485,8 @@ type Options struct {
 }
 
 type PasswordOptions struct {
-	Cost int
+	Cost          int
+	MaxConcurrent int
 }
 </pre>
             </div>
@@ -613,7 +604,7 @@ type TokenSealer interface {
                 <tr>
                   <th>#</th>
                   <th><span lang="en">check</span><span lang="vi">kiểm tra</span></th>
-                  <th>error</th>
+                  <th><span lang="en">error</span><span lang="vi">lỗi</span></th>
                 </tr>
                 <tr>
                   <td>1</td>
@@ -762,12 +753,12 @@ type PasswordHasher interface {
                 tốn một lần so sánh giả).</li>
               <li lang="en"><b>CompareDummy</b> — compares against a hash made at startup with the same cost, so it
                 costs the same time as <code>Compare</code> against hashes made with the <b>current</b> cost. Call it
-                when the user does not exist. Hashes stored under an older <code>AUTH_PASSWORD_COST</code> still take a
-                different time (nothing rehashes them on login yet), so those accounts stay distinguishable.</li>
+                when the user does not exist. Hashes stored under an older <code>Cost</code> still take a
+                different time (the package never rehashes them), so those accounts stay distinguishable.</li>
               <li lang="vi"><b>CompareDummy</b> — so sánh với một hash tạo lúc khởi động với cùng cost, nên tốn đúng
                 thời gian như <code>Compare</code> với các hash tạo bằng cost <b>hiện tại</b>. Gọi khi user không tồn
-                tại. Hash lưu từ <code>AUTH_PASSWORD_COST</code> cũ vẫn tốn thời gian khác (hiện chưa có bước hash lại
-                khi đăng nhập), nên vẫn phân biệt được các tài khoản đó.</li>
+                tại. Hash lưu bằng <code>Cost</code> cũ vẫn tốn thời gian khác (package không bao giờ hash
+                lại), nên vẫn phân biệt được các tài khoản đó.</li>
             </ul>
           </div>
 
@@ -788,20 +779,16 @@ type PasswordHasher interface {
 
         <h3 style="margin-top:24px"><span lang="en">Identity in context</span><span lang="vi">Identity trong
             context</span></h3>
+        <p class="jd-sub" lang="en">The Gin side lives in the middleware package, so this
+            package does not import gin: an auth middleware calls
+            <a href="middleware.html#setidentity"><code>middleware.SetIdentity(c, identity)</code></a>, which stores the
+            identity with <code>WithIdentity</code> below.</p>
+          <p class="jd-sub" lang="vi">Phần gắn với Gin nằm trong package middleware, để package
+            này không import gin: middleware auth gọi
+            <a href="middleware.html#setidentity"><code>middleware.SetIdentity(c, identity)</code></a>, hàm này lưu
+            identity bằng <code>WithIdentity</code> bên dưới.</p>
         <div class="jd-syms">
-          <div class="jd-sym c-purple">
-            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">middleware.SetIdentity</span></div>
-            <div class="jd-term">
-              <pre data-hl="go">func SetIdentity[T any](c *gin.Context, identity T) // package middleware</pre>
-            </div>
-            <p lang="en">Lives in <a href="middleware.html">middleware</a>, so this package does not import gin. It
-              replaces <code>c.Request</code> with one whose context carries <code>identity</code> (via
-              <code>WithIdentity</code>). <code>T</code> is inferred from the argument — that is the type you must
-              read back.</p>
-            <p lang="vi">Nằm trong <a href="middleware.html">middleware</a>, để package này không phải import gin. Nó
-              thay <code>c.Request</code> bằng request có context chứa <code>identity</code> (qua
-              <code>WithIdentity</code>). <code>T</code> được suy ra từ đối số — đó là kiểu bạn phải đọc lại.</p>
-          </div>
+          
 
           <div class="jd-sym c-purple">
             <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">WithIdentity</span>
@@ -936,64 +923,51 @@ var Module = fx.Module("security",
               <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
             </tr>
             <tr>
-              <td>app/fx.go</td>
+              <td>internal/app/fx.go</td>
               <td lang="en"><code>provideSecurityOptions</code> + <code>security.Module</code> (see <a
-                  href="#setup">Wire it up</a>). Dev with both keys unset → <code>RandomBytes</code> keys and a warning;
-                otherwise <code>DecodeKey</code> both env vars.</td>
-              <td lang="vi"><code>provideSecurityOptions</code> + <code>security.Module</code> (xem <a href="#setup">Kết
-                  nối</a>). Dev mà chưa đặt cả hai key → key <code>RandomBytes</code> kèm cảnh báo; ngược lại
-                <code>DecodeKey</code> cả hai biến môi trường.</td>
+                  href="#setup">Setup</a>). Development with both keys unset → <code>RandomBytes</code> keys and a
+                warning; otherwise <code>DecodeKey</code> on both env vars.</td>
+              <td lang="vi"><code>provideSecurityOptions</code> + <code>security.Module</code> (xem <a
+                  href="#setup">Cài đặt</a>). Development mà chưa đặt cả hai key → key <code>RandomBytes</code> kèm cảnh
+                báo; ngược lại <code>DecodeKey</code> cả hai biến môi trường.</td>
             </tr>
             <tr>
-              <td>config/config.go</td>
-              <td lang="en"><code>AuthConfig</code>: <code>AUTH_TOKEN_HMAC_SECRET</code>,
-                <code>AUTH_TOKEN_ENCRYPTION_KEY</code>, <code>AUTH_PASSWORD_COST</code> (default 10).</td>
-              <td lang="vi"><code>AuthConfig</code>: <code>AUTH_TOKEN_HMAC_SECRET</code>,
-                <code>AUTH_TOKEN_ENCRYPTION_KEY</code>, <code>AUTH_PASSWORD_COST</code> (mặc định 10).</td>
+              <td>internal/config/config.go</td>
+              <td lang="en"><code>AUTH_TOKEN_HMAC_SECRET</code>, <code>AUTH_TOKEN_ENCRYPTION_KEY</code> (no default),
+                <code>AUTH_PASSWORD_COST</code> (default 10).</td>
+              <td lang="vi"><code>AUTH_TOKEN_HMAC_SECRET</code>, <code>AUTH_TOKEN_ENCRYPTION_KEY</code> (không có mặc
+                định), <code>AUTH_PASSWORD_COST</code> (mặc định 10).</td>
             </tr>
             <tr>
-              <td>features/auth/service/auth_service.go</td>
-              <td lang="en">Gets <code>Sealer</code> / <code>Hasher</code> via <code>fx.In</code>. <b>Login</b>:
-                <code>CompareDummy</code> for unknown email, else <code>Compare</code>. <b>newTokenPair</b>: two
-                <code>GenerateToken</code>, stores <code>HashToken</code> of each, returns both tokens sealed with
-                <code>Seal</code>. <b>openToken</b>: <code>Open</code> (any error → <code>domain.ErrInvalidToken</code>)
-                then <code>HashToken</code>.</td>
-              <td lang="vi">Nhận <code>Sealer</code> / <code>Hasher</code> qua <code>fx.In</code>. <b>Login</b>:
-                <code>CompareDummy</code> khi email không tồn tại, ngược lại <code>Compare</code>. <b>newTokenPair</b>:
-                hai lần <code>GenerateToken</code>, lưu <code>HashToken</code> của từng cái, trả về token đã
-                <code>Seal</code>. <b>openToken</b>: <code>Open</code> (lỗi nào cũng →
-                <code>domain.ErrInvalidToken</code>) rồi <code>HashToken</code>.</td>
+              <td>internal/features/auth/…</td>
+              <td lang="en">The main user: <code>service/auth_service.go</code> (login with <code>Compare</code> /
+                <code>CompareDummy</code>, token pairs with <code>GenerateToken</code> → <code>HashToken</code> →
+                <code>Seal</code>, <code>Open</code> on refresh/authenticate), <code>service/password_reset.go</code>
+                (reset tokens), <code>infrastructure/login_guard.go</code> (<code>ClientKey</code> for IP counters,
+                <code>HashToken</code> of the email for the reset counter) and the handlers
+                (<code>MustGetIdentity[*domain.Identity]</code>). The flows are on <a
+                  href="../jungo/auth.html">Jungo · auth</a>.</td>
+              <td lang="vi">Nơi dùng chính: <code>service/auth_service.go</code> (login bằng <code>Compare</code> /
+                <code>CompareDummy</code>, cặp token bằng <code>GenerateToken</code> → <code>HashToken</code> →
+                <code>Seal</code>, <code>Open</code> khi refresh/xác thực), <code>service/password_reset.go</code>
+                (reset token), <code>infrastructure/login_guard.go</code> (<code>ClientKey</code> cho bộ đếm theo IP,
+                <code>HashToken</code> của email cho bộ đếm reset) và các handler
+                (<code>MustGetIdentity[*domain.Identity]</code>). Các luồng nằm ở <a
+                  href="../jungo/auth.html">Jungo · auth</a>.</td>
             </tr>
             <tr>
-              <td>features/auth/handler/v1/auth_handler.go</td>
-              <td lang="en"><code>security.MustGetIdentity[*domain.Identity](ctx)</code> in Logout, LogoutAll, Me,
-                Sessions.</td>
-              <td lang="vi"><code>security.MustGetIdentity[*domain.Identity](ctx)</code> trong Logout, LogoutAll, Me,
-                Sessions.</td>
+              <td>internal/middleware/auth.go</td>
+              <td lang="en"><code>BearerAuth</code> stores the identity with <a
+                  href="middleware.html#setidentity"><code>middleware.SetIdentity</code></a>; <code>RequireSecret</code>
+                compares the <code>X-Internal-Secret</code> header with <code>SecureEqual</code>. See <a
+                  href="../jungo/access.html">Jungo · permissions</a>.</td>
+              <td lang="vi"><code>BearerAuth</code> lưu identity bằng <a
+                  href="middleware.html#setidentity"><code>middleware.SetIdentity</code></a>; <code>RequireSecret</code>
+                so sánh header <code>X-Internal-Secret</code> bằng <code>SecureEqual</code>. Xem <a
+                  href="../jungo/access.html">Jungo · phân quyền</a>.</td>
             </tr>
             <tr>
-              <td>middleware/auth.go</td>
-              <td lang="en"><code>BearerAuth</code> (Jungo's own, used by the auth and user routers) — it calls
-                <code>middleware.SetIdentity</code> (junkit) after authenticating.</td>
-              <td lang="vi"><code>BearerAuth</code> (của Jungo, router auth và user dùng) — nó gọi
-                <code>middleware.SetIdentity</code> (junkit) sau khi xác thực.</td>
-            </tr>
-            <tr>
-              <td>middleware/auth.go</td>
-              <td lang="en"><code>RequireSecret("X-Internal-Secret", …)</code> (Jungo's own, on
-                <code>/api/internal/auth/*</code>) — compares with <code>security.SecureEqual</code>.</td>
-              <td lang="vi"><code>RequireSecret("X-Internal-Secret", …)</code> (của Jungo, cho
-                <code>/api/internal/auth/*</code>) — so sánh bằng <code>security.SecureEqual</code>.</td>
-            </tr>
-            <tr>
-              <td>features/auth/infrastructure/login_guard.go</td>
-              <td lang="en"><code>emailKey</code> = <code>"auth:login:email:" + HashToken(lower(trim(email)))</code>, so
-                Redis keys never contain addresses.</td>
-              <td lang="vi"><code>emailKey</code> = <code>"auth:login:email:" + HashToken(lower(trim(email)))</code>,
-                nên key Redis không chứa địa chỉ email.</td>
-            </tr>
-            <tr>
-              <td>features/user/service/user_service.go</td>
+              <td>internal/features/user/service/user_service.go</td>
               <td lang="en"><code>CreateUser</code>: <code>hasher.Hash(ctx, input.Password)</code>.</td>
               <td lang="vi"><code>CreateUser</code>: <code>hasher.Hash(ctx, input.Password)</code>.</td>
             </tr>
@@ -1073,10 +1047,9 @@ var Module = fx.Module("security",
       </section>
 
       <footer class="jd-footer">
-        <span>Jundoc · Junkit · security</span>
-        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
-              Junkit</span></a></span>
-      </footer>
+    <span>Jundoc · Junkit · security</span>
+    <span><a href="recaptcha.html">← recaptcha</a> · <a href="middleware.html">middleware →</a></span>
+  </footer>
     </article>
   </div>
 

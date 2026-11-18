@@ -18,12 +18,12 @@
 
   <!-- ============================================================ HERO -->
   <header class="jd-hero" style="background:radial-gradient(1000px 380px at 0% 0%, rgba(45,212,191,.5), transparent 60%),radial-gradient(900px 380px at 100% 0%, rgba(236,72,153,.45), transparent 60%),linear-gradient(135deg,#134e4a,#1e3a8a 50%,#701a75)">
-    <div class="jd-eyebrow">Jungo · <span lang="en">hands-on guide</span><span lang="vi">hướng dẫn thực hành từng bước</span></div>
+    <div class="jd-eyebrow">Jungo · <span lang="en">Build a feature</span><span lang="vi">Tạo feature</span></div>
     <h1><span lang="en">Build a feature, end to end</span><span lang="vi">Tạo feature từ A đến Z</span></h1>
     <p lang="en">Never touched this codebase? Follow this page top to bottom. You will generate a <code>product</code> feature, follow one real endpoint — <code>PATCH /api/v1/products/:uuid</code>, edit a name — through <b>every</b> layer, call it, and learn the three tools you debug with: logs, <code>trace_id</code> and <code>?t_debug</code>.</p>
-    <p lang="vi">Bạn mới làm quen với codebase Jungo? Hãy theo dõi tài liệu này từ đầu đến cuối. Chúng ta sẽ cùng nhau tạo một feature <code>product</code> hoàn chỉnh, lần theo hành trình thực tế của một endpoint — <code>PATCH /api/v1/products/:uuid</code> (sửa tên sản phẩm) — xuyên suốt qua <b>tất cả</b> các tầng kiến trúc, chạy thử trực tiếp, và làm chủ 3 công cụ debug đắc lực: Log, <code>trace_id</code> và <code>?t_debug</code>.</p>
+    <p lang="vi">Chưa từng đụng tới codebase này? Đọc trang này từ trên xuống. Bạn sẽ sinh một feature <code>product</code>, lần theo một endpoint thật — <code>PATCH /api/v1/products/:uuid</code>, sửa tên — qua <b>mọi</b> tầng, gọi thử, và học ba công cụ để debug: log, <code>trace_id</code> và <code>?t_debug</code>.</p>
     <div class="jd-chips">
-      <span class="jd-chip"><span lang="en">every step run for real</span><span lang="vi">mọi bước đều chạy thực tế</span></span>
+      <span class="jd-chip">cmd/scaffold · make feature</span>
       <span class="jd-chip">SQL → sqlc → domain → repo → service → DTO → handler → router</span>
       <span class="jd-chip">logs · trace_id · t_debug</span>
     </div>
@@ -31,8 +31,8 @@
 
   <nav class="jd-quickmap" aria-label="Sections">
     <a class="jd-quick c-green" href="#map"><span class="num">1</span><b lang="en">The map</b><b lang="vi">Bản đồ</b><span lang="en">Which code goes where</span><span lang="vi">Code nào nằm ở đâu</span></a>
-    <a class="jd-quick c-pink" href="#generate"><span class="num">2</span><b lang="en">Generate</b><b lang="vi">Sinh khung</b><span lang="en">CRUD in 4 commands</span><span lang="vi">CRUD trong 4 lệnh</span></a>
-    <a class="jd-quick c-purple" href="#endpoint"><span class="num">3</span><b lang="en">Every layer</b><b lang="vi">Từng tầng</b><span lang="en">9 files, in order</span><span lang="vi">9 file, theo thứ tự</span></a>
+    <a class="jd-quick c-pink" href="#generate"><span class="num">2</span><b lang="en">Generate</b><b lang="vi">Sinh khung</b><span lang="en">CRUD in 3 commands</span><span lang="vi">CRUD trong 3 lệnh</span></a>
+    <a class="jd-quick c-purple" href="#endpoint"><span class="num">3</span><b lang="en">Every layer</b><b lang="vi">Từng tầng</b><span lang="en">9 steps, in order</span><span lang="vi">9 bước, theo thứ tự</span></a>
     <a class="jd-quick c-blue" href="#try"><span class="num">4</span><b lang="en">Call it</b><b lang="vi">Gọi thử</b><span lang="en">Every response</span><span lang="vi">Mọi response</span></a>
     <a class="jd-quick c-orange" href="#debug"><span class="num">5</span><b lang="en">Debug</b><b lang="vi">Debug</b><span lang="en">Logs, trace_id, t_debug</span><span lang="vi">Log, trace_id, t_debug</span></a>
     <a class="jd-quick c-red" href="#errors"><span class="num">6</span><b lang="en">When it breaks</b><b lang="vi">Khi bị lỗi</b><span lang="en">Symptom → fix</span><span lang="vi">Triệu chứng → cách sửa</span></a>
@@ -63,7 +63,11 @@
         </div>
         <div class="jd-node is-tint c-green" data-node="router">
           <span class="k">router/v1/</span><span class="t">Router</span>
-          <div class="d" lang="en">URL → handler method. BearerAuth.</div><div class="d" lang="vi">Định tuyến URL → method của Handler. Kiểm tra BearerAuth.</div>
+          <div class="d" lang="en">URL → handler method, through:</div><div class="d" lang="vi">URL → method của handler, qua:</div>
+          <div style="display:grid;gap:16px;margin-top:8px">
+            <div class="jd-node c-purple" data-node="auth" style="padding:5px 8px;box-shadow:none"><span class="t mono" style="font-size:12px;margin:0">authenticate</span></div>
+            <div class="jd-node c-purple" data-node="guard" style="padding:5px 8px;box-shadow:none"><span class="t mono" style="font-size:12px;margin:0">guard.Can</span></div>
+          </div>
         </div>
         <div class="jd-node is-tint c-green" data-node="handler">
           <span class="k">handler/v1/ + dto/v1/</span><span class="t">Handler</span>
@@ -71,7 +75,7 @@
         </div>
         <div class="jd-node is-tint c-green" data-node="service">
           <span class="k">service/</span><span class="t">Service</span>
-          <div class="d" lang="en">Business logic. Save, clear cache.</div><div class="d" lang="vi">Xử lý quy tắc nghiệp vụ. Lưu DB, xóa cache cũ.</div>
+          <div class="d" lang="en">Business rules (none yet): calls the repository.</div><div class="d" lang="vi">Quy tắc nghiệp vụ (chưa có): gọi repository.</div>
         </div>
         <div class="jd-node is-tint c-green" data-node="repo">
           <span class="k">repository/</span><span class="t">Repository</span>
@@ -103,18 +107,18 @@
           <tr><th><span lang="en">I need to…</span><span lang="vi">Tôi cần…</span></th><th><span lang="en">File</span><span lang="vi">File</span></th></tr>
           <tr><td><span lang="en">add / change a column</span><span lang="vi">Thêm hoặc đổi cột trong database</span></td><td><code>database/primary/migrations/</code> <span lang="en">new file pair, never edit an applied one</span><span lang="vi">Tạo cặp file migration mới, không sửa file đã chạy</span></td></tr>
           <tr><td><span lang="en">write SQL</span><span lang="vi">Viết câu truy vấn SQL mới</span></td><td><code>database/primary/queries/xxxxx.sql</code> → <code>make sqlc</code></td></tr>
-          <tr><td><span lang="en">check input format (required, min, email…)</span><span lang="vi">Validate định dạng input (required, min, email…)</span></td><td><code>dto/v1/</code> — dùng tag <code>binding:"…"</code></td></tr>
-          <tr><td><span lang="en">a business rule ("only the owner may edit")</span><span lang="vi">Quy tắc nghiệp vụ (vd: "chỉ chủ sở hữu mới có quyền sửa")</span></td><td>Viết trong <code>service/</code></td></tr>
+          <tr><td><span lang="en">check input format (required, min, email…)</span><span lang="vi">Validate định dạng input (required, min, email…)</span></td><td><code>dto/v1/</code> — <span lang="en">the <code>binding:"…"</code> tag</span><span lang="vi">tag <code>binding:"…"</code></span></td></tr>
+          <tr><td><span lang="en">a business rule ("only the owner may edit")</span><span lang="vi">Quy tắc nghiệp vụ (vd: "chỉ chủ sở hữu mới có quyền sửa")</span></td><td><code>service/</code></td></tr>
           <tr><td><span lang="en">a new error for the client</span><span lang="vi">Mã lỗi nghiệp vụ trả về cho client</span></td><td><code>domain/errors.go</code> + <span lang="en">text in</span><span lang="vi">câu chữ trong</span> <code>module.go</code></td></tr>
           <tr><td><span lang="en">cache something / call an outside service</span><span lang="vi">Cache dữ liệu / gọi dịch vụ bên ngoài</span></td><td><code>infrastructure/</code> + <span lang="en">its interface in</span><span lang="vi">interface của nó trong</span> <code>domain/</code></td></tr>
           <tr><td><span lang="en">the JSON shape of the response</span><span lang="vi">Cấu trúc JSON response trả về</span></td><td><code>dto/v1/</code> — struct <code>ProductResponse</code></td></tr>
           <tr><td><span lang="en">a URL, its method, login required?</span><span lang="vi">Khai báo URL, method, yêu cầu đăng nhập?</span></td><td><code>router/v1/</code></td></tr>
           <tr><td><span lang="en">HTTP status of a success</span><span lang="vi">HTTP status code khi thành công</span></td><td><code>handler/v1/</code></td></tr>
-          <tr><td><span lang="en">a new constructor / dependency</span><span lang="vi">Đăng ký Constructor / Dependency mới</span></td><td><code>module.go</code> — dùng <code>fx.Provide</code></td></tr>
+          <tr><td><span lang="en">a new constructor / dependency</span><span lang="vi">Đăng ký Constructor / Dependency mới</span></td><td><code>module.go</code> — <code>fx.Provide</code></td></tr>
         </table></div>
       </div>
       <div>
-        <h3><span lang="en">Four rules that keep the layers clean</span><span lang="vi">Bốn luật giữ các tầng sạch sẽ</span></h3>
+        <h3><span lang="en">Four rules that keep the layers clean</span><span lang="vi">Bốn luật giữ các tầng tách biệt</span></h3>
         <div class="jd-rules" style="grid-template-columns:minmax(0,1fr)">
           <div class="jd-rule"><span class="n" style="background:var(--green)">1</span>
             <p lang="en"><b>Handler never touches SQL</b>, and never decides business rules. It only translates HTTP ↔ service calls.</p>
@@ -139,8 +143,8 @@
       <span class="jd-badge">2</span>
       <div>
         <h2><span lang="en">Generate the skeleton</span><span lang="vi">Khởi tạo khung (skeleton) cho feature</span></h2>
-        <p class="jd-sub" lang="en">Start the stack first (<code>make app-dev-bg</code>, see <a href="overview.html#run">Overview</a>). Then do these three steps <b>on your machine</b>, from the Jungo folder. The app container reloads by itself when a <code>.go</code> file changes; it won't start until step 3 is done.</p>
-        <p class="jd-sub" lang="vi">Trước tiên khởi động stack (<code>make app-dev-bg</code>, xem <a href="overview.html#run">Tổng quan</a>). Sau đó làm 3 bước dưới đây <b>trên máy bạn</b>, tại thư mục <code>jungo</code>. Container app tự reload khi file <code>.go</code> thay đổi; app chỉ chạy được sau bước 3.</p>
+        <p class="jd-sub" lang="en">Start the stack first (<code>make app-dev-bg</code>, see <a href="overview.html#run">Overview</a>). Then do these three steps <b>on your machine</b>, from the Jungo folder. The app container reloads by itself when a <code>.go</code> file changes; it won't start until step 3 is done (it checks at startup that every permission it uses is in the database).</p>
+        <p class="jd-sub" lang="vi">Trước tiên khởi động stack (<code>make app-dev-bg</code>, xem <a href="overview.html#run">Tổng quan</a>). Sau đó làm 3 bước dưới đây <b>trên máy bạn</b>, tại thư mục <code>jungo</code>. Container app tự reload khi file <code>.go</code> thay đổi; app chỉ chạy được sau bước 3 (khi khởi động nó kiểm tra mọi permission nó dùng đã có trong database).</p>
       </div>
     </div>
 
@@ -195,20 +199,62 @@
         <h3><span lang="en">What you get for free</span><span lang="vi">Bạn có sẵn những gì</span></h3>
         <div class="jd-tablewrap"><table class="jd-params">
           <tr><th>Endpoint</th><th><span lang="en">does</span><span lang="vi">chức năng</span></th></tr>
-          <tr><td>POST /api/v1/products</td><td><span lang="en">create — body <code>{"name": "…", "status": 1}</code></span><span lang="vi">tạo mới sản phẩm — body <code>{"name": "…", "status": 1}</code></span></td></tr>
-          <tr><td>GET /api/v1/products</td><td><span lang="en">list — <code>?page=&amp;page_size=&amp;search=</code></span><span lang="vi">danh sách — hỗ trợ <code>?page=&amp;page_size=&amp;search=</code></span></td></tr>
-          <tr><td>GET /api/v1/products/:uuid</td><td><span lang="en">get one (cached 5 min in Redis with <code>CACHE_REDIS_ENABLE=true</code>; without Redis every GET reads the DB)</span><span lang="vi">xem chi tiết (cache 5 phút trong Redis khi <code>CACHE_REDIS_ENABLE=true</code>; không có Redis thì mọi GET đều đọc DB)</span></td></tr>
-          <tr><td>PATCH /api/v1/products/:uuid</td><td><span lang="en">update name / status</span><span lang="vi">cập nhật linh hoạt tên / trạng thái</span></td></tr>
-          <tr><td>DELETE /api/v1/products/:uuid</td><td><span lang="en">soft delete (sets <code>deleted_at</code>)</span><span lang="vi">xóa mềm (tự gán <code>deleted_at</code>)</span></td></tr>
+          <tr><td>POST /api/v1/products</td><td><span lang="en">create — body <code>{"name": "…"}</code> (2–150 chars); new products are <code>active</code>; <code>201</code></span><span lang="vi">tạo mới — body <code>{"name": "…"}</code> (2–150 ký tự); sản phẩm mới ở trạng thái <code>active</code>; <code>201</code></span></td></tr>
+          <tr><td>GET /api/v1/products</td><td><span lang="en">list — <code>?page=&amp;page_size=</code> (≤ 100) <code>&amp;search=</code> (name) <code>&amp;sort_order=asc|desc</code> (by creation, newest first by default)</span><span lang="vi">danh sách — <code>?page=&amp;page_size=</code> (≤ 100) <code>&amp;search=</code> (theo tên) <code>&amp;sort_order=asc|desc</code> (theo thời điểm tạo, mặc định mới nhất trước)</span></td></tr>
+          <tr><td>GET /api/v1/products/:uuid</td><td><span lang="en">get one</span><span lang="vi">xem chi tiết</span></td></tr>
+          <tr><td>PATCH /api/v1/products/:uuid</td><td><span lang="en">update <code>name</code> and/or <code>status</code> (<code>active</code> | <code>inactive</code>)</span><span lang="vi">cập nhật <code>name</code> và/hoặc <code>status</code> (<code>active</code> | <code>inactive</code>)</span></td></tr>
+          <tr><td>DELETE /api/v1/products/:uuid</td><td><span lang="en">soft delete (sets <code>deleted_at</code>)</span><span lang="vi">xóa mềm (gán <code>deleted_at</code>)</span></td></tr>
         </table></div>
-        <p class="jd-sub" style="margin-top:12px" lang="en">The table already has <code>id</code>, <code>uuid</code>, <code>name</code>, <code>status</code> (1 = active, 2 = inactive), <code>created_at</code>, <code>updated_at</code> (set by a trigger) and <code>deleted_at</code>. A unit test file for the service is generated too: <code>go test ./internal/features/product/...</code> passes out of the box.</p>
-        <p class="jd-sub" style="margin-top:12px" lang="vi">Bảng dữ liệu đã chuẩn hóa sẵn các cột: <code>id</code>, <code>uuid</code>, <code>name</code>, <code>status</code> (1 = đang bán, 2 = ngừng bán), <code>created_at</code>, <code>updated_at</code> (trigger PostgreSQL tự gán) và <code>deleted_at</code>. Bộ Unit Test cho tầng Service cũng được sinh sẵn: chạy <code>go test ./internal/features/product/...</code> sẽ pass ngay lập tức.</p>
-        <div class="jd-callout c-green" style="margin-top:14px">
-          <b lang="en">🔒 Every generated route requires login and a permission.</b><b lang="vi">🔒 Mọi route sinh ra đều bắt buộc đăng nhập và có permission.</b>
-          <span lang="en">The generated router puts <code>middleware.BearerAuth</code> on the whole <code>/products</code> group (no valid access token → <b>401</b>) and wraps each handler in <code>guard.Can(…, domain.Products…)</code> (missing permission → <b>403</b>). The demo admin is <code>super_admin</code>: <code>make migrate-up</code> gives it the new permissions. A public endpoint goes outside the protected group, wrapped in <code>guard.Public</code> — the way <code>auth_router.go</code> opens <code>/auth/login</code>.</span>
-          <span lang="vi">Router sinh ra gắn <code>middleware.BearerAuth</code> cho cả nhóm <code>/products</code> (không có access token hợp lệ → <b>401</b>) và bọc từng handler bằng <code>guard.Can(…, domain.Products…)</code> (thiếu permission → <b>403</b>). Admin demo là <code>super_admin</code>: <code>make migrate-up</code> cấp cho nó các permission mới. Endpoint public thì đăng ký ngoài nhóm được bảo vệ và bọc bằng <code>guard.Public</code> — như cách <code>auth_router.go</code> mở <code>/auth/login</code>.</span>
+        <p class="jd-sub" style="margin-top:12px" lang="en">The table already has <code>id</code>, <code>uuid</code>, <code>name</code>, <code>status</code> (stored as 1 = active, 2 = inactive; the API uses the names), <code>created_at</code>, <code>updated_at</code> (set by a trigger) and <code>deleted_at</code>. A unit test file for the service is generated too: <code>go test ./internal/features/product/...</code> passes out of the box.</p>
+        <p class="jd-sub" style="margin-top:12px" lang="vi">Bảng có sẵn các cột <code>id</code>, <code>uuid</code>, <code>name</code>, <code>status</code> (lưu 1 = active, 2 = inactive; API dùng tên), <code>created_at</code>, <code>updated_at</code> (do trigger gán) và <code>deleted_at</code>. File unit test cho service cũng được sinh: <code>go test ./internal/features/product/...</code> pass ngay.</p>
+        <div class="jd-callout c-blue" style="margin-top:14px">
+          <b lang="en">Note:</b><b lang="vi">Ghi chú:</b>
+          <span lang="en">every generated route requires login and a permission. The router puts the auth middleware (<code>middleware.Authenticate</code>, injected by the auth feature) on the whole <code>/products</code> group — no valid access token → <b>401</b> — and wraps each handler in <code>guard.Can(…, domain.Products…)</code> — missing permission → <b>403</b>. The four <code>products:*</code> permissions are declared in the feature's <code>domain/permission.go</code>, labelled in its <code>module.go</code> and inserted by its migration, granted to <code>super_admin</code>. Public routes and owner-only routes: <a href="access.html#integrate">Permissions &amp; roles</a>.</span>
+          <span lang="vi">mọi route sinh ra đều cần đăng nhập và permission. Router gắn middleware xác thực (<code>middleware.Authenticate</code>, do feature auth inject) cho cả group <code>/products</code> — không có access token hợp lệ → <b>401</b> — và bọc từng handler bằng <code>guard.Can(…, domain.Products…)</code> — thiếu permission → <b>403</b>. Bốn permission <code>products:*</code> được khai báo trong <code>domain/permission.go</code> của feature, có nhãn trong <code>module.go</code> và được migration của nó chèn vào, cấp cho <code>super_admin</code>. Route public và route chỉ cho chủ sở hữu: <a href="access.html#integrate">Phân quyền</a>.</span>
         </div>
       </div>
+    </div>
+
+    <h3 style="margin-top:30px"><span lang="en">Options: table name, remove a feature</span><span lang="vi">Tùy chọn: tên bảng, gỡ feature</span></h3>
+    <div class="jd-grid-2">
+      <div class="jd-term" data-copy="commands" lang="en"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="bash">
+# NAME: snake_case, letters and _ only (no digits, not a Go keyword).
+# Table name defaults to the English plural of NAME (product → products,
+# category → categories, box → boxes). URLs and permissions always use
+# the plural of NAME (/api/v1/products, products:read); the sqlc model
+# follows the table (TABLE=items → sqlc.Item).
+$ make feature NAME=product TABLE=items
+
+# Remove: deletes features/product/, queries/product.sql,
+# sqlc/product.sql.go and the fx.go entry. The table and the migration
+# files stay; the command prints what to run next:
+#   make migrate-down   (rolls back the LAST migration only — check it is
+#                        this feature's; drops the table and its permissions)
+#   rm internal/database/primary/migrations/*_products.{up,down}.sql
+#      (*_items.* with TABLE=items: migration files follow the table)
+#   make sqlc
+$ make feature-remove NAME=product
+</pre></div>
+      <div class="jd-term" data-copy="commands" lang="vi"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="bash">
+# NAME: snake_case, chỉ chữ cái và _ (không số, không trùng từ khóa Go).
+# Tên bảng mặc định là số nhiều tiếng Anh của NAME (product → products,
+# category → categories, box → boxes). URL và permission luôn dùng số
+# nhiều của NAME (/api/v1/products, products:read); model sqlc theo
+# tên bảng (TABLE=items → sqlc.Item).
+$ make feature NAME=product TABLE=items
+
+# Gỡ: xóa features/product/, queries/product.sql, sqlc/product.sql.go
+# và dòng trong fx.go. Bảng và file migration vẫn còn; lệnh in ra
+# các bước tiếp theo:
+#   make migrate-down   (chỉ rollback migration CUỐI CÙNG — kiểm tra
+#                        đúng là của feature này; xóa bảng và permission)
+#   rm internal/database/primary/migrations/*_products.{up,down}.sql
+#      (*_items.* nếu dùng TABLE=items: file migration theo tên bảng)
+#   make sqlc
+$ make feature-remove NAME=product
+</pre></div>
     </div>
   </section>
 
@@ -231,7 +277,7 @@
         <h3><span lang="en">Query — the SQL</span><span lang="vi">Query — Câu lệnh SQL &amp; sqlc</span></h3>
         <div class="file">internal/database/primary/queries/product.sql</div>
         <p lang="en">The query file is where you define how data is fetched or updated. We write standard SQL with special annotations that tell sqlc how to generate type-safe Go methods:</p>
-        <p lang="vi">File query là nơi bạn định nghĩa các câu lệnh đọc/ghi dữ liệu. Ta viết SQL thuần kèm theo các chú thích (annotation) để sqlc hiểu và tự động sinh ra mã nguồn Go chuẩn mực:</p>
+        <p lang="vi">File query là nơi bạn định nghĩa cách đọc hoặc ghi dữ liệu. Ta viết SQL chuẩn kèm các annotation để sqlc sinh method Go an toàn kiểu:</p>
 
         <div class="bf-stack">
           <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>queries/product.sql</span></div>
@@ -243,7 +289,7 @@ UPDATE products SET
 WHERE uuid = sqlc.arg(uuid) AND deleted_at IS NULL
 RETURNING *;
 </pre></div>
-          <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>make sqlc → sqlc/product.sql.go (generated, don't edit)</span></div>
+          <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>make sqlc → sqlc/product.sql.go · <span lang="en">generated, don't edit</span><span lang="vi">được sinh, đừng sửa</span></span></div>
 <pre data-hl="go" data-lines="2">
 type UpdateProductParams struct {
     Name   *string   `db:"name" json:"name"`     // narg → pointer: nil = NULL
@@ -251,16 +297,15 @@ type UpdateProductParams struct {
     UUID   uuid.UUID `db:"uuid" json:"uuid"`
 }
 </pre></div>
-          <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>sql log of {"name": "Iced coffee"} — status was not sent</span></div>
+          <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span><span lang="en">sql log of {"name": "Iced coffee"} — status was not sent</span><span lang="vi">sql log của {"name": "Iced coffee"} — không gửi status</span></span></div>
 <pre data-hl="sql">
 UPDATE products SET name = COALESCE('Iced coffee', name), status = COALESCE(NULL, status)
 WHERE uuid = '…' AND deleted_at IS NULL RETURNING id, uuid, name, status, …
 </pre></div>
         </div>
 
-        <div class="jd-callout c-blue" style="margin-top:16px">
-          <b lang="en">💡 Understanding sqlc annotations &amp; dynamic PATCH updates:</b>
-          <b lang="vi">💡 Giải mã cú pháp sqlc &amp; Kỹ thuật Cập nhật linh hoạt (PATCH):</b>
+        <p class="jd-hint" style="margin-top:16px" lang="en">The sqlc annotations and the PATCH pattern used above:</p>
+        <p class="jd-hint" style="margin-top:16px" lang="vi">Các annotation của sqlc và cách làm PATCH ở trên:</p>
           <div class="jd-tablewrap" style="margin-top:10px">
             <table class="jd-params">
               <tr>
@@ -297,7 +342,6 @@ WHERE uuid = '…' AND deleted_at IS NULL RETURNING id, uuid, name, status, …
               </tr>
             </table>
           </div>
-        </div>
 
         <p class="jd-hint" style="margin-top:12px" lang="en">Changed a <code>.sql</code> file? Run <code>make sqlc</code>. Need a new column? That starts with a new migration (<code>make migrate-create NAME=…</code>, then <code>make migrate-up</code>) — never edit one that already ran.</p>
         <p class="jd-hint" style="margin-top:12px" lang="vi">Vừa sửa file <code>.sql</code>? Hãy chạy <code>make sqlc</code> để cập nhật code Go. Cần thêm cột mới vào bảng? Hãy tạo migration mới (<code>make migrate-create NAME=…</code> rồi <code>make migrate-up</code>) — tuyệt đối không sửa trực tiếp file migration đã từng được thực thi.</p>
@@ -308,27 +352,27 @@ WHERE uuid = '…' AND deleted_at IS NULL RETURNING id, uuid, name, status, …
         <span class="n">3.2</span>
         <h3><span lang="en">Domain — the contract</span><span lang="vi">Domain — hợp đồng nghiệp vụ</span></h3>
         <div class="file">internal/features/product/domain/product.go · errors.go</div>
-        <p lang="en">Plain Go, no Gin, no SQL. The input uses pointers so "not sent" (<code>nil</code>) is different from a value. Each layer gets one method in an interface. The error <code>response.New(response.NotFound, "product_not_found")</code> means: HTTP 404, and the message is the translation key <code>product_not_found</code> (its text lives in 3.8).</p>
-        <p lang="vi">Tầng Domain hoàn toàn là Go thuần (Pure Go) — không dính dáng đến Gin, database hay thư viện ngoài. Struct Input dùng con trỏ (<code>*string</code>, <code>*int16</code>) để phân biệt rõ giữa việc "client không gửi trường này" (<code>nil</code>) với việc client gửi giá trị rỗng/mặc định. Mỗi tầng kiến trúc đều được chuẩn hóa qua một Interface. Mã lỗi <code>response.New(response.NotFound, "product_not_found")</code> tương ứng với HTTP 404 và key thông báo <code>product_not_found</code> (được khai báo bản dịch ở bước 3.8).</p>
+        <p lang="en">Plain Go, no Gin, no SQL. The input uses pointers so "not sent" (<code>nil</code>) is different from a value. Each layer gets one method in an interface. The error <code>response.New(response.NotFound, "product_not_found")</code> means: HTTP 404, and the message is the message key <code>product_not_found</code> (its text lives in 3.8). <code>Status</code> is stored as a number (1 = active, 2 = inactive); the DTO converts to and from the names (3.5).</p>
+        <p lang="vi">Go thuần, không Gin, không SQL. Input dùng con trỏ để "không gửi" (<code>nil</code>) khác với một giá trị. Mỗi tầng có một method trong một interface. Lỗi <code>response.New(response.NotFound, "product_not_found")</code> nghĩa là: HTTP 404, và message là message key <code>product_not_found</code> (câu chữ ở bước 3.8). <code>Status</code> lưu dạng số (1 = active, 2 = inactive); DTO đổi qua lại với tên (3.5).</p>
         <div class="bf-stack">
           <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>domain/product.go</span></div>
-<pre data-hl="go" data-lines="3,10,15">
-// UpdateProductInput holds data for updating a product.
+<pre data-hl="go" data-lines="3-4,10,15">
+// UpdateProductInput holds data for updating a product. A nil field is left unchanged.
 type UpdateProductInput struct {
     Name   *string
     Status *int16
 }
 
 type ProductRepository interface {
-    Create(ctx context.Context, input CreateProductInput) (*Product, error)
+    WithTransaction(ctx context.Context, fn func(ctx context.Context) error) error
     GetByUUID(ctx context.Context, uid uuid.UUID) (*Product, error)
     Update(ctx context.Context, uid uuid.UUID, input UpdateProductInput) (*Product, error)
-    // … List, Delete
+    // … Create, List, Delete
 }
 
 type ProductService interface {
     UpdateProduct(ctx context.Context, uid uuid.UUID, input UpdateProductInput) (*Product, error)
-    // … CreateProduct, GetProduct, GetProducts, DeleteProduct
+    // … CreateProduct, GetProduct, ListProducts, DeleteProduct
 }
 </pre></div>
           <div class="jd-grid-2">
@@ -363,10 +407,10 @@ var (
         <span class="n">3.3</span>
         <h3><span lang="en">Repository — run the query</span><span lang="vi">Repository — thực thi câu truy vấn</span></h3>
         <div class="file">internal/features/product/repository/product_repository.go</div>
-        <p lang="en">Turns the domain input into sqlc params, runs the query, turns the row back into a domain <code>Product</code>. The repository holds a <code>*primary.DB</code>; <code>r.db.Queries(ctx)</code> returns the sqlc queries and automatically joins a transaction if the caller started one. <code>database.Match</code> turns "no row matched" (wrong or deleted uuid) into your 404 error; any other error passes through and becomes a 500.</p>
-        <p lang="vi">Repository có nhiệm vụ chuyển đổi input từ Domain thành params cho sqlc, thực thi câu query, rồi map dòng kết quả về entity <code>Product</code> của Domain. Repository giữ một <code>*primary.DB</code>; hàm <code>r.db.Queries(ctx)</code> trả về các query của sqlc và sẽ tự động tham gia vào Database Transaction nếu Service phía trên đang mở transaction. Tiện ích <code>database.Match</code> tự động bắt lỗi "không tìm thấy bản ghi" (do sai UUID hoặc sản phẩm đã bị xóa) và chuyển thành lỗi <code>domain.ErrProductNotFound</code> (HTTP 404); mọi lỗi không xác định khác sẽ được chuyển tiếp để trả về mã 500.</p>
+        <p lang="en">Turns the domain input into sqlc params, runs the query, turns the row back into a domain <code>Product</code>. The repository holds a <code>*primary.DB</code>; <code>r.db.Queries(ctx)</code> returns the sqlc queries and automatically joins a transaction if the caller started one. <code>database.MatchNotFound</code> turns "no row matched" (wrong or deleted uuid) into your 404 error; <code>wrap</code> adds the operation name to any other error, which becomes a 500. See <a href="../junkit/database.html">database</a>.</p>
+        <p lang="vi">Đổi input của domain thành params của sqlc, chạy query, rồi đổi dòng kết quả về <code>Product</code> của domain. Repository giữ một <code>*primary.DB</code>; <code>r.db.Queries(ctx)</code> trả về các query của sqlc và tự tham gia transaction nếu nơi gọi đã mở một transaction. <code>database.MatchNotFound</code> đổi lỗi "không có dòng nào khớp" (sai UUID hoặc đã bị xóa) thành lỗi 404 của bạn; <code>wrap</code> gắn tên thao tác vào mọi lỗi khác, lỗi đó thành 500. Xem <a href="../junkit/database.html">database</a>.</p>
         <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>repository/product_repository.go</span></div>
-<pre data-hl="go" data-lines="3-7,9-11,14">
+<pre data-hl="go" data-lines="3-7,9,16">
 // Update implements domain.ProductRepository.
 func (r *ProductRepository) Update(ctx context.Context, uid uuid.UUID, input domain.UpdateProductInput) (*domain.Product, error) {
     row, err := r.db.Queries(ctx).UpdateProduct(ctx, sqlc.UpdateProductParams{
@@ -375,14 +419,17 @@ func (r *ProductRepository) Update(ctx context.Context, uid uuid.UUID, input dom
         Status: input.Status,
     })
     if err != nil {
-        return nil, database.MatchNotFound(err, domain.ErrProductNotFound)
+        return nil, wrap("update", database.MatchNotFound(err, domain.ErrProductNotFound))
     }
 
     return mapProduct(row), nil
 }
+
+// wrap adds the failed operation to err; domain errors stay matchable with errors.Is/As.
+var wrap = database.Wrapper("product repository")
 </pre></div>
-        <p lang="en">A query sqlc cannot express? Write the SQL by hand through <code>r.db.Executor(ctx)</code> — it is the same executor <code>Queries</code> uses, so the query is still traced and still joins the caller's transaction:</p>
-        <p lang="vi">Gặp câu query mà sqlc không viết được? Hãy viết SQL thuần qua <code>r.db.Executor(ctx)</code> — đây chính là executor mà <code>Queries</code> dùng bên dưới, nên câu query vẫn được trace và vẫn tham gia transaction của Service gọi nó:</p>
+        <p lang="en">A query sqlc cannot express? Write the SQL by hand through <code>r.db.Executor(ctx)</code>; it is still traced and still joins the caller's transaction — see <a href="multi-database.html#sqlc">Multiple databases</a>:</p>
+        <p lang="vi">Câu query sqlc không viết được? Viết SQL tay qua <code>r.db.Executor(ctx)</code>; nó vẫn được trace và vẫn tham gia transaction của nơi gọi — xem <a href="multi-database.html#sqlc">Nhiều database</a>:</p>
         <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>repository/product_repository.go</span></div>
 <pre data-hl="go">
 var total int64
@@ -397,41 +444,37 @@ err := r.db.Executor(ctx).QueryRow(ctx,
         <span class="n">3.4</span>
         <h3><span lang="en">Service — the business logic</span><span lang="vi">Service — xử lý logic nghiệp vụ</span></h3>
         <div class="file">internal/features/product/service/product_service.go</div>
-        <p lang="en">The place for rules. Editing a name has no rule yet, so the service only saves and clears the cache. <code>GetProduct</code> caches products for 5 minutes, so after a write the cache key must go, or readers keep seeing the old name. (With <code>CACHE_REDIS_ENABLE=true</code> the cache is Redis; with the default <code>false</code> there is no cache and both calls do nothing. <code>make app-dev WITH=cache</code> only starts Redis.) Write the flow in the doc comment — the whole codebase does.</p>
-        <p lang="vi">Service là trái tim của hệ thống — nơi lưu giữ toàn bộ quy tắc nghiệp vụ (Business Rules). Ở ví dụ cập nhật tên này, logic rất tinh gọn: gọi repository để lưu vào DB và xóa cache cũ. Vì hàm <code>GetProduct</code> cache sản phẩm 5 phút, nên sau khi ghi thành công bắt buộc phải xóa cache key, nếu không client sẽ tiếp tục nhìn thấy tên cũ. (Với <code>CACHE_REDIS_ENABLE=true</code> cache nằm trong Redis; mặc định <code>false</code> thì không có cache và cả hai lệnh đều không làm gì. <code>make app-dev WITH=cache</code> chỉ khởi động Redis.) Hãy luôn ghi tóm tắt luồng xử lý (Flow) ngay trong comment của hàm — toàn bộ codebase đều tuân thủ quy chuẩn này.</p>
+        <p lang="en">The place for rules. The generated service has none yet: every method passes straight to the repository. It does no permission check either — every route already requires its permission (3.7).</p>
+        <p lang="vi">Nơi đặt quy tắc nghiệp vụ. Service sinh ra chưa có quy tắc nào: mọi method chuyển thẳng xuống repository. Nó cũng không kiểm tra permission — mọi route đã đòi permission của nó (3.7).</p>
         <div class="jd-grid-2">
           <div><div class="jd-sticky">
             <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>service/product_service.go</span></div>
 <pre data-hl="go" id="code-svc">
-// UpdateProduct updates product information.
-//
-// Flow: update in DB -> invalidate cache
+type ProductService struct {
+    repo domain.ProductRepository
+}
+
+func NewProductService(repo domain.ProductRepository) *ProductService {
+    return &amp;ProductService{repo: repo}
+}
+
+// UpdateProduct updates a product.
 func (s *ProductService) UpdateProduct(ctx context.Context, uid uuid.UUID, input domain.UpdateProductInput) (*domain.Product, error) {
-    updated, err := s.repo.Update(ctx, uid, input)
-    if err != nil {
-        return nil, err
-    }
-
-    _ = s.cache.Delete(ctx, cacheKey(uid))
-
-    return updated, nil
+    return s.repo.Update(ctx, uid, input)
 }
 </pre></div>
           </div></div>
           <div class="jd-explain">
-            <div class="jd-ex c-green" data-code="#code-svc" data-show="1-3"><span class="n">1</span>
-              <span class="w">// Flow: …</span>
-              <span class="x"><span lang="en">One line that says what happens, in order. Update it when you add a step.</span><span lang="vi">Mô tả ngắn gọn trình tự các bước thực hiện. Mỗi khi bạn thêm bước xử lý mới, hãy cập nhật dòng comment này.</span></span></div>
-            <div class="jd-ex c-green" data-code="#code-svc" data-show="5-8"><span class="n">2</span>
+            <div class="jd-ex c-green" data-code="#code-svc" data-show="1-7"><span class="n">1</span>
+              <span class="w">NewProductService(repo)</span>
+              <span class="x"><span lang="en">The constructor's parameters are its dependencies; Fx passes them in (<a href="uber-fx.html">Uber Fx</a>). Need a logger or another feature's service? Add a parameter — nothing else to register.</span><span lang="vi">Tham số của constructor là dependency của nó; Fx truyền vào (<a href="uber-fx.html">Uber Fx</a>). Cần logger hay service của feature khác? Thêm tham số — không cần đăng ký gì thêm.</span></span></div>
+            <div class="jd-ex c-green" data-code="#code-svc" data-show="10-11"><span class="n">2</span>
               <span class="w">s.repo.Update</span>
-              <span class="x"><span lang="en">The service only sees the <code>domain.ProductRepository</code> interface — it doesn't know SQL exists. A not-found already comes back as <code>ErrProductNotFound</code>: just return it, don't wrap it.</span><span lang="vi">Service chỉ tương tác qua Interface <code>domain.ProductRepository</code> — nó không hề biết câu lệnh SQL tồn tại. Nếu không tìm thấy bản ghi, Repository đã trả sẵn lỗi <code>ErrProductNotFound</code>: Service chỉ việc return chuyển tiếp mà không cần wrap thêm.</span></span></div>
-            <div class="jd-ex c-green" data-code="#code-svc" data-show="10"><span class="n">3</span>
-              <span class="w">s.cache.Delete</span>
-              <span class="x"><span lang="en">Best-effort: a cache failure must not fail a successful write, hence <code>_ =</code>.</span><span lang="vi">Cơ chế Best-effort: việc xóa cache thất bại không được phép làm hỏng một thao tác ghi dữ liệu đã thành công vào DB, vì vậy ta dùng <code>_ =</code> để bỏ qua lỗi cache.</span></span></div>
-            <div class="jd-callout c-orange">
-              <b lang="en">Adding a rule later?</b><b lang="vi">Cần bổ sung quy tắc nghiệp vụ sau này?</b>
-              <span lang="en">It goes here, before <code>s.repo.Update</code>: load what you need (<code>s.repo.GetByUUID</code>), check it, return a domain error from 3.2. Two writes that must succeed together go inside <code>db.WithTransaction(ctx, func(txCtx context.Context) error { … })</code> — see <a href="../junkit/database.html">database</a>.</span>
-              <span lang="vi">Mọi quy tắc mới đều đặt ở đây, trước khi gọi <code>s.repo.Update</code>: lấy dữ liệu cần kiểm tra (ví dụ <code>s.repo.GetByUUID</code>), validate điều kiện, và trả về lỗi Domain từ bước 3.2 nếu vi phạm. Nếu có 2 thao tác ghi cần đảm bảo tính toàn vẹn (cùng thành công hoặc cùng rollback), hãy bao bọc chúng trong <code>db.WithTransaction(ctx, func(txCtx context.Context) error { … })</code> — xem thêm tại trang <a href="../junkit/database.html">database</a>.</span>
+              <span class="x"><span lang="en">The service only sees the <code>domain.ProductRepository</code> interface. A not-found already comes back as <code>ErrProductNotFound</code>: return it as is.</span><span lang="vi">Service chỉ thấy interface <code>domain.ProductRepository</code>. Lỗi không tìm thấy đã trả về sẵn dạng <code>ErrProductNotFound</code>: cứ trả nguyên nó.</span></span></div>
+            <div class="jd-callout c-green">
+              <b lang="en">Tip:</b><b lang="vi">Mẹo:</b>
+              <span lang="en">a rule goes here, before <code>s.repo.Update</code>: load what you need (<code>s.repo.GetByUUID</code>), check it, return a domain error from 3.2. Two writes that must succeed together go inside <code>s.repo.WithTransaction(ctx, func(ctx context.Context) error { … })</code> — see <a href="multi-database.html#tx">Multiple databases</a>. Write the steps in a <code>// Flow: a -> b -> c</code> doc comment, as the auth, access and user services do.</span>
+              <span lang="vi">quy tắc đặt ở đây, trước <code>s.repo.Update</code>: lấy dữ liệu cần (<code>s.repo.GetByUUID</code>), kiểm tra, trả lỗi domain từ 3.2. Hai thao tác ghi phải cùng thành công thì đặt trong <code>s.repo.WithTransaction(ctx, func(ctx context.Context) error { … })</code> — xem <a href="multi-database.html#tx">Nhiều database</a>. Ghi các bước vào doc comment dạng <code>// Flow: a -> b -> c</code>, như các service auth, access và user.</span>
             </div>
           </div>
         </div>
@@ -442,32 +485,39 @@ func (s *ProductService) UpdateProduct(ctx context.Context, uid uuid.UUID, input
         <span class="n">3.5</span>
         <h3><span lang="en">DTO — what the client may send</span><span lang="vi">DTO — dữ liệu client được phép gửi</span></h3>
         <div class="file">internal/features/product/dto/v1/product_dto.go</div>
-        <p lang="en">The <code>binding</code> tag is validation that runs before your code. <code>omitempty</code> = "skip the checks if the field was not sent"; when it is sent, <code>min=2,max=150</code> must hold. Pointers again: that's how a PATCH tells "not sent" from "sent".</p>
-        <p lang="vi">Tag <code>binding</code> giúp tự động validate dữ liệu trước khi request chạm vào code của bạn. <code>omitempty</code> nghĩa là "nếu không gửi trường này thì bỏ qua kiểm tra"; còn nếu có gửi thì bắt buộc phải thỏa mãn <code>min=2,max=150</code>. Việc sử dụng con trỏ (pointer) là kỹ thuật quan trọng giúp API PATCH phân biệt rạch ròi giữa "client không gửi trường này" và "client có gửi trường này".</p>
+        <p lang="en">The <code>binding</code> tag is validation that runs before your code. <code>omitempty</code> = "skip the checks if the field was not sent"; when it is sent, <code>min=2,max=150</code> must hold. Pointers again: that's how a PATCH tells "not sent" from "sent". The client sends the status name (<code>active</code> / <code>inactive</code>); <code>ToUpdateProductInput</code> turns it into the stored number.</p>
+        <p lang="vi">Tag <code>binding</code> là phần validate chạy trước code của bạn. <code>omitempty</code> = "bỏ qua kiểm tra nếu không gửi field"; nếu có gửi thì phải thỏa <code>min=2,max=150</code>. Lại dùng con trỏ: đó là cách PATCH phân biệt "không gửi" với "có gửi". Client gửi tên status (<code>active</code> / <code>inactive</code>); <code>ToUpdateProductInput</code> đổi nó thành số lưu trong DB.</p>
         <div class="jd-grid-2">
           <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>dto/v1/product_dto.go</span></div>
-<pre data-hl="go" data-lines="3,9">
+<pre data-hl="go" data-lines="3-4,10-12">
 // UpdateProductRequest is the request body for PATCH /products/:uuid.
 type UpdateProductRequest struct {
     Name   *string `json:"name" binding:"omitempty,min=2,max=150"`
-    Status *int16  `json:"status" binding:"omitempty,oneof=1 2"`
+    Status *string `json:"status" binding:"omitempty,oneof=active inactive"`
 }
 
 // ToUpdateProductInput converts UpdateProductRequest to domain input.
 func ToUpdateProductInput(req UpdateProductRequest) domain.UpdateProductInput {
-    return domain.UpdateProductInput{Name: req.Name, Status: req.Status}
+    var status *int16
+    if req.Status != nil {
+        // The binding tag guarantees a known name.
+        if s, ok := domain.ParseProductStatus(*req.Status); ok {
+            status = &amp;s
+        }
+    }
+
+    return domain.UpdateProductInput{Name: req.Name, Status: status}
 }
 </pre></div>
           <div>
             <div class="jd-tablewrap"><table class="jd-params">
-              <tr><th><span lang="en">body sent</span><span lang="vi">body gửi lên</span></th><th><span lang="en">result (tested)</span><span lang="vi">kết quả (đã thử)</span></th></tr>
+              <tr><th><span lang="en">body sent</span><span lang="vi">body gửi lên</span></th><th><span lang="en">result</span><span lang="vi">kết quả</span></th></tr>
               <tr><td>{"name":"Iced coffee"}</td><td><span lang="en">200 — name changed, status untouched</span><span lang="vi">200 — đổi tên, status giữ nguyên</span></td></tr>
-              <tr><td>{}</td><td><span lang="en">200 — nothing changes (only <code>updated_at</code> moves)</span><span lang="vi">200 — không thay đổi gì (chỉ <code>updated_at</code> cập nhật)</span></td></tr>
-              <tr><td>{"name":null}</td><td><span lang="en">200 — same as not sending it</span><span lang="vi">200 — tương đương không gửi</span></td></tr>
-              <tr><td>{"name":""}</td><td><span lang="en">422 — empty string</span><span lang="vi">422 — lỗi chuỗi rỗng</span></td></tr>
-              <tr><td>{"name":"A"}</td><td><span lang="en">422 — shorter than min=2</span><span lang="vi">422 — tên quá ngắn (&lt; 2 ký tự)</span></td></tr>
+              <tr><td>{}</td><td><span lang="en">200 — nothing changes (only <code>updated_at</code> moves)</span><span lang="vi">200 — không đổi gì (chỉ <code>updated_at</code> cập nhật)</span></td></tr>
+              <tr><td>{"name":null}</td><td><span lang="en">200 — same as not sending it</span><span lang="vi">200 — như không gửi</span></td></tr>
+              <tr><td>{"name":""} · {"name":"A"}</td><td><span lang="en">422 — shorter than <code>min=2</code></span><span lang="vi">422 — ngắn hơn <code>min=2</code></span></td></tr>
               <tr><td>{"name":123}</td><td><span lang="en">422 — <code>name must be string</code></span><span lang="vi">422 — <code>name must be string</code></span></td></tr>
-              <tr><td>{"status":3}</td><td><span lang="en">422 — <code>status must be one of the values: 1 2</code></span><span lang="vi">422 — <code>status must be one of the values: 1 2</code></span></td></tr>
+              <tr><td>{"status":"archived"}</td><td><span lang="en">422 — <code>status must be one of the values: active inactive</code></span><span lang="vi">422 — <code>status must be one of the values: active inactive</code></span></td></tr>
             </table></div>
           </div>
         </div>
@@ -481,7 +531,7 @@ func ToUpdateProductInput(req UpdateProductRequest) domain.UpdateProductInput {
         <h3><span lang="en">Handler — HTTP in, JSON out</span><span lang="vi">Handler — tiếp nhận HTTP, trả về JSON</span></h3>
         <div class="file">internal/features/product/handler/v1/product_handler.go</div>
         <p lang="en">Every handler in Jungo has the same four beats. For a new endpoint, copy this one and change the names.</p>
-        <p lang="vi">Mọi Handler trong Jungo đều tuân theo đúng 4 bước xử lý chuẩn mực. Khi viết endpoint mới, bạn chỉ cần copy mẫu handler này và thay đổi tên hàm cùng các kiểu dữ liệu tương ứng.</p>
+        <p lang="vi">Mọi handler trong Jungo có cùng bốn bước. Endpoint mới thì copy handler này và đổi tên.</p>
         <div class="jd-grid-2">
           <div><div class="jd-sticky">
             <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>handler/v1/product_handler.go</span></div>
@@ -520,7 +570,7 @@ func (h *ProductHandler) UpdateProduct(ctx *gin.Context) {
               <span class="x"><span lang="en">Pass <code>ctx.Request.Context()</code>, not the Gin context — it carries the trace ID, the debugger and cancellation. <code>responder.Error</code> turns a domain error into its status (404…); anything unknown becomes a 500 with a generic message.</span><span lang="vi">Luôn truyền <code>ctx.Request.Context()</code> thay vì Gin context — vì nó chứa Trace ID, công cụ debugger và tín hiệu hủy context. Hàm <code>responder.Error</code> tự động ánh xạ lỗi Domain thành HTTP Status tương ứng (404…); các lỗi lạ chưa định nghĩa sẽ thành 500 với thông báo an toàn.</span></span></div>
             <div class="jd-ex c-orange" data-code="#code-h" data-show="19"><span class="n">4</span>
               <span class="w">SendWithData(200, key, dto)</span>
-              <span class="x"><span lang="en">Status, the translation key for <code>message</code>, and the DTO (never the domain struct). Use <code>Send</code> when there is no data, <code>Pagination</code> for lists.</span><span lang="vi">Truyền HTTP status, key bản dịch cho <code>message</code>, và struct DTO (tuyệt đối không trả thẳng struct Domain ra ngoài). Dùng <code>Send</code> khi không có payload data, hoặc <code>Pagination</code> khi trả về danh sách phân trang.</span></span></div>
+              <span class="x"><span lang="en">Status, the message key for <code>message</code>, and the DTO (never the domain struct). Use <code>Send</code> when there is no data, <code>Pagination</code> for lists.</span><span lang="vi">Truyền HTTP status, message key cho <code>message</code>, và struct DTO (tuyệt đối không trả thẳng struct Domain ra ngoài). Dùng <code>Send</code> khi không có payload data, hoặc <code>Pagination</code> khi trả về danh sách phân trang.</span></span></div>
           </div>
         </div>
       </div>
@@ -530,8 +580,8 @@ func (h *ProductHandler) UpdateProduct(ctx *gin.Context) {
         <span class="n">3.7</span>
         <h3><span lang="en">Router — the URL, behind login and a permission</span><span lang="vi">Router — định tuyến URL, bảo vệ đăng nhập &amp; permission</span></h3>
         <div class="file">internal/features/product/router/v1/product_router.go</div>
-        <p lang="en">One line maps <code>PATCH /:uuid</code> to the handler. <code>Version()</code> returning <code>"v1"</code> puts it under <code>/api/v1</code>, <code>BearerAuth</code> on the group means no valid access token → 401, and <code>guard.Can</code> means no <code>products:update</code> → 403, both before the handler runs. A new endpoint = one more line inside the group, wrapped in the Guard — a route without one stops the app at startup. The method matters: <code>PUT</code> on this URL answers 405 "HTTP method is not allowed".</p>
-        <p lang="vi">Chỉ cần 1 dòng khai báo để ánh xạ đường dẫn <code>PATCH /:uuid</code> tới hàm xử lý trong Handler. Hàm <code>Version()</code> trả về <code>"v1"</code> giúp tự động đặt toàn bộ endpoint dưới tiền tố <code>/api/v1</code>. Middleware <code>BearerAuth</code> gắn trên nhóm route đảm bảo: không có access token hợp lệ → lỗi 401; <code>guard.Can</code> đảm bảo: không có <code>products:update</code> → lỗi 403, cả hai đều trước khi Handler kịp chạy. Khi thêm endpoint mới, thêm 1 dòng vào nhóm và bọc bằng Guard — route thiếu Guard sẽ làm app dừng khi khởi động. Lưu ý về HTTP Method: nếu gọi nhầm method (ví dụ gọi <code>PUT</code> vào URL này), Jungo sẽ trả về mã 405 kèm thông báo "HTTP method is not allowed".</p>
+        <p lang="en">One line maps <code>PATCH /:uuid</code> to the handler. <code>Version()</code> returning <code>"v1"</code> puts it under <code>/api/v1</code>, the auth middleware on the group (<code>gin.HandlerFunc(r.authenticate)</code>) means no valid access token → 401, and <code>guard.Can</code> means no <code>products:update</code> → 403, both before the handler runs. A new endpoint = one more line inside the group, wrapped in the Guard — a route without one stops the app at startup. The method matters: <code>PUT</code> on this URL answers 405 "HTTP method is not allowed".</p>
+        <p lang="vi">Chỉ cần 1 dòng khai báo để ánh xạ đường dẫn <code>PATCH /:uuid</code> tới hàm xử lý trong Handler. Hàm <code>Version()</code> trả về <code>"v1"</code> giúp tự động đặt toàn bộ endpoint dưới tiền tố <code>/api/v1</code>. Middleware xác thực gắn trên group (<code>gin.HandlerFunc(r.authenticate)</code>) nghĩa là: không có access token hợp lệ → 401; <code>guard.Can</code> nghĩa là: không có <code>products:update</code> → 403, cả hai đều trước khi handler chạy. Khi thêm endpoint mới, thêm 1 dòng vào nhóm và bọc bằng Guard — route thiếu Guard sẽ làm app dừng khi khởi động. Lưu ý về HTTP Method: nếu gọi nhầm method (ví dụ gọi <code>PUT</code> vào URL này), Jungo sẽ trả về mã 405 kèm thông báo "HTTP method is not allowed".</p>
         <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>router/v1/product_router.go</span></div>
 <pre data-hl="go" data-lines="7,12">
 func (r *ProductRoutes) Version() string {
@@ -567,8 +617,8 @@ func (r *ProductRoutes) Docs() []apidoc.Route {
     }
 }
 </pre></div>
-        <p class="jd-hint" style="margin-top:10px" lang="en">Need a public endpoint? Register it outside the protected group, wrapped in <code>r.guard.Public(…)</code>, the way <code>auth_router.go</code> opens <code>/auth/login</code>. Want "only the owner"? Use <code>r.guard.Authenticated(…)</code> and check in the service — see <a href="access.html#inside">Permissions &amp; roles</a>. Inside a protected handler you can read the logged-in user — see "Integrate" on the <a href="auth.html#client">Authentication</a> page.</p>
-        <p class="jd-hint" style="margin-top:10px" lang="vi">Cần mở endpoint public? Hãy đăng ký nó nằm ngoài nhóm route có <code>BearerAuth</code> và bọc bằng <code>r.guard.Public(…)</code>, tương tự cách <code>auth_router.go</code> mở route <code>/auth/login</code>. Muốn "chỉ chủ sở hữu"? Dùng <code>r.guard.Authenticated(…)</code> và kiểm tra trong service — xem <a href="access.html#inside">Phân quyền</a>. Bên trong Handler được bảo vệ, bạn có thể dễ dàng đọc thông tin user đang đăng nhập — xem mục "Tích hợp" tại trang <a href="auth.html#client">Auth</a>.</p>
+        <p class="jd-hint" style="margin-top:10px" lang="en">Public endpoint, owner-only endpoint, or who is calling: see <a href="access.html#integrate">Permissions &amp; roles</a>.</p>
+        <p class="jd-hint" style="margin-top:10px" lang="vi">Endpoint public, endpoint chỉ cho chủ sở hữu, hay biết ai đang gọi: xem <a href="access.html#integrate">Phân quyền</a>.</p>
         <p class="jd-hint" style="margin-top:10px" lang="en">Need a body over 2 MB (an image upload, an import file)? Every body is capped by the global <code>Payload</code> middleware, which runs <b>before</b> any group middleware — so it can't be raised inside <code>Register</code>. Implement <code>router.BodyLimited</code> on the routes type instead, as <code>user_router.go</code> does for the 5 MB avatar (file size + 64 KiB for multipart overhead):</p>
         <p class="jd-hint" style="margin-top:10px" lang="vi">Cần body lớn hơn 2 MB (upload ảnh, file import)? Mọi body đều bị middleware global <code>Payload</code> giới hạn, và nó chạy <b>trước</b> mọi middleware của group — nên không thể nới giới hạn bên trong <code>Register</code>. Thay vào đó hãy implement <code>router.BodyLimited</code> trên struct routes, như <code>user_router.go</code> làm cho avatar 5 MB (kích thước file + 64 KiB cho phần bao của multipart):</p>
         <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>router/v1/product_router.go</span></div>
@@ -589,14 +639,20 @@ func (r *ProductRoutes) BodyLimits() []router.BodyLimit {
         <span class="n">3.8</span>
         <h3><span lang="en">Module — messages and wiring</span><span lang="vi">Module — khai báo bản dịch &amp; kết nối Fx</span></h3>
         <div class="file">internal/features/product/module.go</div>
-        <p lang="en">Every key used in the handler and errors (<code>product_updated</code>, <code>product_not_found</code>) needs its text here. <b>Forget it and the API answers with the raw key</b> — tested: <code>"message": "product_updated"</code>.</p>
-        <p lang="vi">Mọi key thông báo dùng trong Handler và Domain Errors (ví dụ <code>product_updated</code>, <code>product_not_found</code>) đều cần được định nghĩa nội dung dịch tại đây. <b>Nếu quên khai báo, API sẽ trả về nguyên văn tên key thô</b> — ví dụ thực tế: <code>"message": "product_updated"</code>.</p>
+        <p lang="en">Every key used in the handler and errors (<code>product_updated</code>, <code>product_not_found</code>) needs its text here; so do the permission labels <code>GET /permissions</code> shows. <b>Forget it and the API answers with the raw key</b> — tested: <code>"message": "product_updated"</code>.</p>
+        <p lang="vi">Mọi key thông báo dùng trong Handler và Domain Errors (ví dụ <code>product_updated</code>, <code>product_not_found</code>) đều cần câu chữ ở đây; nhãn permission mà <code>GET /permissions</code> hiển thị cũng vậy. <b>Nếu quên khai báo, API sẽ trả về nguyên văn tên key thô</b> — ví dụ thực tế: <code>"message": "product_updated"</code>.</p>
         <div class="jd-grid-2">
-          <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>module.go — registerTranslations</span></div>
-<pre data-hl="go" data-lines="4,8">
+          <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>module.go · registerTranslations</span></div>
+<pre data-hl="go" data-lines="4-8,10,14">
 func registerTranslations(translator *i18n.Translator) {
     translator.AddTranslations(map[string]map[string]string{
         i18n.LangEN: {
+            "permission_group.products":  "Products",
+            "permission.products.read":   "View products",
+            "permission.products.create": "Create products",
+            "permission.products.update": "Update products",
+            "permission.products.delete": "Delete products",
+
             "product_not_found": "Product not found",
             "product_created":   "Product created successfully",
             "product_retrieved": "Product retrieved successfully",
@@ -608,11 +664,8 @@ func registerTranslations(translator *i18n.Translator) {
 }
 </pre></div>
           <div>
-            <div class="jd-callout c-pink">
-              <b lang="en">When do I touch fx.Provide?</b><b lang="vi">Khi nào phải đụng tới fx.Provide?</b>
-              <span lang="en">Only when you create a <b>new constructor</b> (a new service, client, adapter…). New methods on existing structs, and new parameters whose type is already provided (logger, cache, responder, another feature's service), need nothing. If you forget a provider the app refuses to start — see <a href="#errors">When it breaks</a>.</span>
-              <span lang="vi">Bạn chỉ cần sửa <code>fx.Provide</code> khi tạo thêm một <b>Constructor mới</b> (ví dụ tạo thêm Service, Client bên thứ ba hay Adapter mới). Nếu bạn chỉ thêm method vào struct có sẵn, hay thêm tham số vào hàm tạo mà kiểu đó đã được cung cấp sẵn (như logger, cache, responder, hay service của feature khác) thì không cần đụng vào Fx. Nếu quên đăng ký provider cho một dependency, ứng dụng sẽ từ chối khởi động ngay lập tức — xem cách xử lý tại mục <a href="#errors">Khi bị lỗi</a>.</span>
-            </div>
+            <p class="jd-hint" lang="en">Touch <code>fx.Provide</code> only when you create a <b>new constructor</b> (a new service, client, adapter…). New methods on existing structs, and new parameters whose type is already provided (logger, cache, responder, another feature's service), need nothing. If you forget a provider the app refuses to start — see <a href="#errors">When it breaks</a>.</p>
+            <p class="jd-hint" lang="vi">Chỉ sửa <code>fx.Provide</code> khi tạo một <b>constructor mới</b> (service, client, adapter mới…). Thêm method vào struct có sẵn, hay thêm tham số có kiểu đã được cung cấp (logger, cache, responder, service của feature khác) thì không cần gì. Quên provider thì app không khởi động — xem <a href="#errors">Khi bị lỗi</a>.</p>
             <p class="jd-hint" style="margin-top:12px" lang="en">Fx is explained from zero on the <a href="uber-fx.html">Uber Fx</a> page.</p>
             <p class="jd-hint" style="margin-top:12px" lang="vi">Tìm hiểu toàn diện về cơ chế hoạt động của Uber Fx tại trang <a href="uber-fx.html">Uber Fx</a>.</p>
           </div>
@@ -622,14 +675,14 @@ func registerTranslations(translator *i18n.Translator) {
       <!-- 3.9 -->
       <div class="bf-step c-pink">
         <span class="n">3.9</span>
-        <h3><span lang="en">Test — without a database</span><span lang="vi">Unit Test — kiểm thử nhanh không cần database</span></h3>
+        <h3><span lang="en">Test — without a database</span><span lang="vi">Unit test — không cần database</span></h3>
         <div class="file">internal/features/product/service/product_service_test.go</div>
-        <p lang="en">The generated test file has a hand-written fake repository: each method calls a function you set per test. Below, a test you could add: does the name the service received reach the repository? If you ever add a method to an interface, add it to the fake too, or the tests stop compiling.</p>
-        <p lang="vi">File test được sinh tự động đi kèm một Mock Repository viết tay: mỗi method sẽ ủy quyền cho một hàm do bạn chỉ định trong từng ca test cụ thể. Bạn có thể test toàn bộ logic nghiệp vụ của Service siêu tốc mà không cần khởi động database! Ví dụ dưới đây kiểm tra xem: tên sản phẩm mà Service nhận từ client có được chuyển chính xác xuống Repository hay không? Lưu ý: nếu sau này bạn thêm method mới vào Interface trong Domain, hãy nhớ bổ sung method đó vào Mock Repository này để code test luôn biên dịch thành công.</p>
+        <p lang="en">The generated test file has a hand-written fake repository: each method calls a function field you set per test (an unset one panics). It ships tests for <code>CreateProduct</code>, <code>GetProduct</code>, <code>ListProducts</code> and <code>DeleteProduct</code>. Below, the <code>UpdateProduct</code> test you would add next. If you add a method to an interface, add it to the fake too, or the tests stop compiling.</p>
+        <p lang="vi">File test sinh ra có một fake repository viết tay: mỗi method gọi một field hàm do bạn đặt trong từng test (chưa đặt thì panic). Nó có sẵn test cho <code>CreateProduct</code>, <code>GetProduct</code>, <code>ListProducts</code> và <code>DeleteProduct</code>. Bên dưới là test <code>UpdateProduct</code> bạn sẽ thêm tiếp. Nếu thêm method vào interface, hãy thêm vào fake, nếu không test sẽ không biên dịch.</p>
         <div class="jd-grid-2">
           <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>product_service_test.go</span></div>
-<pre data-hl="go" data-lines="4-6">
-func TestUpdateProduct_PassesNameToRepository(t *testing.T) {
+<pre data-hl="go" data-lines="4-9">
+func TestProductService_UpdateProduct(t *testing.T) {
     name := "Iced coffee"
     repo := &amp;fakeProductRepository{
         UpdateFunc: func(_ context.Context, _ uuid.UUID, input domain.UpdateProductInput) (*domain.Product, error) {
@@ -640,9 +693,8 @@ func TestUpdateProduct_PassesNameToRepository(t *testing.T) {
             return &amp;domain.Product{Name: *input.Name}, nil
         },
     }
-    svc := NewProductService(repo, &amp;fakeProductCache{})
 
-    got, err := svc.UpdateProduct(context.Background(), uuid.New(), domain.UpdateProductInput{Name: &amp;name})
+    got, err := NewProductService(repo).UpdateProduct(context.Background(), uuid.New(), domain.UpdateProductInput{Name: &amp;name})
     if err != nil {
         t.Fatalf("UpdateProduct() error = %v, want nil", err)
     }
@@ -653,23 +705,26 @@ func TestUpdateProduct_PassesNameToRepository(t *testing.T) {
 }
 </pre></div>
           <div>
-            <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+            <div class="jd-term" lang="en" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
 <pre data-hl="bash">
-$ go test ./internal/features/product/... -run UpdateProduct -v
-=== RUN   TestUpdateProduct
---- PASS: TestUpdateProduct (0.00s)
-=== RUN   TestUpdateProduct_DoesNotInvalidateCacheOnError
---- PASS: TestUpdateProduct_DoesNotInvalidateCacheOnError (0.00s)
-=== RUN   TestUpdateProduct_PassesNameToRepository
---- PASS: TestUpdateProduct_PassesNameToRepository (0.00s)
-ok   jungo/internal/features/product/service  0.564s
+# one feature, verbose
+$ go test ./internal/features/product/... -v
 
 # everything, like CI would
 $ make test
 $ make vet
 </pre></div>
-            <p class="jd-hint" style="margin-top:10px" lang="en">The first two tests come with the generator: one checks the cache key is deleted after a successful update, the other that it is <i>not</i> deleted when the update fails. One test per branch of the service is the habit to keep.</p>
-            <p class="jd-hint" style="margin-top:10px" lang="vi">Hai test đầu tiên được sinh sẵn: một test kiểm tra chắc chắn cache key bị xóa sau khi cập nhật thành công, test còn lại kiểm tra cache <i>không</i> bị xóa nếu thao tác cập nhật thất bại. Hãy duy trì thói quen: mỗi nhánh rẽ logic trong Service đều có một Unit Test tương ứng.</p>
+<div class="jd-term" lang="vi" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="bash">
+# một feature, chi tiết
+$ go test ./internal/features/product/... -v
+
+# toàn bộ, như CI chạy
+$ make test
+$ make vet
+</pre></div>
+            <p class="jd-hint" style="margin-top:10px" lang="en">Keep one test per branch of the service: once you add a rule in 3.4, test both the allowed and the refused case.</p>
+            <p class="jd-hint" style="margin-top:10px" lang="vi">Giữ thói quen mỗi nhánh của service một test: khi thêm quy tắc ở 3.4, test cả trường hợp được phép và bị từ chối.</p>
           </div>
         </div>
       </div>
@@ -683,8 +738,8 @@ $ make vet
       <span class="jd-badge">4</span>
       <div>
         <h2><span lang="en">Call it, and read every response</span><span lang="vi">Gọi thử API và giải mã từng mã phản hồi (Response)</span></h2>
-        <p class="jd-sub" lang="en">Every generated route needs a token, so log in with a seeded demo account first (development only). All outputs below are real.</p>
-        <p class="jd-sub" lang="vi">Mọi route được sinh ra đều bắt buộc đăng nhập (cần token xác thực), do đó trước tiên ta sẽ đăng nhập bằng tài khoản admin demo có sẵn (chỉ có trong môi trường development). Toàn bộ dữ liệu kết quả bên dưới đều là chạy thực tế.</p>
+        <p class="jd-sub" lang="en">Every generated route needs a token, so log in with a seeded demo account first (development only). Timestamps, UUIDs and latencies in the outputs are examples.</p>
+        <p class="jd-sub" lang="vi">Mọi route sinh ra đều cần token, nên trước tiên hãy đăng nhập bằng tài khoản demo có sẵn (chỉ ở development). Thời gian, UUID và latency trong kết quả chỉ là ví dụ.</p>
         <p class="jd-sub" lang="en">Prefer clicking to curl? Open <code>http://localhost:$API_SERVER_PORT/docs</code>: every route with its fields and rules, and a <b>Test Request</b> button — paste the access token under <b>Authentication</b> first.</p>
         <p class="jd-sub" lang="vi">Thích bấm hơn gõ curl? Mở <code>http://localhost:$API_SERVER_PORT/docs</code>: mọi route kèm field và luật kiểm tra, có nút <b>Test Request</b> — dán access token vào mục <b>Authentication</b> trước.</p>
       </div>
@@ -692,7 +747,7 @@ $ make vet
 
     <div class="jd-grid-2">
       <div>
-        <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>1 · log in &amp; get token</span></div>
+        <div class="jd-term" lang="en" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>1 · <span lang="en">log in &amp; get token</span><span lang="vi">đăng nhập &amp; lấy token</span></span></div>
 <pre data-hl="bash">
 # 0. load .env ($API_SERVER_PORT, …) into this shell; jq must be installed
 $ set -a; source .env; set +a
@@ -703,22 +758,47 @@ $ TOKEN=$(curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
     -d '{"email":"admin@jungo.com","password":"Password@123"}' \
     | jq -r .data.access_token)
 </pre></div>
-        <div class="jd-term" data-copy="commands" style="margin-top:10px"><div class="jd-term-bar"><i></i><i></i><i></i><span>2 · create product</span></div>
+<div class="jd-term" lang="vi" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>1 · <span lang="en">log in &amp; get token</span><span lang="vi">đăng nhập &amp; lấy token</span></span></div>
+<pre data-hl="bash">
+# 0. nạp .env ($API_SERVER_PORT, …) vào shell này; cần cài jq
+$ set -a; source .env; set +a
+
+# 1. đăng nhập, giữ access token (hiệu lực 15 phút)
+$ TOKEN=$(curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
+    -H 'Content-Type: application/json' \
+    -d '{"email":"admin@jungo.com","password":"Password@123"}' \
+    | jq -r .data.access_token)
+</pre></div>
+        <div class="jd-term" lang="en" data-copy="commands" style="margin-top:10px"><div class="jd-term-bar"><i></i><i></i><i></i><span>2 · <span lang="en">create product</span><span lang="vi">tạo product</span></span></div>
 <pre data-hl="bash">
 # 2. create a product, keep its uuid
 $ UUID=$(curl -s -X POST localhost:$API_SERVER_PORT/api/v1/products \
     -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
     -d '{"name":"Coffee"}' | jq -r .data.uuid)
 </pre></div>
-        <div class="jd-term" data-copy="commands" style="margin-top:10px"><div class="jd-term-bar"><i></i><i></i><i></i><span>3 · edit name</span></div>
+<div class="jd-term" lang="vi" data-copy="commands" style="margin-top:10px"><div class="jd-term-bar"><i></i><i></i><i></i><span>2 · <span lang="en">create product</span><span lang="vi">tạo product</span></span></div>
+<pre data-hl="bash">
+# 2. tạo một product, giữ uuid của nó
+$ UUID=$(curl -s -X POST localhost:$API_SERVER_PORT/api/v1/products \
+    -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+    -d '{"name":"Coffee"}' | jq -r .data.uuid)
+</pre></div>
+        <div class="jd-term" lang="en" data-copy="commands" style="margin-top:10px"><div class="jd-term-bar"><i></i><i></i><i></i><span>3 · <span lang="en">edit name</span><span lang="vi">sửa tên</span></span></div>
 <pre data-hl="bash">
 # 3. edit its name
 $ curl -s -X PATCH localhost:$API_SERVER_PORT/api/v1/products/$UUID \
     -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
     -d '{"name":"Iced coffee"}' | jq
 </pre></div>
+<div class="jd-term" lang="vi" data-copy="commands" style="margin-top:10px"><div class="jd-term-bar"><i></i><i></i><i></i><span>3 · <span lang="en">edit name</span><span lang="vi">sửa tên</span></span></div>
+<pre data-hl="bash">
+# 3. sửa tên của nó
+$ curl -s -X PATCH localhost:$API_SERVER_PORT/api/v1/products/$UUID \
+    -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+    -d '{"name":"Iced coffee"}' | jq
+</pre></div>
       </div>
-      <div class="jd-tabs c-blue">
+      <div class="jd-tabs">
         <div class="jd-tablist">
           <button class="jd-tab" type="button" aria-selected="true">200</button>
           <button class="jd-tab" type="button" aria-selected="false">422</button>
@@ -726,7 +806,7 @@ $ curl -s -X PATCH localhost:$API_SERVER_PORT/api/v1/products/$UUID \
           <button class="jd-tab" type="button" aria-selected="false">401</button>
         </div>
         <div class="jd-tabpanel">
-          <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>200 · name changed</span></div>
+          <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>200 · <span lang="en">name changed</span><span lang="vi">đã đổi tên</span></span></div>
 <pre data-hl="json">
 {
   "status": "success",
@@ -734,7 +814,7 @@ $ curl -s -X PATCH localhost:$API_SERVER_PORT/api/v1/products/$UUID \
   "data": {
     "uuid": "992b8856-5f3c-4d13-87ac-4a0d8ab99b8b",
     "name": "Iced coffee",
-    "status": 1,
+    "status": "active",
     "active": true,
     "created_at": "2026-10-17T00:57:40.934909Z",
     "updated_at": "2026-10-17T00:57:40.988838Z"
@@ -748,11 +828,29 @@ $ curl -s -X PATCH localhost:$API_SERVER_PORT/api/v1/products/$UUID \
   }
 }
 </pre></div>
-          <p class="jd-hint" style="margin-top:8px" lang="en"><code>status</code> stayed 1 because it was not sent. <code>updated_at</code> is set by a database trigger on every update.</p>
-          <p class="jd-hint" style="margin-top:8px" lang="vi"><code>status</code> vẫn là 1 vì không gửi trong request. <code>updated_at</code> được trigger PostgreSQL tự động cập nhật mỗi lần sửa đổi.</p>
+          <p class="jd-hint" style="margin-top:8px" lang="en"><code>status</code> stayed <code>active</code> because it was not sent. <code>updated_at</code> is set by a database trigger on every update.</p>
+          <p class="jd-hint" style="margin-top:8px" lang="vi"><code>status</code> vẫn là <code>active</code> vì không gửi trong request. <code>updated_at</code> được trigger PostgreSQL tự động cập nhật mỗi lần sửa đổi.</p>
         </div>
         <div class="jd-tabpanel" hidden>
-          <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>422 · bad input</span></div>
+          <div class="jd-term" lang="en"><div class="jd-term-bar"><i></i><i></i><i></i><span>422 · <span lang="en">bad input</span><span lang="vi">input sai</span></span></div>
+<pre data-hl="json">
+// body {"name": "A"}   (or {"name": ""})
+{ "status": "error", "code": "UNPROCESSABLE_ENTITY", "message": "Validation error",
+  "error": { "name": "name must be longer than 2 characters" } }
+
+// body {"name": 123}
+{ "status": "error", "code": "UNPROCESSABLE_ENTITY", "message": "Validation error",
+  "error": { "name": "name must be string" } }
+
+// body {"name":   (broken JSON)
+{ "status": "error", "code": "UNPROCESSABLE_ENTITY", "message": "Validation error",
+  "error": "Invalid JSON syntax" }
+
+// body {"status": "archived"}   (only active or inactive)
+{ "status": "error", "code": "UNPROCESSABLE_ENTITY", "message": "Validation error",
+  "error": { "status": "status must be one of the values: active inactive" } }
+</pre></div>
+<div class="jd-term" lang="vi"><div class="jd-term-bar"><i></i><i></i><i></i><span>422 · <span lang="en">bad input</span><span lang="vi">input sai</span></span></div>
 <pre data-hl="json">
 // body {"name": "A"}   (hoặc {"name": ""})
 { "status": "error", "code": "UNPROCESSABLE_ENTITY", "message": "Validation error",
@@ -762,19 +860,19 @@ $ curl -s -X PATCH localhost:$API_SERVER_PORT/api/v1/products/$UUID \
 { "status": "error", "code": "UNPROCESSABLE_ENTITY", "message": "Validation error",
   "error": { "name": "name must be string" } }
 
-// body {"name":   (JSON cú pháp lỗi)
+// body {"name":   (JSON hỏng)
 { "status": "error", "code": "UNPROCESSABLE_ENTITY", "message": "Validation error",
   "error": "Invalid JSON syntax" }
 
-// body {"status": 3}   (chỉ nhận 1 hoặc 2)
+// body {"status": "archived"}   (chỉ nhận active hoặc inactive)
 { "status": "error", "code": "UNPROCESSABLE_ENTITY", "message": "Validation error",
-  "error": { "status": "status must be one of the values: 1 2" } }
+  "error": { "status": "status must be one of the values: active inactive" } }
 </pre></div>
           <p class="jd-hint" style="margin-top:8px" lang="en">Note: the rule is <code>min=2</code>, so <code>"AB"</code> is accepted even though the message says "longer than 2". The rule is right, the message is off by one — a known Junkit issue (<a href="../junkit/validation.html">validation</a>).</p>
           <p class="jd-hint" style="margin-top:8px" lang="vi">Lưu ý: quy tắc kiểm tra là <code>min=2</code>, nên chuỗi <code>"AB"</code> (2 ký tự) vẫn hợp lệ dù câu thông báo dịch ghi "longer than 2". Logic rule hoàn toàn đúng, thông báo chênh 1 ký tự — đây là lỗi câu chữ đã biết của Junkit (<a href="../junkit/validation.html">validation</a>).</p>
         </div>
         <div class="jd-tabpanel" hidden>
-          <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>404 · no such product (or deleted)</span></div>
+          <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>404 · <span lang="en">no such product (or deleted)</span><span lang="vi">không có product (hoặc đã xóa)</span></span></div>
 <pre data-hl="json">
 {
   "status": "error",
@@ -785,7 +883,7 @@ $ curl -s -X PATCH localhost:$API_SERVER_PORT/api/v1/products/$UUID \
 </pre></div>
         </div>
         <div class="jd-tabpanel" hidden>
-          <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>401 · no token</span></div>
+          <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>401 · <span lang="en">no token</span><span lang="vi">thiếu token</span></span></div>
 <pre data-hl="json">
 {
   "status": "error",
@@ -794,8 +892,8 @@ $ curl -s -X PATCH localhost:$API_SERVER_PORT/api/v1/products/$UUID \
   "api_info": { "trace_id": "f0684a6d-…", "…": "…" }
 }
 </pre></div>
-          <p class="jd-hint" style="margin-top:8px" lang="en">That is the answer when the <code>Authorization</code> header is missing. An expired token gives <code>"Token has expired"</code>, a mistyped one <code>"Invalid token"</code> (both <code>UNAUTHORIZED</code>). The access token lives 15 minutes. Log in again, or use the refresh endpoint (<a href="auth.html#endpoints">Authentication</a>).</p>
-          <p class="jd-hint" style="margin-top:8px" lang="vi">Đây là response khi thiếu header <code>Authorization</code>. Token hết hạn sẽ nhận <code>"Token has expired"</code>, token gõ sai nhận <code>"Invalid token"</code> (đều có <code>UNAUTHORIZED</code>). Access token có hiệu lực trong 15 phút. Bạn hãy đăng nhập lại hoặc dùng endpoint refresh token (<a href="auth.html#endpoints">Auth</a>).</p>
+          <p class="jd-hint" style="margin-top:8px" lang="en">The answer when the <code>Authorization</code> header is missing. Every token error and what the client should do: <a href="auth.html#endpoints">Authentication</a>.</p>
+          <p class="jd-hint" style="margin-top:8px" lang="vi">Response khi thiếu header <code>Authorization</code>. Mọi lỗi token và client nên làm gì: <a href="auth.html#endpoints">Xác thực</a>.</p>
         </div>
       </div>
     </div>
@@ -808,7 +906,7 @@ $ curl -s -X PATCH localhost:$API_SERVER_PORT/api/v1/products/$UUID \
       <div>
         <h2><span lang="en">Debug: logs, trace_id and t_debug</span><span lang="vi">Bộ ba công cụ Debug: Log, trace_id và ?t_debug</span></h2>
         <p class="jd-sub" lang="en">Three tools, in the order you reach for them. The example is a real, very common bug: <code>make feature</code> and <code>make sqlc</code> were run, but <code>make migrate-up</code> was forgotten, so the <code>products</code> table does not exist.</p>
-        <p class="jd-sub" lang="vi">Ba công cụ đắc lực được sắp xếp theo đúng trình tự điều tra lỗi thực tế. Dưới đây là một tình huống lỗi kinh điển rất hay gặp: bạn đã chạy <code>make feature</code> và <code>make sqlc</code>, nhưng quên chạy <code>make migrate-up</code>, dẫn đến việc bảng <code>products</code> chưa tồn tại trong cơ sở dữ liệu.</p>
+        <p class="jd-sub" lang="vi">Ba công cụ, theo thứ tự bạn sẽ dùng. Ví dụ là một lỗi thật và rất hay gặp: đã chạy <code>make feature</code> và <code>make sqlc</code> nhưng quên <code>make migrate-up</code>, nên bảng <code>products</code> chưa tồn tại.</p>
       </div>
     </div>
 
@@ -818,8 +916,8 @@ $ curl -s -X PATCH localhost:$API_SERVER_PORT/api/v1/products/$UUID \
       <div class="jd-node is-tint c-orange" data-node="d1">
         <span class="k">1</span><span class="t"><span lang="en">The response</span><span lang="vi">Response</span></span>
         <div class="d mono">500 · "Internal Server Error"</div>
-        <div class="d" lang="en">Clients never see internals. Copy <code>api_info.trace_id</code> (also in the <code>X-Trace-Id</code> header).</div>
-        <div class="d" lang="vi">Client không bao giờ thấy chi tiết bên trong. Copy <code>api_info.trace_id</code> (có cả trong header <code>X-Trace-Id</code>).</div>
+        <div class="d" lang="en">Clients never see internals. Copy <code>api_info.trace_id</code> (also in the <code>X-Trace-Id</code> response header). Jungo generates a new ID per request; an <code>X-Trace-Id</code> sent by the client is ignored.</div>
+        <div class="d" lang="vi">Client không bao giờ thấy chi tiết bên trong. Copy <code>api_info.trace_id</code> (có cả trong header response <code>X-Trace-Id</code>). Jungo tạo ID mới cho mỗi request; <code>X-Trace-Id</code> do client gửi bị bỏ qua.</div>
       </div>
       <div class="jd-node is-tint c-orange" data-node="d2">
         <span class="k">2</span><span class="t"><span lang="en">The logs</span><span lang="vi">Log hệ thống</span></span>
@@ -855,7 +953,7 @@ $ curl -s -X PATCH localhost:$API_SERVER_PORT/api/v1/products/$UUID \
         <p class="jd-hint" style="margin-top:10px" lang="vi">Cấu hình Log Level độc lập cho từng kênh qua: <code>LOG_APP_LEVEL</code>, <code>LOG_HTTP_LEVEL</code>, <code>LOG_SQL_LEVEL</code>, <code>LOG_LIMITER_LEVEL</code> (các mức: debug · info · warn · error; mặc định là info — nhưng <code>.env.example</code> đặt sẵn <code>LOG_APP_LEVEL=debug</code>). Đặt <code>LOG_APP_LEVEL=debug</code> sẽ hiển thị chi tiết từng bước Fx liên kết dependency khi khởi động. Đặt <code>DB_QUERY_LOGGING=false</code> để tắt hoàn toàn log câu lệnh SQL. Thư mục log đi theo <code>STORAGE_DIR</code> (mặc định <code>./storage</code>): log nằm ở <code>$STORAGE_DIR/logs</code>.</p>
       </div>
       <div>
-        <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+        <div class="jd-term" lang="en" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
 <pre data-hl="bash">
 # development: follow the console
 $ make app-logs
@@ -864,6 +962,18 @@ $ make app-logs
 $ make app-logs | grep 51c05e85-eec0-4cb3-bb23-76c9844ac268
 
 # any other environment: the files
+$ grep 51c05e85 storage/logs/*.log
+$ tail -f storage/logs/http.log | jq 'select(.status >= 500)'
+</pre></div>
+<div class="jd-term" lang="vi" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="bash">
+# development: theo dõi console
+$ make app-logs
+
+# chỉ một request
+$ make app-logs | grep 51c05e85-eec0-4cb3-bb23-76c9844ac268
+
+# môi trường khác: đọc file
 $ grep 51c05e85 storage/logs/*.log
 $ tail -f storage/logs/http.log | jq 'select(.status >= 500)'
 </pre></div>
@@ -886,7 +996,7 @@ ERROR  HTTP_ACCESS_LOG {"trace_id": "51c05e85-…", "status": 500, "method": "PA
     </div>
 
     <!-- 5.2 t_debug -->
-    <h3 style="margin-top:34px"><span lang="en">5.2 · ?t_debug — an X-ray of one request</span><span lang="vi">5.2 · ?t_debug — Chụp X-quang toàn diện một request</span></h3>
+    <h3 style="margin-top:34px"><span lang="en">5.2 · ?t_debug — an X-ray of one request</span><span lang="vi">5.2 · ?t_debug — soi toàn bộ một request</span></h3>
     <div class="jd-grid-2">
       <div>
         <p lang="en">Add <code>?t_debug=&lt;value&gt;</code> to any URL and send the header <code>X-Internal-Secret: &lt;AUTH_INTERNAL_SECRET&gt;</code> (in a browser, add it with an extension such as ModHeader). The value is <code>TRACER_DEBUG_VALUE</code> in your <code>.env</code> (<code>.env.example</code> leaves it empty and <code>make app-init</code> writes a random 4-digit value; set a different value in each environment; the parameter name itself is <code>TRACER_DEBUG_KEY</code>, <code>t_debug</code> in <code>.env.example</code>; neither has a built-in default). The request runs normally, but instead of its JSON you get a report:</p>
@@ -899,20 +1009,20 @@ ERROR  HTTP_ACCESS_LOG {"trace_id": "51c05e85-…", "status": 500, "method": "PA
             <p lang="en"><b>A timeline</b>, DB time vs total time, and request/server info (headers with <code>Authorization</code> masked).</p>
             <p lang="vi"><b>Biểu đồ thời gian (Timeline)</b>, tỷ lệ thời gian chạy DB so với tổng thời gian xử lý, cùng thông tin chi tiết về request và server (các header nhạy cảm như <code>Authorization</code> đều được tự động che đi).</p></div>
           <div class="jd-rule"><span class="n" style="background:var(--orange)">▸</span>
-            <p lang="en"><b>Your own notes</b> from <code>tracer.V</code>, <code>tracer.Span</code>… (5.3).</p>
-            <p lang="vi"><b>Các giá trị theo dõi tùy biến</b> do bạn chủ động in ra từ code thông qua <code>tracer.V</code>, <code>tracer.Span</code>… (xem mục 5.3).</p></div>
+            <p lang="en"><b>Your own notes</b> from <code>tracer.Var</code>, <code>tracer.Span</code>… (5.3).</p>
+            <p lang="vi"><b>Các giá trị theo dõi tùy biến</b> do bạn chủ động in ra từ code thông qua <code>tracer.Var</code>, <code>tracer.Span</code>… (xem mục 5.3).</p></div>
           <div class="jd-rule"><span class="n" style="background:var(--orange)">▸</span>
             <p lang="en">Browser → an HTML dashboard. <code>curl</code> / <code>httpie</code> / <code>wget</code> → the same as JSON.</p>
             <p lang="vi">Xem trên trình duyệt → giao diện Dashboard HTML trực quan. Gọi qua <code>curl</code> / <code>httpie</code> / <code>wget</code> → trả về báo cáo dạng JSON chuẩn.</p></div>
         </div>
         <div class="jd-callout c-red" style="margin-top:14px">
-          <b lang="en">Things to know</b><b lang="vi">Những lưu ý quan trọng</b>
-          <span lang="en">The status is always <b>200</b> and the real response body is thrown away — so it is for reading, not for testing your client. The request <b>really runs</b>: a debugged PATCH still writes to the database. Debug requests are not written to the access log. It works in any environment, but only with <code>AUTH_INTERNAL_SECRET</code> (the same secret as <code>/api/internal/auth/*</code>) — keep it long and random; leaving <code>AUTH_INTERNAL_SECRET</code>, <code>TRACER_DEBUG_KEY</code> or <code>TRACER_DEBUG_VALUE</code> empty turns the dashboard off (see <a href="../junkit/middleware.html">middleware</a>).</span>
-          <span lang="vi">Những lưu ý cốt lõi: HTTP status trả về khi có cờ debug luôn là <b>200</b> và payload dữ liệu gốc sẽ được thay thế bằng báo cáo debug — do đó tính năng này dùng để đọc và kiểm tra nội bộ, không dùng để test luồng phía client. Request <b>thực sự được thực thi</b>: một request PATCH có debug vẫn sẽ ghi dữ liệu vào database như bình thường. Các request debug sẽ không được ghi vào file access log. Tính năng chạy ở mọi môi trường, nhưng chỉ khi có <code>AUTH_INTERNAL_SECRET</code> (cùng secret với <code>/api/internal/auth/*</code>) — hãy đặt secret là chuỗi ngẫu nhiên đủ dài; để trống <code>AUTH_INTERNAL_SECRET</code>, <code>TRACER_DEBUG_KEY</code> hoặc <code>TRACER_DEBUG_VALUE</code> sẽ tắt dashboard (xem <a href="../junkit/middleware.html">middleware</a>).</span>
+          <b lang="en">Warning:</b><b lang="vi">Cảnh báo:</b>
+          <span lang="en">The status is always <b>200</b> and the real response body is thrown away — so it is for reading, not for testing your client. The request <b>really runs</b>: a debugged PATCH still writes to the database. Debug requests are not written to the access log, and a panic during one is only recorded in the report — not logged, no alert. It works in any environment, but only with <code>AUTH_INTERNAL_SECRET</code> (the same secret as <code>/api/internal/auth/*</code>) — keep it long and random; leaving <code>AUTH_INTERNAL_SECRET</code>, <code>TRACER_DEBUG_KEY</code> or <code>TRACER_DEBUG_VALUE</code> empty turns the dashboard off (see <a href="../junkit/middleware.html">middleware</a>).</span>
+          <span lang="vi">HTTP status trả về khi có cờ debug luôn là <b>200</b> và payload dữ liệu gốc sẽ được thay thế bằng báo cáo debug — do đó tính năng này dùng để đọc và kiểm tra nội bộ, không dùng để test luồng phía client. Request <b>thực sự được thực thi</b>: một PATCH có debug vẫn ghi vào database. Request debug không được ghi vào access log, và panic xảy ra trong lúc đó chỉ được ghi trong báo cáo — không ghi log, không gửi cảnh báo. Tính năng chạy ở mọi môi trường, nhưng chỉ khi có <code>AUTH_INTERNAL_SECRET</code> (cùng secret với <code>/api/internal/auth/*</code>) — hãy đặt secret là chuỗi ngẫu nhiên đủ dài; để trống <code>AUTH_INTERNAL_SECRET</code>, <code>TRACER_DEBUG_KEY</code> hoặc <code>TRACER_DEBUG_VALUE</code> sẽ tắt dashboard (xem <a href="../junkit/middleware.html">middleware</a>).</span>
         </div>
       </div>
       <div>
-        <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+        <div class="jd-term" lang="en" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
 <pre data-hl="bash">
 # needs .env loaded: set -a; source .env; set +a
 $ curl -s -X PATCH "localhost:$API_SERVER_PORT/api/v1/products/$UUID?t_debug=$TRACER_DEBUG_VALUE" \
@@ -920,7 +1030,15 @@ $ curl -s -X PATCH "localhost:$API_SERVER_PORT/api/v1/products/$UUID?t_debug=$TR
     -H 'Content-Type: application/json' \
     -d '{"name":"Iced coffee"}' | jq
 </pre></div>
-        <div class="jd-term" style="margin-top:12px"><div class="jd-term-bar"><i></i><i></i><i></i><span>JSON report (trimmed)</span></div>
+<div class="jd-term" lang="vi" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="bash">
+# cần nạp .env trước: set -a; source .env; set +a
+$ curl -s -X PATCH "localhost:$API_SERVER_PORT/api/v1/products/$UUID?t_debug=$TRACER_DEBUG_VALUE" \
+    -H "Authorization: Bearer $TOKEN" -H "X-Internal-Secret: $AUTH_INTERNAL_SECRET" \
+    -H 'Content-Type: application/json' \
+    -d '{"name":"Iced coffee"}' | jq
+</pre></div>
+        <div class="jd-term" style="margin-top:12px"><div class="jd-term-bar"><i></i><i></i><i></i><span><span lang="en">JSON report (trimmed)</span><span lang="vi">báo cáo JSON (rút gọn)</span></span></div>
 <pre data-hl="json" data-lines="9,14-16">
 {
   "total_ms": 2.698,
@@ -945,15 +1063,15 @@ $ curl -s -X PATCH "localhost:$API_SERVER_PORT/api/v1/products/$UUID?t_debug=$TR
   ]
 }
 </pre></div>
-        <p class="jd-hint" style="margin-top:10px" lang="en">The first query (<code>GetSessionByHash</code>) is <code>BearerAuth</code> checking your token — every protected request has it.</p>
-        <p class="jd-hint" style="margin-top:10px" lang="vi">Câu truy vấn đầu tiên (<code>GetSessionByHash</code>) chính là do middleware <code>BearerAuth</code> kiểm tra tính hợp lệ của token — mọi request có bảo vệ đều sẽ thấy câu query này.</p>
+        <p class="jd-hint" style="margin-top:10px" lang="en">The first query (<code>GetSessionByHash</code>) is the auth middleware checking your token (it also reads your permissions) — every protected request has it. With Redis enabled the session may come from the cache and this query is skipped.</p>
+        <p class="jd-hint" style="margin-top:10px" lang="vi">Câu truy vấn đầu tiên (<code>GetSessionByHash</code>) là middleware xác thực kiểm tra token (đồng thời đọc permission của bạn) — mọi request có bảo vệ đều có câu này. Khi bật Redis, session có thể lấy từ cache và câu này không xuất hiện.</p>
       </div>
     </div>
 
     <!-- 5.3 tracer helpers -->
     <h3 style="margin-top:34px"><span lang="en">5.3 · Print your own values into the report — tracer.*</span><span lang="vi">5.3 · In giá trị theo dõi vào báo cáo — tracer.*</span></h3>
     <p class="jd-sub" lang="en">Jungo's "dump and die". Import <code>github.com/jun-develop/junkit/tracer</code> and call it with the request's <code>ctx</code>. <b>Without a debug request (<code>?t_debug</code> + secret) every call does nothing</b>, so they are safe to leave in; remove <code>tracer.Stop</code> before you commit anyway.</p>
-    <p class="jd-sub" lang="vi">Đây là công cụ "Dump and Die" độc quyền của Jungo. Chỉ cần import <code>github.com/jun-develop/junkit/tracer</code> và gọi với <code>ctx</code> của request. <b>Khi request không phải request debug (<code>?t_debug</code> + secret), toàn bộ các lệnh tracer sẽ tự động bị bỏ qua và không làm chậm hệ thống</b>, vì vậy bạn có thể hoàn toàn yên tâm; tuy nhiên bạn vẫn nên xóa lệnh <code>tracer.Stop</code> trước khi commit code.</p>
+    <p class="jd-sub" lang="vi">"Dump and die" của Jungo, từ package junkit <code>tracer</code>. Import <code>github.com/jun-develop/junkit/tracer</code> và gọi với <code>ctx</code> của request. <b>Không phải request debug (<code>?t_debug</code> + secret) thì mọi lệnh đều không làm gì</b>, nên để lại cũng an toàn; vẫn nên xóa <code>tracer.Stop</code> trước khi commit.</p>
     <div class="jd-grid-2" style="margin-top:14px">
       <div>
         <div class="jd-tablewrap"><table class="jd-params">
@@ -970,16 +1088,25 @@ $ curl -s -X PATCH "localhost:$API_SERVER_PORT/api/v1/products/$UUID?t_debug=$TR
         <p class="jd-hint" style="margin-top:10px" lang="vi">Lưu ý rằng <code>tracer.Stop</code> chỉ hoạt động trong goroutine chính của request (gọi trong goroutine khác có thể gây panic làm sập app). Xem chi tiết tại trang <a href="../junkit/tracer.html">tracer</a>.</p>
       </div>
       <div>
-        <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>service — temporary, while debugging</span></div>
+        <div class="jd-term" lang="en" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>service — <span lang="en">temporary, while debugging</span><span lang="vi">tạm thời, khi đang debug</span></span></div>
 <pre data-hl="go" data-lines="2-3">
 func (s *ProductService) UpdateProduct(ctx context.Context, uid uuid.UUID, input domain.UpdateProductInput) (*domain.Product, error) {
     tracer.Var(ctx, "update input", input)
     tracer.Stop(ctx, "uuid", uid.String()) // stop BEFORE the write: the DB is not touched
 
-    updated, err := s.repo.Update(ctx, uid, input)
-    // …
+    return s.repo.Update(ctx, uid, input)
+}
 </pre></div>
-        <div class="jd-term" style="margin-top:12px"><div class="jd-term-bar"><i></i><i></i><i></i><span>PATCH …?t_debug=&lt;TRACER_DEBUG_VALUE&gt; {"name":"Hot tea"} — the report's last entries</span></div>
+<div class="jd-term" lang="vi" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>service — <span lang="en">temporary, while debugging</span><span lang="vi">tạm thời, khi đang debug</span></span></div>
+<pre data-hl="go" data-lines="2-3">
+func (s *ProductService) UpdateProduct(ctx context.Context, uid uuid.UUID, input domain.UpdateProductInput) (*domain.Product, error) {
+    tracer.Var(ctx, "update input", input)
+    tracer.Stop(ctx, "uuid", uid.String()) // dừng TRƯỚC khi ghi: DB không bị đụng tới
+
+    return s.repo.Update(ctx, uid, input)
+}
+</pre></div>
+        <div class="jd-term" style="margin-top:12px"><div class="jd-term-bar"><i></i><i></i><i></i><span>PATCH …?t_debug=&lt;TRACER_DEBUG_VALUE&gt; {"name":"Hot tea"} — <span lang="en">the report's last entries</span><span lang="vi">các mục cuối của báo cáo</span></span></div>
 <pre data-hl="json">
 { "type": "variable", "label": "update input", "data": { "Name": "Hot tea", "Status": null } },
 { "type": "variable", "label": "uuid", "data": "992b8856-5f3c-4d13-87ac-4a0d8ab99b8b" },
@@ -995,7 +1122,7 @@ func (s *ProductService) UpdateProduct(ctx context.Context, uid uuid.UUID, input
     <div class="jd-grid-2">
       <div>
         <p lang="en"><code>tracer</code> is for you, right now. A <b>log</b> is for later — production, someone else, at 3 a.m. Ask Fx for a <code>*zap.Logger</code> (the <code>app</code> channel) by adding it to the constructor; nothing to register. Always add the <code>trace_id</code> so the line can be found with the rest of the request.</p>
-        <p lang="vi"><code>tracer</code> dùng để phục vụ bạn trong lúc đang debug nóng. Còn <b>Log</b> là tài sản vô giá cho sau này — khi chạy trên production, để đồng đội điều tra sự cố lúc nửa đêm. Chỉ cần yêu cầu Fx truyền <code>*zap.Logger</code> (thuộc kênh <code>app</code>) vào hàm tạo Constructor của bạn mà không cần đăng ký thêm gì. Hãy luôn gắn kèm <code>trace_id</code> để dòng log dễ dàng được truy vết cùng toàn bộ hành trình của request.</p>
+        <p lang="vi"><code>tracer</code> dành cho bạn, ngay lúc này. <b>Log</b> dành cho sau này — production, người khác, lúc 3 giờ sáng. Xin Fx một <code>*zap.Logger</code> (kênh <code>app</code>) bằng cách thêm vào tham số constructor; không cần đăng ký gì. Luôn kèm <code>trace_id</code> để tìm được dòng log cùng phần còn lại của request.</p>
         <div class="jd-tablewrap" style="margin-top:12px"><table class="jd-params">
           <tr><th><span lang="en">level</span><span lang="vi">level</span></th><th><span lang="en">use for</span><span lang="vi">mục đích dùng</span></th></tr>
           <tr><td>Debug</td><td><span lang="en">noise you only want while developing</span><span lang="vi">Thông tin chi tiết chỉ cần xem trong lúc phát triển cục bộ</span></td></tr>
@@ -1008,33 +1135,37 @@ func (s *ProductService) UpdateProduct(ctx context.Context, uid uuid.UUID, input
       </div>
       <div>
         <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>service/product_service.go</span></div>
-<pre data-hl="go" data-lines="4,7-8,15-18">
+<pre data-hl="go" data-lines="3,6-7,16-19">
 type ProductService struct {
-    repo  domain.ProductRepository
-    cache cache.Cache[*domain.Product]
-    log   *zap.Logger
+    repo domain.ProductRepository
+    log  *zap.Logger
 }
 
-func NewProductService(repo domain.ProductRepository, cache cache.Cache[*domain.Product], log *zap.Logger) *ProductService {
-    return &amp;ProductService{repo: repo, cache: cache, log: log}
+func NewProductService(repo domain.ProductRepository, log *zap.Logger) *ProductService {
+    return &amp;ProductService{repo: repo, log: log}
 }
 
-// in UpdateProduct, after a successful s.repo.Update:
-updated, err := s.repo.Update(ctx, uid, input)
-// … if err != nil { return nil, err }
+func (s *ProductService) UpdateProduct(ctx context.Context, uid uuid.UUID, input domain.UpdateProductInput) (*domain.Product, error) {
+    updated, err := s.repo.Update(ctx, uid, input)
+    if err != nil {
+        return nil, err
+    }
 
-s.log.Info("product: updated",
-    zap.String("trace_id", logger.GetTraceID(ctx)), // junkit/logger
-    zap.String("product_uuid", uid.String()),
-)
+    s.log.Info("product: updated",
+        zap.String("trace_id", logger.GetTraceID(ctx)), // junkit/logger
+        zap.String("product_uuid", uid.String()),
+    )
+
+    return updated, nil
+}
 </pre></div>
         <div class="jd-term" style="margin-top:12px"><div class="jd-term-bar"><i></i><i></i><i></i><span>make app-logs</span></div>
 <pre data-hl="bash">
 INFO  service/product_service.go:61  product: updated
       {"trace_id": "5e42d7bb-4372-4751-a5ea-8f353705c32e", "product_uuid": "992b8856-…"}
 </pre></div>
-        <p class="jd-hint" style="margin-top:10px" lang="en">The generated test file calls <code>NewProductService(repo, cache)</code> — add <code>zap.NewNop()</code> as the new third argument.</p>
-        <p class="jd-hint" style="margin-top:10px" lang="vi">File test được sinh ra đang gọi <code>NewProductService(repo, cache)</code> — hãy thêm <code>zap.NewNop()</code> làm tham số thứ ba (logger) để test chạy êm ái mà không xả rác ra màn hình.</p>
+        <p class="jd-hint" style="margin-top:10px" lang="en">The generated test file calls <code>NewProductService(repo)</code> — pass <code>zap.NewNop()</code> as the new second argument.</p>
+        <p class="jd-hint" style="margin-top:10px" lang="vi">File test sinh ra đang gọi <code>NewProductService(repo)</code> — truyền thêm <code>zap.NewNop()</code> làm tham số thứ hai.</p>
       </div>
     </div>
   </section>
@@ -1062,7 +1193,7 @@ INFO  service/product_service.go:61  product: updated
       <div class="jd-errrow"><span class="code">401</span><div><b>Authentication token is invalid or expired</b><span class="do" lang="en">No <code>Authorization: Bearer …</code> header was sent. Add it.</span><span class="do" lang="vi">Request không gửi header <code>Authorization: Bearer …</code>. Hãy thêm header này vào.</span></div></div>
       <div class="jd-errrow"><span class="code">401</span><div><b>Token has expired</b> · <b>Invalid token</b><span class="do" lang="en">The 15 minutes are up, or the token has a typo. Log in again (or refresh).</span><span class="do" lang="vi">Token đã hết hạn 15 phút, hoặc bị gõ sai. Bạn chỉ cần đăng nhập lại (hoặc refresh) để lấy token mới.</span></div></div>
       <div class="jd-errrow"><span class="code w">200</span><div><b>"message": "product_updated"</b><span class="do" lang="en">A raw key instead of a sentence: the key has no text in <code>registerTranslations</code> (3.8), or it is misspelled.</span><span class="do" lang="vi">Response trả về key thô thay vì câu thông báo hoàn chỉnh: do key này chưa được khai báo câu dịch trong hàm <code>registerTranslations</code> (bước 3.8), hoặc bạn gõ sai chính tả tên key.</span></div></div>
-      <div class="jd-errrow"><span class="code w">200</span><div><b lang="en">A field is empty in the response although the database has it</b><b lang="vi">Một trường (field) bị rỗng trong response dù database có dữ liệu</b><span class="do" lang="en">The field is missing in a mapping: <code>mapProduct</code> (repository) or <code>NewProductResponse</code> (DTO). Or an old value is served from the cache: delete the key after writes (3.4).</span><span class="do" lang="vi">Trường dữ liệu bị bỏ sót ở một khâu mapping nào đó: hàm <code>mapProduct</code> (trong repository) hoặc hàm <code>NewProductResponse</code> (trong DTO). Một nguyên nhân khác là do dữ liệu cũ đang được đọc từ Redis cache: hãy chắc chắn bạn đã xóa cache key sau các thao tác ghi (bước 3.4).</span></div></div>
+      <div class="jd-errrow"><span class="code w">200</span><div><b lang="en">A field is empty in the response although the database has it</b><b lang="vi">Một trường (field) bị rỗng trong response dù database có dữ liệu</b><span class="do" lang="en">The field is missing in a mapping: <code>mapProduct</code> (repository) or <code>NewProductResponse</code> (DTO). If you added a cache, check that writes delete the cached entry.</span><span class="do" lang="vi">Field bị bỏ sót ở một khâu mapping: <code>mapProduct</code> (repository) hoặc <code>NewProductResponse</code> (DTO). Nếu bạn có thêm cache, kiểm tra các thao tác ghi đã xóa entry trong cache.</span></div></div>
       <div class="jd-errrow"><span class="code w">?</span><div><b lang="en">Nothing changed after I edited the code</b><b lang="vi">Sửa code rồi mà không thấy có gì thay đổi</b><span class="do" lang="en">Air (hot reload) rebuilds on every <code>.go</code> save. If the build fails, it prints the compiler error in <code>make app-logs</code> and the old version keeps running. Fix the error, or run <code>go build ./...</code> to see it. Air does not watch <code>.sql</code> files — run <code>make sqlc</code> / <code>make migrate-up</code> yourself.</span><span class="do" lang="vi">Công cụ Air (hot reload) sẽ tự động build lại mỗi khi bạn lưu file <code>.go</code>. Nếu code bị lỗi biên dịch, nó sẽ in thông báo lỗi trong <code>make app-logs</code> và tiếp tục chạy bản build cũ trước đó. Hãy sửa hết lỗi biên dịch, hoặc chạy <code>go build ./...</code> để kiểm tra. Lưu ý rằng Air không theo dõi các file <code>.sql</code> — bạn cần tự tay chạy <code>make sqlc</code> hoặc <code>make migrate-up</code>.</span></div></div>
     </div>
 
@@ -1072,12 +1203,12 @@ INFO  service/product_service.go:61  product: updated
         <div class="jd-rule"><span class="n" style="background:var(--blue)">✓</span><p lang="en">New migration pair with a working <code>down</code>; old migrations untouched.</p><p lang="vi">Tạo đủ cặp migration mới với hàm <code>down</code> hoạt động chuẩn xác; tuyệt đối không sửa các migration cũ.</p></div>
         <div class="jd-rule"><span class="n" style="background:var(--blue)">✓</span><p lang="en"><code>make sqlc</code> run and the generated files committed.</p><p lang="vi">Đã chạy <code>make sqlc</code> và commit đầy đủ các file Go được sinh tự động.</p></div>
         <div class="jd-rule"><span class="n" style="background:var(--purple)">✓</span><p lang="en">Rules live in the service; the handler only translates HTTP.</p><p lang="vi">Mọi quy tắc nghiệp vụ nằm gọn trong Service; Handler chỉ làm nhiệm vụ tiếp nhận và điều phối HTTP.</p></div>
-        <div class="jd-rule"><span class="n" style="background:var(--purple)">✓</span><p lang="en">Routes stay inside the <code>BearerAuth</code> group, each wrapped by the Guard with its own permission (in the feature's <code>domain/permission.go</code> and in a migration); any <code>guard.Public</code> one is deliberate and reviewed.</p><p lang="vi">Các endpoint đều nằm trong nhóm có <code>BearerAuth</code>, mỗi cái bọc bằng Guard với permission riêng (có trong <code>domain/permission.go</code> của feature và trong một migration); endpoint <code>guard.Public</code> nào cũng phải có lý do rõ ràng và được review kỹ.</p></div>
+        <div class="jd-rule"><span class="n" style="background:var(--purple)">✓</span><p lang="en">Routes stay inside the authenticated group, each wrapped by the Guard with its own permission (in the feature's <code>domain/permission.go</code> and in a migration); any <code>guard.Public</code> one is deliberate and reviewed.</p><p lang="vi">Các endpoint đều nằm trong group có xác thực, mỗi cái bọc bằng Guard với permission riêng (có trong <code>domain/permission.go</code> của feature và trong một migration); endpoint <code>guard.Public</code> nào cũng phải có lý do rõ ràng và được review kỹ.</p></div>
         <div class="jd-rule"><span class="n" style="background:var(--purple)">✓</span><p lang="en">Every new route has its line in <code>Docs()</code>, and its DTO fields carry <code>binding</code> and <code>example</code> tags, so <code>/docs</code> shows them.</p><p lang="vi">Mỗi route mới có dòng tương ứng trong <code>Docs()</code>, và field của DTO có tag <code>binding</code> và <code>example</code>, để <code>/docs</code> hiển thị đủ.</p></div>
       </div>
       <div class="jd-rules" style="grid-template-columns:minmax(0,1fr)">
         <div class="jd-rule"><span class="n" style="background:var(--pink)">✓</span><p lang="en">Every new message key has its text in <code>registerTranslations</code>.</p><p lang="vi">Mọi key thông báo mới đều được khai báo bản dịch đầy đủ trong <code>registerTranslations</code>.</p></div>
-        <div class="jd-rule"><span class="n" style="background:var(--pink)">✓</span><p lang="en">Cache key deleted after every write that changes a cached entity.</p><p lang="vi">Cache key luôn được xóa sạch sẽ sau các thao tác ghi làm thay đổi dữ liệu entity.</p></div>
+        <div class="jd-rule"><span class="n" style="background:var(--pink)">✓</span><p lang="en">If you cache an entity, every write that changes it deletes the cached entry.</p><p lang="vi">Nếu có cache một entity, mọi thao tác ghi làm thay đổi nó đều xóa entry trong cache.</p></div>
         <div class="jd-rule"><span class="n" style="background:var(--green)">✓</span><p lang="en">A test for each service branch; <code>make test</code> and <code>make vet</code> pass; <code>make fmt</code> run.</p><p lang="vi">Đã viết Unit Test cho từng nhánh logic của Service; các lệnh <code>make test</code>, <code>make vet</code> và <code>make fmt</code> đều pass.</p></div>
         <div class="jd-rule"><span class="n" style="background:var(--green)">✓</span><p lang="en">No <code>tracer.Stop</code> left, no secrets in logs.</p><p lang="vi">Đã xóa hết các dòng <code>tracer.Stop</code> thử nghiệm, không để lọt mật khẩu hay thông tin bí mật trong log.</p></div>
       </div>
@@ -1085,8 +1216,8 @@ INFO  service/product_service.go:61  product: updated
   </section>
 
   <footer class="jd-footer">
-    <span>Jundoc · <span lang="en">build a feature</span><span lang="vi">tạo feature</span></span>
-    <span><a href="overview.html">← <span lang="en">Jungo overview</span><span lang="vi">Tổng quan Jungo</span></a> · <a href="uber-fx.html">Uber Fx</a></span>
+    <span>Jundoc · Jungo · <span lang="en">Build a feature</span><span lang="vi">Tạo feature</span></span>
+    <span><a href="overview.html">← <span lang="en">Jungo overview</span><span lang="vi">Tổng quan Jungo</span></a> · <a href="uber-fx.html">Uber Fx →</a></span>
   </footer>
 </article>
 </div>
@@ -1098,9 +1229,15 @@ document.addEventListener("jd:ready", function () {
     { node: "client", token: "PATCH /products/:uuid", color: req, ms: 2200,
       text: { en: "The <b>client</b> sends <code>PATCH /api/v1/products/:uuid</code>, body <code>{\"name\": \"Iced coffee\"}</code>, header <code>Authorization: Bearer …</code>.",
               vi: "<b>Client</b> gửi request <code>PATCH /api/v1/products/:uuid</code>, kèm body <code>{\"name\": \"Iced coffee\"}</code> và header xác thực <code>Authorization: Bearer …</code>." } },
-    { node: "router", token: "BearerAuth", color: req, ms: 2400,
-      text: { en: "<b>Router</b> (step 3.7) matches the URL to <code>handler.UpdateProduct</code>. A malformed <code>:uuid</code> was already answered <b>404</b> by the global <code>RoutePatterns</code>. <code>BearerAuth</code> checks the token first — invalid → <b>401</b>; then <code>guard.Can</code> checks <code>products:update</code> — missing → <b>403</b>. Either way the handler never runs.",
-              vi: "<b>Router</b> (bước 3.7) điều hướng URL tới method <code>handler.UpdateProduct</code>. <code>:uuid</code> sai định dạng đã bị middleware global <code>RoutePatterns</code> trả <b>404</b> từ trước. Middleware <code>BearerAuth</code> kiểm tra token trước tiên — không hợp lệ → <b>401</b>; sau đó <code>guard.Can</code> kiểm tra <code>products:update</code> — thiếu → <b>403</b>. Cả hai trường hợp Handler đều không được gọi." } },
+    { node: "router", token: "PATCH /:uuid", color: req, ms: 2200,
+      text: { en: "<b>Router</b> (step 3.7) matches the URL to <code>handler.UpdateProduct</code>. A malformed <code>:uuid</code> was already answered <b>404</b> by the global <code>RoutePatterns</code>.",
+              vi: "<b>Router</b> (bước 3.7) điều hướng URL tới method <code>handler.UpdateProduct</code>. <code>:uuid</code> sai định dạng đã bị middleware global <code>RoutePatterns</code> trả <b>404</b> từ trước." } },
+    { node: "auth", token: "Bearer …", color: req, ms: 2400,
+      text: { en: "The <code>/products</code> group runs the <b>auth middleware</b> (<code>r.authenticate</code>, i.e. <code>BearerAuth</code>): no valid access token → <b>401</b>. Otherwise it puts the caller's identity in the context. See <a href=\"auth.html#inside\">Authentication</a>.",
+              vi: "Group <code>/products</code> chạy <b>middleware xác thực</b> (<code>r.authenticate</code>, tức <code>BearerAuth</code>): không có access token hợp lệ → <b>401</b>. Ngược lại nó đặt identity của người gọi vào context. Xem <a href=\"auth.html#inside\">Xác thực</a>." } },
+    { node: "guard", token: "products:update", color: req, ms: 2400,
+      text: { en: "The route is wrapped by <code>guard.Can(…, domain.ProductsUpdate)</code>: it loads the caller's permissions; missing <code>products:update</code> → <b>403</b>. Either way (401 or 403) the handler never runs. See <a href=\"access.html#inside\">Permissions &amp; roles</a>.",
+              vi: "Route được bọc bởi <code>guard.Can(…, domain.ProductsUpdate)</code>: nó nạp permission của người gọi; thiếu <code>products:update</code> → <b>403</b>. Dù 401 hay 403, Handler đều không được gọi. Xem <a href=\"access.html#inside\">Phân quyền</a>." } },
     { node: "handler", token: ":uuid + body", color: req, ms: 2600,
       text: { en: "<b>Handler</b> (3.6) reads <code>:uuid</code> and binds the body into <code>UpdateProductRequest</code> (3.5). A name shorter than 2 → <b>422</b> right here.",
               vi: "<b>Handler</b> (bước 3.6) đọc <code>:uuid</code> và bind dữ liệu body vào struct <code>UpdateProductRequest</code> (bước 3.5). Nếu tên ngắn hơn 2 ký tự → trả ngay mã lỗi <b>422</b> tại đây." } },
@@ -1116,15 +1253,12 @@ document.addEventListener("jd:ready", function () {
     { node: "repo", token: "*domain.Product", color: res, ms: 2000,
       text: { en: "On the way back the <b>repository</b> maps the row to a <code>domain.Product</code>.",
               vi: "Trên chiều dữ liệu trả về, <b>Repository</b> chuyển đổi (map) dòng dữ liệu từ database thành entity <code>domain.Product</code>." } },
-    { node: "service", token: "cache.Delete", color: res, ms: 2200,
-      text: { en: "The <b>service</b> deletes <code>product:&lt;uuid&gt;</code> from the cache so the next GET reads the new name (Redis with <code>CACHE_REDIS_ENABLE=true</code>; without Redis there is nothing to delete).",
-              vi: "<b>Service</b> xóa sạch key <code>product:&lt;uuid&gt;</code> trong cache để các request GET sau đó sẽ đọc được tên sản phẩm mới nhất (Redis khi bật <code>CACHE_REDIS_ENABLE=true</code>; không có Redis thì không có gì để xóa)." } },
     { node: "handler", token: "ProductResponse", color: res, ms: 2200,
       text: { en: "The <b>handler</b> converts the product to the DTO and sends <code>200</code> with the message key <code>product_updated</code> (text from 3.8).",
               vi: "<b>Handler</b> chuyển đổi product thành DTO response và gửi mã <b>200</b> kèm key thông báo <code>product_updated</code> (đã được định nghĩa ở bước 3.8)." } },
     { node: "client", token: "200 OK", color: res,
       text: { en: "The <b>client</b> receives the JSON envelope with the new name and a <code>trace_id</code>. Now read each of those files, step by step, below.",
-              vi: "<b>Client</b> nhận về cấu trúc JSON chuẩn mực với tên sản phẩm đã được đổi và mã theo dõi <code>trace_id</code>. Giờ hãy cùng khám phá chi tiết từng file mã nguồn ở ngay bên dưới!" } }
+              vi: "<b>Client</b> nhận JSON theo dạng chuẩn với tên mới và <code>trace_id</code>. Giờ hãy cùng khám phá chi tiết từng file mã nguồn ở ngay bên dưới!" } }
   ]);
 });
 </script>

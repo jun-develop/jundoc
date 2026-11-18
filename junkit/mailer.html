@@ -31,17 +31,14 @@
         <p lang="vi">Gửi email giao dịch (OTP, quên mật khẩu, lời mời) qua một interface duy nhất. Nhà cung cấp nào gửi
           mail chỉ là một giá trị cấu hình — đổi nhà cung cấp không bao giờ phải sửa code.</p>
         <div class="jd-chips">
-          <span class="jd-chip">github.com/jun-develop/junkit/mailer</span>
-          <span class="jd-chip"><span lang="en">Fx Module → provides <code>mailer.Sender</code></span><span
-              lang="vi">Fx Module → cung cấp <code>mailer.Sender</code></span></span>
-          <span class="jd-chip">smtp · brevo · log</span>
-          <span class="jd-chip"><span lang="en">standard library only</span><span lang="vi">chỉ dùng thư viện
-              chuẩn</span></span>
-        </div>
-      </header>
+      <span class="jd-chip">github.com/jun-develop/junkit/mailer</span>
+      <span class="jd-chip"><span lang="en">Fx: <code>mailer.Module</code> → provides <code>mailer.Sender</code></span><span lang="vi">Fx: <code>mailer.Module</code> → cung cấp <code>mailer.Sender</code></span></span>
+      <span class="jd-chip"><span lang="en">Depends on: fx · uuid · zap</span><span lang="vi">Phụ thuộc: fx · uuid · zap</span></span>
+    </div>
+  </header>
 
       <!-- ============================================================ 1. WHAT -->
-      <section id="what" class="jd-section c-orange">
+      <section id="what" class="jd-section c-blue">
         <div class="jd-section-head">
           <span class="jd-badge">1</span>
           <div>
@@ -53,28 +50,28 @@
           </div>
         </div>
         <div class="jd-flow" style="margin-top:22px" data-wires='[
-      {"from":"m1","to":"m2","color":"orange"},
-      {"from":"m2","to":"m3","color":"green"},
-      {"from":"m2","to":"m4","color":"blue"},
+      {"from":"m1","to":"m2","color":"blue"},
+      {"from":"m2","to":"m3","color":"orange"},
+      {"from":"m2","to":"m4","color":"orange"},
       {"from":"m2","to":"m5","color":"muted","dashed":true}]'>
-          <div class="jd-node is-tint c-orange" data-node="m1"><span class="k"><span lang="en">1 · your code</span><span
+          <div class="jd-node is-tint c-blue" data-node="m1"><span class="k"><span lang="en">1 · your code</span><span
                 lang="vi">1 · code của bạn</span></span><span class="t mono" style="font-size:15px">Send(ctx, msg)</span>
             <div class="d" lang="en">Depends on <code>mailer.Sender</code> only.</div>
             <div class="d" lang="vi">Chỉ phụ thuộc vào <code>mailer.Sender</code>.</div>
           </div>
-          <div class="jd-node is-tint c-purple" data-node="m2"><span class="k">2 · prepare</span><span class="t mono"
+          <div class="jd-node is-tint c-purple" data-node="m2"><span class="k"><span lang="en">2 · prepare</span><span lang="vi">2 · chuẩn bị</span></span><span class="t mono"
               style="font-size:15px">validate</span>
             <div class="d" lang="en">Parse every address, need a recipient and a body, refuse line breaks in the subject
               (header injection).</div>
             <div class="d" lang="vi">Parse mọi địa chỉ, cần ít nhất một người nhận và một body, chặn xuống dòng trong
               subject (chèn header).</div>
           </div>
-          <div class="jd-node is-tint c-green" data-node="m3"><span class="k">smtp</span><span class="t mono"
+          <div class="jd-node is-tint c-orange" data-node="m3"><span class="k">smtp</span><span class="t mono"
               style="font-size:15px">any provider</span>
             <div class="d" lang="en">Brevo, Resend, SES, Mailgun… TLS required: STARTTLS, or implicit TLS on port 465.</div>
             <div class="d" lang="vi">Brevo, Resend, SES, Mailgun… Bắt buộc TLS: STARTTLS, hoặc TLS ngay từ đầu ở port 465.</div>
           </div>
-          <div class="jd-node is-tint c-blue" data-node="m4"><span class="k">brevo</span><span class="t mono"
+          <div class="jd-node is-tint c-orange" data-node="m4"><span class="k">brevo</span><span class="t mono"
               style="font-size:15px">HTTP API</span>
             <div class="d" lang="en"><code>POST api.brevo.com/v3/smtp/email</code> with an API key.</div>
             <div class="d" lang="vi"><code>POST api.brevo.com/v3/smtp/email</code> với API key.</div>
@@ -92,7 +89,7 @@
         <div class="jd-section-head">
           <span class="jd-badge">2</span>
           <div>
-            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối</span></h2>
+            <h2><span lang="en">Setup</span><span lang="vi">Cài đặt</span></h2>
             <p class="jd-sub" lang="en"><code>mailer.Module</code> needs <code>mailer.Options</code> and a
               <code>*zap.Logger</code>. The <code>*http.Client</code> is optional — only the <code>brevo</code> driver
               uses it.</p>
@@ -101,16 +98,14 @@
               tới.</p>
           </div>
         </div>
-        <div class="jd-tabs c-purple" style="margin-top:18px">
+        <div class="jd-tabs" style="margin-top:18px">
           <div class="jd-tablist">
-            <button type="button" class="jd-tab" aria-selected="true"><span lang="en">with Fx (as Jungo)</span><span
-                lang="vi">với Fx (như Jungo)</span></button>
-            <button type="button" class="jd-tab" aria-selected="false"><span lang="en">without Fx</span><span
-                lang="vi">Không dùng Fx</span></button>
+            <button type="button" class="jd-tab" aria-selected="true"><span lang="en">With Fx (as in Jungo)</span><span lang="vi">Dùng Fx (như Jungo)</span></button>
+            <button type="button" class="jd-tab" aria-selected="false"><span lang="en">Without Fx</span><span lang="vi">Không dùng Fx</span></button>
           </div>
           <div class="jd-tabpanel">
             <div class="jd-term">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>jungo/internal/app/fx.go</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go</span></div>
               <pre data-hl="go">
 fx.Provide(provideMailerOptions),
 mailer.Module,
@@ -155,11 +150,7 @@ sender, err := mailer.New(mailer.Options{
         </div>
         <div class="jd-tablewrap" style="margin-top:16px">
           <table class="jd-params c-purple">
-            <tr>
-              <th>Options field</th>
-              <th>type</th>
-              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-            </tr>
+            <tr><th>field</th><th><span lang="en">type</span><span lang="vi">kiểu</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
             <tr>
               <td>Driver</td>
               <td>Driver</td>
@@ -223,11 +214,11 @@ sender, err := mailer.New(mailer.Options{
       </section>
 
       <!-- ============================================================ 3. QUICK START -->
-      <section id="quick" class="jd-section c-orange">
+      <section id="quick" class="jd-section c-green">
         <div class="jd-section-head">
           <span class="jd-badge">3</span>
           <div>
-            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <h2><span lang="en">Quick start</span><span lang="vi">Dùng nhanh</span></h2>
             <p class="jd-sub" lang="en">Send a welcome email with an HTML and a plain-text version. Hover an explanation
               to light up its lines.</p>
             <p class="jd-sub" lang="vi">Gửi mail chào mừng có bản HTML và bản text thường. Rê chuột vào giải thích để làm
@@ -260,18 +251,15 @@ func (w *Welcomer) Send(ctx context.Context, email, name string) error {
             </div>
           </div>
           <div class="jd-explain">
-            <div class="jd-ex c-orange" data-code="#code-quick" data-show="1-3"><span class="n">1</span><span
-                class="w">depend on the interface</span><span class="x" lang="en">Take <code>mailer.Sender</code>. Tests
+            <div class="jd-ex c-orange" data-code="#code-quick" data-show="1-3"><span class="n">1</span><span class="w"><span lang="en">Depend on the interface</span><span lang="vi">Phụ thuộc vào interface</span></span><span class="x" lang="en">Take <code>mailer.Sender</code>. Tests
                 pass a fake; production gets whatever <code>MAIL_DRIVER</code> selects.</span><span class="x"
                 lang="vi">Nhận <code>mailer.Sender</code>. Test truyền vào bản fake; production nhận driver mà
                 <code>MAIL_DRIVER</code> chọn.</span></div>
-            <div class="jd-ex c-orange" data-code="#code-quick" data-show="6-7"><span class="n">2</span><span
-                class="w">bound the call</span><span class="x" lang="en">SMTP is slow (often ~1s). The context deadline
+            <div class="jd-ex c-orange" data-code="#code-quick" data-show="6-7"><span class="n">2</span><span class="w"><span lang="en">Bound the call</span><span lang="vi">Giới hạn lời gọi</span></span><span class="x" lang="en">Each SMTP send dials, negotiates TLS and authenticates. The context deadline
                 cuts the connection short; without one, <code>SMTPOptions.Timeout</code> applies.</span><span class="x"
-                lang="vi">SMTP chậm (thường ~1s). Deadline của context cắt kết nối khi quá hạn; không có deadline thì
+                lang="vi">Mỗi lần gửi SMTP đều dial, bắt tay TLS và xác thực. Deadline của context cắt kết nối khi quá hạn; không có deadline thì
                 dùng <code>SMTPOptions.Timeout</code>.</span></div>
-            <div class="jd-ex c-orange" data-code="#code-quick" data-show="10-11"><span class="n">3</span><span
-                class="w">addresses</span><span class="x" lang="en"><code>"a@x.com"</code> or
+            <div class="jd-ex c-orange" data-code="#code-quick" data-show="10"><span class="n">3</span><span class="w"><span lang="en">Addresses</span><span lang="vi">Địa chỉ</span></span><span class="x" lang="en"><code>"a@x.com"</code> or
                 <code>"Name &lt;a@x.com&gt;"</code>. <code>From</code> is left out, so <code>Options.From</code> is
                 used.</span><span class="x" lang="vi"><code>"a@x.com"</code> hoặc <code>"Tên &lt;a@x.com&gt;"</code>.
                 Không đặt <code>From</code>, nên dùng <code>Options.From</code>.</span></div>
@@ -290,10 +278,8 @@ func (w *Welcomer) Send(ctx context.Context, email, name string) error {
           <span class="jd-badge">4</span>
           <div>
             <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
-            <p class="jd-sub" lang="en">Everything the package exports — from <code>junkit/mailer/mailer.go</code> and
-              <code>module.go</code>.</p>
-            <p class="jd-sub" lang="vi">Mọi thứ package export — từ <code>junkit/mailer/mailer.go</code> và
-              <code>module.go</code>.</p>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/mailer</code>.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/mailer</code>.</p>
           </div>
         </div>
         <div class="jd-syms" style="margin-top:18px">
@@ -344,6 +330,11 @@ type Attachment struct {
               <li lang="vi">Người nhận Bcc nhận được mail nhưng không bao giờ xuất hiện trong header.</li>
               <li lang="en">Non-ASCII subjects and attachment names (e.g. Vietnamese) are encoded for you.</li>
               <li lang="vi">Subject và tên file đính kèm có ký tự ngoài ASCII (vd. tiếng Việt) được mã hóa tự động.</li>
+              <li lang="en">The brevo driver sends only each attachment's name and data; <code>ContentType</code> is
+                ignored. The log driver lists Bcc recipients together with To and Cc in its
+                <code>to</code> field.</li>
+              <li lang="vi">Driver brevo chỉ gửi tên và dữ liệu của file đính kèm; <code>ContentType</code> bị bỏ qua.
+                Driver log liệt kê người nhận Bcc chung với To và Cc trong field <code>to</code>.</li>
             </ul>
           </div>
 
@@ -353,11 +344,11 @@ type Attachment struct {
               <pre data-hl="go">var ErrInvalidMessage = errors.New("mailer: invalid message")</pre>
             </div>
             <p lang="en">Wrapped by <code>Send</code> when the message fails validation (bad address, no recipient,
-              empty body, line break in the subject, empty attachment name, invalid attachment content type). Check
+              empty body, line break in the subject, empty or line-broken attachment name, invalid attachment content type). Check
               with
               <code>errors.Is(err, mailer.ErrInvalidMessage)</code>. Nothing was sent.</p>
             <p lang="vi"><code>Send</code> bọc lỗi này khi message không hợp lệ (địa chỉ sai, không có người nhận, body
-              trống, xuống dòng trong subject, tên file đính kèm trống, content type đính kèm không hợp lệ). Kiểm tra
+              trống, xuống dòng trong subject, tên file đính kèm trống hoặc có xuống dòng, content type đính kèm không hợp lệ). Kiểm tra
               bằng
               <code>errors.Is(err, mailer.ErrInvalidMessage)</code>. Chưa có gì được gửi.</p>
           </div>
@@ -375,9 +366,11 @@ type Attachment struct {
           </div>
 
           <div class="jd-sym c-purple">
-            <div class="jd-sym-head"><span class="jd-kind">const</span><span class="jd-sym-name">Driver</span></div>
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Driver</span></div>
             <div class="jd-term">
               <pre data-hl="go">
+type Driver string
+
 const (
 	DriverSMTP  Driver = "smtp"
 	DriverBrevo Driver = "brevo"
@@ -394,10 +387,58 @@ const (
             </div>
             <p lang="en">Checks the config without contacting the provider: unknown driver, invalid <code>From</code>,
               missing SMTP host or Brevo key → error. A wrong password or key shows up on the first <code>Send</code>.
-              A nil <code>httpClient</code> gets a 10s timeout; a nil <code>logger</code> is fine.</p>
+              A nil <code>httpClient</code> gets a 10s timeout; a nil <code>logger</code> is fine. Errors:
+              <code>mailer: unknown driver %q</code>, <code>mailer: smtp host is required</code>,
+              <code>mailer: brevo api key is required</code>, or <code>ErrInvalidMessage</code> for a bad
+              <code>From</code> (not checked for <code>log</code>). <code>Send</code> errors from the smtp driver are
+              prefixed <code>mailer: smtp dial / handshake / starttls / auth / MAIL FROM / RCPT TO / DATA / write /
+              send</code>; from brevo <code>mailer: brevo request: …</code> or <code>mailer: brevo api error (status
+              %d): …</code>.</p>
             <p lang="vi">Kiểm tra cấu hình mà không gọi tới nhà cung cấp: driver lạ, <code>From</code> sai, thiếu SMTP
               host hoặc Brevo key → lỗi. Sai mật khẩu hoặc key chỉ lộ ra ở lần <code>Send</code> đầu tiên.
-              <code>httpClient</code> nil được timeout 10s; <code>logger</code> nil cũng được.</p>
+              <code>httpClient</code> nil được timeout 10s; <code>logger</code> nil cũng được. Lỗi:
+              <code>mailer: unknown driver %q</code>, <code>mailer: smtp host is required</code>,
+              <code>mailer: brevo api key is required</code>, hoặc <code>ErrInvalidMessage</code> khi
+              <code>From</code> sai (không kiểm tra với <code>log</code>). Lỗi <code>Send</code> của driver smtp có tiền
+              tố <code>mailer: smtp dial / handshake / starttls / auth / MAIL FROM / RCPT TO / DATA / write /
+              send</code>; của brevo là <code>mailer: brevo request: …</code> hoặc <code>mailer: brevo api error
+              (status %d): …</code>.</p>
+          </div>
+
+          <div class="jd-sym c-blue">
+            <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Options · SMTPOptions ·
+                BrevoOptions</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+type Options struct {
+	Driver Driver       // "" → DriverLog
+	From   string       // default sender; Message.From overrides it
+	SMTP   SMTPOptions  // used by DriverSMTP
+	Brevo  BrevoOptions // used by DriverBrevo
+}
+
+type SMTPOptions struct {
+	Host           string
+	Port           int           // 0 → 587; 465 = implicit TLS
+	Username       string        // set → PLAIN auth
+	Password       string
+	AllowPlaintext bool          // send without TLS when the server offers no STARTTLS
+	Timeout        time.Duration // whole send when ctx has no deadline; ≤ 0 → 30s
+}
+
+type BrevoOptions struct {
+	APIKey string // Brevo v3 API key
+}
+</pre>
+            </div>
+            <p lang="en">Defaults and meaning: <a href="#setup">Setup</a>. <code>PLAIN</code> auth is refused by
+              <code>net/smtp</code> on a connection without TLS unless the host is <code>localhost</code>, <code>127.0.0.1</code> or <code>::1</code>, so
+              <code>AllowPlaintext</code> with a <code>Username</code> on any other host fails with
+              <code>mailer: smtp auth: …</code>.</p>
+            <p lang="vi">Mặc định và ý nghĩa: <a href="#setup">Cài đặt</a>. <code>net/smtp</code> từ chối auth
+              <code>PLAIN</code> trên kết nối không TLS trừ khi host là <code>localhost</code>, <code>127.0.0.1</code> hoặc <code>::1</code>, nên
+              <code>AllowPlaintext</code> kèm <code>Username</code> với host khác sẽ lỗi
+              <code>mailer: smtp auth: …</code>.</p>
           </div>
 
           <div class="jd-sym c-muted">
@@ -425,11 +466,36 @@ var Module = fx.Module("mailer",
           <span class="jd-badge">5</span>
           <div>
             <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
-            <p class="jd-sub" lang="en">Configured from <code>MAIL_*</code> in <code>.env</code>; used by <a
-                href="../jungo/auth.html">password reset</a>.</p>
-            <p class="jd-sub" lang="vi">Cấu hình từ <code>MAIL_*</code> trong <code>.env</code>; được dùng bởi <a
-                href="../jungo/auth.html">quên mật khẩu</a>.</p>
+            <p class="jd-sub" lang="en">Configured from <code>MAIL_*</code> in <code>.env</code> (default
+              <code>MAIL_DRIVER=log</code>; outside development <code>provideMailerOptions</code> logs a warning for it);
+              used by <a href="../jungo/auth.html#endpoints">password reset</a>. Below: switching to Brevo SMTP.</p>
+            <p class="jd-sub" lang="vi">Cấu hình từ <code>MAIL_*</code> trong <code>.env</code> (mặc định
+              <code>MAIL_DRIVER=log</code>; ngoài development <code>provideMailerOptions</code> log một cảnh báo về điều
+              này); được dùng bởi <a href="../jungo/auth.html#endpoints">quên mật khẩu</a>. Bên dưới: chuyển sang SMTP của Brevo.</p>
           </div>
+        </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-orange">
+            <tr>
+              <th>file</th>
+              <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
+            </tr>
+            <tr>
+              <td>internal/app/fx.go</td>
+              <td lang="en"><code>provideMailerOptions</code> (from <code>MAIL_*</code>) + <code>mailer.Module</code>.</td>
+              <td lang="vi"><code>provideMailerOptions</code> (từ <code>MAIL_*</code>) + <code>mailer.Module</code>.</td>
+            </tr>
+            <tr>
+              <td>internal/features/auth/service/auth_service.go</td>
+              <td lang="en">Takes <code>mailer.Sender</code> as <code>optional:"true"</code>.</td>
+              <td lang="vi">Nhận <code>mailer.Sender</code> dạng <code>optional:"true"</code>.</td>
+            </tr>
+            <tr>
+              <td>internal/features/auth/service/password_reset.go</td>
+              <td lang="en">Builds the reset email and calls <code>Send</code>.</td>
+              <td lang="vi">Dựng email reset và gọi <code>Send</code>.</td>
+            </tr>
+          </table>
         </div>
         <div class="jd-grid-2" style="margin-top:16px">
           <div class="jd-term" data-copy="commands">
@@ -492,21 +558,23 @@ MAIL_SMTP_ALLOW_PLAINTEXT=false # true only for a local Mailpit (WITH=mail)
               Transactional → Logs).</span><span class="x" lang="vi"><code>Send</code> trả <code>nil</code> khi nhà cung
               cấp đã nhận mail. Nhà cung cấp vẫn có thể bỏ mail sau đó (sender chưa xác minh, người nhận bị chặn) — xem
               log của họ (Brevo: Transactional → Logs).</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">the log
-                driver logs bodies</span><span lang="vi">driver log ghi cả body</span></span><span class="x"
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">The log
+                driver logs bodies</span><span lang="vi">Driver log ghi cả body</span></span><span class="x"
               lang="en">OTPs and reset links end up in the log on purpose, for local testing. Never run production on
               <code>log</code>; Jungo warns at startup if you do.</span><span class="x" lang="vi">OTP và link reset được
               ghi ra log có chủ đích, để test local. Đừng bao giờ chạy production với <code>log</code>; Jungo cảnh báo
               lúc khởi động nếu bạn làm vậy.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">one
-                connection per mail, no retry</span><span lang="vi">mỗi mail một kết nối, không retry</span></span><span
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">One
+                connection per mail, no retry</span><span lang="vi">Mỗi mail một kết nối, không retry</span></span><span
               class="x" lang="en">Fine for transactional volume. Retry only belongs in your code if sending twice is
-              acceptable; the <code>brevo</code> driver retries only if the injected <code>*http.Client</code> does
-              (Jungo's does not).</span><span class="x" lang="vi">Ổn với lượng mail giao dịch. Chỉ nên retry trong code
-              của bạn nếu gửi trùng là chấp nhận được; driver <code>brevo</code> chỉ retry nếu
-              <code>*http.Client</code> được inject có retry (của Jungo thì không).</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">a new
-                provider</span><span lang="vi">nhà cung cấp mới</span></span><span class="x" lang="en">Anything with SMTP
+              acceptable. The <code>brevo</code> driver makes one attempt per call: even an <a
+                href="httpclient.html">httpclient</a> client with <code>MaxRetries</code> never retries it, because it
+              is a plain POST without <code>Idempotency-Key</code>.</span><span class="x" lang="vi">Ổn với lượng mail
+              giao dịch. Chỉ nên retry trong code của bạn nếu gửi trùng là chấp nhận được. Driver <code>brevo</code> chỉ
+              gửi một lần mỗi lời gọi: kể cả client <a href="httpclient.html">httpclient</a> có <code>MaxRetries</code>
+              cũng không bao giờ retry nó, vì đó là POST thường không có <code>Idempotency-Key</code>.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">A new
+                provider</span><span lang="vi">Nhà cung cấp mới</span></span><span class="x" lang="en">Anything with SMTP
               needs only new <code>MAIL_*</code> values. A provider with an HTTP API only gets a new driver file in
               junkit; apps keep calling <code>Sender</code> unchanged.</span><span class="x" lang="vi">Nhà cung cấp nào
               có SMTP thì chỉ cần đổi giá trị <code>MAIL_*</code>. Nhà cung cấp chỉ có HTTP API thì thêm một file driver
@@ -515,10 +583,9 @@ MAIL_SMTP_ALLOW_PLAINTEXT=false # true only for a local Mailpit (WITH=mail)
       </section>
 
       <footer class="jd-footer">
-        <span>Jundoc · Junkit · mailer</span>
-        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
-              Junkit</span></a></span>
-      </footer>
+    <span>Jundoc · Junkit · mailer</span>
+    <span><a href="notification.html">← notification</a> · <a href="recaptcha.html">recaptcha →</a></span>
+  </footer>
     </article>
   </div>
 </body>

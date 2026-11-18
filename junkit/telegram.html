@@ -31,14 +31,11 @@
         <p lang="vi">Một client Telegram Bot API nhỏ gọn: gửi tin nhắn định dạng HTML hoặc upload file vào một chat — và
           lặng lẽ không làm gì khi bot chưa được cấu hình.</p>
         <div class="jd-chips">
-          <span class="jd-chip">github.com/jun-develop/junkit/telegram</span>
-          <span class="jd-chip"><span lang="en">Fx Module → provides <code>telegram.Client</code></span><span
-              lang="vi">Fx Module → cung cấp <code>telegram.Client</code></span></span>
-          <span class="jd-chip"><span lang="en">optional <code>*http.Client</code></span><span
-              lang="vi"><code>*http.Client</code> tuỳ chọn</span></span>
-          <span class="jd-chip">parse_mode = HTML</span>
-        </div>
-      </header>
+      <span class="jd-chip">github.com/jun-develop/junkit/telegram</span>
+      <span class="jd-chip"><span lang="en">Fx: <code>telegram.Module</code> → provides <code>telegram.Client</code></span><span lang="vi">Fx: <code>telegram.Module</code> → cung cấp <code>telegram.Client</code></span></span>
+      <span class="jd-chip"><span lang="en">Depends on: fx</span><span lang="vi">Phụ thuộc: fx</span></span>
+    </div>
+  </header>
 
       <!-- ============================================================ 1. WHAT -->
       <section id="what" class="jd-section c-blue">
@@ -49,23 +46,23 @@
             <p class="jd-sub" lang="en">Two methods, one HTTP call each. If the token or chat id is missing, the call
               stops at the guard: <code>nil</code> returned, nothing sent. The client never logs; errors are returned
               and never contain the bot token.</p>
-            <p class="jd-sub" lang="vi">Cung cấp 2 method, mỗi method thực hiện một HTTP request độc lập. Nếu thiếu
-              token hoặc chat id, method sẽ tự động dừng tại bước kiểm tra (Guard): trả về <code>nil</code> và không gửi
-              request. Client không bao giờ log; lỗi được trả về và không bao giờ chứa bot token.</p>
+            <p class="jd-sub" lang="vi">Hai method, mỗi method một HTTP call. Nếu thiếu token hoặc chat id, lời gọi dừng
+              ở bước kiểm tra: trả <code>nil</code>, không gửi gì. Client không bao giờ log; lỗi được trả về và không bao
+              giờ chứa bot token.</p>
           </div>
         </div>
         <div class="jd-flow" style="margin-top:22px" data-wires='[
       {"from":"t1","to":"t2","color":"blue"},
-      {"from":"t2","to":"t3","color":"green"},
-      {"from":"t3","to":"t4","color":"purple"}]'>
+      {"from":"t2","to":"t3","color":"blue"},
+      {"from":"t3","to":"t4","color":"orange"}]'>
           <div class="jd-node is-tint c-blue" data-node="t1"><span class="k"><span lang="en">1 · your code</span><span
                 lang="vi">1 · code của bạn</span></span><span class="t mono"
               style="font-size:15px">SendMessage(…)</span>
             <div class="d" lang="en">or <code>SendDocument(…)</code> with an <code>io.Reader</code>.</div>
             <div class="d" lang="vi">hoặc <code>SendDocument(…)</code> với một <code>io.Reader</code>.</div>
           </div>
-          <div class="jd-node is-tint c-green" data-node="t2"><span class="k">2 · guard</span><span class="t mono"
-              style="font-size:15px">token == "" ?</span>
+          <div class="jd-node is-tint c-blue" data-node="t2"><span class="k"><span lang="en">2 · guard</span><span lang="vi">2 · kiểm tra</span></span><span class="t mono"
+              style="font-size:15px">token / chatID == "" ?</span>
             <div class="d" lang="en">Empty token / chatID (or nil content) → return <code>nil</code>, nothing sent.</div>
             <div class="d" lang="vi">Token / chatID trống (hoặc content nil) → trả <code>nil</code>, không gửi.</div>
           </div>
@@ -89,7 +86,7 @@
         <div class="jd-section-head">
           <span class="jd-badge">2</span>
           <div>
-            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối</span></h2>
+            <h2><span lang="en">Setup</span><span lang="vi">Cài đặt</span></h2>
             <p class="jd-sub" lang="en"><code>telegram.Module</code> calls <code>NewClient</code>, so the Fx graph must
               contain <code>telegram.Options</code>; an <code>*http.Client</code> is used when present
               (<code>optional:"true"</code>), otherwise a 10s-timeout client.</p>
@@ -98,16 +95,14 @@
               không thì dùng client timeout 10s.</p>
           </div>
         </div>
-        <div class="jd-tabs c-purple" style="margin-top:18px">
+        <div class="jd-tabs" style="margin-top:18px">
           <div class="jd-tablist">
-            <button type="button" class="jd-tab" aria-selected="true"><span lang="en">with Fx (as Jungo)</span><span
-                lang="vi">với Fx (như Jungo)</span></button>
-            <button type="button" class="jd-tab" aria-selected="false"><span lang="en">without Fx</span><span
-                lang="vi">Không dùng Fx</span></button>
+            <button type="button" class="jd-tab" aria-selected="true"><span lang="en">With Fx (as in Jungo)</span><span lang="vi">Dùng Fx (như Jungo)</span></button>
+            <button type="button" class="jd-tab" aria-selected="false"><span lang="en">Without Fx</span><span lang="vi">Không dùng Fx</span></button>
           </div>
           <div class="jd-tabpanel">
             <div class="jd-term">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>jungo/internal/app/fx.go</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go</span></div>
               <pre data-hl="go">
 // inside CoreModules(cfg):
 fx.Provide(httpclient.NewDefaultClient), // *http.Client: 15s timeout, no retries
@@ -143,12 +138,7 @@ tg := telegram.NewClient(
         </div>
         <div class="jd-tablewrap" style="margin-top:16px">
           <table class="jd-params c-purple">
-            <tr>
-              <th>Options field</th>
-              <th>type</th>
-              <th><span lang="en">zero value</span><span lang="vi">giá trị zero</span></th>
-              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-            </tr>
+            <tr><th>field</th><th><span lang="en">type</span><span lang="vi">kiểu</span></th><th><span lang="en">default</span><span lang="vi">mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
             <tr>
               <td>Token</td>
               <td>string</td>
@@ -165,7 +155,7 @@ tg := telegram.NewClient(
           <table class="jd-params c-purple">
             <tr>
               <th><span lang="en">NewClient param</span><span lang="vi">tham số NewClient</span></th>
-              <th>type</th>
+              <th><span lang="en">type</span><span lang="vi">kiểu</span></th>
               <th><span lang="en">nil behaviour</span><span lang="vi">khi nil</span></th>
             </tr>
             <tr>
@@ -182,11 +172,11 @@ tg := telegram.NewClient(
       </section>
 
       <!-- ============================================================ 3. QUICK START -->
-      <section id="quick" class="jd-section c-blue">
+      <section id="quick" class="jd-section c-green">
         <div class="jd-section-head">
           <span class="jd-badge">3</span>
           <div>
-            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <h2><span lang="en">Quick start</span><span lang="vi">Dùng nhanh</span></h2>
             <p class="jd-sub" lang="en">Report a finished job: one message, one CSV attachment. Hover an explanation to
               light up its lines.</p>
             <p class="jd-sub" lang="vi">Báo cáo một job đã chạy xong: một tin nhắn và một file CSV đính kèm. Rê chuột
@@ -223,33 +213,28 @@ func (r *Reporter) Done(ctx context.Context, job string,
             </div>
           </div>
           <div class="jd-explain">
-            <div class="jd-ex c-blue" data-code="#code-quick" data-show="1-4"><span class="n">1</span><span
-                class="w">depend on the interface</span><span class="x" lang="en">Take <code>telegram.Client</code>, not
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="1-4"><span class="n">1</span><span class="w"><span lang="en">Depend on the interface</span><span lang="vi">Phụ thuộc vào interface</span></span><span class="x" lang="en">Take <code>telegram.Client</code>, not
                 a concrete type — easy to fake in tests. The chat id is yours to store; the client only knows the
                 token.</span><span class="x" lang="vi">Nhận <code>telegram.Client</code>, không phải kiểu cụ thể — dễ
                 fake khi test. Chat id do bạn tự giữ; client chỉ biết token.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-quick" data-show="8-9"><span class="n">2</span><span
-                class="w">bound the call</span><span class="x" lang="en">The context is passed to the HTTP request, so a
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="8-9"><span class="n">2</span><span class="w"><span lang="en">Bound the call</span><span lang="vi">Giới hạn lời gọi</span></span><span class="x" lang="en">The context is passed to the HTTP request, so a
                 deadline here cuts the call short. Without it only the <code>*http.Client</code> timeout
                 applies.</span><span class="x" lang="vi">Context được truyền vào HTTP request, giúp tự động hủy hoặc áp
                 đặt timeout cho request. Nếu không truyền context có deadline, chỉ timeout mặc định của
                 <code>*http.Client</code> được áp dụng.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-quick" data-show="11-12"><span class="n">3</span><span
-                class="w">HTML, escaped</span><span class="x" lang="en">Text is sent with
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="11-12"><span class="n">3</span><span class="w"><span lang="en">HTML, escaped</span><span lang="vi">HTML, đã escape</span></span><span class="x" lang="en">Text is sent with
                 <code>parse_mode: "HTML"</code>. Escape any dynamic value — a stray <code>&lt;</code> makes Telegram
                 reject the whole message.</span><span class="x" lang="vi">Nội dung được gửi với
                 <code>parse_mode: "HTML"</code>. Phải escape mọi giá trị động — một dấu <code>&lt;</code> lạc chỗ khiến
                 Telegram từ chối cả tin nhắn.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-quick" data-show="13-15"><span class="n">4</span><span
-                class="w">errors are real errors</span><span class="x" lang="en">Network failures come back as
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="13-15"><span class="n">4</span><span class="w"><span lang="en">Errors are real errors</span><span lang="vi">Error là error thật</span></span><span class="x" lang="en">Network failures come back as
                 <code>telegram: sendMessage: &lt;cause&gt;</code> (without the URL, so no token); a non-200 answer becomes
                 <code>telegram: sendMessage: status 400: {…body…}</code>. Unconfigured bot →
                 <code>nil</code>.</span><span class="x" lang="vi">Lỗi mạng trả về dạng
                 <code>telegram: sendMessage: &lt;nguyên nhân&gt;</code> (không kèm URL, nên không lộ token); response
                 khác 200 thành <code>telegram: sendMessage: status 400: {…body…}</code>. Bot chưa cấu hình →
                 <code>nil</code>.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-quick" data-show="17-18"><span class="n">5</span><span
-                class="w">SendDocument streams</span><span class="x" lang="en">Any <code>io.Reader</code> — it is copied
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="17-18"><span class="n">5</span><span class="w"><span lang="en">SendDocument streams</span><span lang="vi">SendDocument stream dữ liệu</span></span><span class="x" lang="en">Any <code>io.Reader</code> — it is copied
                 into the multipart body while uploading, so big files don't sit in memory. The caption is optional (<code>""</code> = none).</span><span class="x" lang="vi">Mọi <code>io.Reader</code> — được chép vào
                 body multipart trong lúc upload, nên file lớn không nằm hết trong bộ nhớ. Caption là tuỳ chọn (<code>""</code> = không có).</span></div>
           </div>
@@ -262,10 +247,8 @@ func (r *Reporter) Done(ctx context.Context, job string,
           <span class="jd-badge">4</span>
           <div>
             <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
-            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from
-              <code>junkit/telegram/telegram.go</code> and <code>module.go</code>.</p>
-            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/telegram/telegram.go</code>
-              và <code>module.go</code>.</p>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/telegram</code>.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/telegram</code>.</p>
           </div>
         </div>
         <div class="jd-syms" style="margin-top:18px">
@@ -344,6 +327,12 @@ type Client interface {
                 <code>telegram: sendDocument: status %d: %s</code>. Nothing is logged and the token never appears.</li>
               <li lang="vi">Lỗi: <code>telegram: sendDocument: &lt;nguyên nhân&gt;</code>; khác 200 →
                 <code>telegram: sendDocument: status %d: %s</code>. Không log gì và token không bao giờ xuất hiện.</li>
+              <li lang="en">Both methods: if the request cannot be built, the error is
+                <code>telegram: &lt;method&gt;: build request failed</code>; the cause is dropped on purpose, since it
+                would contain the URL and so the token.</li>
+              <li lang="vi">Cả hai method: nếu không tạo được request, lỗi là
+                <code>telegram: &lt;method&gt;: build request failed</code>; nguyên nhân bị bỏ có chủ đích, vì nó sẽ chứa
+                URL và do đó chứa token.</li>
             </ul>
           </div>
 
@@ -408,32 +397,32 @@ var Module = fx.Module("telegram",
               <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
             </tr>
             <tr>
-              <td>config/config.go</td>
+              <td>internal/config/config.go</td>
               <td lang="en"><code>TelegramConfig{Token, ChatID}</code> ← <code>TELEGRAM_BOT_TOKEN</code>,
                 <code>TELEGRAM_CHAT_ID</code>. Both default to empty, so Telegram is off out of the box.</td>
               <td lang="vi"><code>TelegramConfig{Token, ChatID}</code> ← <code>TELEGRAM_BOT_TOKEN</code>,
                 <code>TELEGRAM_CHAT_ID</code>. Cả hai mặc định rỗng, nên Telegram tắt sẵn.</td>
             </tr>
             <tr>
-              <td>app/fx.go</td>
+              <td>internal/app/fx.go</td>
               <td lang="en"><code>provideTelegramOptions</code> + <code>telegram.Module</code>; the
                 <code>*http.Client</code> comes from <code>fx.Provide(httpclient.NewDefaultClient)</code>.</td>
               <td lang="vi"><code>provideTelegramOptions</code> + <code>telegram.Module</code>;
                 <code>*http.Client</code> đến từ <code>fx.Provide(httpclient.NewDefaultClient)</code>.</td>
             </tr>
             <tr>
-              <td>features/auth/infrastructure/login_guard.go</td>
-              <td lang="en">Takes <code>telegram.Client</code> (<code>optional:"true"</code>) and
-                <code>cfg.Telegram.ChatID</code>. When an IP hits <code>AUTH_LOGIN_BLACKLIST_ATTEMPTS</code> failures it
-                sends a brute-force alert in a goroutine with a 5s timeout (<code>notifyTimeout</code>); skipped if the
-                client is nil or the chat id is empty.</td>
-              <td lang="vi">Nhận <code>telegram.Client</code> (<code>optional:"true"</code>) và
-                <code>cfg.Telegram.ChatID</code>. Khi một IP đạt <code>AUTH_LOGIN_BLACKLIST_ATTEMPTS</code> lần thất
-                bại, nó gửi cảnh báo brute-force trong goroutine với timeout 5s (<code>notifyTimeout</code>); bỏ qua nếu
-                client nil hoặc chat id rỗng.</td>
+              <td>internal/features/auth/infrastructure/login_guard.go</td>
+              <td lang="en">Direct caller: sends the brute-force alert with <code>SendMessage</code> (5s timeout) to
+                <code>cfg.Telegram.ChatID</code>. It does not go through <a href="notification.html">notification</a>,
+                so <code>notification.Enabled</code> does not apply: the alert is sent in any environment once both env
+                vars are set. Details: <a href="../jungo/auth.html#inside">Auth</a>.</td>
+              <td lang="vi">Nơi gọi trực tiếp: gửi cảnh báo brute-force bằng <code>SendMessage</code> (timeout 5s) tới
+                <code>cfg.Telegram.ChatID</code>. Nó không đi qua <a href="notification.html">notification</a>, nên
+                <code>notification.Enabled</code> không áp dụng: cảnh báo được gửi ở mọi môi trường khi đã đặt cả hai
+                biến môi trường. Chi tiết: <a href="../jungo/auth.html#inside">Auth</a>.</td>
             </tr>
             <tr>
-              <td>router/router.go</td>
+              <td>internal/router/router.go</td>
               <td lang="en">Indirect: <code>middleware.Recover</code>, <code>middleware.Limiter</code> and <code>middleware.Banner</code> get a
                 <code>notification.Notifier</code>, which sends through this client.</td>
               <td lang="vi">Gián tiếp: <code>middleware.Recover</code>, <code>middleware.Limiter</code> và <code>middleware.Banner</code> nhận một
@@ -442,17 +431,6 @@ var Module = fx.Module("telegram",
           </table>
         </div>
         <div style="margin-top:14px">
-          <div class="jd-term" style="margin-bottom:14px">
-            <div class="jd-term-bar"><i></i><i></i><i></i><span>login_guard.go · notifyBlacklisted</span></div>
-            <pre data-hl="go">
-msg := fmt.Sprintf("🛡️ &lt;b&gt;Security Alert: Brute Force Attempt&lt;/b&gt;\n"+
-	"&lt;b&gt;Environment:&lt;/b&gt; %s\n"+
-	"&lt;b&gt;IP Address:&lt;/b&gt; &lt;code&gt;%s&lt;/code&gt; (blocked: &lt;code&gt;%s&lt;/code&gt;)\n"+
-	"&lt;b&gt;Time:&lt;/b&gt; %s\n"+
-	"⛔ &lt;b&gt;Action:&lt;/b&gt; IP blocked for &lt;b&gt;%s&lt;/b&gt; (%d failed attempts).",
-	g.env, ip, security.ClientKey(ip), time.Now().Format(time.DateTime), g.cfg.LoginBlacklistWindow, failures)
-</pre>
-          </div>
           <div>
             <div class="jd-term" data-copy="commands">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>.env</span></div>
@@ -492,8 +470,8 @@ $ curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" 
               typo in the env var name means alerts silently never arrive, with no log line to warn you.</span><span
               class="x" lang="vi">Token hoặc chat id trống trả về <code>nil</code>. Tiện cho dev, nhưng ở production gõ
               sai tên biến môi trường nghĩa là cảnh báo âm thầm không bao giờ tới, không có dòng log nào báo.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">escape
-                your HTML</span><span lang="vi">tự escape HTML</span></span><span class="x" lang="en">Nothing is escaped
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">Escape
+                your HTML</span><span lang="vi">Tự escape HTML</span></span><span class="x" lang="en">Nothing is escaped
               for you. Telegram's HTML mode accepts only a few tags (<code>b</code>, <code>i</code>, <code>code</code>,
               <code>pre</code>, <code>a</code>…); unknown tags or a bare <code>&lt;</code> / <code>&amp;</code> make it
               answer 400 and the message is lost.</span><span class="x" lang="vi">Package không tự động escape HTML cho
@@ -501,21 +479,21 @@ $ curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" 
               <code>code</code>, <code>pre</code>, <code>a</code>…); nếu chứa thẻ không hỗ trợ hoặc ký tự
               <code>&lt;</code>, <code>&amp;</code> chưa escape, Telegram sẽ trả về lỗi 400 và không gửi được tin
               nhắn.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">you
-                log the errors</span><span lang="vi">bạn tự log lỗi</span></span><span class="x"
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">You
+                log the errors</span><span lang="vi">Bạn tự log lỗi</span></span><span class="x"
               lang="en">The client never logs. The token is part of the request URL, so errors are built without it
               (the <code>*url.Error</code> wrapper is stripped): logging what <code>SendMessage</code> returns is
               safe.</span><span class="x" lang="vi">Client không bao giờ log. Token nằm trong URL request, nên lỗi được
               dựng không kèm URL (lớp <code>*url.Error</code> bị bóc ra): log lỗi mà <code>SendMessage</code> trả về là
               an toàn.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span
-                lang="en">Telegram's own limits</span><span lang="vi">giới hạn của Telegram</span></span><span class="x"
+                lang="en">Telegram's own limits</span><span lang="vi">Giới hạn của Telegram</span></span><span class="x"
               lang="en">The client does not truncate. Telegram rejects message text longer than 4096 characters and
               document captions longer than 1024 — you get <code>telegram: …: status 400: …</code>.</span><span class="x"
               lang="vi">Client không cắt ngắn nội dung. Telegram từ chối tin nhắn dài hơn 4096 ký tự và caption tài liệu
               dài hơn 1024 — bạn nhận lỗi <code>telegram: …: status 400: …</code>.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w"><span lang="en">no
-                retries</span><span lang="vi">không retry</span></span><span class="x" lang="en">One attempt per call.
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w"><span lang="en">No
+                retries</span><span lang="vi">Không retry</span></span><span class="x" lang="en">One attempt per call.
               Retries only happen if the injected <code>*http.Client</code> does them
               (<code>httpclient.Options.MaxRetries</code>), and httpclient never retries these POSTs since they carry no
               <code>Idempotency-Key</code>.</span><span class="x" lang="vi">Mỗi request chỉ gửi đúng một lần (không tự retry). Cơ chế retry chỉ
@@ -526,10 +504,9 @@ $ curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" 
       </section>
 
       <footer class="jd-footer">
-        <span>Jundoc · Junkit · telegram</span>
-        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
-              Junkit</span></a></span>
-      </footer>
+    <span>Jundoc · Junkit · telegram</span>
+    <span><a href="httpclient.html">← httpclient</a> · <a href="notification.html">notification →</a></span>
+  </footer>
     </article>
   </div>
 </body>

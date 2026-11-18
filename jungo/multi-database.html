@@ -18,15 +18,15 @@
 
   <!-- ============================================================ HERO -->
   <header class="jd-hero">
-    <div class="jd-eyebrow">Jungo · <span lang="en">multiple databases</span><span lang="vi">nhiều database</span></div>
+    <div class="jd-eyebrow">Jungo · <span lang="en">Multiple databases</span><span lang="vi">Nhiều database</span></div>
     <h1><span lang="en">Multiple databases</span><span lang="vi">Nhiều database</span></h1>
     <p lang="en">Jungo runs on one PostgreSQL database today. The code is laid out so a second one — another Postgres or a different engine — plugs in without editing the repositories you already have, and the compiler stops a repository from talking to the wrong database.</p>
     <p lang="vi">Hiện tại Jungo chạy trên một database PostgreSQL. Code được tổ chức sẵn để thêm database thứ hai — một Postgres khác hoặc một engine khác — mà không phải sửa các repository đang có, và compiler sẽ chặn một repository dùng nhầm database.</p>
     <div class="jd-chips">
-      <span class="jd-chip">*primary.DB</span>
-      <span class="jd-chip">Executor(ctx)</span>
+      <span class="jd-chip">internal/database</span>
       <span class="jd-chip">junkit/database/postgres</span>
-      <span class="jd-chip">sqlc · raw SQL</span>
+      <span class="jd-chip">*primary.DB · Executor(ctx)</span>
+      <span class="jd-chip"><span lang="en">sqlc · raw SQL</span><span lang="vi">sqlc · SQL viết tay</span></span>
     </div>
   </header>
 
@@ -196,8 +196,8 @@ rows, err := r.db.Executor(ctx).Query(ctx,
       </div>
     </div>
 
-    <div class="jd-callout c-purple" style="margin-top:18px">
-      <b lang="en">Engines sqlc doesn't support</b><b lang="vi">Engine mà sqlc không hỗ trợ</b>
+    <div class="jd-callout c-blue" style="margin-top:18px">
+      <b lang="en">Note:</b><b lang="vi">Ghi chú:</b> <span lang="en">engines sqlc doesn't support</span><span lang="vi">engine mà sqlc không hỗ trợ</span>
       <span lang="en">— ClickHouse, for example — use hand-written SQL only. Nothing else changes: it still runs through that engine's <code>Executor(ctx)</code> and is still traced on <code>t_debug</code> requests.</span>
       <span lang="vi">— ví dụ ClickHouse — chỉ dùng SQL viết tay. Ngoài ra không có gì khác: vẫn chạy qua <code>Executor(ctx)</code> của engine đó và vẫn được trace với request <code>t_debug</code>.</span>
     </div>
@@ -266,8 +266,8 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
 
     <div class="jd-rules">
       <div class="jd-rule"><span class="n" style="background:var(--pink)">1</span>
-        <p lang="en">Copy <code>internal/database/primary/</code> to <code>internal/database/analytics/</code>, empty its migrations and queries, remove the copied <code>functions/f_auth_login_session.sql</code>, <code>functions/f_auth_refresh_session.sql</code>, <code>seeders/001_users.sql</code>, <code>seeders/002_access.sql</code> and <code>sqlc/</code>, rename the package and set <code>Name: "analytics"</code>. Regenerate <code>sqlc/</code> with <code>make sqlc</code> once its queries exist.</p>
-        <p lang="vi">Copy <code>internal/database/primary/</code> thành <code>internal/database/analytics/</code>, xóa trống migrations và queries, xóa các file copy theo <code>functions/f_auth_login_session.sql</code>, <code>functions/f_auth_refresh_session.sql</code>, <code>seeders/001_users.sql</code>, <code>seeders/002_access.sql</code> và <code>sqlc/</code>, đổi tên package và đặt <code>Name: "analytics"</code>. Sinh lại <code>sqlc/</code> bằng <code>make sqlc</code> khi đã có query.</p></div>
+        <p lang="en">Copy <code>internal/database/primary/</code> to <code>internal/database/analytics/</code>, empty its migrations and queries, remove the copied <code>functions/f_auth_login_session.sql</code>, <code>functions/f_auth_refresh_session.sql</code>, <code>functions/f_user_permissions.sql</code> (it reads <code>user_roles</code>), <code>seeders/001_users.sql</code>, <code>seeders/002_access.sql</code> and <code>sqlc/</code>, rename the package, point <code>options()</code> at the new config (step 2) and set <code>Name: "analytics"</code>. Regenerate <code>sqlc/</code> with <code>make sqlc</code> once its queries exist.</p>
+        <p lang="vi">Copy <code>internal/database/primary/</code> thành <code>internal/database/analytics/</code>, xóa trống migrations và queries, xóa các file copy theo <code>functions/f_auth_login_session.sql</code>, <code>functions/f_auth_refresh_session.sql</code>, <code>functions/f_user_permissions.sql</code> (nó đọc <code>user_roles</code>), <code>seeders/001_users.sql</code>, <code>seeders/002_access.sql</code> và <code>sqlc/</code>, đổi tên package, trỏ <code>options()</code> sang config mới (bước 2) và đặt <code>Name: "analytics"</code>. Sinh lại <code>sqlc/</code> bằng <code>make sqlc</code> khi đã có query.</p></div>
       <div class="jd-rule"><span class="n" style="background:var(--pink)">2</span>
         <p lang="en"><code>internal/config/config.go</code>: add <code>Analytics DatabaseConfig `envPrefix:"ANALYTICS_"`</code> and read it in <code>analytics.New</code> (env vars become <code>ANALYTICS_DB_HOST</code>, …).</p>
         <p lang="vi"><code>internal/config/config.go</code>: thêm <code>Analytics DatabaseConfig `envPrefix:"ANALYTICS_"`</code> và đọc nó trong <code>analytics.New</code> (biến môi trường thành <code>ANALYTICS_DB_HOST</code>, …).</p></div>
@@ -284,8 +284,16 @@ err := s.repo.WithTransaction(ctx, func(txCtx context.Context) error {
         <p lang="en">Ping it from <code>health:check</code>; add the <code>ANALYTICS_*</code> variables to <code>.env.example</code> and <code>deploy/</code>.</p>
         <p lang="vi">Ping nó trong <code>health:check</code>; thêm các biến <code>ANALYTICS_*</code> vào <code>.env.example</code> và <code>deploy/</code>.</p></div>
       <div class="jd-rule"><span class="n" style="background:var(--pink)">7</span>
+        <p lang="en">Production migrations: <code>db:migrate</code> only migrates <code>*primary.DB</code> (<code>internal/console/commands/migrate_command.go</code>), and the prod stack's <code>migrate</code> service runs only that command. Add the same call for <code>*analytics.DB</code> (its copied <code>Migrate</code>) and run it there.</p>
+        <p lang="vi">Migration ở production: <code>db:migrate</code> chỉ migrate <code>*primary.DB</code> (<code>internal/console/commands/migrate_command.go</code>), và service <code>migrate</code> của stack prod chỉ chạy lệnh đó. Thêm lời gọi tương tự cho <code>*analytics.DB</code> (hàm <code>Migrate</code> đã copy) và chạy nó ở đó.</p></div>
+      <div class="jd-rule"><span class="n" style="background:var(--pink)">8</span>
         <p lang="en">Repositories that use it declare <code>db *analytics.DB</code> and call <code>r.db.Queries(ctx)</code>.</p>
         <p lang="vi">Repository nào dùng nó thì khai báo <code>db *analytics.DB</code> và gọi <code>r.db.Queries(ctx)</code>.</p></div>
+    </div>
+    <div class="jd-callout c-red" style="margin-top:18px">
+      <b lang="en">Warning:</b><b lang="vi">Cảnh báo:</b>
+      <span lang="en">the copied <code>migrate.go</code> embeds <code>//go:embed migrations/*.sql functions/*.sql</code>. Go refuses to build when a pattern matches no file ("pattern functions/*.sql: no matching files found"), so an empty <code>functions/</code> (or <code>migrations/</code>) breaks the build: drop that pattern from the directive, or add a file before you build.</span>
+      <span lang="vi"><code>migrate.go</code> đã copy có <code>//go:embed migrations/*.sql functions/*.sql</code>. Go không build khi một pattern không khớp file nào ("pattern functions/*.sql: no matching files found"), nên <code>functions/</code> (hoặc <code>migrations/</code>) rỗng sẽ làm build lỗi: bỏ pattern đó khỏi directive, hoặc thêm một file trước khi build.</span>
     </div>
   </section>
 
@@ -342,9 +350,8 @@ func (w *tracedDB) ExecContext(ctx context.Context, query string, args ...any) (
   </section>
 
   <footer class="jd-footer">
-    <span>Jundoc · Jungo multiple databases</span>
-    <span lang="en">Source of truth: the Jungo repository — this page explains it, the code decides.</span>
-    <span lang="vi">Nguồn chuẩn: repo Jungo — trang này giải thích, code mới là quyết định.</span>
+    <span>Jundoc · Jungo · <span lang="en">Multiple databases</span><span lang="vi">Nhiều database</span></span>
+    <span><a href="access.html">← <span lang="en">Permissions &amp; roles</span><span lang="vi">Phân quyền</span></a> · <a href="../junkit/index.html"><span lang="en">Junkit overview</span><span lang="vi">Tổng quan Junkit</span> →</a></span>
   </footer>
 </article>
 </div>

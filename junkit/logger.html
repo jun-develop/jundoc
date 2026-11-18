@@ -33,16 +33,11 @@
           development, ghi file JSON có xoay vòng (rotate) ở mọi môi trường khác — kèm các kênh log có tên và trace ID
           mang theo trong <code>context.Context</code>.</p>
         <div class="jd-chips">
-          <span class="jd-chip">github.com/jun-develop/junkit/logger</span>
-          <span class="jd-chip"><span lang="en">Fx: <code>logger.Module</code> provides <code>*zap.Logger</code> (needs
-              <code>logger.Options</code>)</span><span lang="vi">Fx: <code>logger.Module</code> cung cấp
-              <code>*zap.Logger</code> (cần <code>logger.Options</code>)</span></span>
-          <span class="jd-chip"><span lang="en"><code>ProvideNamed</code> → <code>*zap.Logger</code> tagged
-              <code>name:"…"</code></span><span lang="vi"><code>ProvideNamed</code> → <code>*zap.Logger</code> gắn tag
-              <code>name:"…"</code></span></span>
-          <span class="jd-chip">go.uber.org/zap · lumberjack.v2 · go.uber.org/fx</span>
-        </div>
-      </header>
+      <span class="jd-chip">github.com/jun-develop/junkit/logger</span>
+      <span class="jd-chip"><span lang="en">Fx: <code>logger.Module</code> → provides <code>*zap.Logger</code></span><span lang="vi">Fx: <code>logger.Module</code> → cung cấp <code>*zap.Logger</code></span></span>
+      <span class="jd-chip"><span lang="en">Depends on: fx · lumberjack · zap</span><span lang="vi">Phụ thuộc: fx · lumberjack · zap</span></span>
+    </div>
+  </header>
 
       <!-- ============================================================ 1. WHAT -->
       <section id="what" class="jd-section c-blue">
@@ -51,65 +46,42 @@
           <div>
             <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
             <p class="jd-sub" lang="en">You describe the logger with data; <code>New</code> picks the encoder and the
-              destination. A second, independent path carries the request's trace ID so every log line can be tied to
-              one request.</p>
-            <p class="jd-sub" lang="vi">Bạn mô tả logger bằng dữ liệu; <code>New</code> chọn encoder và nơi ghi. Một
-              luồng thứ hai, độc lập, mang trace ID của request để mỗi dòng log đều gắn được với đúng một request.</p>
+              destination: <code>"development"</code> → coloured console on stdout, anything else → JSON lines in
+              <code>Filename</code>, rotated and buffered (<code>Output</code> overrides the choice). Fx flushes it when
+              the app stops. The trace ID travels separately, through the request context, so every log line can be
+              tied to one request:</p>
+            <p class="jd-sub" lang="vi">Bạn mô tả logger bằng dữ liệu; <code>New</code> chọn encoder và nơi ghi: <code>"development"</code> → console có màu ra stdout, giá trị khác → từng dòng JSON vào
+              <code>Filename</code>, xoay vòng và có buffer (<code>Output</code> ghi đè lựa chọn này). Fx flush nó khi app
+              dừng. Trace ID đi riêng, qua context của request, để mỗi dòng log đều gắn được với đúng một request:</p>
           </div>
         </div>
         <div class="jd-flow" style="margin-top:22px" data-wires='[
-      {"from":"l1","to":"l2","color":"blue"},
-      {"from":"l2","to":"l3","color":"blue"},
-      {"from":"l3","to":"l4","color":"blue"}]'>
-          <div class="jd-node is-tint c-blue" data-node="l1"><span class="k">1 · config</span><span class="t mono"
-              style="font-size:15px">Options / Definition</span>
-            <div class="d" lang="en">Environment, Level, Filename and the rotation settings.</div>
-            <div class="d" lang="vi">Environment, Level, Filename và các thiết lập xoay vòng file.</div>
-          </div>
-          <div class="jd-node is-tint c-blue" data-node="l2"><span class="k">2 · build</span><span class="t mono"
-              style="font-size:15px">New(opts, lc)</span>
-            <div class="d" lang="en">Parses <code>Level</code> (invalid → error), adds caller info and stack traces from
-              error level up.</div>
-            <div class="d" lang="vi">Đọc <code>Level</code> (sai → trả lỗi), thêm vị trí gọi (caller) và stack trace từ mức
-              error trở lên.</div>
-          </div>
-          <div class="jd-node is-tint c-purple" data-node="l3"><span class="k">3 · output</span><span class="t mono"
-              style="font-size:15px">stdout | file</span>
-            <div class="d" lang="en"><code>"development"</code> → coloured console on stdout. Anything else → JSON lines
-              in <code>Filename</code>, rotated by lumberjack and buffered. <code>Output</code> overrides this choice.</div>
-            <div class="d" lang="vi"><code>"development"</code> → console có màu ra stdout. Giá trị khác → từng dòng
-              JSON vào <code>Filename</code>, xoay vòng bởi lumberjack và có buffer. <code>Output</code> ghi đè lựa chọn này.</div>
-          </div>
-          <div class="jd-node is-tint c-green" data-node="l4"><span class="k">4 · lifecycle</span><span class="t mono"
-              style="font-size:15px">OnStop → Sync()</span>
-            <div class="d" lang="en">The logger is injected by Fx and flushed when the app stops.</div>
-            <div class="d" lang="vi">Logger được Fx inject và được flush khi app dừng.</div>
-          </div>
-        </div>
-        <div class="jd-flow" style="margin-top:34px" data-wires='[
-      {"from":"t1","to":"t2","color":"orange","label":"X-Trace-Id"},
-      {"from":"t2","to":"t3","color":"orange","label":"ctx"},
-      {"from":"t3","to":"t4","color":"orange","label":"trace_id"}]'>
-          <div class="jd-node is-tint c-orange" data-node="t1"><span class="k">a · request</span><span class="t mono"
+      {"from":"t1","to":"t2","color":"blue","label":"trace ID"},
+      {"from":"t2","to":"t3","color":"blue","label":"ctx"},
+      {"from":"t3","to":"t4","color":"blue","label":"trace_id"}]'>
+          <div class="jd-node is-tint c-blue" data-node="t1"><span class="k">1 · request</span><span class="t mono"
               style="font-size:15px">middleware.Trace</span>
-            <div class="d" lang="en">Reads the <code>X-Trace-Id</code> header or generates a UUID.</div>
-            <div class="d" lang="vi">Đọc header <code>X-Trace-Id</code> hoặc sinh một UUID.</div>
+            <div class="d" lang="en">Generates a UUID per request and returns it in the <code>X-Trace-Id</code> response
+              header. A client's <code>X-Trace-Id</code> is reused only with <code>TrustHeader</code> (off in Jungo).</div>
+            <div class="d" lang="vi">Sinh một UUID cho mỗi request và trả nó trong header response
+              <code>X-Trace-Id</code>. <code>X-Trace-Id</code> do client gửi chỉ được dùng lại khi bật
+              <code>TrustHeader</code> (Jungo để tắt).</div>
           </div>
-          <div class="jd-node is-tint c-orange" data-node="t2"><span class="k">b · store</span><span class="t mono"
+          <div class="jd-node is-tint c-blue" data-node="t2"><span class="k"><span lang="en">2 · store</span><span lang="vi">2 · lưu</span></span><span class="t mono"
               style="font-size:15px">WithTraceID</span>
             <div class="d" lang="en">Puts it into the request <code>context.Context</code> under
               <code>TraceIDKey</code>.</div>
             <div class="d" lang="vi">Đặt nó vào <code>context.Context</code> của request với khoá
               <code>TraceIDKey</code>.</div>
           </div>
-          <div class="jd-node is-tint c-orange" data-node="t3"><span class="k">c · read</span><span class="t mono"
+          <div class="jd-node is-tint c-blue" data-node="t3"><span class="k"><span lang="en">3 · read</span><span lang="vi">3 · đọc</span></span><span class="t mono"
               style="font-size:15px">GetTraceID(ctx)</span>
             <div class="d" lang="en">Anywhere below — service, repository, SQL tracer. Returns <code>""</code> if
               missing.</div>
             <div class="d" lang="vi">Ở bất kỳ tầng nào bên dưới — service, repository, SQL tracer. Trả <code>""</code>
               nếu không có.</div>
           </div>
-          <div class="jd-node is-tint c-orange" data-node="t4"><span class="k">d · log</span><span class="t mono"
+          <div class="jd-node is-tint c-blue" data-node="t4"><span class="k"><span lang="en">4 · log</span><span lang="vi">4 · ghi log</span></span><span class="t mono"
               style="font-size:15px">zap.String("trace_id", …)</span>
             <div class="d" lang="en">You attach it as a field yourself — the logger does not do it automatically.</div>
             <div class="d" lang="vi">Bạn tự gắn nó vào làm field — logger không tự làm việc này.</div>
@@ -122,19 +94,15 @@
         <div class="jd-section-head">
           <span class="jd-badge">2</span>
           <div>
-            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối vào app</span></h2>
+            <h2><span lang="en">Setup</span><span lang="vi">Cài đặt</span></h2>
             <p class="jd-sub" lang="en">Three ways, from the one Jungo uses to no Fx at all.</p>
-            <p class="jd-sub" lang="vi">Ba cách, từ cách Jungo đang dùng tới hoàn toàn Không dùng Fx.</p>
+            <p class="jd-sub" lang="vi">Ba cách, từ cách Jungo đang dùng tới cách không dùng Fx.</p>
           </div>
         </div>
-        <div class="jd-tabs c-purple" style="margin-top:18px">
+        <div class="jd-tabs" style="margin-top:18px">
           <div class="jd-tablist">
-            <button class="jd-tab" type="button" aria-selected="true"><span lang="en">Fx · named channels
-                (Jungo)</span><span lang="vi">Fx · nhiều kênh (Jungo)</span></button>
-            <button class="jd-tab" type="button" aria-selected="false"><span lang="en">Fx · one logger</span><span
-                lang="vi">Fx · một logger</span></button>
-            <button class="jd-tab" type="button" aria-selected="false"><span lang="en">without Fx</span><span
-                lang="vi">Không dùng Fx</span></button>
+            <button class="jd-tab" type="button" aria-selected="true"><span lang="en">With Fx (as in Jungo)</span><span lang="vi">Dùng Fx (như Jungo)</span></button>
+            <button class="jd-tab" type="button" aria-selected="false"><span lang="en">Without Fx</span><span lang="vi">Không dùng Fx</span></button>
           </div>
           <div class="jd-tabpanel">
             <p lang="en">Jungo builds four channels — <code>app</code>, <code>http</code>, <code>sql</code>,
@@ -183,8 +151,9 @@ func provideLoggers(cfg *config.Config) []fx.Option {
               one inside the database module only — so SQL logs land in their own file.</p>
             <p class="jd-sub" lang="vi"><code>fx.Decorate</code> thay logger mặc định bằng kênh <code>sql</code> chỉ bên
               trong module database — nhờ vậy log SQL nằm ở file riêng.</p>
-          </div>
-          <div class="jd-tabpanel" hidden>
+          
+            <h4 style="margin:26px 0 10px"><span lang="en">One logger, no channels</span><span lang="vi">Một logger, không chia kênh</span></h4>
+
             <p lang="en">One logger, untagged. <code>logger.Module</code> needs a <code>logger.Options</code> value in
               the container — supply it or provide it from your config.</p>
             <p lang="vi">Một logger, không gắn tag. <code>logger.Module</code> cần có một giá trị
@@ -207,7 +176,8 @@ fx.New(
 ).Run()
 </pre>
             </div>
-          </div>
+                    </div>
+          
           <div class="jd-tabpanel" hidden>
             <p lang="en"><code>New</code> takes an <code>fx.Lifecycle</code> only to register its flush hook. Outside
               Fx, pass anything with an <code>Append(fx.Hook)</code> method (the package tests do exactly this) and call
@@ -242,12 +212,7 @@ func main() {
         <h3 style="margin-top:22px"><code>logger.Options</code></h3>
         <div class="jd-tablewrap">
           <table class="jd-params c-purple">
-            <tr>
-              <th>field</th>
-              <th>type</th>
-              <th><span lang="en">zero value</span><span lang="vi">giá trị rỗng</span></th>
-              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-            </tr>
+            <tr><th>field</th><th><span lang="en">type</span><span lang="vi">kiểu</span></th><th><span lang="en">default</span><span lang="vi">mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
             <tr>
               <td>Environment</td>
               <td>string</td>
@@ -264,10 +229,12 @@ func main() {
               <td lang="en"><code>""</code> → decided by Environment</td>
               <td lang="vi"><code>""</code> → do Environment quyết định</td>
               <td lang="en"><code>logger.OutputConsole</code> → console on stdout, <code>logger.OutputFile</code> → JSON
-                to <code>Filename</code>, whatever <code>Environment</code> says. jungo's console uses it to keep the
+                to <code>Filename</code>, whatever <code>Environment</code> says. Any other non-empty value (e.g.
+                <code>"stdout"</code>) also means file. Jungo's console uses it to keep the
                 terminal clean unless <code>--verbose</code> / <code>--debug</code> is passed.</td>
               <td lang="vi"><code>logger.OutputConsole</code> → console ra stdout, <code>logger.OutputFile</code> → JSON
-                vào <code>Filename</code>, bất kể <code>Environment</code>. Console của jungo dùng nó để màn hình sạch
+                vào <code>Filename</code>, bất kể <code>Environment</code>. Mọi giá trị khác không rỗng (vd.
+                <code>"stdout"</code>) cũng là file. Console của Jungo dùng nó để màn hình sạch
                 trừ khi truyền <code>--verbose</code> / <code>--debug</code>.</td>
             </tr>
             <tr>
@@ -333,11 +300,11 @@ func main() {
       </section>
 
       <!-- ============================================================ 3. QUICK START -->
-      <section id="quick" class="jd-section c-blue">
+      <section id="quick" class="jd-section c-green">
         <div class="jd-section-head">
           <span class="jd-badge">3</span>
           <div>
-            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <h2><span lang="en">Quick start</span><span lang="vi">Dùng nhanh</span></h2>
             <p class="jd-sub" lang="en">A service that logs with the request's trace ID. Hover an explanation to light
               up its lines.</p>
             <p class="jd-sub" lang="vi">Một service ghi log kèm trace ID của request. Rê chuột vào giải thích để làm
@@ -386,8 +353,7 @@ type AuditParams struct {
             </div>
           </div>
           <div class="jd-explain">
-            <div class="jd-ex c-blue" data-code="#code-quick" data-show="1-9"><span class="n">1</span><span
-                class="w">inject *zap.Logger</span><span class="x" lang="en">Just ask for <code>*zap.Logger</code> in a
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="1-9"><span class="n">1</span><span class="w"><span lang="en">Inject *zap.Logger</span><span lang="vi">Inject *zap.Logger</span></span><span class="x" lang="en">Just ask for <code>*zap.Logger</code> in a
                 constructor. With <code>ProvideNamed</code> the untagged logger is the <code>"app"</code>
                 channel.</span><span class="x" lang="vi">Chỉ cần nhận <code>*zap.Logger</code> trong constructor. Với
                 <code>ProvideNamed</code>, logger không tag chính là kênh <code>"app"</code>.</span></div>
@@ -397,12 +363,10 @@ type AuditParams struct {
                 <code>nil</code> context.</span><span class="x" lang="vi">Đọc ID mà <code>middleware.Trace</code> đã
                 lưu. Trả <code>""</code> khi không nằm trong request (CLI, job nền) hoặc context là
                 <code>nil</code>.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-quick" data-show="15-16"><span class="n">3</span><span
-                class="w">levels filter</span><span class="x" lang="en"><code>Debug</code> is dropped unless the
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="15-16"><span class="n">3</span><span class="w"><span lang="en">Levels filter</span><span lang="vi">Level lọc log</span></span><span class="x" lang="en"><code>Debug</code> is dropped unless the
                 channel's <code>Level</code> is <code>debug</code>.</span><span class="x" lang="vi"><code>Debug</code>
                 bị bỏ qua trừ khi <code>Level</code> của kênh là <code>debug</code>.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-quick" data-show="19-21"><span class="n">4</span><span
-                class="w">Error adds a stack trace</span><span class="x" lang="en">From error level up every entry gets
+            <div class="jd-ex c-blue" data-code="#code-quick" data-show="19-21"><span class="n">4</span><span class="w"><span lang="en">Error adds a stack trace</span><span lang="vi">Error kèm stack trace</span></span><span class="x" lang="en">From error level up every entry gets
                 a <code>stacktrace</code>, and every entry has a <code>caller</code> (file:line).</span><span class="x"
                 lang="vi">Từ mức error trở lên mỗi dòng có thêm <code>stacktrace</code>, và dòng nào cũng có
                 <code>caller</code> (file:dòng).</span></div>
@@ -416,16 +380,17 @@ type AuditParams struct {
       </section>
 
       <!-- ============================================================ 4. TRY IT -->
-      <section id="try" class="jd-section c-purple">
+      <section id="try" class="jd-section c-pink">
         <div class="jd-section-head">
           <span class="jd-badge">4</span>
           <div>
             <h2><span lang="en">Try it</span><span lang="vi">Thử ngay</span></h2>
             <p class="jd-sub" lang="en">Mirrors how <code>New</code> picks the output and parses <code>Level</code>.
-              Four calls are made: Debug, Info, Warn, Error. The lines are illustrative (time, caller and fields are
-              made up).</p>
+              Four calls are made: Debug, Info, Warn, Error. <code>Output</code> is left empty here, so
+              <code>Environment</code> decides. The lines are illustrative (time, caller and fields are made up).</p>
             <p class="jd-sub" lang="vi">Mô phỏng cách <code>New</code> chọn đầu ra và đọc <code>Level</code>. Gọi bốn
-              lần: Debug, Info, Warn, Error. Các dòng chỉ để minh hoạ (thời gian, caller và field là giả).</p>
+              lần: Debug, Info, Warn, Error. <code>Output</code> để rỗng ở đây, nên <code>Environment</code> quyết định.
+              Các dòng chỉ để minh hoạ (thời gian, caller và field là giả).</p>
           </div>
         </div>
         <div class="jd-calc c-purple" style="margin-top:18px">
@@ -433,7 +398,7 @@ type AuditParams struct {
           <label>Level <input type="text" id="lg-level" value="info"></label>
           <label>Filename <input type="text" id="lg-file" value="storage/logs/app.log"></label>
         </div>
-        <div class="jd-callout c-purple" id="lg-summary"></div>
+        <div class="jd-callout c-pink" id="lg-summary"></div>
         <div class="jd-term" style="margin-top:14px">
           <div class="jd-term-bar"><i></i><i></i><i></i><span id="lg-dest">stdout</span></div>
           <pre id="lg-out"></pre>
@@ -446,10 +411,8 @@ type AuditParams struct {
           <span class="jd-badge">5</span>
           <div>
             <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
-            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from
-              <code>junkit/logger/logger.go</code>.</p>
-            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/logger/logger.go</code>.
-            </p>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/logger</code>.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/logger</code>.</p>
           </div>
         </div>
 
@@ -501,24 +464,21 @@ type Options struct {
                 lumberjack rotating file built from <code>Filename</code> / <code>MaxSize</code> /
                 <code>MaxBackups</code> / <code>MaxAge</code> / <code>Compress</code>. Nothing is printed to stdout.
                 Writes go through a 256 KB <code>zapcore.BufferedWriteSyncer</code>, flushed every second, when full,
-                on Fx stop and on a Panic/Fatal entry: without it every line was one write syscall behind the file's
-                lock — ~17% of a busy API's CPU in a profile. A crash can lose the last second of lines.
-              </li>
+                on Fx stop and on a DPanic/Panic/Fatal entry, so a busy server does not make one write syscall per
+                line (each behind the file's lock). A crash can lose the last second of lines.</li>
               <li lang="vi"><b>còn lại</b>: JSON encoder production của zap (khoá <code>level</code>, <code>ts</code>,
                 <code>caller</code>, <code>msg</code>, <code>stacktrace</code>), thời gian dạng RFC 3339, ghi vào file
                 xoay vòng của lumberjack tạo từ <code>Filename</code> / <code>MaxSize</code> / <code>MaxBackups</code> /
                 <code>MaxAge</code> / <code>Compress</code>. Không in gì ra stdout. Việc ghi đi qua
                 <code>zapcore.BufferedWriteSyncer</code> 256 KB, được flush mỗi giây, khi đầy, khi Fx stop và khi có
-                entry Panic/Fatal: không có nó, mỗi dòng là một syscall ghi phải chờ khoá file — chiếm ~17% CPU của một
-                API bận trong profile. App crash có thể mất dòng log của giây cuối.</li>
-              <li lang="en">Both: <code>zap.AddCaller()</code> and <code>zap.AddStacktrace(zapcore.ErrorLevel)</code>.
+                entry DPanic/Panic/Fatal, để server bận không phải gọi một syscall ghi cho mỗi dòng (mỗi lần đều chờ khoá
+                file). App crash có thể mất dòng log của giây cuối.</li>
+              <li lang="en">Both: <code>zap.AddCaller()</code> and <code>zap.AddStacktrace(zapcore.ErrorLevel)</code>.</li>
 
-              <li lang="vi">Cả hai: <code>zap.AddCaller()</code> và <code>zap.AddStacktrace(zapcore.ErrorLevel)</code>.
+              <li lang="vi">Cả hai: <code>zap.AddCaller()</code> và <code>zap.AddStacktrace(zapcore.ErrorLevel)</code>.</li>
 
-              <li lang="en">Appends one <code>OnStop</code> hook to <code>lc</code> that calls <code>Sync()</code> (its
-                error is ignored).</li>
-              <li lang="vi">Thêm một hook <code>OnStop</code> vào <code>lc</code> để gọi <code>Sync()</code> (lỗi của nó
-                bị bỏ qua).</li>
+              <li lang="en">Appends one <code>OnStop</code> hook to <code>lc</code> that calls <code>Sync()</code> and, in file mode, stops the buffered writer (errors are ignored).</li>
+              <li lang="vi">Thêm một hook <code>OnStop</code> vào <code>lc</code> để gọi <code>Sync()</code> và, ở chế độ file, dừng writer có buffer (lỗi bị bỏ qua).</li>
               <li lang="en"><b>Errors:</b> an invalid <code>Level</code> (<code>logger: parse level "inof": …</code>).
                 The log file is opened lazily on the first write, so a bad path is not reported here.</li>
               <li lang="vi"><b>Lỗi:</b> <code>Level</code> không hợp lệ (<code>logger: parse level "inof": …</code>).
@@ -653,7 +613,7 @@ type Definition struct {
               <li lang="en">Reads only <code>TraceIDKey</code>, i.e. what <code>WithTraceID</code> stored; there is no
                 fallback to a raw <code>"trace_id"</code> key. For a request, pass <code>c.Request.Context()</code>,
                 where <code>middleware.Trace</code> puts it.</li>
-              <li lang="vi">Chỉ đọc <code>TraceIDKey</code>, tức giá trị do <code>WithTraceID</code> lưu; không còn thử
+              <li lang="vi">Chỉ đọc <code>TraceIDKey</code>, tức giá trị do <code>WithTraceID</code> lưu; không thử
                 khoá chuỗi thô <code>"trace_id"</code>. Với request, truyền <code>c.Request.Context()</code>, nơi
                 <code>middleware.Trace</code> đặt nó.</li>
               <li lang="en">Nothing found → <code>""</code>.</li>
@@ -680,7 +640,7 @@ type Definition struct {
               <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
             </tr>
             <tr>
-              <td>app/fx.go</td>
+              <td>internal/app/fx.go</td>
               <td lang="en"><code>provideLoggers</code> → <code>logger.ProvideNamed</code> with <code>app</code>,
                 <code>http</code>, <code>sql</code>, <code>limiter</code>. The untagged (<code>app</code>) logger also
                 receives Fx's own events at Debug (<code>fx.WithLogger</code>) and is used by
@@ -692,7 +652,7 @@ type Definition struct {
                 dùng để ghi cảnh báo. Module database được decorate bằng kênh <code>sql</code>.</td>
             </tr>
             <tr>
-              <td>config/config.go</td>
+              <td>internal/config/config.go</td>
               <td lang="en"><code>LoggerConfig</code>: <code>LOG_MAX_SIZE</code>=10, <code>LOG_MAX_BACKUPS</code>=5,
                 <code>LOG_MAX_AGE</code>=7, <code>LOG_COMPRESS</code>=true,
                 <code>LOG_&lt;APP|HTTP|SQL|LIMITER&gt;_LEVEL</code>=info,
@@ -707,7 +667,7 @@ type Definition struct {
                 <code>API_ENVIRONMENT</code> mặc định là <code>production</code> (<code>.env.example</code> đặt <code>development</code>).</td>
             </tr>
             <tr>
-              <td>router/router.go</td>
+              <td>internal/router/router.go</td>
               <td lang="en"><code>Params</code> takes <code>HTTPLogger *zap.Logger `name:"http"`</code> and
                 <code>LimiterLogger *zap.Logger `name:"limiter"`</code>, passed to <code>middleware.AccessLog</code>,
                 <code>middleware.Recover</code> and <code>middleware.Limiter</code>. <code>middleware.Trace</code> is
@@ -721,39 +681,21 @@ type Definition struct {
         </div>
         <p class="jd-sub" lang="en">Inside Junkit, <code>database</code>'s query tracer logs <code>trace_id</code> via
           <code>logger.GetTraceID(ctx)</code>, so an SQL line can be matched with its <code>HTTP_ACCESS_LOG</code> line.
-          Send your own trace ID and grep for it:</p>
+          Jungo does not set <code>TraceOptions.TrustHeader</code>, so it ignores a client's <code>X-Trace-Id</code>:
+          read the ID from the response, then grep for it. The full debugging workflow is in <a
+            href="../jungo/build-a-feature.html#debug">Build a feature · Debug</a>.</p>
         <p class="jd-sub" lang="vi">Bên trong Junkit, query tracer của <code>database</code> ghi <code>trace_id</code>
           qua <code>logger.GetTraceID(ctx)</code>, nên một dòng SQL có thể ghép với dòng <code>HTTP_ACCESS_LOG</code>
-          của nó. Tự gửi trace ID và grep theo nó:</p>
-        <!-- English commands -->
-        <div class="jd-term" data-copy="commands" style="margin-top:10px" lang="en">
-          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · send trace id</span></div>
+          của nó. Jungo không bật <code>TraceOptions.TrustHeader</code>, nên bỏ qua <code>X-Trace-Id</code> do client
+          gửi: đọc ID trong response rồi grep theo nó. Quy trình debug đầy đủ ở <a
+            href="../jungo/build-a-feature.html#debug">Tạo feature · Debug</a>.</p>
+        <div class="jd-term" data-copy="commands" style="margin-top:10px">
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
           <pre data-hl="bash">
-# the response echoes "X-Trace-Id: demo-123"
-$ curl -i localhost:$API_SERVER_PORT/health -H 'X-Trace-Id: demo-123'
-</pre>
-        </div>
-        <div class="jd-term" data-copy="commands" style="margin-top:10px" lang="en">
-          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · grep log file</span></div>
-          <pre data-hl="bash">
-# API_ENVIRONMENT=development → the log lines are on stdout; otherwise look in files:
-$ grep demo-123 storage/logs/http.log
-</pre>
-        </div>
-
-        <!-- Vietnamese commands -->
-        <div class="jd-term" data-copy="commands" style="margin-top:10px" lang="vi">
-          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · gửi trace id</span></div>
-          <pre data-hl="bash">
-# response trả về kèm header "X-Trace-Id: demo-123"
-$ curl -i localhost:$API_SERVER_PORT/health -H 'X-Trace-Id: demo-123'
-</pre>
-        </div>
-        <div class="jd-term" data-copy="commands" style="margin-top:10px" lang="vi">
-          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · tìm trong log file</span></div>
-          <pre data-hl="bash">
-# API_ENVIRONMENT=development → log ra stdout; các môi trường khác xem trong file:
-$ grep demo-123 storage/logs/http.log
+# 1. the X-Trace-Id response header holds this request's trace ID
+$ curl -si localhost:$API_SERVER_PORT/health | grep -i x-trace-id
+# 2. API_ENVIRONMENT=development → lines are on stdout; otherwise grep the files
+$ grep &lt;trace_id&gt; storage/logs/http.log
 </pre>
         </div>
       </section>
@@ -767,49 +709,58 @@ $ grep demo-123 storage/logs/http.log
           </div>
         </div>
         <div class="jd-explain" style="margin-top:16px">
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">Production prints
-              nothing to stdout</span><span class="x" lang="en">Outside <code>"development"</code> logs go <b>only</b>
-              to files. <code>docker logs</code> / <code>kubectl logs</code> will be empty — mount or ship the log
-              folder.</span><span class="x" lang="vi">Ngoài <code>"development"</code>, log <b>chỉ</b> ghi vào file.
-              <code>docker logs</code> / <code>kubectl logs</code> sẽ trống — hãy mount hoặc thu gom thư mục log.</span>
-          </div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">"development" is an
-              exact match</span><span class="x" lang="en"><code>"dev"</code>, <code>"local"</code> or
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w"><span
+                lang="en">Production prints nothing to stdout</span><span lang="vi">Production không in gì ra
+                stdout</span></span><span class="x" lang="en">Outside <code>"development"</code> logs go <b>only</b>
+              to files, unless <code>Output</code> is <code>OutputConsole</code>. <code>docker logs</code> /
+              <code>kubectl logs</code> will be empty — set <code>Output</code>, or mount or ship the log folder.
+              Jungo has no env var for <code>Output</code>.</span><span class="x" lang="vi">Ngoài
+              <code>"development"</code>, log <b>chỉ</b> ghi vào file, trừ khi <code>Output</code> là
+              <code>OutputConsole</code>. <code>docker logs</code> / <code>kubectl logs</code> sẽ trống — đặt
+              <code>Output</code>, hoặc mount / thu gom thư mục log. Jungo không có biến môi trường cho
+              <code>Output</code>.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span
+                lang="en">"development" is an exact match</span><span lang="vi">"development" phải khớp
+                chính xác</span></span><span class="x" lang="en"><code>"dev"</code>, <code>"local"</code> or
               <code>"Development"</code> switch to file mode — and with an empty <code>Filename</code> the logs end up
               in the temp dir.</span><span class="x" lang="vi"><code>"dev"</code>, <code>"local"</code> hay
               <code>"Development"</code> đều chuyển sang chế độ file — và nếu <code>Filename</code> rỗng thì log nằm
               trong thư mục tạm.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Typos in Level fail
-              startup</span><span class="x" lang="en"><code>"inof"</code> makes <code>New</code> return an error, so
-              the Fx app does not start. An empty <code>Level</code> is info.</span><span class="x" lang="vi"><code>"inof"</code>
-              làm <code>New</code> trả lỗi, nên app Fx không khởi động. <code>Level</code> rỗng là info.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Trace ID is not
-              automatic</span><span class="x" lang="en">The logger does not read the context. Add
-              <code>zap.String("trace_id", logger.GetTraceID(ctx))</code> yourself, or create a child logger with
-              <code>log.With(...)</code> per request.</span><span class="x" lang="vi">Logger không đọc context. Tự thêm
-              <code>zap.String("trace_id", logger.GetTraceID(ctx))</code>, hoặc tạo logger con bằng
-              <code>log.With(...)</code> cho mỗi request.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">One file per
-              channel</span><span class="x" lang="en">Each <code>Definition</code> gets its own lumberjack writer. Two
-              channels pointing at the same <code>Filename</code> would rotate the same file independently — give each
-              its own path.</span><span class="x" lang="vi">Mỗi <code>Definition</code> có writer lumberjack riêng. Hai
-              kênh cùng trỏ vào một <code>Filename</code> sẽ xoay vòng cùng một file một cách độc lập — hãy cho mỗi kênh
-              một đường dẫn riêng.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Keep an "app"
-              channel</span><span class="x" lang="en">An empty <code>Name</code> becomes <code>"app"</code>. With no definition
-              resolving to <code>"app"</code>, nothing provides an untagged <code>*zap.Logger</code> and every
-              constructor asking for one fails at Fx start. Two definitions resolving to <code>"app"</code> (e.g.
-              <code>"app"</code> and an empty name) fail at startup with an Fx duplicate-provide error.</span><span
-              class="x" lang="vi"><code>Name</code> rỗng sẽ thành <code>"app"</code>. Không có definition nào ra
-              <code>"app"</code> thì không có <code>*zap.Logger</code> không tag nào, và mọi constructor cần nó sẽ lỗi
-              khi Fx khởi động. Hai definition cùng ra <code>"app"</code> (ví dụ <code>"app"</code> và một tên rỗng) sẽ
-              lỗi khi khởi động vì Fx báo provide trùng.</span>
-          </div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">Fatal skips Fx
-              shutdown</span><span class="x" lang="en"><code>log.Fatal</code> calls <code>os.Exit</code>, so no Fx
-              <code>OnStop</code> hook runs (other modules' graceful shutdown included). No log line is lost: zap syncs
-              the core before exiting, which flushes the file buffer too. <code>log.Panic</code> does not exit — it
-              panics after writing. Prefer returning errors.</span><span class="x" lang="vi"><code>log.Fatal</code> gọi
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">Typos
+                in Level fail startup</span><span lang="vi">Gõ sai Level làm app không khởi động</span></span><span
+              class="x" lang="en"><code>"inof"</code> makes <code>New</code> return an error, so the Fx app does not
+              start. An empty <code>Level</code> is info.</span><span class="x" lang="vi"><code>"inof"</code> làm
+              <code>New</code> trả lỗi, nên app Fx không khởi động. <code>Level</code> rỗng là info.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">Trace
+                ID is not automatic</span><span lang="vi">Trace ID không tự gắn</span></span><span class="x"
+              lang="en">The logger does not read the context. Add <code>zap.String("trace_id",
+              logger.GetTraceID(ctx))</code> yourself, or create a child logger with <code>log.With(...)</code> per
+              request.</span><span class="x" lang="vi">Logger không đọc context. Tự thêm <code>zap.String("trace_id",
+              logger.GetTraceID(ctx))</code>, hoặc tạo logger con bằng <code>log.With(...)</code> cho mỗi
+              request.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w"><span lang="en">One
+                file per channel</span><span lang="vi">Mỗi kênh một file</span></span><span class="x" lang="en">Each
+              <code>Definition</code> gets its own lumberjack writer. Two channels pointing at the same
+              <code>Filename</code> would rotate the same file independently — give each its own path.</span><span
+              class="x" lang="vi">Mỗi <code>Definition</code> có writer lumberjack riêng. Hai kênh cùng trỏ vào một
+              <code>Filename</code> sẽ xoay vòng cùng một file một cách độc lập — hãy cho mỗi kênh một đường dẫn
+              riêng.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w"><span lang="en">Keep
+                an "app" channel</span><span lang="vi">Luôn có kênh "app"</span></span><span class="x" lang="en">An
+              empty <code>Name</code> becomes <code>"app"</code>. With no definition resolving to <code>"app"</code>,
+              nothing provides an untagged <code>*zap.Logger</code> and every constructor asking for one fails at Fx
+              start. Two definitions resolving to <code>"app"</code> (e.g. <code>"app"</code> and an empty name) fail
+              at startup with an Fx duplicate-provide error.</span><span class="x" lang="vi"><code>Name</code> rỗng sẽ
+              thành <code>"app"</code>. Không có definition nào ra <code>"app"</code> thì không có
+              <code>*zap.Logger</code> không tag nào, và mọi constructor cần nó sẽ lỗi khi Fx khởi động. Hai definition
+              cùng ra <code>"app"</code> (ví dụ <code>"app"</code> và một tên rỗng) sẽ lỗi khi khởi động vì Fx báo
+              provide trùng.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w"><span lang="en">Fatal
+                skips Fx shutdown</span><span lang="vi">Fatal bỏ qua shutdown của Fx</span></span><span class="x"
+              lang="en"><code>log.Fatal</code> calls <code>os.Exit</code>, so no Fx <code>OnStop</code> hook runs
+              (other modules' graceful shutdown included). No log line is lost: zap syncs the core before exiting,
+              which flushes the file buffer too. <code>log.Panic</code> does not exit — it panics after writing.
+              Prefer returning errors.</span><span class="x" lang="vi"><code>log.Fatal</code> gọi
               <code>os.Exit</code>, nên không hook <code>OnStop</code> nào của Fx chạy (kể cả graceful shutdown của các
               module khác). Không mất dòng log nào: zap sync core trước khi thoát, việc này cũng flush buffer của file.
               <code>log.Panic</code> không thoát — nó panic sau khi ghi log. Nên trả lỗi về thay vì dùng chúng.</span></div>
@@ -817,10 +768,9 @@ $ grep demo-123 storage/logs/http.log
       </section>
 
       <footer class="jd-footer">
-        <span>Jundoc · Junkit · logger</span>
-        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
-              Junkit</span></a></span>
-      </footer>
+    <span>Jundoc · Junkit · logger</span>
+    <span><a href="console.html">← console</a> · <a href="i18n.html">i18n →</a></span>
+  </footer>
     </article>
   </div>
 

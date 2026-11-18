@@ -34,19 +34,14 @@
           stack trace. Cảnh báo đi qua một hàng đợi nền có giới hạn, nên Telegram chậm hay lỗi cũng không làm trễ
           request.</p>
         <div class="jd-chips">
-          <span class="jd-chip">github.com/jun-develop/junkit/notification</span>
-          <span class="jd-chip"><span lang="en">Fx Module → provides <code>notification.Notifier</code></span><span
-              lang="vi">Fx Module → cung cấp <code>notification.Notifier</code></span></span>
-          <span class="jd-chip"><span lang="en">built on <a href="telegram.html"
-                style="color:inherit">telegram.Client</a></span><span lang="vi">xây trên <a href="telegram.html"
-                style="color:inherit">telegram.Client</a></span></span>
-          <span class="jd-chip"><span lang="en">queue of 100 · 1 worker</span><span lang="vi">hàng đợi 100 · 1
-              worker</span></span>
-        </div>
-      </header>
+      <span class="jd-chip">github.com/jun-develop/junkit/notification</span>
+      <span class="jd-chip"><span lang="en">Fx: <code>notification.Module</code> → provides <code>notification.Notifier</code></span><span lang="vi">Fx: <code>notification.Module</code> → cung cấp <code>notification.Notifier</code></span></span>
+      <span class="jd-chip"><span lang="en">Depends on: fx · zap · junkit/logger · junkit/security · junkit/telegram</span><span lang="vi">Phụ thuộc: fx · zap · junkit/logger · junkit/security · junkit/telegram</span></span>
+    </div>
+  </header>
 
       <!-- ============================================================ 1. WHAT -->
-      <section id="what" class="jd-section c-orange">
+      <section id="what" class="jd-section c-blue">
         <div class="jd-section-head">
           <span class="jd-badge">1</span>
           <div>
@@ -58,34 +53,38 @@
               đưa việc gửi vào hàng đợi. Một worker gửi lần lượt; gửi thất bại thì được log, không bao giờ trả về.</p>
           </div>
         </div>
-        <div class="jd-flow" style="margin-top:22px" data-wires='[
-      {"from":"n1","to":"n2","color":"orange"},
-      {"from":"n2","to":"n3","color":"green"},
-      {"from":"n3","to":"n4","color":"blue"}]'>
-          <div class="jd-node is-tint c-orange" data-node="n1"><span class="k"><span lang="en">1 · caller</span><span
+        <div class="jd-grid3w" style="margin-top:22px;gap:40px 56px" data-wires='[
+      {"from":"n1","to":"n2","color":"blue"},
+      {"from":"n2","to":"n3","color":"blue","label":{"en":"queue","vi":"hàng đợi"}},
+      {"from":"n3","to":"n4","color":"blue","dir":"v"},
+      {"from":"lg","to":"n4","color":"orange","dashed":true,"label":{"en":"direct","vi":"gọi thẳng"}}]'>
+          <div class="jd-node is-tint c-blue" data-node="n1" style="grid-column:1;grid-row:1"><span class="k"><span lang="en">1 · caller</span><span
                 lang="vi">1 · nơi gọi</span></span><span class="t mono" style="font-size:15px">Recover · Limiter ·
               Banner</span>
-            <div class="d" lang="en">A panic (500), a rate-limit breach, a ban — or your own handler.</div>
-            <div class="d" lang="vi">Một panic (500), vượt rate limit, một lần ban — hoặc handler của bạn.</div>
+            <div class="d" lang="en">A panic (<code>ReportError</code>), a rate-limit breach or a ban (<code>Send</code>) — or your own code.</div>
+            <div class="d" lang="vi">Một panic (<code>ReportError</code>), vượt rate limit hoặc một lần ban (<code>Send</code>) — hoặc code của bạn.</div>
           </div>
-          <div class="jd-node is-tint c-pink" data-node="n2"><span class="k">2 · Notifier</span><span class="t mono"
+          <div class="jd-node is-tint c-blue" data-node="n2" style="grid-column:2;grid-row:1"><span class="k">2 · Notifier</span><span class="t mono"
               style="font-size:15px">Send · ReportError</span>
-            <div class="d" lang="en">Only when <code>Options.Enabled</code>. Renders the text, then queues it (full
-              queue → dropped).</div>
-            <div class="d" lang="vi">Chỉ khi <code>Options.Enabled</code>. Dựng nội dung rồi đưa vào hàng đợi (hàng đợi
-              đầy → bỏ).</div>
+            <div class="d" lang="en"><code>Options.Enabled</code> false → returns, nothing queued. Otherwise renders the text and queues it (100 slots; full or closed → dropped).</div>
+            <div class="d" lang="vi"><code>Options.Enabled</code> là false → return, không đưa gì vào hàng đợi. Ngược lại dựng nội dung rồi đưa vào hàng đợi (100 chỗ; đầy hoặc đã đóng → bỏ).</div>
           </div>
-          <div class="jd-node is-tint c-green" data-node="n3"><span class="k">3 · worker</span><span class="t mono"
-              style="font-size:15px">SendMessage / SendDocument</span>
-            <div class="d" lang="en">10s timeout per alert. With a stack: the message, then a
-              <code>stack-….txt</code> document.</div>
-            <div class="d" lang="vi">Timeout 10s mỗi cảnh báo. Có stack: gửi tin nhắn, rồi một tài liệu
-              <code>stack-….txt</code>.</div>
+          <div class="jd-node is-tint c-blue" data-node="n3" style="grid-column:3;grid-row:1"><span class="k">3 · worker</span><span class="t mono"
+              style="font-size:15px">run()</span>
+            <div class="d" lang="en">One goroutine, in order, 10s timeout per alert. With a stack: the message, then a
+              <code>stack-….txt</code> document. A failed send is logged.</div>
+            <div class="d" lang="vi">Một goroutine, lần lượt, timeout 10s mỗi cảnh báo. Có stack: gửi tin nhắn, rồi một tài liệu
+              <code>stack-….txt</code>. Gửi lỗi thì được log.</div>
           </div>
-          <div class="jd-node is-tint c-blue" data-node="n4"><span class="k">4 · chat</span><span class="t mono"
-              style="font-size:15px">TelegramChatID</span>
-            <div class="d" lang="en">Empty chat id or bot token → the telegram client silently skips.</div>
-            <div class="d" lang="vi">Chat id hoặc bot token rỗng → telegram client lặng lẽ bỏ qua.</div>
+          <div class="jd-node is-tint c-orange" data-node="n4" style="grid-column:3;grid-row:2"><span class="k">4 · <a href="telegram.html">telegram</a></span><span class="t mono"
+              style="font-size:15px">telegram.Client</span>
+            <div class="d" lang="en"><code>SendMessage</code> / <code>SendDocument</code> to <code>api.telegram.org</code>. Empty bot token or chat id → returns <code>nil</code>, nothing sent.</div>
+            <div class="d" lang="vi"><code>SendMessage</code> / <code>SendDocument</code> tới <code>api.telegram.org</code>. Bot token hoặc chat id rỗng → trả <code>nil</code>, không gửi gì.</div>
+          </div>
+          <div class="jd-node is-tint c-muted" data-node="lg" style="grid-column:1 / span 2;grid-row:2;align-self:center"><span class="k"><span lang="en">Jungo · not through the Notifier</span><span lang="vi">Jungo · không qua Notifier</span></span><span class="t mono"
+              style="font-size:15px">LoginGuard.notifyBlacklisted</span>
+            <div class="d" lang="en">The login guard's brute-force alert calls <code>telegram.Client</code> itself: no <code>Enabled</code> check (so any environment, once a token and chat id are set), no queue, its own 5s timeout. See <a href="../jungo/auth.html#inside">Jungo · auth</a>.</div>
+            <div class="d" lang="vi">Cảnh báo dò mật khẩu của login guard tự gọi <code>telegram.Client</code>: không kiểm tra <code>Enabled</code> (nên chạy ở mọi môi trường, khi đã có token và chat id), không qua hàng đợi, timeout riêng 5s. Xem <a href="../jungo/auth.html#inside">Jungo · auth</a>.</div>
           </div>
         </div>
       </section>
@@ -95,7 +94,7 @@
         <div class="jd-section-head">
           <span class="jd-badge">2</span>
           <div>
-            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối</span></h2>
+            <h2><span lang="en">Setup</span><span lang="vi">Cài đặt</span></h2>
             <p class="jd-sub" lang="en"><code>notification.Module</code> calls <code>NewNotifier</code> and closes it
               OnStop (draining the queue), so the graph needs <code>notification.Options</code>, a
               <code>telegram.Client</code> (from <a href="telegram.html">telegram.Module</a>) and, optionally, a
@@ -106,16 +105,14 @@
               <code>*zap.Logger</code> để log lần gửi lỗi.</p>
           </div>
         </div>
-        <div class="jd-tabs c-purple" style="margin-top:18px">
+        <div class="jd-tabs" style="margin-top:18px">
           <div class="jd-tablist">
-            <button type="button" class="jd-tab" aria-selected="true"><span lang="en">with Fx (as Jungo)</span><span
-                lang="vi">với Fx (như Jungo)</span></button>
-            <button type="button" class="jd-tab" aria-selected="false"><span lang="en">without Fx</span><span
-                lang="vi">Không dùng Fx</span></button>
+            <button type="button" class="jd-tab" aria-selected="true"><span lang="en">With Fx (as in Jungo)</span><span lang="vi">Dùng Fx (như Jungo)</span></button>
+            <button type="button" class="jd-tab" aria-selected="false"><span lang="en">Without Fx</span><span lang="vi">Không dùng Fx</span></button>
           </div>
           <div class="jd-tabpanel">
             <div class="jd-term">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>jungo/internal/app/fx.go</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go</span></div>
               <pre data-hl="go">
 // inside CoreModules(cfg):
 fx.Provide(provideTelegramOptions),
@@ -155,12 +152,7 @@ defer notifier.Close(context.Background()) // sends what is still queued
         </div>
         <div class="jd-tablewrap" style="margin-top:16px">
           <table class="jd-params c-purple">
-            <tr>
-              <th>Options field</th>
-              <th>type</th>
-              <th><span lang="en">zero value</span><span lang="vi">giá trị zero</span></th>
-              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-            </tr>
+            <tr><th>field</th><th><span lang="en">type</span><span lang="vi">kiểu</span></th><th><span lang="en">default</span><span lang="vi">mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
             <tr>
               <td>TelegramChatID</td>
               <td>string</td>
@@ -176,21 +168,32 @@ defer notifier.Close(context.Background()) // sends what is still queued
               <td>bool</td>
               <td lang="en"><code>false</code> → <code>Send</code> and <code>ReportError</code> do nothing.</td>
               <td lang="vi"><code>false</code> → <code>Send</code> và <code>ReportError</code> không làm gì.</td>
-              <td lang="en">The one switch for <b>every</b> alert: panics, rate-limit and ban alerts from the
+              <td lang="en">The switch for every <b>Notifier</b> alert: panics, rate-limit and ban alerts from the
                 middleware, and your own calls. Jungo sets it to <code>cfg.Environment == "production"</code>.</td>
-              <td lang="vi">Công tắc duy nhất cho <b>mọi</b> cảnh báo: panic, cảnh báo rate limit và ban từ
+              <td lang="vi">Công tắc cho mọi cảnh báo qua <b>Notifier</b>: panic, cảnh báo rate limit và ban từ
                 middleware, và lời gọi của bạn. Jungo đặt nó bằng <code>cfg.Environment == "production"</code>.</td>
             </tr>
           </table>
         </div>
+        <div class="jd-callout c-red" style="margin-top:14px">
+          <b lang="en">Warning:</b><b lang="vi">Cảnh báo:</b>
+          <span lang="en">In Jungo, <code>Enabled</code> does not cover every Telegram alert. The login guard's
+            brute-force alert calls <a href="telegram.html"><code>telegram.Client</code></a> directly, so it is sent in
+            any environment, development included, whenever <code>TELEGRAM_BOT_TOKEN</code> and
+            <code>TELEGRAM_CHAT_ID</code> are set (<a href="../jungo/auth.html#inside">Auth</a>).</span><span
+            lang="vi">Trong Jungo, <code>Enabled</code> không bao trùm mọi cảnh báo Telegram. Cảnh báo brute-force của
+            login guard gọi thẳng <a href="telegram.html"><code>telegram.Client</code></a>, nên nó được gửi ở mọi môi
+            trường, kể cả development, miễn là đã đặt <code>TELEGRAM_BOT_TOKEN</code> và <code>TELEGRAM_CHAT_ID</code>
+            (<a href="../jungo/auth.html#inside">Auth</a>).</span>
+        </div>
       </section>
 
       <!-- ============================================================ 3. QUICK START -->
-      <section id="quick" class="jd-section c-orange">
+      <section id="quick" class="jd-section c-green">
         <div class="jd-section-head">
           <span class="jd-badge">3</span>
           <div>
-            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <h2><span lang="en">Quick start</span><span lang="vi">Dùng nhanh</span></h2>
             <p class="jd-sub" lang="en">Panics are already covered by <code>middleware.Recover</code>. Call the Notifier
               yourself for errors you handle. Hover an explanation to light up its lines.</p>
             <p class="jd-sub" lang="vi">Panic đã được <code>middleware.Recover</code> lo. Tự gọi Notifier cho các lỗi
@@ -218,7 +221,7 @@ func (h *OrderHandler) Create(c *gin.Context) {
             Location:   file,
             Line:       line,
             Function:   "OrderHandler.Create",
-            StatusCode: http.StatusBadGateway,
+            StatusCode: http.StatusInternalServerError, // what responder.Error sends for a plain error
             ClientIP:   c.ClientIP(),
         })
         h.responder.Error(c, err)
@@ -237,12 +240,13 @@ func (h *OrderHandler) Create(c *gin.Context) {
             </div>
           </div>
           <div class="jd-explain">
-            <div class="jd-ex c-orange" data-code="#code-quick" data-show="3"><span class="n">1</span><span
-                class="w">inject the interface</span><span class="x" lang="en">Fx gives you
-                <code>notification.Notifier</code>. Jungo marks it <code>optional:"true"</code> in the router, so check
-                for nil if you do the same.</span><span class="x" lang="vi">Fx đưa bạn
-                <code>notification.Notifier</code>. Jungo đánh dấu nó <code>optional:"true"</code> trong router, nên hãy
-                kiểm tra nil nếu bạn làm tương tự.</span></div>
+            <div class="jd-ex c-orange" data-code="#code-quick" data-show="3"><span class="n">1</span><span class="w"><span lang="en">Inject the interface</span><span lang="vi">Inject interface</span></span><span class="x" lang="en">Fx gives you
+                <code>notification.Notifier</code> when <code>notification.Module</code> is in the graph. This handler
+                requires it; if you mark it <code>optional:"true"</code> (as Jungo's router does), guard each call with
+                <code>if h.notifier != nil</code>.</span><span class="x" lang="vi">Fx đưa bạn
+                <code>notification.Notifier</code> khi <code>notification.Module</code> có trong graph. Handler này bắt
+                buộc phải có nó; nếu bạn đánh dấu <code>optional:"true"</code> (như router của Jungo), hãy bọc mỗi lời gọi
+                bằng <code>if h.notifier != nil</code>.</span></div>
             <div class="jd-ex c-orange" data-code="#code-quick" data-show="11-18"><span class="n">2</span><span
                 class="w">ErrorReport</span><span class="x" lang="en">Typed fields; empty strings print
                 <code>-</code>. <code>ClientIP</code> empty → <code>r.RemoteAddr</code>. The trace ID comes from
@@ -251,8 +255,7 @@ func (h *OrderHandler) Create(c *gin.Context) {
                 <code>ClientIP</code> rỗng → <code>r.RemoteAddr</code>. Trace ID lấy từ <code>ctx</code>
                 (<code>logger.GetTraceID</code>). Request được dựng thành chữ trước khi vào hàng đợi, nên có thể return
                 ngay sau đó.</span></div>
-            <div class="jd-ex c-orange" data-code="#code-quick" data-show="16"><span class="n">3</span><span
-                class="w">status picks the banner</span><span class="x" lang="en"><code>&gt;= 500</code> → "Error
+            <div class="jd-ex c-orange" data-code="#code-quick" data-show="16"><span class="n">3</span><span class="w"><span lang="en">Status picks the banner</span><span lang="vi">Status quyết định banner</span></span><span class="x" lang="en"><code>&gt;= 500</code> → "Error
                 Notification", otherwise "Client Error".</span><span class="x" lang="vi"><code>&gt;= 500</code> →
                 "Error Notification", ngược lại "Client Error".</span></div>
             <div class="jd-ex c-orange" data-code="#code-quick" data-show="23-26"><span class="n">4</span><span
@@ -271,14 +274,14 @@ func (h *OrderHandler) Create(c *gin.Context) {
         <div class="jd-section-head">
           <span class="jd-badge">4</span>
           <div>
-            <h2><span lang="en">Try it: preview an alert</span><span lang="vi">Thử ngay: xem trước cảnh báo</span></h2>
-            <p class="jd-sub" lang="en">Same formatting as <code>ReportError</code>, shown as the raw HTML text sent to
-              Telegram. Request headers are left out here; real alerts add one <code>-H</code> per header except
+            <h2><span lang="en">Try it</span><span lang="vi">Thử ngay</span></h2>
+            <p class="jd-sub" lang="en">Same formatting as <code>ReportError</code>, shown the way Telegram renders it (the message is sent with
+              <code>parse_mode</code> HTML; user values are HTML-escaped first). Request headers are left out here; real alerts add one <code>-H</code> per header except
               Content-Length, User-Agent, Postman-Token and Cookie, with secret values masked by
               <code>security.MaskHeader</code> (<code>Authorization: Bearer ****</code>). The query string and body never
               go into the alert.</p>
-            <p class="jd-sub" lang="vi">Cùng cách định dạng với <code>ReportError</code>, hiển thị dạng HTML thô gửi tới
-              Telegram. Ở đây bỏ qua header; cảnh báo thật thêm một <code>-H</code> cho mỗi header trừ Content-Length,
+            <p class="jd-sub" lang="vi">Cùng cách định dạng với <code>ReportError</code>, hiển thị như Telegram render (tin nhắn gửi với
+              <code>parse_mode</code> HTML; giá trị người dùng được escape HTML trước). Ở đây bỏ qua header; cảnh báo thật thêm một <code>-H</code> cho mỗi header trừ Content-Length,
               User-Agent, Postman-Token và Cookie, với giá trị bí mật được che bằng <code>security.MaskHeader</code>
               (<code>Authorization: Bearer ****</code>). Query string và body không bao giờ được đưa vào cảnh báo.</p>
           </div>
@@ -311,30 +314,32 @@ func (h *OrderHandler) Create(c *gin.Context) {
             <p class="jd-sub" lang="en">Clear a field to see its fallback (<code>-</code>, or <code>0</code> for
               <code>Line</code>). Long values are cut: Error at 2000 characters, the curl at 1200, other fields at 200.
               IP and Trace ID are fixed in this demo.</p>
-            <p class="jd-sub" lang="vi">Xoá trống một ô để xem giá trị thay thế (<code>-</code>, hoặc <code>0</code> với
+            <p class="jd-sub" lang="vi">Xóa trống một ô để xem giá trị thay thế (<code>-</code>, hoặc <code>0</code> với
               <code>Line</code>). Giá trị dài bị cắt: Error ở 2000 ký tự, curl ở 1200, các field khác ở 200. IP và Trace
               ID cố định trong demo này.</p>
           </div>
           <div>
             <div class="jd-callout c-pink" id="nf-verdict" style="margin-bottom:10px"></div>
             <div class="jd-term">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span id="nf-title">text</span></div>
-              <pre id="nf-out" style="white-space:pre-wrap;word-break:break-word"></pre>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span id="nf-title">Telegram</span></div>
+              <style>
+                #nf-out { padding: 16px 18px; white-space: pre-wrap; word-break: break-word; font: 400 14.5px/1.55 var(--font); color: var(--code-ink); }
+                #nf-out pre { margin: 4px 0; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,.06); font: 500 13px/1.5 var(--mono); white-space: pre-wrap; }
+              </style>
+              <div id="nf-out"></div>
             </div>
           </div>
         </div>
       </section>
 
       <!-- ============================================================ 5. API -->
-      <section id="api" class="jd-section c-orange">
+      <section id="api" class="jd-section c-blue">
         <div class="jd-section-head">
           <span class="jd-badge">5</span>
           <div>
             <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
-            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from
-              <code>junkit/notification/notification.go</code> and <code>module.go</code>.</p>
-            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ
-              <code>junkit/notification/notification.go</code> và <code>module.go</code>.</p>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/notification</code>.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/notification</code>.</p>
           </div>
         </div>
         <div class="jd-syms" style="margin-top:18px">
@@ -411,13 +416,15 @@ type ErrorReport struct {
               <code>SendMessage</code>; when <code>Stack</code> is non-empty it then sends a document
               <code>stack-YYYYMMDD-HHMMSS.txt</code> (content
               <code>STACK TRACE\nGenerated: &lt;time&gt;\n----------------------------------------\n\n&lt;stack&gt;</code>)
-              with no caption.</p>
+              with no caption. The document is sent even if the message failed; both errors are joined into one
+              <code>notification: send failed</code> log line.</p>
             <p lang="vi">Không làm gì trừ khi <code>Options.Enabled</code>. Dựng cảnh báo bên dưới từ <code>r</code>
               trước khi đưa vào hàng đợi (không được đọc r sau khi handler trả về). Worker gửi nó bằng
               <code>SendMessage</code>; khi <code>Stack</code> khác rỗng, nó gửi tiếp một tài liệu
               <code>stack-YYYYMMDD-HHMMSS.txt</code> (nội dung
               <code>STACK TRACE\nGenerated: &lt;time&gt;\n----------------------------------------\n\n&lt;stack&gt;</code>)
-              không có caption.</p>
+              không có caption. Tài liệu vẫn được gửi kể cả khi tin nhắn lỗi; hai lỗi được gộp vào một dòng log
+              <code>notification: send failed</code>.</p>
             <div class="jd-term" style="margin:10px 0">
               <div class="jd-term-bar"><i></i><i></i><i></i><span>notification.go · buildErrorNotification</span></div>
               <pre data-hl="go">
@@ -529,10 +536,12 @@ func (n *TelegramNotifier) Dropped() int64
 </pre>
             </div>
             <ul>
-              <li lang="en">Starts one worker over a queue of 100 alerts; each send gets its own 10s timeout. Failed
+              <li lang="en">Starts one worker over a queue of 100 alerts; it sends them one at a time, in order, each
+                with its own 10s timeout, so one slow Telegram call delays every alert behind it. Failed
                 sends are logged to <code>log</code> as <code>notification: send failed</code> (nil
                 <code>log</code> discards them). <code>tgClient</code> must not be nil.</li>
-              <li lang="vi">Khởi động một worker trên hàng đợi 100 cảnh báo; mỗi lần gửi có timeout 10s riêng. Gửi lỗi
+              <li lang="vi">Khởi động một worker trên hàng đợi 100 cảnh báo; nó gửi lần lượt từng cảnh báo theo thứ tự,
+                mỗi lần có timeout 10s riêng, nên một lần gọi Telegram chậm làm trễ mọi cảnh báo phía sau. Gửi lỗi
                 được log vào <code>log</code> là <code>notification: send failed</code> (<code>log</code> nil thì bỏ
                 đi). <code>tgClient</code> không được nil.</li>
               <li lang="en"><code>Close</code> stops accepting alerts and waits until the queued ones are sent or
@@ -566,7 +575,7 @@ var Module = fx.Module("notification",
       </section>
 
       <!-- ============================================================ 6. IN JUNGO -->
-      <section id="jungo" class="jd-section c-blue">
+      <section id="jungo" class="jd-section c-orange">
         <div class="jd-section-head">
           <span class="jd-badge">6</span>
           <div>
@@ -582,45 +591,32 @@ var Module = fx.Module("notification",
               <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
             </tr>
             <tr>
-              <td>app/fx.go</td>
-              <td lang="en"><code>provideNotificationOptions</code> + <code>notification.Module</code> (see Wire it up).
-              </td>
-              <td lang="vi"><code>provideNotificationOptions</code> + <code>notification.Module</code> (xem Kết nối).
-              </td>
+              <td>internal/app/fx.go</td>
+              <td lang="en"><code>provideNotificationOptions</code> + <code>notification.Module</code> (see <a
+                  href="#setup">Setup</a>).</td>
+              <td lang="vi"><code>provideNotificationOptions</code> + <code>notification.Module</code> (xem <a
+                  href="#setup">Cài đặt</a>).</td>
             </tr>
             <tr>
-              <td>router/router.go</td>
+              <td>internal/router/router.go</td>
               <td lang="en"><code>Params.Notifier notification.Notifier `optional:"true"`</code> is passed to
                 <code>middleware.Limiter(…, p.Notifier)</code>, <code>middleware.Banner(…, p.Notifier)</code> and
-                <code>middleware.Recover(opts, p.HTTPLogger, p.Notifier, p.Responder)</code>.</td>
+                <code>middleware.Recover(opts, p.HTTPLogger, p.Notifier, p.Responder)</code> (both the global one and
+                the one on the <code>/uploads</code> group). <code>Banner</code> is installed only when
+                <code>cfg.Banner.Enabled</code>.</td>
               <td lang="vi"><code>Params.Notifier notification.Notifier `optional:"true"`</code> được truyền vào
                 <code>middleware.Limiter(…, p.Notifier)</code>, <code>middleware.Banner(…, p.Notifier)</code> và
-                <code>middleware.Recover(opts, p.HTTPLogger, p.Notifier, p.Responder)</code>.</td>
+                <code>middleware.Recover(opts, p.HTTPLogger, p.Notifier, p.Responder)</code> (cả bản toàn cục lẫn bản
+                trên group <code>/uploads</code>). <code>Banner</code> chỉ được gắn khi <code>cfg.Banner.Enabled</code>.</td>
             </tr>
             <tr>
-              <td>Junkit middleware/recover.go</td>
-              <td lang="en">On a panic: answers 500 <code>internal_server_error</code> first, then
-                <code>ReportError</code> with Error, Location, Line, Function, Stack, StatusCode and ClientIP → the
-                message plus a stack document.</td>
-              <td lang="vi">Khi panic: trả 500 <code>internal_server_error</code> trước, rồi gọi
-                <code>ReportError</code> với Error, Location, Line, Function, Stack, StatusCode và ClientIP → tin nhắn
-                kèm tài liệu stack.</td>
-            </tr>
-            <tr>
-              <td>Junkit middleware/limiter.go · banner.go</td>
-              <td lang="en">When an IP is rate-limited (at most once per <code>LogTTL</code> per IP) or banned:
-                <code>Send(ctx, LevelError, msg)</code> with a "🚦 &lt;b&gt;Rate Limit Exceeded&lt;/b&gt;" or "⛔
-                &lt;b&gt;Client Banned&lt;/b&gt;" message (IP, method, path, time).</td>
-              <td lang="vi">Khi một IP bị giới hạn (tối đa một lần mỗi <code>LogTTL</code> cho mỗi IP) hoặc bị ban:
-                <code>Send(ctx, LevelError, msg)</code> với tin "🚦 &lt;b&gt;Rate Limit Exceeded&lt;/b&gt;" hoặc "⛔
-                &lt;b&gt;Client Banned&lt;/b&gt;" (IP, method, path, thời gian).</td>
-            </tr>
-            <tr>
-              <td>features/auth/infrastructure/login_guard.go</td>
-              <td lang="en">Not a Notifier user: the brute-force alert goes straight through <a
-                  href="telegram.html">telegram.Client</a>.</td>
-              <td lang="vi">Không dùng Notifier: cảnh báo brute-force đi thẳng qua <a
-                  href="telegram.html">telegram.Client</a>.</td>
+              <td>junkit/middleware · recover.go, limiter.go, banner.go</td>
+              <td lang="en"><code>Recover</code> calls <code>ReportError</code> on a panic (with the stack);
+                <code>Limiter</code> and <code>Banner</code> call <code>Send(ctx, LevelError, …)</code> for rate-limit
+                and ban alerts. Details: <a href="middleware.html">middleware</a>.</td>
+              <td lang="vi"><code>Recover</code> gọi <code>ReportError</code> khi panic (kèm stack);
+                <code>Limiter</code> và <code>Banner</code> gọi <code>Send(ctx, LevelError, …)</code> cho cảnh báo rate
+                limit và ban. Chi tiết: <a href="middleware.html">middleware</a>.</td>
             </tr>
           </table>
         </div>
@@ -645,19 +641,22 @@ LIMITER_IP_WHITELIST=10.0.0.5      # optional (empty by default): whitelisted IP
         </div>
         <div class="jd-explain" style="margin-top:16px">
           <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w"><span
-                lang="en">the curl is not complete</span><span lang="vi">lệnh curl không đầy đủ</span></span><span
+                lang="en">The curl is not complete</span><span lang="vi">Lệnh curl không đầy đủ</span></span><span
               class="x" lang="en">So that no credential lands in the chat, the curl masks secret headers and leaves out
               the query string and the body. To reproduce, add them back from the access log (trace ID) and use your
               own token.</span><span class="x" lang="vi">Để không có thông tin đăng nhập nào lọt vào chat, lệnh curl che
               các header bí mật và bỏ query string cùng body. Muốn tái hiện, lấy lại chúng từ access log (theo trace ID)
               và dùng token của chính bạn.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">a
-                burst drops alerts</span><span lang="vi">dồn dập thì mất cảnh báo</span></span><span class="x"
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">A
+                burst drops alerts</span><span lang="vi">Dồn dập thì mất cảnh báo</span></span><span class="x"
               lang="en">The queue holds 100 alerts. While Telegram is slow or down, further alerts are dropped (never
               blocking the request); <code>Dropped()</code> on the <code>*TelegramNotifier</code> tells you how
-              many.</span><span class="x" lang="vi">Hàng đợi chứa 100 cảnh báo. Khi Telegram chậm hoặc sập, cảnh báo
-              tiếp theo bị bỏ (không bao giờ chặn request); <code>Dropped()</code> trên <code>*TelegramNotifier</code>
-              cho biết bao nhiêu.</span></div>
+              many. <code>Module</code> provides the <code>Notifier</code> interface, so under Fx you need
+              <code>n.(*notification.TelegramNotifier)</code> to reach it.</span><span class="x" lang="vi">Hàng đợi chứa
+              100 cảnh báo. Khi Telegram chậm hoặc sập, cảnh báo tiếp theo bị bỏ (không bao giờ chặn request);
+              <code>Dropped()</code> trên <code>*TelegramNotifier</code> cho biết bao nhiêu. <code>Module</code> cung
+              cấp interface <code>Notifier</code>, nên với Fx bạn cần <code>n.(*notification.TelegramNotifier)</code>
+              để gọi nó.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span
                 lang="en">Send is raw HTML</span><span lang="vi">Send là HTML thô</span></span><span class="x"
               lang="en"><code>Send</code> does not escape or cut <code>msg</code>. Escape request values with
@@ -665,14 +664,14 @@ LIMITER_IP_WHITELIST=10.0.0.5      # optional (empty by default): whitelisted IP
               only shows up in the log.</span><span class="x" lang="vi"><code>Send</code> không escape hay cắt
               <code>msg</code>. Escape giá trị từ request bằng <code>html.EscapeString</code> và giữ dưới 4096 ký tự,
               nếu không Telegram từ chối — và lỗi chỉ hiện trong log.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">one
-                switch for everything</span><span lang="vi">một công tắc cho tất cả</span></span><span class="x"
-              lang="en"><code>Enabled: false</code> silences every alert, including rate-limit and ban alerts from the
-              middleware. Leave it off in development so a local token never spams the team chat.</span><span class="x"
-              lang="vi"><code>Enabled: false</code> tắt mọi cảnh báo, kể cả cảnh báo rate limit và ban từ middleware.
-              Để tắt ở development để token local không spam chat của team.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w"><span lang="en">close
-                it without Fx</span><span lang="vi">tự đóng khi không dùng Fx</span></span><span class="x"
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">One
+                switch for everything</span><span lang="vi">Một công tắc cho tất cả</span></span><span class="x"
+              lang="en"><code>Enabled: false</code> silences every Notifier alert, including rate-limit and ban alerts
+              from the middleware. Leave it off in development so a local token never spams the team chat.</span><span
+              class="x" lang="vi"><code>Enabled: false</code> tắt mọi cảnh báo qua Notifier, kể cả cảnh báo rate limit
+              và ban từ middleware. Hãy tắt ở development để token local không spam chat của team.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w"><span lang="en">Close
+                it without Fx</span><span lang="vi">Tự đóng khi không dùng Fx</span></span><span class="x"
               lang="en">Outside Fx, call <code>Close(ctx)</code> on shutdown, or alerts still queued (often the panic
               that preceded the shutdown) are lost.</span><span class="x" lang="vi">Ngoài Fx, gọi
               <code>Close(ctx)</code> khi tắt, nếu không cảnh báo còn trong hàng đợi (thường là panic ngay trước khi
@@ -681,10 +680,9 @@ LIMITER_IP_WHITELIST=10.0.0.5      # optional (empty by default): whitelisted IP
       </section>
 
       <footer class="jd-footer">
-        <span>Jundoc · Junkit · notification</span>
-        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
-              Junkit</span></a></span>
-      </footer>
+    <span>Jundoc · Junkit · notification</span>
+    <span><a href="telegram.html">← telegram</a> · <a href="mailer.html">mailer →</a></span>
+  </footer>
     </article>
   </div>
 
@@ -717,6 +715,7 @@ document.addEventListener("jd:ready", function () {
   console.assert(build(mk({})).indexOf("<pre>curl -X GET &#34;http://h/x&#34;</pre>\n") > 0, "curl only");
   console.assert(curl("POST", "http://h/x?token=abc") === "curl -X POST \"http://h/x\"", "curl drops the query string");
   console.assert(cut("abcdef", 3) === "abc…", "cut");
+  console.assert(!/<(?!\/?(b|pre)>)/.test(build(mk({ ua: "<script>x<\/script>", method: "<i>", report: { status: 500, error: "<img src=x>", fn: "<a>", location: "</pre><b>" } }))), "only b/pre tags reach innerHTML");
 
   var ids = ["nf-env", "nf-status", "nf-method", "nf-url", "nf-ua", "nf-err", "nf-fn", "nf-loc", "nf-line", "nf-stack"];
   function v(id) { return document.getElementById(id).value; }
@@ -733,8 +732,9 @@ document.addEventListener("jd:ready", function () {
     } else {
       verdict.innerHTML = JD.bi({ en: "<b>SendMessage</b> with parse_mode HTML.", vi: "<b>SendMessage</b> với parse_mode HTML." });
     }
-    title.textContent = "text";
-    out.textContent = text;
+    title.textContent = "Telegram";
+    // Every input is escaped by esc(), so only the b/pre tags built above can be in text; refuse anything else.
+    out.innerHTML = /<(?!\/?(b|pre)>)/.test(text) ? "" : text.replace(/<pre>\n?/g, "<pre>").replace(/<\/pre>\n/g, "</pre>");
   }
   ids.forEach(function (id) { var el = document.getElementById(id); el.addEventListener("input", paint); el.addEventListener("change", paint); });
   paint();

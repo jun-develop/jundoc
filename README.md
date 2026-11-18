@@ -25,6 +25,24 @@ jundoc/
     └── *.html
 ```
 
+## Writing docs
+
+Read these before adding or changing a page:
+
+- [contributing/DOCUMENTATION_GUIDELINES.md](contributing/DOCUMENTATION_GUIDELINES.md) — scope (Jungo vs Junkit), page structure, which page owns which topic, callouts, diagrams
+- [contributing/DOCUMENTATION_TEMPLATES.md](contributing/DOCUMENTATION_TEMPLATES.md) — copy-paste markup
+- [contributing/DOCUMENTATION_TERMINOLOGY.md](contributing/DOCUMENTATION_TERMINOLOGY.md) — one name per concept
+- [contributing/DOCUMENTATION_AUDIT.md](contributing/DOCUMENTATION_AUDIT.md) — the last full audit
+
+Every fact comes from the source: [jungo](https://github.com/jun-develop/jungo) and
+[junkit](https://github.com/jun-develop/junkit) at the version Jungo pins in `go.mod`.
+
+Before committing, check links and anchors:
+
+```bash
+python3 scripts/check-links.py
+```
+
 ## Adding a page
 
 1. Copy `jungo/overview.html`, keep the `<head>` and the `#jd-app` / `.jd-content` wrapper, set

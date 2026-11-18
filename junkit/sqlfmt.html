@@ -33,17 +33,14 @@
           <code>[]any{…}</code> — thành một dòng log dễ đọc: tên query, operation, SQL một dòng với giá trị thật, và
           <code>file:line</code> đã chạy nó.</p>
         <div class="jd-chips">
-          <span class="jd-chip">github.com/jun-develop/junkit/sqlfmt</span>
-          <span class="jd-chip"><span lang="en">no Fx Module — plain functions</span><span lang="vi">không có Fx Module
-              — chỉ là hàm</span></span>
-          <span class="jd-chip">google/uuid · pgx/v5/pgtype</span>
-          <span class="jd-chip"><span lang="en">used by database + tracer</span><span lang="vi">được dùng bởi database +
-              tracer</span></span>
-        </div>
-      </header>
+      <span class="jd-chip">github.com/jun-develop/junkit/sqlfmt</span>
+      <span class="jd-chip"><span lang="en">No Fx module</span><span lang="vi">Không có Fx module</span></span>
+      <span class="jd-chip"><span lang="en">Depends on: pgx/v5 · uuid</span><span lang="vi">Phụ thuộc: pgx/v5 · uuid</span></span>
+    </div>
+  </header>
 
       <!-- ============================================================ 1. WHAT -->
-      <section id="what" class="jd-section c-pink">
+      <section id="what" class="jd-section c-blue">
         <div class="jd-section-head">
           <span class="jd-badge">1</span>
           <div>
@@ -58,12 +55,12 @@
       {"from":"s1","to":"s2","color":"pink"},
       {"from":"s2","to":"s3","color":"pink"},
       {"from":"s3","to":"s4","color":"purple","dashed":true}]'>
-          <div class="jd-node is-tint c-pink" data-node="s1"><span class="k">1 · input</span><span class="t mono"
+          <div class="jd-node is-tint c-pink" data-node="s1"><span class="k"><span lang="en">1 · input</span><span lang="vi">1 · đầu vào</span></span><span class="t mono"
               style="font-size:15px">sql + args</span>
             <div class="d" lang="en">What pgx (database) or the DBTX wrapper (tracer) receives.</div>
             <div class="d" lang="vi">Những gì pgx (database) hoặc wrapper DBTX (tracer) nhận được.</div>
           </div>
-          <div class="jd-node is-tint c-pink" data-node="s2"><span class="k">2 · parse</span><span class="t mono"
+          <div class="jd-node is-tint c-pink" data-node="s2"><span class="k"><span lang="en">2 · parse</span><span lang="vi">2 · phân tích</span></span><span class="t mono"
               style="font-size:15px">sqlfmt.Parse(sql)</span>
             <div class="d" lang="en"><code>Name</code>, <code>Operation</code> from the sqlc comment; comments stripped,
               whitespace collapsed. Cached.</div>
@@ -77,7 +74,7 @@
             <div class="d" lang="vi"><code>$1</code> → <code>'jane@example.com'</code> qua <code>FormatValue</code>.
             </div>
           </div>
-          <div class="jd-node is-tint c-purple" data-node="s4"><span class="k">4 · locate</span><span class="t mono"
+          <div class="jd-node is-tint c-purple" data-node="s4"><span class="k"><span lang="en">4 · locate</span><span lang="vi">4 · định vị</span></span><span class="t mono"
               style="font-size:15px">sqlfmt.Origin()</span>
             <div class="d" lang="en">On failure only: the repository line that ran the query.</div>
             <div class="d" lang="vi">Chỉ khi lỗi: dòng code repository đã chạy query.</div>
@@ -114,7 +111,7 @@ Bind(…)        = "SELECT * FROM users WHERE email = 'jane@example.com' AND del
         <div class="jd-section-head">
           <span class="jd-badge">2</span>
           <div>
-            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối vào app</span></h2>
+            <h2><span lang="en">Setup</span><span lang="vi">Cài đặt</span></h2>
             <p class="jd-sub" lang="en">Nothing to wire: no Module, no constructor, no Options. Import and call.</p>
             <p class="jd-sub" lang="vi">Không có gì để kết nối: không Module, không constructor, không Options. Import
               rồi gọi.</p>
@@ -170,11 +167,11 @@ import "github.com/jun-develop/junkit/sqlfmt"
       </section>
 
       <!-- ============================================================ 3. QUICK START -->
-      <section id="quick" class="jd-section c-blue">
+      <section id="quick" class="jd-section c-green">
         <div class="jd-section-head">
           <span class="jd-badge">3</span>
           <div>
-            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <h2><span lang="en">Quick start</span><span lang="vi">Dùng nhanh</span></h2>
             <p class="jd-sub" lang="en">A tiny <code>DBTX</code> decorator that logs every <code>Exec</code> — plug it
               into <code>postgres.Options.Decorate</code>. Hover an explanation.</p>
             <p class="jd-sub" lang="vi">Một decorator <code>DBTX</code> nhỏ log mọi lệnh <code>Exec</code> — gắn vào
@@ -228,12 +225,12 @@ func (l execLogger) Exec(ctx context.Context, sql string, args ...any) (pgconn.C
                 <code>"ONE"</code>. Với SQL viết tay: một tên đoán như <code>"Update"</code> và operation rỗng.</span>
             </div>
             <div class="jd-ex c-blue" data-code="#code-quick" data-show="13"><span class="n">3</span><span
-                class="w">Bind the cleaned SQL</span><span class="x" lang="en">Bind <code>info.SQL</code> (not the raw
+                class="w"><span lang="en">Bind the cleaned SQL</span><span lang="vi">Bind SQL đã làm sạch</span></span><span class="x" lang="en">Bind <code>info.SQL</code> (not the raw
                 <code>sql</code>) so the log line has no comment and no newlines — that's what database and tracer
                 do.</span><span class="x" lang="vi">Bind <code>info.SQL</code> (không phải <code>sql</code> gốc) để dòng
                 log không có comment và xuống dòng — database và tracer cũng làm vậy.</span></div>
             <div class="jd-ex c-blue" data-code="#code-quick" data-show="15-17"><span class="n">4</span><span
-                class="w">why no Origin here?</span><span class="x" lang="en"><code>Origin</code> skips only Junkit /
+                class="w"><span lang="en">Why no Origin here?</span><span lang="vi">Vì sao không gọi Origin?</span></span><span class="x" lang="en"><code>Origin</code> skips only Junkit /
                 pgx / runtime / <code>*.sql.go</code> frames. Called from this wrapper (your package), it would return
                 the wrapper's own line — so leave it to database and tracer (see Good to know).</span><span class="x"
                 lang="vi"><code>Origin</code> chỉ bỏ qua frame của Junkit / pgx / runtime / <code>*.sql.go</code>. Gọi
@@ -244,15 +241,17 @@ func (l execLogger) Exec(ctx context.Context, sql string, args ...any) (pgconn.C
       </section>
 
       <!-- ============================================================ 4. TRY IT -->
-      <section id="try" class="jd-section c-orange">
+      <section id="try" class="jd-section c-pink">
         <div class="jd-section-head">
           <span class="jd-badge">4</span>
           <div>
             <h2><span lang="en">Try it</span><span lang="vi">Thử ngay</span></h2>
-            <p class="jd-sub" lang="en">Same regexes and the same <code>$n</code> scanner as the Go code. Args are a
+            <p class="jd-sub" lang="en">Same regexes and the same <code>$n</code> scanner as the Go code, including skipping quoted strings and
+              dollar-quoted bodies. Args are a
               JSON array: strings, booleans, null, arrays; whole numbers act as Go <code>int</code>, others as
               <code>float64</code>.</p>
-            <p class="jd-sub" lang="vi">Cùng regex và cùng bộ quét <code>$n</code> với code Go. Args là một mảng JSON:
+            <p class="jd-sub" lang="vi">Cùng regex và cùng bộ quét <code>$n</code> với code Go, kể cả việc bỏ qua chuỗi nháy đơn và thân
+              dollar-quoted. Args là một mảng JSON:
               chuỗi, boolean, null, mảng; số nguyên tương ứng <code>int</code> của Go, số khác là <code>float64</code>.
             </p>
           </div>
@@ -278,16 +277,13 @@ SELECT *
       </section>
 
       <!-- ============================================================ 5. API -->
-      <section id="api" class="jd-section c-pink">
+      <section id="api" class="jd-section c-blue">
         <div class="jd-section-head">
           <span class="jd-badge">5</span>
           <div>
             <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
-            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from
-              <code>junkit/sqlfmt/sqlfmt.go</code> and <code>origin.go</code>. All functions are safe for concurrent
-              use.</p>
-            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/sqlfmt/sqlfmt.go</code> và
-              <code>origin.go</code>. Mọi hàm đều an toàn khi gọi đồng thời.</p>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/sqlfmt</code>. All functions are safe for concurrent use.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/sqlfmt</code>. Mọi hàm đều an toàn khi gọi đồng thời.</p>
           </div>
         </div>
         <div class="jd-syms" style="margin-top:18px">
@@ -413,8 +409,12 @@ sqlfmt.Bind("SELECT $1, $5", []any{"only one arg"})
                 <code>len(args)</code> are left as-is.</li>
               <li lang="vi"><code>args</code> rỗng → trả nguyên <code>sql</code>. Các <code>?</code> dư ra ngoài
                 <code>len(args)</code> được giữ nguyên.</li>
-              <li lang="en">Like <code>Bind</code>, a <code>?</code> inside a single-quoted string is skipped.</li>
-              <li lang="vi">Giống <code>Bind</code>, dấu <code>?</code> nằm trong chuỗi nháy đơn được bỏ qua.</li>
+              <li lang="en">Like <code>Bind</code>, a <code>?</code> inside a single-quoted string is skipped. Backslash
+                escapes (<code>'it\'s ?'</code>), double-quoted strings and backtick identifiers are not tracked, so a
+                <code>?</code> there may be replaced.</li>
+              <li lang="vi">Giống <code>Bind</code>, dấu <code>?</code> nằm trong chuỗi nháy đơn được bỏ qua. Escape bằng
+                backslash (<code>'it\'s ?'</code>), chuỗi nháy kép và identifier trong dấu backtick không được xử lý, nên
+                <code>?</code> ở đó có thể bị thay.</li>
             </ul>
             <div class="jd-term">
               <pre data-hl="go">
@@ -497,6 +497,14 @@ sqlfmt.BindQuestion("SELECT * FROM users WHERE email = ? AND note = '?'", []any{
                   <td>'2026-01-15' <span lang="en">or NULL</span><span lang="vi">hoặc NULL</span></td>
                 </tr>
                 <tr>
+                  <td><span lang="en">named non-string types (<code>type Role int32</code>, named bool…)</span><span
+                      lang="vi">kiểu có tên không phải string (<code>type Role int32</code>, bool có tên…)</span></td>
+                  <td lang="en">quoted <code>%v</code>: <code>Role(5)</code> → <code>'5'</code> (only the built-in types
+                    match the cases above; a named string prints like a string)</td>
+                  <td lang="vi"><code>%v</code> có nháy: <code>Role(5)</code> → <code>'5'</code> (chỉ kiểu có sẵn khớp các
+                    dòng trên; string có tên in như string)</td>
+                </tr>
+                <tr>
                   <td><span lang="en">anything else (structs, maps, other pgtype…)</span><span lang="vi">mọi thứ khác
                       (struct, map, pgtype khác…)</span></td>
                   <td lang="en"><code>fmt.Sprintf("%v")</code>, quoted — <code>struct{ X int }{1}</code> →
@@ -534,11 +542,11 @@ sqlfmt.BindQuestion("SELECT * FROM users WHERE email = ? AND note = '?'", []any{
       </section>
 
       <!-- ============================================================ 6. IN JUNGO -->
-      <section id="jungo" class="jd-section c-green">
+      <section id="jungo" class="jd-section c-orange">
         <div class="jd-section-head">
           <span class="jd-badge">6</span>
           <div>
-            <h2><span lang="en">In Jungo · who uses it</span><span lang="vi">Trong Jungo · ai dùng nó</span></h2>
+            <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
             <p class="jd-sub" lang="en">Jungo's own code never imports <code>sqlfmt</code>; it shows up in Jungo's sql
               log and tracer dashboard through two Junkit packages.</p>
             <p class="jd-sub" lang="vi">Code của Jungo không import <code>sqlfmt</code>; nó xuất hiện trong log sql và
@@ -548,7 +556,7 @@ sqlfmt.BindQuestion("SELECT * FROM users WHERE email = ? AND note = '?'", []any{
         <div class="jd-tablewrap" style="margin-top:16px">
           <table class="jd-params c-green">
             <tr>
-              <th>caller</th>
+              <th><span lang="en">caller</span><span lang="vi">nơi gọi</span></th>
               <th><span lang="en">what it uses</span><span lang="vi">dùng gì</span></th>
             </tr>
             <tr>
@@ -564,17 +572,17 @@ sqlfmt.BindQuestion("SELECT * FROM users WHERE email = ? AND note = '?'", []any{
             </tr>
             <tr>
               <td>junkit/tracer/db.go</td>
-              <td lang="en"><code>PgxWrapper</code> (installed in Jungo by <code>database/primary/db.go</code> via
+              <td lang="en"><code>PgxWrapper</code> (installed in Jungo by <code>internal/database/primary/db.go</code> via
                 <code>Decorate</code>): <code>Parse</code> → entry label = <code>Name</code>, <code>Operation</code>;
                 <code>Bind(info.SQL, args)</code> → displayed SQL; <code>Origin()</code> → <code>Location</code>,
                 <code>Function</code> when the query failed.</td>
-              <td lang="vi"><code>PgxWrapper</code> (Jungo gắn trong <code>database/primary/db.go</code> qua <code>Decorate</code>):
+              <td lang="vi"><code>PgxWrapper</code> (Jungo gắn trong <code>internal/database/primary/db.go</code> qua <code>Decorate</code>):
                 <code>Parse</code> → nhãn entry = <code>Name</code>, <code>Operation</code>;
                 <code>Bind(info.SQL, args)</code> → SQL hiển thị; <code>Origin()</code> → <code>Location</code>,
                 <code>Function</code> khi query lỗi.</td>
             </tr>
             <tr>
-              <td>database/primary/queries/*.sql (Jungo)</td>
+              <td>internal/database/primary/queries/*.sql (Jungo)</td>
               <td lang="en">The <code>-- name: GetUserByEmail :one</code> lines that sqlc keeps at the top of every
                 generated query — that's where <code>Name</code> / <code>Operation</code> come from.</td>
               <td lang="vi">Các dòng <code>-- name: GetUserByEmail :one</code> mà sqlc giữ ở đầu mỗi query được sinh ra
@@ -601,32 +609,27 @@ $ tail -f storage/logs/sql.log
           </div>
         </div>
         <div class="jd-explain" style="margin-top:16px">
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">Never execute Bind's
-              output</span><span class="x" lang="en">The quoting is just enough to read; it is not an escaping function.
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w"><span lang="en">Never execute Bind's output</span><span lang="vi">Đừng chạy kết quả của Bind</span></span><span class="x" lang="en">The quoting is just enough to read; it is not an escaping function.
               Always run the original <code>sql</code> with <code>args</code>.</span><span class="x" lang="vi">Cách đặt
               nháy chỉ đủ để đọc; đây không phải hàm escape. Luôn chạy <code>sql</code> gốc kèm
               <code>args</code>.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Values end up in
-              logs</span><span class="x" lang="en">Bound SQL contains real data — emails, hashes, tokens. Treat anything
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">Values end up in logs</span><span lang="vi">Giá trị nằm trong log</span></span><span class="x" lang="en">Bound SQL contains real data — emails, hashes, tokens. Treat anything
               built with <code>Bind</code> as sensitive.</span><span class="x" lang="vi">SQL đã bind chứa dữ liệu thật —
               email, hash, token. Hãy coi mọi thứ tạo bởi <code>Bind</code> là nhạy cảm.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Text-only
-              cleaning</span><span class="x" lang="en"><code>Parse</code> doesn't understand SQL:
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">Text-only cleaning</span><span lang="vi">Làm sạch chỉ theo văn bản</span></span><span class="x" lang="en"><code>Parse</code> doesn't understand SQL:
               <code>'a -- b'</code> inside a string literal is cut too, spaces inside literals are collapsed, and <code>--comment</code> without a space after the dashes is <b>not</b> removed.
               The logged SQL may therefore differ slightly from what ran.</span><span class="x"
               lang="vi"><code>Parse</code> không hiểu SQL:
               <code>'a -- b'</code> nằm trong string literal cũng bị cắt, khoảng trắng trong literal bị gộp, và
               <code>--comment</code> không có dấu cách sau hai gạch thì <b>không</b> bị xoá. Vì vậy SQL được log có thể
               hơi khác so với SQL đã chạy.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Lossy
-              literals</span><span class="x" lang="en"><code>time.Time</code> loses sub-second precision;
-              <code>[]byte</code> is a slice, so it prints as <code>'{104,105}'</code>; unsupported pgtype values (e.g.
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">Lossy literals</span><span lang="vi">Literal mất thông tin</span></span><span class="x" lang="en"><code>time.Time</code> loses sub-second precision;
+              <code>[]byte</code> is a slice, so it prints as <code>'{104,105}'</code> (in the sql log, pgx has already turned it into hex and cut values over 64 bytes); unsupported pgtype values (e.g.
               <code>pgtype.Numeric</code>, <code>pgtype.Float8</code>) print their Go struct with
               <code>%v</code>.</span><span class="x" lang="vi"><code>time.Time</code> mất phần lẻ giây;
-              <code>[]byte</code> là slice nên in ra <code>'{104,105}'</code>; các giá trị pgtype không hỗ trợ (vd.
+              <code>[]byte</code> là slice nên in ra <code>'{104,105}'</code> (trong log sql, pgx đã đổi nó thành hex và cắt giá trị dài hơn 64 byte); các giá trị pgtype không hỗ trợ (vd.
               <code>pgtype.Numeric</code>, <code>pgtype.Float8</code>) in struct Go bằng <code>%v</code>.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">Origin and your own
-              wrappers</span><span class="x" lang="en">Only Junkit's <code>database</code>, <code>tracer</code>,
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w"><span lang="en">Origin and your own wrappers</span><span lang="vi">Origin và wrapper của bạn</span></span><span class="x" lang="en">Only Junkit's <code>database</code>, <code>tracer</code>,
               <code>sqlfmt</code>, pgx, runtime and <code>*.sql.go</code> frames are skipped. If you call
               <code>Origin</code> from your own logging wrapper, it returns the wrapper's line, not the repository's.
               Deep stacks (&gt; 32 frames above it) can also yield <code>"unknown"</code>.</span><span class="x"
@@ -634,8 +637,7 @@ $ tail -f storage/logs/sql.log
               runtime và <code>*.sql.go</code> bị bỏ qua. Nếu bạn gọi <code>Origin</code> từ wrapper log của riêng mình,
               nó trả dòng của wrapper, không phải của repository. Stack quá sâu (&gt; 32 frame phía trên) cũng có thể
               cho <code>"unknown"</code>.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Dynamic SQL and the
-              cache</span><span class="x" lang="en">The cache key is the full SQL text. SQL built with inlined values
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w"><span lang="en">Dynamic SQL and the cache</span><span lang="vi">SQL động và cache</span></span><span class="x" lang="en">The cache key is the full SQL text. SQL built with inlined values
               fills the 1024 slots quickly; after that, new strings are parsed on every call (correct, just slower). Use
               placeholders.</span><span class="x" lang="vi">Key của cache là toàn bộ chuỗi SQL. SQL dựng bằng cách nhét
               giá trị trực tiếp sẽ nhanh chóng lấp đầy 1024 chỗ; sau đó chuỗi mới bị parse ở mỗi lần gọi (vẫn đúng, chỉ
@@ -644,10 +646,9 @@ $ tail -f storage/logs/sql.log
       </section>
 
       <footer class="jd-footer">
-        <span>Jundoc · Junkit · sqlfmt</span>
-        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
-              Junkit</span></a></span>
-      </footer>
+    <span>Jundoc · Junkit · sqlfmt</span>
+    <span><a href="tracer.html">← tracer</a> · <a href="slicex.html">slicex →</a></span>
+  </footer>
     </article>
   </div>
 
@@ -694,15 +695,35 @@ $ tail -f storage/logs/sql.log
           return Array.isArray(e) ? body : '"' + body.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
         }).join(",") + "}";
       }
+      // Mirrors closingSpan / dollarTag: a quoted string or dollar-quoted body is copied verbatim.
+      function closingSpan(sql, i, delim) {
+        var end = sql.indexOf(delim, i + delim.length);
+        return end < 0 ? sql.length - i : end + delim.length - i;
+      }
+      function dollarTag(str) {
+        for (var j = 1; j < str.length; j++) {
+          var c = str[j];
+          if (c === "$") return str.slice(0, j + 1);
+          var letter = c === "_" || (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c.charCodeAt(0) >= 0x80;
+          if (!letter && (j === 1 || !(c >= "0" && c <= "9"))) return null;
+        }
+        return null;
+      }
       function bind(sql, args) {
         if (args.length === 0) return sql;
         var out = "";
         for (var i = 0; i < sql.length; i++) {
-          if (sql[i] === "$" && i + 1 < sql.length && sql[i + 1] >= "0" && sql[i + 1] <= "9") {
+          var skip = 0;
+          if (sql[i] === "'") skip = closingSpan(sql, i, "'");
+          else if (sql[i] === "$" && i + 1 < sql.length && sql[i + 1] >= "0" && sql[i + 1] <= "9") {
             var idx = 0, j = i + 1;
             while (j < sql.length && sql[j] >= "0" && sql[j] <= "9") { idx = idx * 10 + (sql.charCodeAt(j) - 48); j++; }
             if (idx > 0 && idx <= args.length) { out += formatValue(args[idx - 1]); i = j - 1; continue; }
+          } else if (sql[i] === "$") {
+            var tag = dollarTag(sql.slice(i));
+            if (tag) skip = closingSpan(sql, i, tag);
           }
+          if (skip > 0) { out += sql.slice(i, i + skip); i += skip - 1; continue; }
           out += sql[i];
         }
         return out;
@@ -719,6 +740,7 @@ $ tail -f storage/logs/sql.log
       console.assert(bind("SELECT $0", ["x"]) === "SELECT $0" && bind("SELECT $1, $5", ["only one arg"]) === "SELECT 'only one arg', $5", "bind out of range");
       console.assert(bind("SELECT price_tag FROM t WHERE note = 'costs $ a lot'", ["x"]) === "SELECT price_tag FROM t WHERE note = 'costs $ a lot'", "bind bare $");
       console.assert(formatValue("O'Brien") === "'O''Brien'" && formatValue(3.5) === "3.5" && formatValue(-7) === "-7" && formatValue([]) === "'{}'" && formatValue([1, 2, 3]) === "'{1,2,3}'" && formatValue(["a", 'say "hi"', "back\\slash", "it's"]) === "'{\"a\",\"say \\\"hi\\\"\",\"back\\\\slash\",\"it''s\"}'" && formatValue([null]) === "'{NULL}'" && formatValue([[1, 2], [3, 4]]) === "'{{1,2},{3,4}}'" && formatValue(null) === "NULL", "formatValue");
+      console.assert(bind("SELECT '$1', $1", ["x"]) === "SELECT '$1', 'x'" && bind("SELECT 'it''s $1', $1", ["x"]) === "SELECT 'it''s $1', 'x'" && bind("SELECT $$ $1 $$, $tag$ $1 $tag$, $1", ["x"]) === "SELECT $$ $1 $$, $tag$ $1 $tag$, 'x'", "bind skips quoted spans");
       console.assert(g15(0.1) === "0.1" && g15(1e20) === "1e+20" && g15(1e-5) === "1e-05" && g15(123456.75) === "123456.75", "%.15g");
 
       function paint() {

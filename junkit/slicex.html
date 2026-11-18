@@ -24,17 +24,17 @@
     <p lang="vi">Các hàm cho slice mà package chuẩn <code>slices</code> chưa có. Hiện có một hàm: <code>Map</code>, biến các row thành response và không bao giờ trả <code>nil</code>, nên danh sách JSON rỗng là <code>[]</code> chứ không phải <code>null</code>.</p>
     <div class="jd-chips">
       <span class="jd-chip">github.com/jun-develop/junkit/slicex</span>
-      <span class="jd-chip"><span lang="en">no Fx Module — plain functions</span><span lang="vi">không có Fx Module — chỉ hàm</span></span>
-      <span class="jd-chip"><span lang="en">no dependencies</span><span lang="vi">không phụ thuộc gì</span></span>
+      <span class="jd-chip"><span lang="en">No Fx module</span><span lang="vi">Không có Fx module</span></span>
+      <span class="jd-chip"><span lang="en">Depends on: standard library only</span><span lang="vi">Phụ thuộc: chỉ thư viện chuẩn</span></span>
     </div>
   </header>
 
   <!-- ============================================================ 1. QUICK START -->
-  <section id="quick" class="jd-section c-blue">
+  <section id="quick" class="jd-section c-green">
     <div class="jd-section-head">
       <span class="jd-badge">1</span>
       <div>
-        <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+        <h2><span lang="en">Quick start</span><span lang="vi">Dùng nhanh</span></h2>
         <p class="jd-sub" lang="en">Map database rows to domain values, and domain values to responses.</p>
         <p class="jd-sub" lang="vi">Ánh xạ row database sang giá trị domain, và giá trị domain sang response.</p>
       </div>
@@ -59,20 +59,20 @@ ids := slicex.Map(users, func(u *User) int64 { return u.ID })
 </pre></div>
       </div></div>
       <div class="jd-explain">
-        <div class="jd-ex c-blue" data-code="#code-quick" data-show="9-11"><span class="n">1</span><span class="w">pass a named func</span><span class="x" lang="en">Any <code>func(E) R</code> works, so an existing constructor is the mapper.</span><span class="x" lang="vi">Mọi <code>func(E) R</code> đều dùng được, nên constructor có sẵn chính là hàm ánh xạ.</span></div>
-        <div class="jd-ex c-blue" data-code="#code-quick" data-show="13"><span class="n">2</span><span class="w">or a closure</span><span class="x" lang="en">The result type is inferred from the func: here <code>[]int64</code>.</span><span class="x" lang="vi">Kiểu kết quả được suy ra từ hàm: ở đây là <code>[]int64</code>.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick" data-show="9-11"><span class="n">1</span><span class="w"><span lang="en">Pass a named func</span><span lang="vi">Truyền hàm có tên</span></span><span class="x" lang="en">Any <code>func(E) R</code> works, so an existing constructor is the mapper.</span><span class="x" lang="vi">Mọi <code>func(E) R</code> đều dùng được, nên constructor có sẵn chính là hàm ánh xạ.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick" data-show="13"><span class="n">2</span><span class="w"><span lang="en">Or a closure</span><span lang="vi">Hoặc closure</span></span><span class="x" lang="en">The result type is inferred from the func: here <code>[]int64</code>.</span><span class="x" lang="vi">Kiểu kết quả được suy ra từ hàm: ở đây là <code>[]int64</code>.</span></div>
       </div>
     </div>
   </section>
 
   <!-- ============================================================ 2. API -->
-  <section id="api" class="jd-section c-green">
+  <section id="api" class="jd-section c-blue">
     <div class="jd-section-head">
       <span class="jd-badge">2</span>
       <div>
         <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
-        <p class="jd-sub" lang="en">Signature copied from <code>junkit/slicex/slicex.go</code>.</p>
-        <p class="jd-sub" lang="vi">Chữ ký chép từ <code>junkit/slicex/slicex.go</code>.</p>
+        <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/slicex</code>.</p>
+        <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/slicex</code>.</p>
       </div>
     </div>
     <div class="jd-syms" style="margin-top:18px">
@@ -98,15 +98,30 @@ ids := slicex.Map(users, func(u *User) int64 { return u.ID })
     </div>
     <div class="jd-tablewrap" style="margin-top:16px"><table class="jd-params c-orange">
       <tr><th>file</th><th><span lang="en">what it does</span><span lang="vi">làm gì</span></th></tr>
-      <tr><td>features/*/repository/*.go</td><td lang="en">sqlc rows → domain values (<code>slicex.Map(rows, mapUser)</code>).</td><td lang="vi">Row sqlc → giá trị domain (<code>slicex.Map(rows, mapUser)</code>).</td></tr>
-      <tr><td>features/*/dto/v1/*.go</td><td lang="en">domain values → response DTOs (<code>slicex.Map(users, NewUserResponse)</code>).</td><td lang="vi">Giá trị domain → DTO response (<code>slicex.Map(users, NewUserResponse)</code>).</td></tr>
-      <tr><td>cmd/scaffold/templates.go</td><td lang="en">Generated features use the same two calls.</td><td lang="vi">Feature được sinh ra dùng đúng hai lệnh gọi này.</td></tr>
+      <tr><td>internal/features/*/repository/*.go</td><td lang="en">sqlc rows → domain values (<code>slicex.Map(rows, mapUser)</code>).</td><td lang="vi">Row sqlc → giá trị domain (<code>slicex.Map(rows, mapUser)</code>).</td></tr>
+      <tr><td>internal/features/*/dto/v1/*.go</td><td lang="en">domain values → response DTOs (<code>slicex.Map(users, NewUserResponse)</code>).</td><td lang="vi">Giá trị domain → DTO response (<code>slicex.Map(users, NewUserResponse)</code>).</td></tr>
+      <tr><td>internal/features/access/service/access_service.go</td><td lang="en">Collects role IDs with a closure (<code>func(r *domain.Role) int64 { return r.ID }</code>).</td><td lang="vi">Lấy danh sách ID của role bằng closure (<code>func(r *domain.Role) int64 { return r.ID }</code>).</td></tr>
+      <tr><td>cmd/scaffold/templates.go</td><td lang="en">Generated features use the same repository and DTO calls.</td><td lang="vi">Feature được sinh ra dùng đúng hai lệnh gọi ở repository và DTO.</td></tr>
     </table></div>
+  </section>
+
+  <!-- ============================================================ GOTCHAS -->
+  <section id="gotchas" class="jd-section c-red">
+    <div class="jd-section-head">
+      <span class="jd-badge">!</span>
+      <div>
+        <h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2>
+      </div>
+    </div>
+    <div class="jd-explain" style="margin-top:16px">
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w"><span lang="en">No error return</span><span lang="vi">Không trả lỗi</span></span><span class="x" lang="en"><code>fn</code> cannot fail or stop early. When the mapping can return an error, write a plain loop.</span><span class="x" lang="vi"><code>fn</code> không thể trả lỗi hay dừng giữa chừng. Khi phép ánh xạ có thể lỗi, hãy viết vòng lặp thường.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">Always a new slice</span><span lang="vi">Luôn là slice mới</span></span><span class="x" lang="en">The result is allocated with <code>len(s)</code> elements and <code>fn</code> runs once per element, in order, on the calling goroutine.</span><span class="x" lang="vi">Kết quả được cấp phát với <code>len(s)</code> phần tử và <code>fn</code> chạy một lần cho mỗi phần tử, theo thứ tự, trên goroutine đang gọi.</span></div>
+    </div>
   </section>
 
   <footer class="jd-footer">
     <span>Jundoc · Junkit · slicex</span>
-    <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package Junkit</span></a></span>
+    <span><a href="sqlfmt.html">← sqlfmt</a> · <a href="scaffold.html">scaffold →</a></span>
   </footer>
 </article>
 </div>

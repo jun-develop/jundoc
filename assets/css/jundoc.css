@@ -979,11 +979,12 @@ button.jd-card h3 { font-size: 28px; color: var(--c); }
 .jd-term pre.has-focus .ln:not(.is-focus) { opacity: 0.28; }
 .jd-term .ln.is-focus { background: color-mix(in srgb, var(--purple) 30%, transparent); }
 
-.jd-explain { display: grid; gap: 10px; }
+.jd-explain { display: grid; gap: 10px; align-content: start; }
 .jd-ex {
   --c: var(--purple);
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr);
+  align-content: start;
   gap: 4px 12px;
   padding: 12px 14px;
   border-radius: 12px;
@@ -1009,7 +1010,7 @@ button.jd-card h3 { font-size: 28px; color: var(--c); }
   color: var(--c-ink, #fff);
   background: var(--c);
 }
-.jd-ex .w { font: 700 14.5px var(--mono); color: var(--c); }
+.jd-ex .w { font: 700 14.5px var(--mono); color: var(--c); overflow-wrap: anywhere; }
 .jd-ex .x { font-size: 14.5px; color: var(--ink-2); }
 .jd-ex .x .eg { display: block; margin-top: 4px; color: var(--muted); font-size: 13.5px; }
 .jd-hint { font-size: 13px; color: var(--muted); margin: 0 0 10px; }
@@ -1486,7 +1487,7 @@ button.jd-card h3 { font-size: 28px; color: var(--c); }
 }
 .jd-params td { padding: 9px 8px; border-bottom: 1px dashed var(--line); vertical-align: top; }
 .jd-params td:first-child,
-[data-lang="vi"] .jd-params td[lang="en"]:first-child + td[lang="vi"] { font: 700 13px var(--mono); color: var(--c, var(--purple)); white-space: nowrap; }
+[data-lang="vi"] .jd-params td[lang="en"]:first-child + td[lang="vi"] { font: 700 13px var(--mono); color: var(--c, var(--purple)); min-width: 22ch; max-width: 40ch; overflow-wrap: anywhere; }
 .jd-params .req { font: 800 10px var(--font); letter-spacing: 0.06em; text-transform: uppercase; color: var(--red); margin-left: 6px; }
 .jd-params .opt { font: 800 10px var(--font); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-left: 6px; }
 .jd-params .rule { display: block; margin-top: 2px; font: 600 12px var(--mono); color: var(--muted); }
@@ -1525,8 +1526,7 @@ button.jd-card h3 { font-size: 28px; color: var(--c); }
   border-radius: 14px;
   background: var(--code-bg);
   color: var(--code-ink);
-  overflow-x: auto;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .jd-token-anatomy .a { color: #f472b6; }
 .jd-token-anatomy .b { color: #93c5fd; }
@@ -1559,7 +1559,7 @@ button.jd-card h3 { font-size: 28px; color: var(--c); }
 
 .jd-grid3w { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px 90px; position: relative; }
 .jd-grid3w > :not(.jd-wires):not(.jd-packet):not(.jd-token) { position: relative; z-index: 2; }
-@media (max-width: 900px) { .jd-grid3w { grid-template-columns: minmax(0, 1fr); gap: 36px; } .jd-grid3w > * { grid-column: auto !important; grid-row: auto !important; } }
+@media (max-width: 900px) { .jd-grid3w { grid-template-columns: minmax(0, 1fr) !important; gap: 36px; } .jd-grid3w > * { grid-column: auto !important; grid-row: auto !important; } }
 .jd-sim-log:empty { display: none; }
 
 /* long inline paths must wrap on phones */
@@ -1595,7 +1595,7 @@ button.jd-card h3 { font-size: 28px; color: var(--c); }
 
 .jd-pkg-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
 .jd-calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 14px; }
-.jd-calc label { display: grid; gap: 4px; font: 700 12px var(--font); color: var(--muted); letter-spacing: 0.04em; }
+.jd-calc label { display: grid; align-content: start; gap: 4px; font: 700 12px var(--font); color: var(--muted); letter-spacing: 0.04em; }
 .jd-calc input, .jd-calc select {
   height: 40px;
   border-radius: 10px;
@@ -1611,7 +1611,7 @@ button.jd-card h3 { font-size: 28px; color: var(--c); }
 .jd-syms { grid-template-columns: minmax(0, 1fr); }
 
 /* demo inputs must shrink on phones */
-.jd-calc { grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); }
+.jd-calc { grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); align-content: start; align-self: start; }
 .jd-calc input, .jd-calc select, .jd-calc textarea { width: 100%; min-width: 0; }
 
 /* inline grid placement must not create extra columns on phones */

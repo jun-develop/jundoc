@@ -24,38 +24,38 @@
     <p lang="vi">Kiểm tra file upload — kích thước, phần mở rộng và content type đoán từ các byte đầu — trước khi đưa cho <a href="storage.html">storage</a>. Một file <code>.png</code> mà thực chất là trang HTML sẽ bị từ chối.</p>
     <div class="jd-chips">
       <span class="jd-chip">github.com/jun-develop/junkit/upload</span>
-      <span class="jd-chip"><span lang="en">no Fx Module — plain functions</span><span lang="vi">không có Fx Module — chỉ hàm</span></span>
-      <span class="jd-chip"><span lang="en">stdlib only</span><span lang="vi">chỉ dùng thư viện chuẩn</span></span>
+      <span class="jd-chip"><span lang="en">No Fx module</span><span lang="vi">Không có Fx module</span></span>
+      <span class="jd-chip"><span lang="en">Depends on: standard library only</span><span lang="vi">Phụ thuộc: chỉ thư viện chuẩn</span></span>
     </div>
   </header>
 
   <!-- ============================================================ 1. WHAT -->
-  <section id="what" class="jd-section c-green">
+  <section id="what" class="jd-section c-blue">
     <div class="jd-section-head">
       <span class="jd-badge">1</span>
       <div>
         <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
-        <p class="jd-sub" lang="en"><code>upload.Open</code> runs three checks in order; the cheap ones first, so an oversized or wrongly named file is never opened.</p>
-        <p class="jd-sub" lang="vi"><code>upload.Open</code> chạy ba bước kiểm tra theo thứ tự; bước rẻ chạy trước, nên file quá lớn hoặc sai tên không bao giờ bị mở.</p>
+        <p class="jd-sub" lang="en"><code>upload.Open</code> runs three checks in order; the cheap ones first, so an oversized or wrongly named file is never opened or sniffed. Any failed check returns <code>ErrInvalidFile</code>.</p>
+        <p class="jd-sub" lang="vi"><code>upload.Open</code> chạy ba bước kiểm tra theo thứ tự; bước rẻ chạy trước, nên file quá lớn hoặc sai tên không bao giờ bị mở hay đoán kiểu. Bước nào không đạt cũng trả <code>ErrInvalidFile</code>.</p>
       </div>
     </div>
     <div class="jd-flow" style="margin-top:22px" data-wires='[
-      {"from":"u1","to":"u2","color":"blue","label":"size ok"},
+      {"from":"u1","to":"u2","color":"blue","label":{"en":"size ok","vi":"kích thước ok"}},
       {"from":"u2","to":"u3","color":"blue","label":".png"},
-      {"from":"u3","to":"u4","color":"blue","label":"image/png"}]'>
-      <div class="jd-node is-tint c-green" data-node="u1"><span class="k">1 · size</span><span class="t mono" style="font-size:15px">fh.Size ≤ MaxSize</span><div class="d" lang="en">From the multipart header; nothing read yet.</div><div class="d" lang="vi">Lấy từ header multipart; chưa đọc gì.</div></div>
-      <div class="jd-node is-tint c-green" data-node="u2"><span class="k">2 · extension</span><span class="t mono" style="font-size:15px">Extension(fh.Filename)</span><div class="d" lang="en">Lowercased, must be in <code>Rule.Extensions</code>.</div><div class="d" lang="vi">Đổi sang chữ thường, phải nằm trong <code>Rule.Extensions</code>.</div></div>
-      <div class="jd-node is-tint c-green" data-node="u3"><span class="k">3 · content</span><span class="t mono" style="font-size:15px">HasType(file, Types…)</span><div class="d" lang="en">Sniffs the first 512 bytes, then rewinds.</div><div class="d" lang="vi">Đoán từ 512 byte đầu, rồi tua lại đầu file.</div></div>
-      <div class="jd-node is-tint c-blue" data-node="u4"><span class="k">4 · store</span><span class="t mono" style="font-size:15px">storage.UploadFile</span><div class="d" lang="en">The open file is ready to save; you close it.</div><div class="d" lang="vi">File đã mở sẵn sàng để lưu; bạn tự đóng nó.</div></div>
+      {"from":"u3","to":"u4","color":"green","label":"image/png"}]'>
+      <div class="jd-node is-tint c-blue" data-node="u1"><span class="k"><span lang="en">1 · size</span><span lang="vi">1 · kích thước</span></span><span class="t mono" style="font-size:15px">fh.Size ≤ MaxSize</span><div class="d" lang="en">Bytes Go counted while parsing the form; the file is not opened yet.</div><div class="d" lang="vi">Số byte Go đã đếm khi parse form; file chưa được mở.</div></div>
+      <div class="jd-node is-tint c-blue" data-node="u2"><span class="k"><span lang="en">2 · extension</span><span lang="vi">2 · phần mở rộng</span></span><span class="t mono" style="font-size:15px">Extension(fh.Filename)</span><div class="d" lang="en">Lowercased, must be in <code>Rule.Extensions</code>.</div><div class="d" lang="vi">Đổi sang chữ thường, phải nằm trong <code>Rule.Extensions</code>.</div></div>
+      <div class="jd-node is-tint c-blue" data-node="u3"><span class="k"><span lang="en">3 · content</span><span lang="vi">3 · nội dung</span></span><span class="t mono" style="font-size:15px">HasType(file, Types…)</span><div class="d" lang="en">Sniffs the first 512 bytes, then rewinds.</div><div class="d" lang="vi">Đoán từ 512 byte đầu, rồi tua lại đầu file.</div></div>
+      <div class="jd-node is-tint c-green" data-node="u4"><span class="k"><span lang="en">4 · store</span><span lang="vi">4 · lưu</span></span><span class="t mono" style="font-size:15px">storage.UploadFile</span><div class="d" lang="en">The open file is ready to save; you close it.</div><div class="d" lang="vi">File đã mở sẵn sàng để lưu; bạn tự đóng nó.</div></div>
     </div>
   </section>
 
   <!-- ============================================================ 2. QUICK START -->
-  <section id="quick" class="jd-section c-blue">
+  <section id="quick" class="jd-section c-green">
     <div class="jd-section-head">
       <span class="jd-badge">2</span>
       <div>
-        <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+        <h2><span lang="en">Quick start</span><span lang="vi">Dùng nhanh</span></h2>
         <p class="jd-sub" lang="en">An avatar upload handler. Hover an explanation to light up its lines.</p>
         <p class="jd-sub" lang="vi">Một handler upload avatar. Rê chuột vào giải thích để làm sáng các dòng tương ứng.</p>
       </div>
@@ -97,14 +97,14 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
       <div class="jd-explain">
         <div class="jd-ex c-blue" data-code="#code-quick" data-show="1"><span class="n">1</span><span class="w">upload.Image</span><span class="x" lang="en">A ready-made <code>Rule</code>: <code>.jpg .jpeg .png .webp</code> and <code>image/jpeg image/png image/webp</code>. Build your own <code>Rule</code> for other kinds.</span><span class="x" lang="vi"><code>Rule</code> dựng sẵn: <code>.jpg .jpeg .png .webp</code> và <code>image/jpeg image/png image/webp</code>. Tự tạo <code>Rule</code> cho loại file khác.</span></div>
         <div class="jd-ex c-blue" data-code="#code-quick" data-show="10-14"><span class="n">2</span><span class="w">ErrInvalidFile → 400</span><span class="x" lang="en">Too big, wrong extension, or bytes that are not one of <code>Types</code>. Always the same sentinel, so the client learns nothing about which check failed.</span><span class="x" lang="vi">Quá lớn, sai phần mở rộng, hoặc nội dung không thuộc <code>Types</code>. Luôn cùng một lỗi sentinel, nên client không biết bước nào thất bại.</span></div>
-        <div class="jd-ex c-blue" data-code="#code-quick" data-show="15-18"><span class="n">3</span><span class="w">other errors → 500</span><span class="x" lang="en">Failing to open the upload's temp file is a wrapped I/O error (<code>upload: open: …</code>), not <code>ErrInvalidFile</code>.</span><span class="x" lang="vi">Lỗi mở file tạm của upload là lỗi I/O được bọc (<code>upload: open: …</code>), không phải <code>ErrInvalidFile</code>.</span></div>
-        <div class="jd-ex c-blue" data-code="#code-quick" data-show="19-21"><span class="n">4</span><span class="w">close, then store</span><span class="x" lang="en">The file is rewound to byte 0 after sniffing; pass it straight to <a href="storage.html">storage</a>.</span><span class="x" lang="vi">File đã được tua về byte 0 sau khi đoán kiểu; đưa thẳng cho <a href="storage.html">storage</a>.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick" data-show="15-18"><span class="n">3</span><span class="w"><span lang="en">Other errors → 500</span><span lang="vi">Lỗi khác → 500</span></span><span class="x" lang="en">Failing to open the upload's temp file is a wrapped I/O error (<code>upload: open: …</code>), not <code>ErrInvalidFile</code>.</span><span class="x" lang="vi">Lỗi mở file tạm của upload là lỗi I/O được bọc (<code>upload: open: …</code>), không phải <code>ErrInvalidFile</code>.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick" data-show="19-21"><span class="n">4</span><span class="w"><span lang="en">Store, then close</span><span lang="vi">Lưu, rồi đóng</span></span><span class="x" lang="en">The file is rewound to byte 0 after sniffing; pass it straight to <a href="storage.html">storage</a>. <code>defer file.Close()</code> closes it once the handler returns.</span><span class="x" lang="vi">File đã được tua về byte 0 sau khi đoán kiểu; đưa thẳng cho <a href="storage.html">storage</a>. <code>defer file.Close()</code> đóng nó khi handler trả về.</span></div>
       </div>
     </div>
   </section>
 
   <!-- ============================================================ 3. API -->
-  <section id="api" class="jd-section c-green">
+  <section id="api" class="jd-section c-blue">
     <div class="jd-section-head">
       <span class="jd-badge">3</span>
       <div>
@@ -139,6 +139,8 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
           <li lang="en">Rule violation → <code>ErrInvalidFile</code> (the file is closed for you).</li><li lang="vi">Vi phạm Rule → <code>ErrInvalidFile</code> (file được đóng giúp bạn).</li>
           <li lang="en"><code>fh.Open</code> failure → wrapped I/O error.</li><li lang="vi"><code>fh.Open</code> lỗi → lỗi I/O được bọc.</li>
           <li lang="en">Success → an open file rewound to the start; the caller closes it.</li><li lang="vi">Thành công → file đang mở, đã tua về đầu; người gọi tự đóng.</li>
+          <li lang="en">The extension is compared with <code>Extension(fh.Filename)</code>, which is lowercase, so upper-case entries in <code>Rule.Extensions</code> never match.</li><li lang="vi">Phần mở rộng được so với <code>Extension(fh.Filename)</code> (luôn chữ thường), nên mục viết hoa trong <code>Rule.Extensions</code> không bao giờ khớp.</li>
+          <li lang="en">An empty file always fails (nothing to sniff), and so does a file <code>HasType</code> cannot rewind — both as <code>ErrInvalidFile</code>, not as I/O errors.</li><li lang="vi">File rỗng luôn bị từ chối (không có gì để đoán kiểu), file mà <code>HasType</code> không tua lại được cũng vậy — cả hai là <code>ErrInvalidFile</code>, không phải lỗi I/O.</li>
         </ul>
       </div>
 
@@ -148,8 +150,8 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
 func HasType(file io.ReadSeeker, types ...string) bool
 func Extension(filename string) string
 </pre></div>
-        <p lang="en"><code>HasType</code> sniffs up to 512 bytes, rewinds, and reports whether the type is one of <code>types</code> (a read or seek error → false). <code>Extension</code> is the lowercased <code>filepath.Ext</code>, dot included (<code>"A.PNG"</code> → <code>".png"</code>).</p>
-        <p lang="vi"><code>HasType</code> đọc tối đa 512 byte, tua lại, và báo kiểu có nằm trong <code>types</code> không (lỗi đọc hoặc seek → false). <code>Extension</code> là <code>filepath.Ext</code> đổi sang chữ thường, có dấu chấm (<code>"A.PNG"</code> → <code>".png"</code>).</p>
+        <p lang="en"><code>HasType</code> sniffs up to 512 bytes, rewinds, and reports whether the type is one of <code>types</code> (an empty file, a read error or a seek error → false). <code>Extension</code> is the lowercased <code>filepath.Ext</code>, dot included (<code>"A.PNG"</code> → <code>".png"</code>).</p>
+        <p lang="vi"><code>HasType</code> đọc tối đa 512 byte, tua lại, và báo kiểu có nằm trong <code>types</code> không (file rỗng, lỗi đọc hoặc lỗi seek → false). <code>Extension</code> là <code>filepath.Ext</code> đổi sang chữ thường, có dấu chấm (<code>"A.PNG"</code> → <code>".png"</code>).</p>
       </div>
 
       <div class="jd-sym c-red">
@@ -165,12 +167,34 @@ func Extension(filename string) string
       <span class="jd-badge">4</span>
       <div>
         <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+        <p class="jd-sub" lang="en">User avatars: <code>POST</code> / <code>DELETE /api/v1/users/:uuid/avatar</code>, for the user themself or anyone with <code>users:update</code>.</p>
+        <p class="jd-sub" lang="vi">Avatar người dùng: <code>POST</code> / <code>DELETE /api/v1/users/:uuid/avatar</code>, cho chính user đó hoặc ai có <code>users:update</code>.</p>
       </div>
     </div>
     <div class="jd-tablewrap" style="margin-top:16px"><table class="jd-params c-orange">
       <tr><th>file</th><th><span lang="en">what it does</span><span lang="vi">làm gì</span></th></tr>
-      <tr><td>features/user/handler/v1/user_handler.go</td><td lang="en"><code>avatarRule = upload.Image(MaxAvatarFileSize)</code> (5 MB); <code>UploadAvatar</code> calls <code>upload.Open</code> and answers 400 <code>invalid_avatar_file</code> on any error, then passes the file to the service, which stores it through <a href="storage.html">storage</a>. The route's body limit is derived from the same constant (<a href="middleware.html">middleware.Payload</a> <code>RouteLimits</code>).</td><td lang="vi"><code>avatarRule = upload.Image(MaxAvatarFileSize)</code> (5 MB); <code>UploadAvatar</code> gọi <code>upload.Open</code> và trả 400 <code>invalid_avatar_file</code> khi có lỗi, rồi chuyển file cho service lưu qua <a href="storage.html">storage</a>. Giới hạn body của route lấy từ cùng hằng số (<a href="middleware.html">middleware.Payload</a> <code>RouteLimits</code>).</td></tr>
+      <tr><td>internal/features/user/handler/v1/user_handler.go</td><td lang="en"><code>MaxAvatarFileSize = 5 &lt;&lt; 20</code>, <code>avatarRule = upload.Image(MaxAvatarFileSize)</code>. <code>UploadAvatar</code> reads form field <code>avatar</code> and calls <code>upload.Open</code>; a missing field or any <code>Open</code> error → 400 <code>invalid_avatar_file</code>. It then passes the open file to the service and closes it on return.</td><td lang="vi"><code>MaxAvatarFileSize = 5 &lt;&lt; 20</code>, <code>avatarRule = upload.Image(MaxAvatarFileSize)</code>. <code>UploadAvatar</code> đọc field form <code>avatar</code> và gọi <code>upload.Open</code>; thiếu field hoặc <code>Open</code> lỗi bất kỳ → 400 <code>invalid_avatar_file</code>. Sau đó nó chuyển file đã mở cho service và đóng file khi trả về.</td></tr>
+      <tr><td>internal/features/user/router/v1/user_router.go</td><td lang="en"><code>BodyLimits()</code> (implements <code>router.BodyLimited</code>) raises the body limit of <code>POST /users/:uuid/avatar</code> to <code>MaxAvatarFileSize</code> + 64 KiB for multipart boundaries and headers.</td><td lang="vi"><code>BodyLimits()</code> (cài đặt <code>router.BodyLimited</code>) nâng giới hạn body của <code>POST /users/:uuid/avatar</code> lên <code>MaxAvatarFileSize</code> + 64 KiB cho boundary và header của multipart.</td></tr>
+      <tr><td>internal/features/user/service/user_service.go</td><td lang="en"><code>UploadAvatar</code>: authorize → <a href="storage.html"><code>storage.UploadFile</code></a> outside the transaction (any error → <code>ErrInvalidAvatarFile</code>) → in one transaction: authorize again, lock the row, read the old avatar, save the new URL (failure → <code>DeleteFile(newURL)</code>) → drop cached sessions → <code>DeleteFile</code> the old avatar. <code>DeleteAvatar</code>: clear <code>avatar_url</code> in a transaction, drop cached sessions, then <code>DeleteFile</code>. <code>DeleteUser</code> (soft delete) also deletes the file. A failed <code>DeleteFile</code> is only logged.</td><td lang="vi"><code>UploadAvatar</code>: authorize → <a href="storage.html"><code>storage.UploadFile</code></a> ngoài transaction (lỗi nào cũng thành <code>ErrInvalidAvatarFile</code>) → trong một transaction: authorize lại, khoá dòng, đọc avatar cũ, lưu URL mới (lỗi → <code>DeleteFile(newURL)</code>) → xóa session đã cache → <code>DeleteFile</code> avatar cũ. <code>DeleteAvatar</code>: xóa <code>avatar_url</code> trong transaction, xóa session đã cache, rồi <code>DeleteFile</code>. <code>DeleteUser</code> (xóa mềm) cũng xóa file. <code>DeleteFile</code> lỗi chỉ được log.</td></tr>
+      <tr><td>internal/features/user/module.go</td><td lang="en">Messages: <code>invalid_avatar_file</code> → "Invalid avatar file (allowed: jpg, jpeg, png, webp; max 5MB)", <code>avatar_uploaded</code>, <code>avatar_deleted</code>.</td><td lang="vi">Thông điệp: <code>invalid_avatar_file</code> → "Invalid avatar file (allowed: jpg, jpeg, png, webp; max 5MB)", <code>avatar_uploaded</code>, <code>avatar_deleted</code>.</td></tr>
     </table></div>
+    <div class="jd-term" data-copy="commands" style="margin-top:14px">
+      <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="bash">
+# upload
+$ curl -s -X POST "localhost:$API_SERVER_PORT/api/v1/users/&lt;uuid&gt;/avatar" \
+    -H 'Authorization: Bearer &lt;access_token&gt;' \
+    -F 'avatar=@me.png' | jq
+# → data.avatar_url = "http://localhost:&lt;port&gt;/uploads/&lt;uuid&gt;_&lt;unix&gt;.png"
+
+# download (public, no auth)
+$ curl -O "http://localhost:$API_SERVER_PORT/uploads/&lt;uuid&gt;_&lt;unix&gt;.png"
+
+# delete
+$ curl -s -X DELETE "localhost:$API_SERVER_PORT/api/v1/users/&lt;uuid&gt;/avatar" \
+    -H 'Authorization: Bearer &lt;access_token&gt;' | jq
+</pre>
+    </div>
   </section>
 
   <!-- ============================================================ 5. GOTCHAS -->
@@ -180,15 +204,16 @@ func Extension(filename string) string
       <div><h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2></div>
     </div>
     <div class="jd-explain" style="margin-top:16px">
-      <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">Size is the header's claim</span><span class="x" lang="en"><code>fh.Size</code> comes from the parsed multipart form; the real cap on bytes read is the request body limit (<code>middleware.Payload</code>). Set both.</span><span class="x" lang="vi"><code>fh.Size</code> lấy từ form multipart đã parse; giới hạn thực sự số byte đọc vào là giới hạn body của request (<code>middleware.Payload</code>). Hãy đặt cả hai.</span></div>
-      <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Sniffing is not a virus scan</span><span class="x" lang="en"><code>http.DetectContentType</code> only reads magic bytes. It stops renamed HTML or scripts, not a malicious but valid image.</span><span class="x" lang="vi"><code>http.DetectContentType</code> chỉ đọc magic byte. Nó chặn HTML hay script bị đổi tên, không chặn một ảnh hợp lệ nhưng độc hại.</span></div>
-      <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Types must match exactly</span><span class="x" lang="en">Text types come back with a charset (<code>"text/plain; charset=utf-8"</code>); list that full string in <code>Types</code>.</span><span class="x" lang="vi">Kiểu text trả về kèm charset (<code>"text/plain; charset=utf-8"</code>); ghi đủ chuỗi đó vào <code>Types</code>.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w"><span lang="en">The body limit stops big uploads, not <code>MaxSize</code></span><span lang="vi">Giới hạn body chặn upload lớn, không phải <code>MaxSize</code></span></span><span class="x" lang="en"><code>fh.Size</code> is measured while the whole multipart body is parsed (in memory, then temp files), so by the time <code>Open</code> checks it the bytes are already read. The request body limit is the real cap: in Jungo the global <a href="middleware.html">Payload</a> middleware limits every body to <code>SECURITY_MAX_BODY_SIZE</code> (default <code>2097152</code> = 2 MiB). For a multipart body it only wraps the body in <code>http.MaxBytesReader</code> and lets the handler run, so the limit trips while the handler parses the form: <code>c.FormFile</code> fails and Jungo answers 400 <code>invalid_avatar_file</code>, not 413. A route that needs more declares it through <code>router.BodyLimited</code>, as the avatar route does; keep that limit and <code>MaxSize</code> in step.</span><span class="x" lang="vi"><code>fh.Size</code> được đo trong lúc parse toàn bộ body multipart (trong bộ nhớ, rồi ra file tạm), nên khi <code>Open</code> kiểm tra thì byte đã được đọc xong. Giới hạn body của request mới là chốt chặn thật: trong Jungo, middleware <a href="middleware.html">Payload</a> toàn cục giới hạn mọi body ở <code>SECURITY_MAX_BODY_SIZE</code> (mặc định <code>2097152</code> = 2 MiB). Với body multipart, nó chỉ bọc body bằng <code>http.MaxBytesReader</code> rồi cho handler chạy, nên giới hạn bị vượt trong lúc handler parse form: <code>c.FormFile</code> lỗi và Jungo trả 400 <code>invalid_avatar_file</code>, không phải 413. Route cần lớn hơn thì khai báo qua <code>router.BodyLimited</code>, như route avatar; giữ giới hạn đó và <code>MaxSize</code> khớp nhau.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">Sniffing is not a virus scan</span><span lang="vi">Đoán kiểu không phải quét virus</span></span><span class="x" lang="en"><code>http.DetectContentType</code> only reads magic bytes. It stops renamed HTML or scripts, not a malicious but valid image.</span><span class="x" lang="vi"><code>http.DetectContentType</code> chỉ đọc magic byte. Nó chặn HTML hay script bị đổi tên, không chặn một ảnh hợp lệ nhưng độc hại.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">Types must match exactly</span><span lang="vi">Types phải khớp chính xác</span></span><span class="x" lang="en">Text types come back with a charset (<code>"text/plain; charset=utf-8"</code>); list that full string in <code>Types</code>.</span><span class="x" lang="vi">Kiểu text trả về kèm charset (<code>"text/plain; charset=utf-8"</code>); ghi đủ chuỗi đó vào <code>Types</code>.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">Jungo: storage errors become 400</span><span lang="vi">Jungo: lỗi storage thành 400</span></span><span class="x" lang="en"><code>UserService.UploadAvatar</code> turns any <code>UploadFile</code> error (e.g. disk full) into <code>ErrInvalidAvatarFile</code>, so a server problem reaches the client as 400 <code>invalid_avatar_file</code>, and the original error is not logged.</span><span class="x" lang="vi"><code>UserService.UploadAvatar</code> biến mọi lỗi của <code>UploadFile</code> (vd. đầy đĩa) thành <code>ErrInvalidAvatarFile</code>, nên lỗi phía server đến client dưới dạng 400 <code>invalid_avatar_file</code>, và lỗi gốc không được log.</span></div>
     </div>
   </section>
 
   <footer class="jd-footer">
     <span>Jundoc · Junkit · upload</span>
-    <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package Junkit</span></a></span>
+    <span><a href="storage.html">← storage</a> · <a href="httpclient.html">httpclient →</a></span>
   </footer>
 </article>
 </div>

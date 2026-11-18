@@ -31,18 +31,14 @@
         <p lang="vi">Hỏi Google xem một token reCAPTCHA v3 có đến từ người thật không: <code>Verify</code> chỉ trả
           <code>nil</code> khi Google chấp nhận token và điểm của nó đạt ít nhất <code>MinScore</code>.</p>
         <div class="jd-chips">
-          <span class="jd-chip">github.com/jun-develop/junkit/recaptcha</span>
-          <span class="jd-chip"><span lang="en">Fx Module → provides <code>recaptcha.Verifier</code> (real or
-              mock)</span><span lang="vi">Fx Module → cung cấp <code>recaptcha.Verifier</code> (thật hoặc
-              mock)</span></span>
-          <span class="jd-chip"><span lang="en">optional <code>*http.Client</code></span><span lang="vi">
-              <code>*http.Client</code> tuỳ chọn</span></span>
-          <span class="jd-chip"><span lang="en">stdlib only</span><span lang="vi">chỉ dùng stdlib</span></span>
-        </div>
-      </header>
+      <span class="jd-chip">github.com/jun-develop/junkit/recaptcha</span>
+      <span class="jd-chip"><span lang="en">Fx: <code>recaptcha.Module</code> → provides <code>recaptcha.Verifier</code></span><span lang="vi">Fx: <code>recaptcha.Module</code> → cung cấp <code>recaptcha.Verifier</code></span></span>
+      <span class="jd-chip"><span lang="en">Depends on: fx</span><span lang="vi">Phụ thuộc: fx</span></span>
+    </div>
+  </header>
 
       <!-- ============================================================ 1. WHAT -->
-      <section id="what" class="jd-section c-purple">
+      <section id="what" class="jd-section c-blue">
         <div class="jd-section-head">
           <span class="jd-badge">1</span>
           <div>
@@ -55,38 +51,38 @@
               token đều qua.</p>
           </div>
         </div>
-        <div class="jd-grid3w" style="margin-top:22px;grid-template-columns:repeat(4,minmax(0,1fr));gap:60px 36px" data-wires='[
-      {"from":"r1","to":"r2","color":"blue","label":"token"},
-      {"from":"r2","to":"r3","color":"purple","label":"✓"},
-      {"from":"r3","to":"r4","color":"green","label":"✓"},
-      {"from":"r2","to":"x2","color":"red","dir":"v","label":"✗"},
-      {"from":"r3","to":"x3","color":"red","dir":"v","label":"✗"},
-      {"from":"r4","to":"x4","color":"red","dir":"v","label":"✗"}]'>
-          <div class="jd-node is-tint c-blue" data-node="r1" style="grid-column:1;grid-row:1"><span class="k">1 · browser</span><span class="t mono" style="font-size:15px">grecaptcha.execute</span>
+        <div class="jd-grid3w" style="margin-top:22px;gap:34px 90px" data-wires='[
+      {"from":"r1","to":"r2","color":"blue","dir":"v","label":"token"},
+      {"from":"r2","to":"r3","color":"orange","dir":"v","label":"✓"},
+      {"from":"r3","to":"r4","color":"green","dir":"v","label":"✓"},
+      {"from":"r2","to":"x2","color":"red","dir":"h","label":"✗"},
+      {"from":"r3","to":"x3","color":"red","dir":"h","label":"✗"},
+      {"from":"r4","to":"x4","color":"red","dir":"h","label":"✗"}]'>
+          <div class="jd-node is-tint c-blue" data-node="r1" style="grid-column:1 / span 2;grid-row:1"><span class="k"><span lang="en">1 · browser</span><span lang="vi">1 · trình duyệt</span></span><span class="t mono" style="font-size:15px">grecaptcha.execute</span>
             <div class="d" lang="en">Google's v3 script returns a short-lived token.</div>
             <div class="d" lang="vi">Script v3 của Google trả về một token sống ngắn.</div>
           </div>
-          <div class="jd-node is-tint c-purple" data-node="r2" style="grid-column:2;grid-row:1"><span class="k"><span lang="en">2 · your server</span><span lang="vi">2 · server của bạn</span></span><span class="t mono" style="font-size:15px">Verify(ctx, token, ip)</span>
+          <div class="jd-node is-tint c-purple" data-node="r2" style="grid-column:1 / span 2;grid-row:2"><span class="k"><span lang="en">2 · your server</span><span lang="vi">2 · server của bạn</span></span><span class="t mono" style="font-size:15px">Verify(ctx, token, ip)</span>
             <div class="d" lang="en">Is a secret key configured?</div>
             <div class="d" lang="vi">Đã cấu hình secret key chưa?</div>
           </div>
-          <div class="jd-node is-tint c-red" data-node="x2" style="grid-column:2;grid-row:2"><span class="k">✗ error</span>
+          <div class="jd-node is-tint c-red" data-node="x2" style="grid-column:3;grid-row:2"><span class="k"><span lang="en">✗ error</span><span lang="vi">✗ lỗi</span></span>
             <div class="d" lang="en"><code>ErrUnavailable</code>: secret key not configured — Google is never called.</div>
             <div class="d" lang="vi"><code>ErrUnavailable</code>: secret key not configured — không hề gọi Google.</div>
           </div>
-          <div class="jd-node is-tint c-pink" data-node="r3" style="grid-column:3;grid-row:1"><span class="k">3 · Google</span><span class="t mono" style="font-size:15px">siteverify</span>
+          <div class="jd-node is-tint c-orange" data-node="r3" style="grid-column:1 / span 2;grid-row:3"><span class="k">3 · Google</span><span class="t mono" style="font-size:15px">siteverify</span>
             <div class="d" lang="en"><code>POST https://www.google.com/recaptcha/api/siteverify</code> — did it answer 200 with valid JSON?</div>
             <div class="d" lang="vi"><code>POST https://www.google.com/recaptcha/api/siteverify</code> — có trả 200 kèm JSON hợp lệ không?</div>
           </div>
-          <div class="jd-node is-tint c-red" data-node="x3" style="grid-column:3;grid-row:2"><span class="k">✗ error</span>
+          <div class="jd-node is-tint c-red" data-node="x3" style="grid-column:3;grid-row:3"><span class="k"><span lang="en">✗ error</span><span lang="vi">✗ lỗi</span></span>
             <div class="d" lang="en"><code>ErrUnavailable</code>: network error, non-200 status or unreadable JSON.</div>
             <div class="d" lang="vi"><code>ErrUnavailable</code>: lỗi mạng, status khác 200 hoặc JSON không đọc được.</div>
           </div>
-          <div class="jd-node is-tint c-green" data-node="r4" style="grid-column:4;grid-row:1"><span class="k">4 · verdict</span><span class="t mono" style="font-size:15px">success · action · host · score ?</span>
+          <div class="jd-node is-tint c-green" data-node="r4" style="grid-column:1 / span 2;grid-row:4"><span class="k"><span lang="en">4 · verdict</span><span lang="vi">4 · kết luận</span></span><span class="t mono" style="font-size:15px">success · action · host · score ?</span>
             <div class="d" lang="en">All pass → <code>nil</code>: the request goes on.</div>
             <div class="d" lang="vi">Tất cả đạt → <code>nil</code>: request đi tiếp.</div>
           </div>
-          <div class="jd-node is-tint c-red" data-node="x4" style="grid-column:4;grid-row:2"><span class="k">✗ error</span>
+          <div class="jd-node is-tint c-red" data-node="x4" style="grid-column:3;grid-row:4"><span class="k"><span lang="en">✗ error</span><span lang="vi">✗ lỗi</span></span>
             <div class="d" lang="en"><code>ErrVerificationFailed</code> (rejected, wrong action or hostname) or <code>ErrLowScore</code>.</div>
             <div class="d" lang="vi"><code>ErrVerificationFailed</code> (bị từ chối, sai action hoặc hostname) hoặc <code>ErrLowScore</code>.</div>
           </div>
@@ -96,11 +92,11 @@
       </section>
 
       <!-- ============================================================ 2. SETUP -->
-      <section id="setup" class="jd-section c-pink">
+      <section id="setup" class="jd-section c-purple">
         <div class="jd-section-head">
           <span class="jd-badge">2</span>
           <div>
-            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối</span></h2>
+            <h2><span lang="en">Setup</span><span lang="vi">Cài đặt</span></h2>
             <p class="jd-sub" lang="en"><code>recaptcha.Module</code> picks the implementation:
               <code>Options.Mock</code> → <code>*MockVerifier</code>, otherwise <code>*Client</code>. Either way it is
               provided as <code>recaptcha.Verifier</code>.</p>
@@ -109,16 +105,14 @@
               <code>recaptcha.Verifier</code>.</p>
           </div>
         </div>
-        <div class="jd-tabs c-pink" style="margin-top:18px">
+        <div class="jd-tabs" style="margin-top:18px">
           <div class="jd-tablist">
-            <button type="button" class="jd-tab" aria-selected="true"><span lang="en">with Fx (as Jungo)</span><span
-                lang="vi">với Fx (như Jungo)</span></button>
-            <button type="button" class="jd-tab" aria-selected="false"><span lang="en">without Fx</span><span
-                lang="vi">Không dùng Fx</span></button>
+            <button type="button" class="jd-tab" aria-selected="true"><span lang="en">With Fx (as in Jungo)</span><span lang="vi">Dùng Fx (như Jungo)</span></button>
+            <button type="button" class="jd-tab" aria-selected="false"><span lang="en">Without Fx</span><span lang="vi">Không dùng Fx</span></button>
           </div>
           <div class="jd-tabpanel">
             <div class="jd-term">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>jungo/internal/app/fx.go</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go</span></div>
               <pre data-hl="go">
 // inside CoreModules(cfg):
 fx.Provide(httpclient.NewDefaultClient), // *http.Client — optional; without it a 10s client is used
@@ -177,12 +171,7 @@ if os.Getenv("APP_ENV") == "production" {
         </div>
         <div class="jd-tablewrap" style="margin-top:16px">
           <table class="jd-params c-pink">
-            <tr>
-              <th>Options field</th>
-              <th>type</th>
-              <th><span lang="en">zero value</span><span lang="vi">giá trị zero</span></th>
-              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-            </tr>
+            <tr><th>field</th><th><span lang="en">type</span><span lang="vi">kiểu</span></th><th><span lang="en">default</span><span lang="vi">mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
             <tr>
               <td>SecretKey</td>
               <td>string</td>
@@ -236,11 +225,11 @@ if os.Getenv("APP_ENV") == "production" {
       </section>
 
       <!-- ============================================================ 3. QUICK START -->
-      <section id="quick" class="jd-section c-purple">
+      <section id="quick" class="jd-section c-green">
         <div class="jd-section-head">
           <span class="jd-badge">3</span>
           <div>
-            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <h2><span lang="en">Quick start</span><span lang="vi">Dùng nhanh</span></h2>
             <p class="jd-sub" lang="en">Protect a sign-up form. Hover an explanation to light up its lines.</p>
             <p class="jd-sub" lang="vi">Bảo vệ một form đăng ký. Rê chuột vào giải thích để làm sáng các dòng tương ứng.
             </p>
@@ -285,14 +274,12 @@ func (h *SignupHandler) Signup(c *gin.Context) {
             </div>
           </div>
           <div class="jd-explain">
-            <div class="jd-ex c-purple" data-code="#code-quick" data-show="1-2"><span class="n">1</span><span
-                class="w">your own AppError</span><span class="x" lang="en">Verify returns errors wrapping the package's
+            <div class="jd-ex c-purple" data-code="#code-quick" data-show="1-2"><span class="n">1</span><span class="w"><span lang="en">Your own AppError</span><span lang="vi">AppError của riêng bạn</span></span><span class="x" lang="en">Verify returns errors wrapping the package's
                 sentinels, not AppErrors. Passing those to <code>responder.Error</code> gives a generic 500 — map them to an <a
                   href="response.html">AppError</a> (Jungo uses this exact one).</span><span class="x" lang="vi">Verify
                 trả error bọc sentinel của package, không phải AppError. Đưa chúng vào <code>responder.Error</code> sẽ ra 500 chung chung —
                 hãy ánh xạ sang một <a href="response.html">AppError</a> (Jungo dùng đúng cái này).</span></div>
-            <div class="jd-ex c-purple" data-code="#code-quick" data-show="6"><span class="n">2</span><span
-                class="w">token field</span><span class="x" lang="en">v3 tokens are long; Jungo caps the field at 4096.
+            <div class="jd-ex c-purple" data-code="#code-quick" data-show="6"><span class="n">2</span><span class="w"><span lang="en">Token field</span><span lang="vi">Field token</span></span><span class="x" lang="en">v3 tokens are long; Jungo caps the field at 4096.
                 Use <code>required</code> if the form must carry one.</span><span class="x" lang="vi">Token v3 khá dài;
                 Jungo giới hạn field ở 4096. Dùng <code>required</code> nếu form bắt buộc phải có.</span></div>
             <div class="jd-ex c-purple" data-code="#code-quick" data-show="17"><span class="n">3</span><span
@@ -301,8 +288,7 @@ func (h *SignupHandler) Signup(c *gin.Context) {
                 class="x" lang="vi">Truyền <code>c.Request.Context()</code> để tự động hủy request tới Google nếu client
                 đóng kết nối sớm. Tham số <code>remoteIP</code> là tùy chọn (truyền <code>""</code> nếu không
                 cần).</span></div>
-            <div class="jd-ex c-purple" data-code="#code-quick" data-show="18-25"><span class="n">4</span><span
-                class="w">log, don't leak</span><span class="x" lang="en">The error says why (score, Google error codes)
+            <div class="jd-ex c-purple" data-code="#code-quick" data-show="18-25"><span class="n">4</span><span class="w"><span lang="en">Log, don't leak</span><span lang="vi">Log, đừng để lộ</span></span><span class="x" lang="en">The error says why (score, Google error codes)
                 — useful in logs, not for the client. <code>errors.Is(err, recaptcha.ErrUnavailable)</code> tells an
                 outage from a bad token, so you can choose to fail open or closed. Error texts never contain the
                 secret.</span><span class="x" lang="vi">Error cho biết lý do (điểm, mã lỗi của Google) — hữu ích trong log,
@@ -328,8 +314,7 @@ grecaptcha.ready(() =&gt; {
         <div class="jd-section-head">
           <span class="jd-badge">4</span>
           <div>
-            <h2><span lang="en">Try it: what does Verify return?</span><span lang="vi">Thử ngay: Verify trả về
-                gì?</span></h2>
+            <h2><span lang="en">Try it</span><span lang="vi">Thử ngay</span></h2>
             <p class="jd-sub" lang="en">Same decision order as the Go code. "Google says" is the siteverify response.
             </p>
             <p class="jd-sub" lang="vi">Cùng thứ tự quyết định với code Go. "Google trả lời" là response của siteverify.
@@ -368,15 +353,13 @@ grecaptcha.ready(() =&gt; {
       </section>
 
       <!-- ============================================================ 5. API -->
-      <section id="api" class="jd-section c-purple">
+      <section id="api" class="jd-section c-blue">
         <div class="jd-section-head">
           <span class="jd-badge">5</span>
           <div>
             <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
-            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from
-              <code>junkit/recaptcha/recaptcha.go</code>, <code>mock.go</code> and <code>module.go</code>.</p>
-            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ
-              <code>junkit/recaptcha/recaptcha.go</code>, <code>mock.go</code> và <code>module.go</code>.</p>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/recaptcha</code>.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/recaptcha</code>.</p>
           </div>
         </div>
         <div class="jd-syms" style="margin-top:18px">
@@ -579,10 +562,12 @@ func newVerifier(p verifierParams) Verifier
           <span class="jd-badge">6</span>
           <div>
             <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
-            <p class="jd-sub" lang="en">Login can require a token. Off by default
-              (<code>AUTH_RECAPTCHA_ON_LOGIN=false</code>).</p>
-            <p class="jd-sub" lang="vi">Đăng nhập có thể yêu cầu token. Mặc định tắt
-              (<code>AUTH_RECAPTCHA_ON_LOGIN=false</code>).</p>
+            <p class="jd-sub" lang="en">Login can require a token; off by default
+              (<code>AUTH_RECAPTCHA_ON_LOGIN=false</code>). The login flow is documented on <a
+                href="../jungo/auth.html#inside">Auth</a>.</p>
+            <p class="jd-sub" lang="vi">Đăng nhập có thể yêu cầu token; mặc định tắt
+              (<code>AUTH_RECAPTCHA_ON_LOGIN=false</code>). Luồng đăng nhập có ở trang <a
+                href="../jungo/auth.html#inside">Auth</a>.</p>
           </div>
         </div>
         <div class="jd-tablewrap" style="margin-top:16px">
@@ -592,79 +577,30 @@ func newVerifier(p verifierParams) Verifier
               <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
             </tr>
             <tr>
-              <td>config/config.go</td>
-              <td lang="en"><code>RecaptchaConfig</code>: <code>RECAPTCHA_SECRET_KEY</code>,
-                <code>RECAPTCHA_MIN_SCORE</code> (0.5), <code>RECAPTCHA_MOCK</code> (true).
-                <code>AuthConfig.RecaptchaOnLogin</code> ← <code>AUTH_RECAPTCHA_ON_LOGIN</code> (false).</td>
-              <td lang="vi"><code>RecaptchaConfig</code>: <code>RECAPTCHA_SECRET_KEY</code>,
-                <code>RECAPTCHA_MIN_SCORE</code> (0.5), <code>RECAPTCHA_MOCK</code> (true).
-                <code>AuthConfig.RecaptchaOnLogin</code> ← <code>AUTH_RECAPTCHA_ON_LOGIN</code> (false).</td>
+              <td>internal/app/fx.go · internal/config/config.go</td>
+              <td lang="en"><code>provideRecaptchaOptions</code> + <code>recaptcha.Module</code>, from
+                <code>RECAPTCHA_SECRET_KEY</code>, <code>RECAPTCHA_MIN_SCORE</code> (0.5) and <code>RECAPTCHA_MOCK</code>
+                (true, honoured only in development). It sets only <code>SecretKey</code>, <code>MinScore</code> and
+                <code>Mock</code>: <b><code>ExpectedAction</code> and <code>Hostnames</code> are not set</b>, so the
+                login accepts a valid token minted for any action or hostname (gotcha 3). Outside development, startup
+                fails if <code>AUTH_RECAPTCHA_ON_LOGIN=true</code> and the secret is empty.</td>
+              <td lang="vi"><code>provideRecaptchaOptions</code> + <code>recaptcha.Module</code>, từ
+                <code>RECAPTCHA_SECRET_KEY</code>, <code>RECAPTCHA_MIN_SCORE</code> (0.5) và <code>RECAPTCHA_MOCK</code>
+                (true, chỉ có tác dụng ở development). Nó chỉ đặt <code>SecretKey</code>, <code>MinScore</code> và
+                <code>Mock</code>: <b>không đặt <code>ExpectedAction</code> và <code>Hostnames</code></b>, nên login
+                chấp nhận token hợp lệ tạo cho bất kỳ action hay hostname nào (lưu ý 3). Ngoài development, app khởi
+                động lỗi nếu <code>AUTH_RECAPTCHA_ON_LOGIN=true</code> mà secret rỗng.</td>
             </tr>
             <tr>
-              <td>app/fx.go</td>
-              <td lang="en"><code>provideRecaptchaOptions</code> + <code>recaptcha.Module</code>. Outside development it
-                forces <code>Mock</code> off and fails startup if <code>AUTH_RECAPTCHA_ON_LOGIN=true</code> with an
-                empty <code>RECAPTCHA_SECRET_KEY</code>.</td>
-              <td lang="vi"><code>provideRecaptchaOptions</code> + <code>recaptcha.Module</code>. Ngoài development nó luôn
-                tắt <code>Mock</code> và báo lỗi khi khởi động nếu <code>AUTH_RECAPTCHA_ON_LOGIN=true</code> mà
-                <code>RECAPTCHA_SECRET_KEY</code> trống.</td>
-            </tr>
-            <tr>
-              <td>features/auth/dto/v1/auth_dto.go</td>
-              <td lang="en"><code>LoginRequest.RecaptchaToken</code> — JSON <code>recaptcha_token</code>,
-                <code>binding:"omitempty,max=4096"</code>; copied into <code>domain.Metadata.RecaptchaToken</code>.</td>
-              <td lang="vi"><code>LoginRequest.RecaptchaToken</code> — JSON <code>recaptcha_token</code>,
-                <code>binding:"omitempty,max=4096"</code>; được chép vào <code>domain.Metadata.RecaptchaToken</code>.
-              </td>
-            </tr>
-            <tr>
-              <td>features/auth/service/auth_service.go</td>
-              <td lang="en"><code>Params.Recaptcha recaptcha.Verifier `optional:"true"`</code>. <code>Login</code> runs
-                it first: <code>if s.cfg.RecaptchaOnLogin &amp;&amp; s.recaptcha != nil</code> →
-                <code>Verify(ctx, meta.RecaptchaToken, meta.IPAddress)</code>; any error →
-                <code>domain.ErrRecaptchaFailed</code>, before the brute-force check and the password.</td>
-              <td lang="vi"><code>Params.Recaptcha recaptcha.Verifier `optional:"true"`</code>. <code>Login</code> chạy
-                nó đầu tiên: <code>if s.cfg.RecaptchaOnLogin &amp;&amp; s.recaptcha != nil</code> →
-                <code>Verify(ctx, meta.RecaptchaToken, meta.IPAddress)</code>; mọi error →
-                <code>domain.ErrRecaptchaFailed</code>, trước cả kiểm tra brute-force và mật khẩu.</td>
-            </tr>
-            <tr>
-              <td>features/auth/domain/errors.go · module.go</td>
-              <td lang="en">
-                <code>ErrRecaptchaFailed = response.New(response.Forbidden, "recaptcha_verification_failed")</code> →
-                HTTP 403, message "reCAPTCHA verification failed".</td>
-              <td lang="vi">
-                <code>ErrRecaptchaFailed = response.New(response.Forbidden, "recaptcha_verification_failed")</code> →
-                HTTP 403, message "reCAPTCHA verification failed".</td>
-            </tr>
-            <tr>
-              <td>features/auth/handler/v1/auth_handler.go</td>
-              <td lang="en">The IP passed as <code>remoteIP</code> is <code>ctx.ClientIP()</code>.</td>
-              <td lang="vi">IP truyền vào <code>remoteIP</code> là <code>ctx.ClientIP()</code>.</td>
+              <td>internal/features/auth/service/auth_service.go</td>
+              <td lang="en">Login calls <code>Verify(ctx, recaptcha_token, client IP)</code> first when
+                <code>AUTH_RECAPTCHA_ON_LOGIN=true</code>; any error (outages included) → 403
+                <code>recaptcha_verification_failed</code>. Details: <a href="../jungo/auth.html#inside">Auth</a>.</td>
+              <td lang="vi">Login gọi <code>Verify(ctx, recaptcha_token, IP client)</code> đầu tiên khi
+                <code>AUTH_RECAPTCHA_ON_LOGIN=true</code>; mọi lỗi (kể cả sự cố dịch vụ) → 403
+                <code>recaptcha_verification_failed</code>. Chi tiết: <a href="../jungo/auth.html#inside">Auth</a>.</td>
             </tr>
           </table>
-        </div>
-        <div style="margin-top:14px;display:grid;gap:14px">
-          <div class="jd-term" data-copy="commands">
-            <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
-            <pre data-hl="bash">
-# .env: AUTH_RECAPTCHA_ON_LOGIN=true, RECAPTCHA_MOCK=false, RECAPTCHA_SECRET_KEY=…
-$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
-    -H 'Content-Type: application/json' \
-    -d '{"email":"admin@jungo.com","password":"Password@123","recaptcha_token":"not-a-real-token"}' | jq
-</pre>
-          </div>
-          <div class="jd-term">
-            <div class="jd-term-bar"><i></i><i></i><i></i><span>403 Forbidden</span></div>
-            <pre data-hl="json">
-{
-  "status": "error",
-  "code": "FORBIDDEN",
-  "message": "reCAPTCHA verification failed",
-  "api_info": { … }
-}
-</pre>
-          </div>
         </div>
       </section>
 
@@ -687,42 +623,38 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
               <code>API_ENVIRONMENT=development</code>. Staging, production và mọi giá trị khác luôn dùng client thật,
               nên đặt tên môi trường khác đi cũng không vô tình cho mọi token qua.</span></div>
           <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">v3
-                only</span><span lang="vi">chỉ dùng v3</span></span><span class="x" lang="en">A v2 checkbox token has no
-              score, so it decodes as 0 and fails with <code>ErrLowScore</code>. Set <code>ExpectedAction</code> (and
-              <code>Hostnames</code>), or a token minted for another action on your site is accepted.</span><span class="x" lang="vi">Token v2 (checkbox) không có điểm, nên bị đọc là 0 và lỗi "score
-              too low" (<code>ErrLowScore</code>). Hãy đặt <code>ExpectedAction</code> (và <code>Hostnames</code>), nếu
-              không token tạo cho action khác trên site của bạn vẫn được chấp nhận.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">an
-                outage is your call</span><span lang="vi">sự cố dịch vụ do bạn quyết</span></span><span class="x"
+                only</span><span lang="vi">Chỉ dùng v3</span></span><span class="x" lang="en">A v2 checkbox token has no
+              score, so it decodes as 0 and fails with <code>ErrLowScore</code>.</span><span class="x" lang="vi">Token
+              v2 (checkbox) không có điểm, nên bị đọc là 0 và lỗi "score too low" (<code>ErrLowScore</code>).</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">Set
+                the action and hosts</span><span lang="vi">Đặt action và host</span></span><span class="x" lang="en">Set
+              <code>ExpectedAction</code> (and <code>Hostnames</code>), or a valid token minted for another action on
+              your site is accepted. Jungo's login sets neither (see <a href="#jungo">In Jungo</a>).</span><span
+              class="x" lang="vi">Hãy đặt <code>ExpectedAction</code> (và <code>Hostnames</code>), nếu không token hợp
+              lệ tạo cho action khác trên site của bạn vẫn được chấp nhận. Login của Jungo không đặt cả hai (xem <a
+                href="#jungo">Trong Jungo</a>).</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">An
+                outage is your call</span><span lang="vi">Sự cố dịch vụ do bạn quyết</span></span><span class="x"
               lang="en">When Google is unreachable, <code>Verify</code> returns <code>ErrUnavailable</code>. Rejecting
               then (fail closed, as Jungo's login does) blocks every user during an outage; letting it pass (fail
               open) lets bots through meanwhile. Pick per form with <code>errors.Is</code>.</span><span class="x"
               lang="vi">Khi không gọi được Google, <code>Verify</code> trả <code>ErrUnavailable</code>. Từ chối lúc đó
               (fail closed, như login của Jungo) chặn mọi user trong thời gian sự cố; cho qua (fail open) thì bot cũng
               qua. Chọn theo từng form bằng <code>errors.Is</code>.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">tokens
-                are single-use</span><span lang="vi">token chỉ dùng một lần</span></span><span class="x"
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w"><span lang="en">Tokens
+                are single-use</span><span lang="vi">Token chỉ dùng một lần</span></span><span class="x"
               lang="en">Google rejects a token verified twice or older than about two minutes
               (<code>timeout-or-duplicate</code>). Get a fresh token right before each submit; never retry
               <code>Verify</code> with the same token.</span><span class="x" lang="vi">Google từ chối token đã verify
               một lần hoặc cũ hơn khoảng hai phút (<code>timeout-or-duplicate</code>). Lấy token mới ngay trước mỗi lần
               submit; đừng gọi lại <code>Verify</code> với cùng token.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w"><span
-                lang="en">optional in Jungo</span><span lang="vi">tuỳ chọn trong Jungo</span></span><span class="x"
-              lang="en">The login check needs both <code>AUTH_RECAPTCHA_ON_LOGIN=true</code> and a Verifier in the
-              graph. A missing token is not a validation error (<code>omitempty</code>) — with a real client it reaches
-              Google and fails there.</span><span class="x" lang="vi">Kiểm tra khi đăng nhập cần cả
-              <code>AUTH_RECAPTCHA_ON_LOGIN=true</code> và một Verifier trong graph. Thiếu token không phải lỗi
-              validation (<code>omitempty</code>) — với client thật nó được gửi tới Google và thất bại ở đó.</span>
-          </div>
         </div>
       </section>
 
       <footer class="jd-footer">
-        <span>Jundoc · Junkit · recaptcha</span>
-        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
-              Junkit</span></a></span>
-      </footer>
+    <span>Jundoc · Junkit · recaptcha</span>
+    <span><a href="mailer.html">← mailer</a> · <a href="security.html">security →</a></span>
+  </footer>
     </article>
   </div>
 

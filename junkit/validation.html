@@ -33,18 +33,14 @@
           cho tag <code>binding:"…"</code> của gin và biến mọi lỗi binding thành map <code>{field: message}</code> gọn
           gàng — hoặc một message duy nhất — sẵn sàng cho response 422.</p>
         <div class="jd-chips">
-          <span class="jd-chip">github.com/jun-develop/junkit/validation</span>
-          <span class="jd-chip"><span lang="en">Fx Module → provides <code>*validation.Validator</code></span><span
-              lang="vi">Fx Module → cung cấp <code>*validation.Validator</code></span></span>
-          <span class="jd-chip"><span lang="en">needs <code>validation.Options</code> +
-              <code>*i18n.Translator</code></span><span lang="vi">cần <code>validation.Options</code> +
-              <code>*i18n.Translator</code></span></span>
-          <span class="jd-chip">go-playground/validator/v10 · gin binding · junkit/i18n</span>
-        </div>
-      </header>
+      <span class="jd-chip">github.com/jun-develop/junkit/validation</span>
+      <span class="jd-chip"><span lang="en">Fx: <code>validation.Module</code> → provides <code>*validation.Validator</code></span><span lang="vi">Fx: <code>validation.Module</code> → cung cấp <code>*validation.Validator</code></span></span>
+      <span class="jd-chip"><span lang="en">Depends on: fx · gin · uuid · validator/v10 · junkit/i18n · junkit/response</span><span lang="vi">Phụ thuộc: fx · gin · uuid · validator/v10 · junkit/i18n · junkit/response</span></span>
+    </div>
+  </header>
 
       <!-- ============================================================ 1. WHAT -->
-      <section id="what" class="jd-section c-purple">
+      <section id="what" class="jd-section c-blue">
         <div class="jd-section-head">
           <span class="jd-badge">1</span>
           <div>
@@ -59,26 +55,26 @@
       {"from":"v1","to":"v2","color":"red","label":"err"},
       {"from":"v2","to":"v3","color":"purple","label":"tag"},
       {"from":"v3","to":"v4","color":"green","label":"map"}]'>
-          <div class="jd-node is-tint c-red" data-node="v1"><span class="k">1 · bind</span><span class="t mono"
-              style="font-size:15px">ctx.ShouldBindJSON(&amp;req)</span>
-            <div class="d" lang="en">Gin decodes the body and runs the <code>binding:"…"</code> tags — including the
-              custom rules.</div>
-            <div class="d" lang="vi">Gin decode body và chạy các tag <code>binding:"…"</code> — gồm cả rule tùy chỉnh.
+          <div class="jd-node is-tint c-blue" data-node="v1"><span class="k"><span lang="en">1 · bind</span><span lang="vi">1 · bind</span></span><span class="t mono" style="font-size:15px">validation.BindJSON(…)</span>
+            <div class="d" lang="en">Calls <code>ShouldBindJSON</code>: gin decodes the body and runs the
+              <code>binding:"…"</code> tags — including the custom rules.</div>
+            <div class="d" lang="vi">Gọi <code>ShouldBindJSON</code>: gin decode body và chạy các tag
+              <code>binding:"…"</code> — gồm cả rule tùy chỉnh.
             </div>
           </div>
-          <div class="jd-node is-tint c-purple" data-node="v2"><span class="k">2 · classify</span><span class="t mono"
+          <div class="jd-node is-tint c-purple" data-node="v2"><span class="k"><span lang="en">2 · classify</span><span lang="vi">2 · phân loại</span></span><span class="t mono"
               style="font-size:15px">GetValidationErrors</span>
             <div class="d" lang="en">Type error? Bad number in the query? Rule failed? Broken JSON?</div>
             <div class="d" lang="vi">Sai kiểu? Số sai trong query? Rule không đạt? JSON hỏng?</div>
           </div>
-          <div class="jd-node is-tint c-blue" data-node="v3"><span class="k">3 · translate</span><span class="t mono"
-              style="font-size:15px">i18n key = tag</span>
+          <div class="jd-node is-tint c-blue" data-node="v3"><span class="k"><span lang="en">3 · translate</span><span lang="vi">3 · dịch</span></span><span class="t mono"
+              style="font-size:15px">message key = tag</span>
             <div class="d" lang="en"><code>"required"</code> → <code>"%[1]s is required"</code> →
               <code>"email is required"</code>.</div>
             <div class="d" lang="vi"><code>"required"</code> → <code>"%[1]s is required"</code> →
               <code>"email is required"</code>.</div>
           </div>
-          <div class="jd-node is-tint c-green" data-node="v4"><span class="k">4 · respond</span><span class="t mono"
+          <div class="jd-node is-tint c-green" data-node="v4"><span class="k"><span lang="en">4 · respond</span><span lang="vi">4 · trả lời</span></span><span class="t mono"
               style="font-size:15px">SendWithData(422, …)</span>
             <div class="d" lang="en">The result becomes <code>"error"</code> in the <a href="response.html">response</a>
               envelope.</div>
@@ -134,104 +130,78 @@
             </tr>
           </table>
         </div>
-        <div class="jd-grid-2" style="margin-top:14px">
+        <p class="jd-sub" lang="en">The result goes into <code>"error"</code> of a 422 response with message
+          <code>"Validation error"</code> (full envelope: <a href="response.html#what">response</a>). Clients must handle
+          both shapes:</p>
+        <p class="jd-sub" lang="vi">Kết quả nằm trong <code>"error"</code> của response 422 với message
+          <code>"Validation error"</code> (envelope đầy đủ: <a href="response.html#what">response</a>). Client phải xử lý
+          cả hai dạng:</p>
+        <div class="jd-grid-2" style="margin-top:10px">
           <div class="jd-term">
-            <div class="jd-term-bar"><i></i><i></i><i></i><span>422 · field map</span></div>
+            <div class="jd-term-bar"><i></i><i></i><i></i><span>422 · "error": map</span></div>
             <pre data-hl="json">
-{
-  "status": "error",
-  "code": "UNPROCESSABLE_ENTITY",
-  "message": "Validation error",
-  "error": {
-    "email": "email must be a valid email format",
-    "password": "password is required"
-  },
-  "api_info": {
-    "trace_id": "eb9b3d81-869d-4b62-80b8-5780f2da2f30",
-    "timestamp": "2026-10-16T09:12:44+07:00",
-    "latency": "0.412ms",
-    "version": "v0.1.0",
-    "env": "development"
-  }
+"error": {
+  "email": "email must be a valid email format",
+  "password": "password is required"
 }
 </pre>
           </div>
           <div class="jd-term">
-            <div class="jd-term-bar"><i></i><i></i><i></i><span>422 · single string</span></div>
+            <div class="jd-term-bar"><i></i><i></i><i></i><span>422 · "error": string</span></div>
             <pre data-hl="json">
-{
-  "status": "error",
-  "code": "UNPROCESSABLE_ENTITY",
-  "message": "Validation error",
-  "error": "Invalid JSON syntax",
-  "api_info": {
-    "trace_id": "5b0c8a52-0e7e-4a43-9d1b-6c2f0f4e7a19",
-    "timestamp": "2026-10-16T09:12:51+07:00",
-    "latency": "0.198ms",
-    "version": "v0.1.0",
-    "env": "development"
-  }
-}
+"error": "Invalid JSON syntax"
 </pre>
           </div>
         </div>
-        <p class="jd-sub" lang="en">Clients must handle both: <code>typeof error === "string"</code> → show it as a
-          banner; object → show each message next to its field.</p>
-        <p class="jd-sub" lang="vi">Client phải xử lý cả hai: <code>typeof error === "string"</code> → hiện thành
-          banner; object → hiện từng message cạnh field tương ứng.</p>
+        <p class="jd-sub" lang="en">Object → show each message next to its field; string (<code>typeof error === "string"</code>) → show it as a banner.</p>
+        <p class="jd-sub" lang="vi">Object → hiện từng message cạnh field tương ứng; string (<code>typeof error === "string"</code>) → hiện thành banner.</p>
       </section>
 
       <!-- ============================================================ 2. SETUP -->
-      <section id="setup" class="jd-section c-blue">
+      <section id="setup" class="jd-section c-purple">
         <div class="jd-section-head">
           <span class="jd-badge">2</span>
           <div>
-            <h2><span lang="en">Wire it up</span><span lang="vi">Kết nối</span></h2>
+            <h2><span lang="en">Setup</span><span lang="vi">Cài đặt</span></h2>
             <p class="jd-sub" lang="en">Creating the Validator is what registers the custom rules — do it before the
               first request.</p>
             <p class="jd-sub" lang="vi">Chính việc tạo Validator là đăng ký các rule tùy chỉnh — làm trước request đầu
               tiên.</p>
           </div>
         </div>
-        <div class="jd-tabs c-blue" style="margin-top:18px">
+        <div class="jd-tabs" style="margin-top:18px">
           <div class="jd-tablist">
-            <button type="button" class="jd-tab" aria-selected="true"><span lang="en">with Fx (as Jungo)</span><span
-                lang="vi">với Fx (như Jungo)</span></button>
-            <button type="button" class="jd-tab" aria-selected="false"><span lang="en">without Fx</span><span
-                lang="vi">Không dùng Fx</span></button>
+            <button type="button" class="jd-tab" aria-selected="true"><span lang="en">With Fx (as in Jungo)</span><span lang="vi">Dùng Fx (như Jungo)</span></button>
+            <button type="button" class="jd-tab" aria-selected="false"><span lang="en">Without Fx</span><span lang="vi">Không dùng Fx</span></button>
           </div>
           <div class="jd-tabpanel">
             <div class="jd-term" data-copy>
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go · CoreModules</span></div>
               <pre data-hl="go">
-// in CoreModules(cfg)
-i18n.Module, // provided once, shared with response
-// …
+i18n.Module,
+fx.Invoke(func(t *i18n.Translator) { t.SetDefaultLang(cfg.Language) }),
+response.Module,
+
 fx.Provide(provideValidationOptions),
 validation.Module,
-
-// provideValidationOptions returns validation.Options; the zero value uses the built-in
-// disposable-email list and a 3s MX timeout.
+</pre>
+            </div>
+            <div class="jd-term" style="margin-top:12px">
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/app/fx.go</span></div>
+              <pre data-hl="go">
+// provideValidationOptions builds validation.Options; the disposable-email blocklist is the
+// embedded seed.
 func provideValidationOptions() validation.Options {
     return validation.Options{}
 }
-
-// Messages use the translator's default language:
-fx.Invoke(func(t *i18n.Translator) { t.SetDefaultLang(cfg.Language) }),
 </pre>
             </div>
-            <p class="jd-sub" style="margin-top:10px" lang="en"><code>cfg.Language</code> = env
-              <code>API_LANGUAGE</code> (default <code>en</code>), set once on the shared translator. Fx builds the Validator lazily — in Jungo the
-              handlers ask for <code>*validation.Validator</code> (reached through <code>fx.Invoke(router.RegisterAll)</code>),
-              so it exists before the server starts. If nothing requests it, it is never built, the custom tags are
-              never registered, and the first bind using one panics with <code>Undefined validation function
-              '…'</code> — force it with e.g. <code>fx.Invoke(func(*validation.Validator) {})</code>.</p>
-            <p class="jd-sub" style="margin-top:10px" lang="vi"><code>cfg.Language</code> = env
-              <code>API_LANGUAGE</code> (mặc định <code>en</code>), đặt một lần trên translator dùng chung. Fx tạo Validator khi có nơi cần — ở Jungo các
-              handler xin <code>*validation.Validator</code> (thông qua <code>fx.Invoke(router.RegisterAll)</code>), nên nó
-              có trước khi server chạy. Nếu không nơi nào xin, nó không bao giờ được tạo, các tag tùy chỉnh không được
-              đăng ký, và lần bind đầu tiên dùng tag đó sẽ panic với <code>Undefined validation function
-              '…'</code> — hãy ép tạo, ví dụ <code>fx.Invoke(func(*validation.Validator) {})</code>.</p>
+            <p class="jd-sub" style="margin-top:10px" lang="en">Messages use the shared translator's default language
+              (<a href="i18n.html#setup">i18n</a>). Fx builds the Validator only when something asks for it — see
+              <a href="#gotchas">Good to know</a>.</p>
+            <p class="jd-sub" style="margin-top:10px" lang="vi">Message dùng ngôn ngữ mặc định của translator dùng chung
+              (<a href="i18n.html#setup">i18n</a>). Fx chỉ tạo Validator khi có nơi cần nó — xem
+              <a href="#gotchas">Cần lưu ý</a>.</p>
           </div>
           <div class="jd-tabpanel" hidden>
             <div class="jd-term" data-copy>
@@ -254,12 +224,7 @@ if err != nil {
         </div>
         <div class="jd-tablewrap" style="margin-top:16px">
           <table class="jd-params c-blue">
-            <tr>
-              <th>Options field</th>
-              <th>type</th>
-              <th><span lang="en">zero value</span><span lang="vi">giá trị rỗng</span></th>
-              <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-            </tr>
+            <tr><th>field</th><th><span lang="en">type</span><span lang="vi">kiểu</span></th><th><span lang="en">default</span><span lang="vi">mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
             <tr>
               <td>BlocklistPath</td>
               <td>string</td>
@@ -289,7 +254,7 @@ if err != nil {
         <div class="jd-section-head">
           <span class="jd-badge">3</span>
           <div>
-            <h2><span lang="en">Use it in 30 seconds</span><span lang="vi">Dùng ngay trong 30 giây</span></h2>
+            <h2><span lang="en">Quick start</span><span lang="vi">Dùng nhanh</span></h2>
             <p class="jd-sub" lang="en">Jungo's create-user request. Hover an explanation to light up its lines.</p>
             <p class="jd-sub" lang="vi">Request tạo user của Jungo. Rê chuột vào giải thích để làm sáng các dòng tương
               ứng.</p>
@@ -304,7 +269,7 @@ if err != nil {
 type CreateUserRequest struct {
     FirstName   string  `json:"first_name" binding:"required,min=2,max=50"`
     LastName    string  `json:"last_name" binding:"required,min=2,max=50"`
-    Email       string  `json:"email" binding:"required,email,email_advanced"`
+    Email       string  `json:"email" binding:"required,max=150,email,email_advanced"`
     Password    string  `json:"password" binding:"required,min=8,max=72,password_strong"`
     PhoneNumber *string `json:"phone_number" binding:"omitempty,phone_advanced"`
 }
@@ -315,10 +280,8 @@ type CreateUserRequest struct {
                 <pre data-hl="go" id="code-quick-hdl">
 func (h *UserHandler) CreateUser(ctx *gin.Context) {
     var req v1dto.CreateUserRequest
-    if err := ctx.ShouldBindJSON(&amp;req); err != nil {
-        h.responder.SendWithData(ctx, http.StatusUnprocessableEntity, "validation_error",
-            h.validator.GetValidationErrors(ctx, err))
-        return
+    if !validation.BindJSON(ctx, h.responder, h.validator, &amp;req) {
+        return // the 422 is already written
     }
     // req is valid from here on
 }
@@ -328,12 +291,12 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
           </div>
           <div class="jd-explain">
             <div class="jd-ex c-green" data-code="#code-quick-dto" data-show="2-3"><span class="n">1</span><span
-                class="w">standard tags</span><span class="x" lang="en"><code>required</code>, <code>min</code>,
+                class="w"><span lang="en">Standard tags</span><span lang="vi">Tag chuẩn</span></span><span class="x" lang="en"><code>required</code>, <code>min</code>,
                 <code>max</code> come from go-playground/validator; their English messages are built in.</span><span
                 class="x" lang="vi"><code>required</code>, <code>min</code>, <code>max</code> đến từ
                 go-playground/validator; message tiếng Anh có sẵn.</span></div>
             <div class="jd-ex c-green" data-code="#code-quick-dto" data-show="4-6"><span class="n">2</span><span
-                class="w">custom tags</span><span class="x" lang="en"><code>email_advanced</code>,
+                class="w"><span lang="en">Custom tags</span><span lang="vi">Tag tùy chỉnh</span></span><span class="x" lang="en"><code>email_advanced</code>,
                 <code>password_strong</code>, <code>phone_advanced</code> work in <code>binding:</code> because
                 <code>NewValidator</code> registered them on gin's validator. Rules run left to right and stop at the
                 first failure per field.</span><span class="x" lang="vi"><code>email_advanced</code>,
@@ -341,32 +304,30 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
                 <code>NewValidator</code> đã đăng ký chúng vào validator của gin. Rule chạy từ trái sang phải và dừng ở
                 lỗi đầu tiên của mỗi field.</span></div>
             <div class="jd-ex c-green" data-code="#code-quick-hdl" data-show="3"><span class="n">3</span><span
-                class="w">bind</span><span class="x" lang="en">Works the same with <code>ShouldBindQuery</code>,
-                <code>ShouldBindUri</code>, <code>ShouldBind</code> (forms).</span><span class="x" lang="vi">Tương tự
-                với <code>ShouldBindQuery</code>, <code>ShouldBindUri</code>, <code>ShouldBind</code> (form).</span>
-            </div>
-            <div class="jd-ex c-green" data-code="#code-quick-hdl" data-show="4-6"><span class="n">4</span><span
-                class="w">422</span><span class="x" lang="en">Pass the error and the gin context (needed to find the
-                field of a bad query number). The map or string ends up in <code>"error"</code>.</span><span class="x"
-                lang="vi">Truyền lỗi và gin context (cần để tìm field của số sai trong query). Map hoặc string sẽ nằm ở
-                <code>"error"</code>.</span></div>
-            <div class="jd-ex c-green" data-code="#code-quick-hdl" data-show="3-6"><span class="n">5</span><span
-                class="w">BindJSON</span><span class="x" lang="en">Lines 3–6 in one call:
-                <code>if !validation.BindJSON(ctx, h.responder, h.validator, &amp;req) { return }</code>. Also
-                <code>BindQuery</code> and <code>ParseUUID</code> — see the <a href="#api">API reference</a>.</span><span
-                class="x" lang="vi">Dòng 3–6 gói trong một lời gọi:
-                <code>if !validation.BindJSON(ctx, h.responder, h.validator, &amp;req) { return }</code>. Có thêm
-                <code>BindQuery</code> và <code>ParseUUID</code> — xem <a href="#api">tham chiếu API</a>.</span></div>
+                class="w">BindJSON</span><span class="x" lang="en">Runs <code>ctx.ShouldBindJSON(&amp;req)</code>, which decodes
+                the body and runs the <code>binding</code> tags. <code>BindQuery</code> does the same for the query string,
+                <code>ParseUUID</code> for the <code>:uuid</code> path parameter.</span><span class="x" lang="vi">Chạy
+                <code>ctx.ShouldBindJSON(&amp;req)</code>: decode body rồi chạy các tag <code>binding</code>.
+                <code>BindQuery</code> làm tương tự với query string, <code>ParseUUID</code> với path param
+                <code>:uuid</code>.</span></div>
+            <div class="jd-ex c-green" data-code="#code-quick-hdl" data-show="3-5"><span class="n">4</span><span
+                class="w">422</span><span class="x" lang="en">On failure it writes
+                <code>responder.SendWithData(ctx, 422, "validation_error", v.GetValidationErrors(ctx, err))</code> and
+                returns <code>false</code>; the handler only returns. Call those two yourself for other binders
+                (<code>ShouldBindUri</code>, <code>ShouldBind</code> for forms).</span><span class="x" lang="vi">Khi lỗi, nó
+                ghi <code>responder.SendWithData(ctx, 422, "validation_error", v.GetValidationErrors(ctx, err))</code> và
+                trả <code>false</code>; handler chỉ cần return. Với binder khác (<code>ShouldBindUri</code>,
+                <code>ShouldBind</code> cho form) hãy tự gọi hai hàm đó.</span></div>
           </div>
         </div>
       </section>
 
       <!-- ============================================================ 4. TRY IT -->
-      <section id="try" class="jd-section c-orange">
+      <section id="try" class="jd-section c-pink">
         <div class="jd-section-head">
           <span class="jd-badge">4</span>
           <div>
-            <h2><span lang="en">Try a rule</span><span lang="vi">Thử một rule</span></h2>
+            <h2><span lang="en">Try it</span><span lang="vi">Thử ngay</span></h2>
             <p class="jd-sub" lang="en">Same regexes / checks as <code>custom_validation.go</code>, with the built-in
               English message on failure. (<code>email_advanced</code> and <code>date_past</code> are left out: they
               need DNS / the clock.)</p>
@@ -377,7 +338,7 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
         </div>
         <div class="jd-grid-2" style="margin-top:18px">
           <div class="jd-calc c-orange">
-            <label>rule <select id="vr-rule">
+            <label><span lang="en">rule</span><span lang="vi">luật</span> <select id="vr-rule">
                 <option selected>password_strong</option>
                 <option>slug</option>
                 <option>search</option>
@@ -387,7 +348,7 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
                 <option value="file_ext">file_ext=jpg png</option>
               </select></label>
             <label>field <input type="text" id="vr-field" value="password"></label>
-            <label>value <input type="text" id="vr-value" value="Abcdefg1"></label>
+            <label><span lang="en">value</span><span lang="vi">giá trị</span> <input type="text" id="vr-value" value="Abcdefg1"></label>
           </div>
           <div class="jd-term">
             <div class="jd-term-bar"><i></i><i></i><i></i><span>GetValidationErrors → error</span></div>
@@ -397,15 +358,15 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
       </section>
 
       <!-- ============================================================ 5. RULES -->
-      <section id="rules" class="jd-section c-pink">
+      <section id="rules" class="jd-section c-purple">
         <div class="jd-section-head">
           <span class="jd-badge">5</span>
           <div>
             <h2><span lang="en">Rules &amp; messages</span><span lang="vi">Rule &amp; message</span></h2>
-            <p class="jd-sub" lang="en">The i18n key is the tag name. <code>%[1]s</code> = field path,
+            <p class="jd-sub" lang="en">The message key is the tag name. <code>%[1]s</code> = field path,
               <code>%[2]s</code> = the tag's parameter. These English texts are the only built-in catalog
               (<code>i18n.LangEN</code>); there is <b>no</b> built-in Vietnamese catalog.</p>
-            <p class="jd-sub" lang="vi">i18n key chính là tên tag. <code>%[1]s</code> = đường dẫn field,
+            <p class="jd-sub" lang="vi">Message key chính là tên tag. <code>%[1]s</code> = đường dẫn field,
               <code>%[2]s</code> = tham số của tag. Các văn bản tiếng Anh này là catalog có sẵn duy nhất
               (<code>i18n.LangEN</code>); <b>không</b> có catalog tiếng Việt có sẵn.</p>
           </div>
@@ -560,6 +521,12 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
               <th><span lang="en">used for</span><span lang="vi">dùng cho</span></th>
             </tr>
             <tr>
+              <td>validation_error</td>
+              <td>Validation error</td>
+              <td lang="en">the 422 <code>"message"</code> that <code>BindJSON</code> / <code>BindQuery</code> / <code>ParseUUID</code> send</td>
+              <td lang="vi"><code>"message"</code> của response 422 mà <code>BindJSON</code> / <code>BindQuery</code> / <code>ParseUUID</code> gửi</td>
+            </tr>
+            <tr>
               <td>invalid_type</td>
               <td>%[1]s must be %[2]s</td>
               <td lang="en">JSON type mismatch / bad query number; <code>%[2]s</code> = the <code>type_*</code> text
@@ -608,7 +575,7 @@ func (h *UserHandler) CreateUser(ctx *gin.Context) {
         <div class="jd-tablewrap">
           <table class="jd-params c-pink">
             <tr>
-              <th>validator namespace</th>
+              <th><span lang="en">validator namespace</span><span lang="vi">namespace của validator</span></th>
               <th>key</th>
             </tr>
             <tr>
@@ -680,7 +647,8 @@ translator.AddTranslations(map[string]map[string]string{
         "password_strong":  "%[1]s cần ít nhất 8 ký tự gồm chữ thường, chữ hoa, số và ký tự đặc biệt",
     },
 })
-// Keys you don't translate fall back to English.
+// Keys you don't translate come back as the bare tag name (e.g. "max") —
+// translate every tag you use.
 // Field names stay as they are: "email", "password".
 </pre>
           </div>
@@ -697,8 +665,8 @@ translator.AddTranslations(map[string]map[string]string{
           <span class="jd-badge">6</span>
           <div>
             <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
-            <p class="jd-sub" lang="en">Everything the package exports. Signatures copied from the source.</p>
-            <p class="jd-sub" lang="vi">Mọi thứ package export. Chữ ký chép từ source.</p>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/validation</code>.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/validation</code>.</p>
           </div>
         </div>
         <h3 style="margin-top:18px">Validator</h3>
@@ -812,10 +780,16 @@ func BindQuery(ctx *gin.Context, responder response.Responder, validator *Valida
             <div class="jd-term">
               <pre data-hl="go">func ParseUUID(ctx *gin.Context, responder response.Responder, validator *Validator) (uuid.UUID, bool)</pre>
             </div>
-            <p lang="en">Reads the <code>:uuid</code> path parameter as a typed <code>uuid.UUID</code>. Missing or not a
-              UUID → 422 <code>{"uuid":"uuid must be a valid UUID"}</code>; the route must name it <code>:uuid</code>.</p>
-            <p lang="vi">Đọc tham số đường dẫn <code>:uuid</code> thành <code>uuid.UUID</code> có kiểu. Thiếu hoặc không phải
-              UUID → 422 <code>{"uuid":"uuid must be a valid UUID"}</code>; route phải đặt tên nó là <code>:uuid</code>.</p>
+            <p lang="en">Reads the <code>:uuid</code> path parameter as a typed <code>uuid.UUID</code>; the route must name it
+              <code>:uuid</code>. Not a UUID → 422 <code>{"uuid":"uuid must be a valid UUID"}</code>; no such parameter →
+              422 <code>{"uuid":"uuid is required"}</code>; if <code>uuid.Parse</code> still fails after the
+              <code>uuid</code> tag passed → 400 <code>"invalid_uuid"</code>. Behind a global <a href="middleware.html#api"><code>RoutePatterns</code></a>
+              with an <code>IsUUID</code> rule (as in Jungo) a malformed <code>:uuid</code> gets 404 before the handler runs.</p>
+            <p lang="vi">Đọc tham số đường dẫn <code>:uuid</code> thành <code>uuid.UUID</code> có kiểu; route phải đặt tên nó
+              là <code>:uuid</code>. Không phải UUID → 422 <code>{"uuid":"uuid must be a valid UUID"}</code>; route không có
+              param này → 422 <code>{"uuid":"uuid is required"}</code>; nếu <code>uuid.Parse</code> vẫn lỗi sau khi tag
+              <code>uuid</code> đã đạt → 400 <code>"invalid_uuid"</code>. Khi có <a href="middleware.html#api"><code>RoutePatterns</code></a>
+              global với rule <code>IsUUID</code> (như Jungo), <code>:uuid</code> sai định dạng nhận 404 trước khi handler chạy.</p>
           </div>
         </div>
 
@@ -857,12 +831,12 @@ func BindQuery(ctx *gin.Context, responder response.Responder, validator *Valida
               <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
             </tr>
             <tr>
-              <td>app/fx.go</td>
+              <td>internal/app/fx.go</td>
               <td lang="en"><code>provideValidationOptions</code> + <code>validation.Module</code>.</td>
               <td lang="vi"><code>provideValidationOptions</code> + <code>validation.Module</code>.</td>
             </tr>
             <tr>
-              <td>features/user/dto/v1/user_dto.go</td>
+              <td>internal/features/user/dto/v1/user_dto.go</td>
               <td lang="en"><code>CreateUserRequest</code> (<code>email_advanced</code>, <code>password_strong</code>,
                 <code>phone_advanced</code>), <code>UpdateUserRequest</code> (<code>oneof=active inactive</code>),
                 <code>ListUsersRequest</code> (embeds <code>pagination.Request</code>).</td>
@@ -871,14 +845,14 @@ func BindQuery(ctx *gin.Context, responder response.Responder, validator *Valida
                 <code>ListUsersRequest</code> (nhúng <code>pagination.Request</code>).</td>
             </tr>
             <tr>
-              <td>features/auth/dto/v1/auth_dto.go</td>
+              <td>internal/features/auth/dto/v1/auth_dto.go</td>
               <td lang="en"><code>LoginRequest</code>: <code>required,email,max=150</code> /
                 <code>required,max=72</code>.</td>
               <td lang="vi"><code>LoginRequest</code>: <code>required,email,max=150</code> /
                 <code>required,max=72</code>.</td>
             </tr>
             <tr>
-              <td>features/user/handler/v1/user_handler.go<br>features/auth/handler/v1/auth_handler.go</td>
+              <td>internal/features/user/handler/v1/user_handler.go<br>internal/features/auth/handler/v1/auth_handler.go</td>
               <td lang="en"><code>validation.BindJSON</code>, <code>BindQuery</code> and <code>ParseUUID</code> on
                 every request — a failed bind answers 422 by itself.</td>
               <td lang="vi"><code>validation.BindJSON</code>, <code>BindQuery</code> và <code>ParseUUID</code> ở mọi
@@ -907,7 +881,7 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · query param error</span></div>
           <pre data-hl="bash">
 # query errors → {"page_size":"page_size must be less than 100"}
-$ curl -s 'localhost:$API_SERVER_PORT/api/v1/users?page_size=500' -H 'Authorization: Bearer &lt;access_token&gt;' | jq
+$ curl -s "localhost:$API_SERVER_PORT/api/v1/users?page_size=500" -H 'Authorization: Bearer &lt;access_token&gt;' | jq
 </pre>
         </div>
 
@@ -932,7 +906,7 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · lỗi query param</span></div>
           <pre data-hl="bash">
 # lỗi query param → {"page_size":"page_size must be less than 100"}
-$ curl -s 'localhost:$API_SERVER_PORT/api/v1/users?page_size=500' -H 'Authorization: Bearer &lt;access_token&gt;' | jq
+$ curl -s "localhost:$API_SERVER_PORT/api/v1/users?page_size=500" -H 'Authorization: Bearer &lt;access_token&gt;' | jq
 </pre>
         </div>
       </section>
@@ -946,8 +920,7 @@ $ curl -s 'localhost:$API_SERVER_PORT/api/v1/users?page_size=500' -H 'Authorizat
           </div>
         </div>
         <div class="jd-explain" style="margin-top:16px">
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">min / max messages are
-              off by one</span><span class="x" lang="en">The bounds are inclusive but the texts say "longer than" /
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w"><span lang="en">min / max messages are off by one</span><span lang="vi">Message min / max lệch một đơn vị</span></span><span class="x" lang="en">The bounds are inclusive but the texts say "longer than" /
               "greater than" / "less than": <code>min=8</code> accepts 8 characters yet says
               <code>"password must be longer than 8 characters"</code>; <code>max=100</code> on an int says
               <code>"page_size must be less than 100"</code> although 100 passes. Override the texts if that
@@ -955,60 +928,70 @@ $ curl -s 'localhost:$API_SERVER_PORT/api/v1/users?page_size=500' -H 'Authorizat
               "greater than" / "less than": <code>min=8</code> chấp nhận 8 ký tự nhưng báo
               <code>"password must be longer than 8 characters"</code>; <code>max=100</code> trên số nguyên báo
               <code>"page_size must be less than 100"</code> dù 100 vẫn đạt. Ghi đè văn bản nếu cần.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">email_advanced hits
-              DNS</span><span class="x" lang="en">A new domain costs a live MX (then A/AAAA) lookup, bounded by
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">email_advanced hits DNS</span><span lang="vi">email_advanced gọi DNS</span></span><span class="x" lang="en">A new domain costs a live MX (then A/AAAA) lookup, bounded by
               <code>MXTimeout</code> (3s); answers are cached per Validator for 10 minutes. When DNS itself fails
               (offline, timeout) the address is accepted rather than blocking sign-ups. Nothing is logged.</span><span
               class="x" lang="vi">Domain mới tốn một lần tra MX (rồi A/AAAA) thật, giới hạn bởi <code>MXTimeout</code>
               (3s); kết quả được cache theo Validator trong 10 phút. Khi chính DNS lỗi (offline, timeout) địa chỉ được
               chấp nhận thay vì chặn đăng ký. Không log gì.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Keys come from Go
-              names</span><span class="x" lang="en">Gin's validator reports Go field names, so
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">Keys come from Go names</span><span lang="vi">Key lấy từ tên Go</span></span><span class="x" lang="en">Gin's validator reports Go field names, so
               <code>Phone string `json:"tel"`</code> yields the key <code>"phone"</code> for a rule error — but a JSON
               type error on the same field uses <code>"tel"</code>. One field, two keys. Keep json tags = snake_case of
               the field name.</span><span class="x" lang="vi">Validator của gin báo tên field Go, nên
               <code>Phone string `json:"tel"`</code> cho key <code>"phone"</code> khi lỗi rule — nhưng lỗi kiểu JSON
               trên cùng field lại dùng <code>"tel"</code>. Một field, hai key. Giữ json tag = snake_case của tên
               field.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Untranslated
-              tags</span><span class="x" lang="en">A tag without a catalog entry (e.g. <code>url</code>,
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">Untranslated tags</span><span lang="vi">Tag chưa có bản dịch</span></span><span class="x" lang="en">A tag without a catalog entry (e.g. <code>url</code>,
               <code>len</code>, <code>numeric</code>) gives the bare tag as the message. Add a translation for every tag
               you use.</span><span class="x" lang="vi">Tag không có trong catalog (ví dụ <code>url</code>,
               <code>len</code>, <code>numeric</code>) cho message chỉ là tên tag. Thêm bản dịch cho mọi tag bạn
               dùng.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">min_int / max_int are
-              integer-only</span><span class="x" lang="en">They accept int and uint fields; on a string, float or any
-              other kind they simply fail validation (no panic). For floats prefer the standard <code>min</code> /
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w"><span lang="en">min_int / max_int are integer-only</span><span lang="vi">min_int / max_int chỉ cho số nguyên</span></span><span class="x" lang="en">They accept int and uint fields; on a string, float or any
+              other kind they fail validation (no panic). For floats prefer the standard <code>min</code> /
               <code>max</code> / <code>gte</code> / <code>lte</code>.</span><span class="x" lang="vi">Chúng nhận field
               int và uint; trên field chuỗi, số thực hay kiểu khác thì chỉ báo không đạt (không panic). Với số thực, nên
               dùng <code>min</code> / <code>max</code> / <code>gte</code> / <code>lte</code> chuẩn.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">password_strong
-              details</span><span class="x" lang="en">Length is counted in bytes, and only the listed specials count —
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w"><span lang="en">password_strong details</span><span lang="vi">Chi tiết password_strong</span></span><span class="x" lang="en">Length is counted in bytes, and only the listed specials count —
               <code>~</code>, <code>`</code> and spaces don't, so <code>"Abcdefg1~"</code> fails.</span><span class="x"
               lang="vi">Độ dài tính theo byte, và chỉ các ký tự đặc biệt trong danh sách được tính — <code>~</code>,
               <code>`</code> và dấu cách thì không, nên <code>"Abcdefg1~"</code> không đạt.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">Bad query numbers are
-              matched by value</span><span class="x" lang="en"><code>strconv.NumError</code> has no field name, so the
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w"><span lang="en">Bad query numbers are matched by value</span><span lang="vi">Số sai trong query được dò theo giá trị</span></span><span class="x" lang="en"><code>strconv.NumError</code> has no field name, so the
               first query/form key holding that value wins. <code>?page=x&amp;page_size=x</code> may report either key;
               values from <code>ShouldBindUri</code> aren't searched (you get the single string).</span><span class="x"
               lang="vi"><code>strconv.NumError</code> không có tên field, nên query/form key đầu tiên chứa giá trị đó
               được chọn. <code>?page=x&amp;page_size=x</code> có thể báo key nào cũng được; giá trị từ
               <code>ShouldBindUri</code> không được tìm (bạn nhận dạng string).</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">8</span><span class="w">One Validator per
-              process</span><span class="x" lang="en">gin's binding engine is process-global: every
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">8</span><span class="w"><span lang="en">One Validator per process</span><span lang="vi">Một Validator cho mỗi process</span></span><span class="x" lang="en">gin's binding engine is process-global: every
               <code>NewValidator</code> re-registers the custom tags on it, so the most recently created Validator's
               blocklist and MX settings are the ones <code>ShouldBind…</code> uses.</span><span class="x"
               lang="vi">Engine binding của gin là toàn cục cho process: mỗi <code>NewValidator</code> đăng ký lại các
               tag tùy chỉnh lên nó, nên blocklist và cấu hình MX của Validator tạo sau cùng là thứ
               <code>ShouldBind…</code> dùng.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">9</span><span class="w"><span lang="en">Fx builds it only on demand</span><span lang="vi">Fx chỉ tạo khi cần</span></span><span class="x" lang="en">Creating the Validator is what registers the custom tags. If nothing in the Fx graph
+              asks for <code>*validation.Validator</code>, it is never built and the first bind using a custom tag panics
+              with <code>Undefined validation function '…'</code>. Jungo's handlers ask for it; elsewhere force it with
+              <code>fx.Invoke(func(*validation.Validator) {})</code>.</span><span class="x" lang="vi">Chính việc tạo Validator
+              là đăng ký các tag tùy chỉnh. Nếu không gì trong Fx graph xin <code>*validation.Validator</code>, nó không
+              bao giờ được tạo và lần bind đầu tiên dùng tag tùy chỉnh sẽ panic với <code>Undefined validation function
+              '…'</code>. Handler của Jungo có xin nó; ở nơi khác hãy ép tạo bằng
+              <code>fx.Invoke(func(*validation.Validator) {})</code>.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">10</span><span class="w"><span lang="en">Blocklist and MX cache limits</span><span lang="vi">Giới hạn của blocklist và cache MX</span></span><span class="x" lang="en">The blocklist matches the exact domain after the <code>@</code> (lowercased):
+              <code>sub.mailinator.com</code> is not blocked by <code>mailinator.com</code>. The MX cache holds at most
+              10 000 domains; when full it is cleared completely. Failed DNS lookups are never cached.</span><span class="x" lang="vi">Blocklist so khớp chính xác domain sau <code>@</code> (đã chuyển chữ thường):
+              <code>sub.mailinator.com</code> không bị chặn bởi <code>mailinator.com</code>. Cache MX giữ tối đa 10 000
+              domain; khi đầy thì bị xoá toàn bộ. Tra DNS thất bại không bao giờ được cache.</span></div>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">11</span><span class="w"><span lang="en">datetime message ignores its layout</span><span lang="vi">Message datetime bỏ qua layout</span></span><span class="x" lang="en">The built-in <code>datetime</code> tag takes a layout (<code>datetime=2006-01-02T15:04:05Z07:00</code>),
+              but its text always says <code>YYYY-MM-DD</code>. Override <code>datetime</code> when you use another
+              layout, or use the custom <code>date</code> tag for dates.</span><span class="x" lang="vi">Tag <code>datetime</code> có sẵn nhận một layout (<code>datetime=2006-01-02T15:04:05Z07:00</code>),
+              nhưng văn bản luôn ghi <code>YYYY-MM-DD</code>. Hãy ghi đè <code>datetime</code> khi dùng layout khác, hoặc
+              dùng tag tùy chỉnh <code>date</code> cho ngày.</span></div>
         </div>
       </section>
 
       <footer class="jd-footer">
-        <span>Jundoc · Junkit · validation</span>
-        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
-              Junkit</span></a></span>
-      </footer>
+    <span>Jundoc · Junkit · validation</span>
+    <span><a href="response.html">← response</a> · <a href="pagination.html">pagination →</a></span>
+  </footer>
     </article>
   </div>
 

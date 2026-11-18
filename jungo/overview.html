@@ -18,17 +18,17 @@
 
   <!-- ============================================================ HERO -->
   <header class="jd-hero">
-    <div class="jd-eyebrow">Jungo · <span lang="en">overview</span><span lang="vi">tổng quan</span></div>
+    <div class="jd-eyebrow">Jungo · <span lang="en">Overview</span><span lang="vi">Tổng quan</span></div>
     <h1>Jungo</h1>
-    <p lang="en">A Go REST API skeleton built on Clean Architecture. Clone it, run 3 commands, and you have a production-ready API with authentication, user management, migrations, code scaffold, and CLI console — designed to scale cleanly feature by feature.</p>
-    <p lang="vi">Bộ khung REST API viết bằng Go theo Clean Architecture. Clone về, chạy 3 lệnh là có ngay hệ thống hoàn chỉnh với Authentication (Opaque token), quản lý user, database migration, công cụ sinh code (Scaffold) và console CLI — cấu trúc chuẩn mực để mở rộng từng feature.</p>
+    <p lang="en">A Go REST API skeleton (Gin + Uber Fx) organised in layers: handler, service, repository. Clone it and run a few commands to get an API with authentication (opaque tokens), users, roles and permissions, migrations, a feature generator and a CLI console. You add your own code one feature at a time.</p>
+    <p lang="vi">Bộ khung REST API viết bằng Go (Gin + Uber Fx), chia tầng: handler, service, repository. Clone về và chạy vài lệnh là có API kèm authentication (opaque token), user, role và permission, migration, công cụ sinh feature và console CLI. Bạn thêm code của mình theo từng feature.</p>
     <div class="jd-chips">
-      <span class="jd-chip">Gin · HTTP</span>
-      <span class="jd-chip">Uber Fx · DI</span>
-      <span class="jd-chip">PostgreSQL + pgx</span>
-      <span class="jd-chip">sqlc · Type-safe</span>
-      <span class="jd-chip">Junkit · Toolkit</span>
-      <span class="jd-chip">Docker + Air</span>
+      <span class="jd-chip">Gin</span>
+      <span class="jd-chip">Uber Fx</span>
+      <span class="jd-chip">PostgreSQL · pgx</span>
+      <span class="jd-chip">sqlc</span>
+      <span class="jd-chip">Junkit</span>
+      <span class="jd-chip">Docker · Air</span>
     </div>
   </header>
 
@@ -46,7 +46,7 @@
       <b>CLI</b>
       <span lang="en">One-off jobs, same services</span><span lang="vi">Tác vụ nền, chung service</span></a>
     <a class="jd-quick c-purple" href="#cheat"><span class="num">⌘</span>
-      <b>Cheat sheet</b>
+      <b lang="en">Cheat sheet</b><b lang="vi">Tra cứu nhanh</b>
       <span lang="en">Every make command</span><span lang="vi">Bảng tra cứu lệnh make</span></a>
   </nav>
 
@@ -77,14 +77,14 @@
 
     <!-- ---------- 2 · install -->
     <h3 style="margin-top:26px"><span lang="en">2 · Install them</span><span lang="vi">2 · Cài đặt</span></h3>
-    <div class="jd-tabs c-blue">
+    <div class="jd-tabs">
       <div class="jd-tablist">
         <button class="jd-tab" type="button" aria-selected="true">macOS</button>
         <button class="jd-tab" type="button" aria-selected="false">Windows</button>
       </div>
       <div class="jd-tabpanel">
         <div class="jd-term" data-copy="commands" lang="en">
-          <div class="jd-term-bar"><i></i><i></i><i></i><span>Terminal</span></div>
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
 <pre data-hl="bash">
 # 0. Homebrew — skip if `brew --version` already works
 $ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -104,7 +104,7 @@ $ brew link --force libpq
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" lang="vi">
-          <div class="jd-term-bar"><i></i><i></i><i></i><span>Terminal</span></div>
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
 <pre data-hl="bash">
 # 0. Homebrew — bỏ qua nếu `brew --version` đã chạy được
 $ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -165,11 +165,8 @@ $ scoop install migrate sqlc postgresql
 $ winget install -e --id Docker.DockerDesktop
 </pre>
         </div>
-        <div class="jd-callout c-orange" style="margin-top:12px">
-          <b lang="en">Windows: run every command from step 3 on in Git Bash</b><b lang="vi">Windows: từ bước 3 trở đi, chạy mọi lệnh trong Git Bash</b>
-          <span lang="en">— not PowerShell or CMD. The Makefile and <code>make app-init</code> are bash scripts. Find "Git Bash" in the Start menu.</span>
-          <span lang="vi">— không dùng PowerShell hay CMD. Makefile và <code>make app-init</code> là script bash. Tìm "Git Bash" trong Start menu.</span>
-        </div>
+        <p class="jd-hint" style="margin-top:12px" lang="en"><b>Windows:</b> run every command from step 3 on in <b>Git Bash</b> (Start menu) — not PowerShell or CMD. The Makefile and <code>make app-init</code> are bash scripts. In step 3, clone with <code>git clone -c core.autocrlf=false …</code> so they keep Unix line endings.</p>
+        <p class="jd-hint" style="margin-top:12px" lang="vi"><b>Windows:</b> từ bước 3 trở đi chạy mọi lệnh trong <b>Git Bash</b> (Start menu) — không dùng PowerShell hay CMD. Makefile và <code>make app-init</code> là script bash. Ở bước 3, clone bằng <code>git clone -c core.autocrlf=false …</code> để chúng giữ kiểu xuống dòng Unix.</p>
       </div>
     </div>
 
@@ -204,11 +201,11 @@ $ sqlc version
 </pre>
         </div>
       </div>
-      <div class="jd-callout c-blue">
-        <b lang="en">"command not found"?</b><b lang="vi">Báo "command not found"?</b>
-        <span lang="en">Close the terminal and open a new one — installers update <code>PATH</code> only for new windows. Still missing → re-run that tool's install line. <code>docker</code> errors like "Cannot connect to the Docker daemon" mean Docker Desktop isn't open yet.</span>
-        <span lang="vi">Đóng terminal và mở cái mới — trình cài chỉ cập nhật <code>PATH</code> cho cửa sổ mới. Vẫn thiếu → chạy lại dòng cài của công cụ đó. <code>docker</code> báo "Cannot connect to the Docker daemon" nghĩa là Docker Desktop chưa được mở.</span>
-      </div>
+      <div class="jd-tablewrap"><table class="jd-params is-prose">
+        <tr><th><span lang="en">symptom</span><span lang="vi">triệu chứng</span></th><th><span lang="en">fix</span><span lang="vi">cách sửa</span></th></tr>
+        <tr><td>command not found</td><td><span lang="en">Open a new terminal — installers update <code>PATH</code> only for new windows. Still missing → re-run that tool's install line.</span><span lang="vi">Mở terminal mới — trình cài chỉ cập nhật <code>PATH</code> cho cửa sổ mới. Vẫn thiếu → chạy lại dòng cài của công cụ đó.</span></td></tr>
+        <tr><td>Cannot connect to the Docker daemon</td><td><span lang="en">Docker Desktop isn't open yet.</span><span lang="vi">Docker Desktop chưa được mở.</span></td></tr>
+      </table></div>
     </div>
 
     <!-- ---------- 3 · clone -->
@@ -231,16 +228,11 @@ $ cd jungo
         </div>
       </div>
       <div>
-        <div class="jd-callout c-blue">
-          <b lang="en">Windows:</b><b lang="vi">Windows:</b>
-          <span lang="en">clone with <code>git clone -c core.autocrlf=false git@github.com:jun-develop/jungo.git</code> so the bash scripts keep Unix line endings — otherwise <code>make app-init</code> fails with <code>$'\r': command not found</code>.</span>
-          <span lang="vi">clone bằng <code>git clone -c core.autocrlf=false git@github.com:jun-develop/jungo.git</code> để script bash giữ kiểu xuống dòng Unix — nếu không <code>make app-init</code> sẽ lỗi <code>$'\r': command not found</code>.</span>
-        </div>
-        <div class="jd-callout c-blue" style="margin-top:10px">
-          <b lang="en">"Permission denied (publickey)"?</b><b lang="vi">Báo "Permission denied (publickey)"?</b>
-          <span lang="en">Your SSH key isn't on GitHub yet. Clone over HTTPS instead: <code>git clone https://github.com/jun-develop/jungo.git</code></span>
-          <span lang="vi">Bạn chưa thêm SSH key vào GitHub. Clone bằng HTTPS thay thế: <code>git clone https://github.com/jun-develop/jungo.git</code></span>
-        </div>
+        <div class="jd-tablewrap"><table class="jd-params is-prose">
+          <tr><th><span lang="en">symptom</span><span lang="vi">triệu chứng</span></th><th><span lang="en">fix</span><span lang="vi">cách sửa</span></th></tr>
+          <tr><td>$'\r': command not found <span lang="en">(Windows)</span><span lang="vi">(Windows)</span></td><td><span lang="en">The scripts got Windows line endings. Clone again with <code>git clone -c core.autocrlf=false git@github.com:jun-develop/jungo.git</code>.</span><span lang="vi">Script bị đổi sang kiểu xuống dòng Windows. Clone lại bằng <code>git clone -c core.autocrlf=false git@github.com:jun-develop/jungo.git</code>.</span></td></tr>
+          <tr><td>Permission denied (publickey)</td><td><span lang="en">Your SSH key isn't on GitHub. Clone over HTTPS: <code>git clone https://github.com/jun-develop/jungo.git</code>.</span><span lang="vi">SSH key của bạn chưa có trên GitHub. Clone bằng HTTPS: <code>git clone https://github.com/jun-develop/jungo.git</code>.</span></td></tr>
+        </table></div>
       </div>
     </div>
 
@@ -253,32 +245,32 @@ $ cd jungo
       <div class="jd-node is-tint c-blue" data-node="s1">
         <span class="k"><span lang="en">Step 1</span><span lang="vi">Bước 1</span></span>
         <span class="t mono">make app-init</span>
-        <div class="d" lang="en">Asks for app name, DB name/user/password and ports — press <b>Enter</b> to keep each default. Creates <code>.env</code> with auth secrets, and warns if <code>migrate</code>, <code>psql</code> or <code>sqlc</code> is missing.</div>
-        <div class="d" lang="vi">Hỏi tên app, tên/user/mật khẩu DB và port — cứ nhấn <b>Enter</b> để giữ giá trị mặc định. Tạo file <code>.env</code> kèm auth secret, và cảnh báo nếu thiếu <code>migrate</code>, <code>psql</code> hay <code>sqlc</code>.</div>
+        <div class="d" lang="en">Asks for app name, DB name/user/password, ports and a CI provider — press <b>Enter</b> to keep each default. Creates <code>.env</code> with auth secrets, writes a release CI workflow (GitHub or GitLab, unless you pick none), warns if <code>migrate</code>, <code>psql</code> or <code>sqlc</code> is missing, and <b>deletes <code>.git</code> and starts a fresh repository</b> (no commits). Run it once, on a fresh clone.</div>
+        <div class="d" lang="vi">Hỏi tên app, tên/user/mật khẩu DB, port và nhà cung cấp CI — cứ nhấn <b>Enter</b> để giữ giá trị mặc định. Tạo file <code>.env</code> kèm auth secret, ghi một workflow CI cho release (GitHub hoặc GitLab, trừ khi chọn none), cảnh báo nếu thiếu <code>migrate</code>, <code>psql</code> hay <code>sqlc</code>, và <b>xóa <code>.git</code> rồi tạo repository mới</b> (chưa có commit). Chỉ chạy một lần, trên bản clone mới.</div>
       </div>
       <div class="jd-node is-tint c-blue" data-node="s2">
         <span class="k"><span lang="en">Step 2</span><span lang="vi">Bước 2</span></span>
         <span class="t mono">make app-dev-bg</span>
-        <div class="d" lang="en">Docker Desktop must be open. Builds and starts API + PostgreSQL in the background. It returns quickly — <b>the API is not ready yet</b>.</div>
-        <div class="d" lang="vi">Docker Desktop phải đang mở. Build và chạy API + PostgreSQL ở chế độ nền. Lệnh kết thúc nhanh — nhưng <b>API chưa sẵn sàng đâu</b>.</div>
+        <div class="d" lang="en">Docker Desktop must be open. Builds and starts API + PostgreSQL in the background; it returns once PostgreSQL is healthy. <b>The API is not ready yet</b>.</div>
+        <div class="d" lang="vi">Docker Desktop phải đang mở. Build và chạy API + PostgreSQL ở chế độ nền; lệnh kết thúc khi PostgreSQL đã sẵn sàng. <b>API thì chưa sẵn sàng</b>.</div>
       </div>
-      <div class="jd-node is-tint c-orange" data-node="s3">
-        <span class="k"><span lang="en">Step 3 · wait</span><span lang="vi">Bước 3 · chờ</span></span>
-        <span class="t mono">make app-logs</span>
-        <div class="d" lang="en">Watch the logs until you see <code>server: starting</code>. Then press <b>Ctrl+C</b> — that only closes the log view, the app keeps running.</div>
-        <div class="d" lang="vi">Theo dõi log đến khi thấy dòng <code>server: starting</code>. Rồi nhấn <b>Ctrl+C</b> — chỉ thoát khỏi màn hình log, app vẫn chạy.</div>
-      </div>
-      <div class="jd-node is-tint c-blue" data-node="s4">
-        <span class="k"><span lang="en">Step 4</span><span lang="vi">Bước 4</span></span>
+      <div class="jd-node is-tint c-blue" data-node="s3">
+        <span class="k"><span lang="en">Step 3</span><span lang="vi">Bước 3</span></span>
         <span class="t mono">make migrate-up</span>
-        <div class="d" lang="en">Creates tables, SQL functions and demo users (admin, manager, member, user). API ready on <code>localhost:$API_SERVER_PORT</code> — the port you chose in <code>app-init</code> (<code>API_SERVER_PORT</code> in <code>.env</code>, default 8080); every example in these docs uses it.</div>
-        <div class="d" lang="vi">Tạo bảng, SQL function và nạp user demo (admin, manager, member, user). API sẵn sàng tại <code>localhost:$API_SERVER_PORT</code> — chính là port bạn chọn ở <code>app-init</code> (<code>API_SERVER_PORT</code> trong <code>.env</code>, mặc định 8080); mọi ví dụ trong tài liệu đều dùng biến này.</div>
+        <div class="d" lang="en">Creates tables, permissions, SQL functions and demo users (admin, manager, member, user). Run it now: the API refuses to start until the permissions it uses are in the database.</div>
+        <div class="d" lang="vi">Tạo bảng, permission, SQL function và nạp user demo (admin, manager, member, user). Chạy ngay bây giờ: API không chịu khởi động cho tới khi các permission nó dùng có trong database.</div>
+      </div>
+      <div class="jd-node is-tint c-orange" data-node="s4">
+        <span class="k"><span lang="en">Step 4 · wait</span><span lang="vi">Bước 4 · chờ</span></span>
+        <span class="t mono">make app-logs</span>
+        <div class="d" lang="en">Watch the logs until you see <code>server: starting</code>, then press <b>Ctrl+C</b> (it only closes the log view). The API listens on <code>localhost:$API_SERVER_PORT</code> — the port you chose in <code>app-init</code> (default 8080); every example in these docs uses it.</div>
+        <div class="d" lang="vi">Theo dõi log đến khi thấy dòng <code>server: starting</code>, rồi nhấn <b>Ctrl+C</b> (chỉ thoát màn hình log). API lắng nghe ở <code>localhost:$API_SERVER_PORT</code> — port bạn chọn ở <code>app-init</code> (mặc định 8080); mọi ví dụ trong tài liệu đều dùng biến này.</div>
       </div>
     </div>
     <div class="jd-callout c-orange" style="margin-top:18px">
-      <b lang="en">⏳ The first start is slow — that's normal.</b><b lang="vi">⏳ Lần chạy đầu tiên rất lâu — đó là bình thường.</b>
-      <span lang="en">Docker downloads the Go image and every Go module, then compiles the whole app: from one to several minutes depending on your network. Until <code>server: starting</code> appears, <code>curl</code> hangs or gets "connection refused" — keep watching <code>make app-logs</code> instead of restarting. Later starts take seconds, because the modules and build cache stay in Docker volumes.</span>
-      <span lang="vi">Docker phải tải image Go và toàn bộ Go module, rồi biên dịch cả app: mất từ một đến vài phút tùy mạng. Trước khi thấy <code>server: starting</code>, <code>curl</code> sẽ treo hoặc báo "connection refused" — cứ xem <code>make app-logs</code>, đừng tắt đi chạy lại. Các lần sau chỉ mất vài giây vì module và build cache được giữ trong Docker volume.</span>
+      <b lang="en">Important:</b><b lang="vi">Quan trọng:</b>
+      <span lang="en">the first start is slow. The container downloads every Go module and compiles the whole app before it can answer; until <code>server: starting</code> appears, <code>curl</code> hangs or gets "connection refused". Keep watching <code>make app-logs</code> instead of restarting. Later starts are fast, because the modules and build cache stay in Docker volumes. If the app exits (database not migrated yet), Air starts it again 3 seconds later.</span>
+      <span lang="vi">lần chạy đầu rất chậm. Container tải toàn bộ Go module và biên dịch cả app trước khi trả lời được; trước khi thấy <code>server: starting</code>, <code>curl</code> sẽ treo hoặc báo "connection refused". Cứ xem <code>make app-logs</code>, đừng tắt đi chạy lại. Các lần sau nhanh vì module và build cache được giữ trong Docker volume. Nếu app thoát (database chưa migrate), Air chạy lại sau 3 giây.</span>
     </div>
 
     <div class="jd-grid-2" style="margin-top:30px">
@@ -290,9 +282,9 @@ $ cd jungo
           {"from":"app","to":"mail","color":"muted","dashed":true,"delay":1200}]'>
           <div class="jd-node is-tint c-blue" data-node="app">
             <span class="t mono">app</span>
-            <div class="d"><span lang="en">Go API on :$API_SERVER_PORT — hot reload with Air: save a .go file, it restarts by itself. If it exits (database not ready or not migrated yet), Air starts it again 3 seconds later.</span><span lang="vi">Go API ở :$API_SERVER_PORT — hot reload bằng Air: lưu file .go là app tự khởi động lại. Nếu app thoát (database chưa sẵn sàng hoặc chưa migrate), Air chạy lại sau 3 giây.</span></div>
+            <div class="d"><span lang="en">Go API on :$API_SERVER_PORT — hot reload with Air: save a .go file and it rebuilds and restarts.</span><span lang="vi">Go API ở :$API_SERVER_PORT — hot reload bằng Air: lưu file .go là app tự build và khởi động lại.</span></div>
           </div>
-          <div class="jd-node is-tint c-blue" data-node="pg">
+          <div class="jd-node is-tint c-green" data-node="pg">
             <span class="t mono">postgresql</span>
             <div class="d"><span lang="en">Where the data lives.</span><span lang="vi">Nơi lưu dữ liệu.</span></div>
           </div>
@@ -300,12 +292,13 @@ $ cd jungo
             <span class="tag"><span lang="en">optional</span><span lang="vi">tùy chọn</span></span>
             <span class="t mono">redis</span>
             <div class="p">make app-dev WITH=cache</div>
-            <div class="d"><span lang="en">Only starts Redis — the app uses it once <code>CACHE_REDIS_ENABLE=true</code> (default <code>false</code>: no cache, the app reads the DB).</span><span lang="vi">Chỉ khởi động Redis — app chỉ dùng nó khi đặt <code>CACHE_REDIS_ENABLE=true</code> (mặc định <code>false</code>: không cache, app đọc thẳng DB).</span></div>
+            <div class="d"><span lang="en">Only starts Redis — the app uses it once <code>CACHE_REDIS_ENABLED=true</code> (default <code>false</code>: no cache, the app reads the DB).</span><span lang="vi">Chỉ khởi động Redis — app chỉ dùng nó khi đặt <code>CACHE_REDIS_ENABLED=true</code> (mặc định <code>false</code>: không cache, app đọc thẳng DB).</span></div>
           </div>
           <div class="jd-node is-opt c-muted" data-node="mail">
             <span class="tag"><span lang="en">optional</span><span lang="vi">tùy chọn</span></span>
             <span class="t mono">mailpit</span>
-            <div class="p">make app-dev WITH=full</div>
+            <div class="p">make app-dev WITH=mail</div>
+            <div class="d"><span lang="en">Local SMTP server; read the emails at <code>localhost:8025</code>. The app sends to it only with <code>MAIL_DRIVER=smtp</code>, <code>MAIL_SMTP_HOST=mailpit</code>, <code>MAIL_SMTP_PORT=1025</code>, <code>MAIL_SMTP_ALLOW_PLAINTEXT=true</code>. <code>WITH=full</code> starts Redis and Mailpit.</span><span lang="vi">SMTP server local; đọc mail tại <code>localhost:8025</code>. App chỉ gửi tới nó khi đặt <code>MAIL_DRIVER=smtp</code>, <code>MAIL_SMTP_HOST=mailpit</code>, <code>MAIL_SMTP_PORT=1025</code>, <code>MAIL_SMTP_ALLOW_PLAINTEXT=true</code>. <code>WITH=full</code> chạy cả Redis và Mailpit.</span></div>
           </div>
         </div>
       </div>
@@ -382,19 +375,19 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/users \
       <span class="jd-badge">2</span>
       <div>
         <h2><span lang="en">How a request flows (Clean Architecture)</span><span lang="vi">Luồng xử lý một Request (Clean Architecture)</span></h2>
-        <p class="jd-sub" lang="en">Follow <code>GET /api/v1/users/:uuid</code> from the client through middleware, router, handler, service, repository to PostgreSQL and back. Press ▶ or step through it.</p>
-        <p class="jd-sub" lang="vi">Theo dõi <code>GET /api/v1/users/:uuid</code> từ client qua middleware, router, handler, service, repository đến PostgreSQL rồi quay về. Bấm ▶ hoặc nhấn từng bước.</p>
+        <p class="jd-sub" lang="en">Follow <code>GET /api/v1/users/:uuid</code> from the client through middleware, router, handler, service, repository to PostgreSQL and back. Press ▶ or step through it. What each global middleware does is in the table below the player.</p>
+        <p class="jd-sub" lang="vi">Theo dõi <code>GET /api/v1/users/:uuid</code> từ client qua middleware, router, handler, service, repository đến PostgreSQL rồi quay về. Bấm ▶ hoặc nhấn từng bước. Mỗi middleware chung làm gì: xem bảng bên dưới player.</p>
       </div>
     </div>
 
     <div class="jd-player" id="rf-player" style="margin-top:26px">
       <div class="jd-stage rf" data-wires='[
-        {"from":"client","to":"mw","color":"green"},
-        {"from":"mw","to":"router","color":"green","dir":"v"},
-        {"from":"router","to":"handler","color":"green"},
-        {"from":"handler","to":"service","color":"green"},
-        {"from":"service","to":"repo","color":"green"},
-        {"from":"repo","to":"sqlc","color":"green"},
+        {"from":"client","to":"mw","color":"blue"},
+        {"from":"mw","to":"router","color":"blue","dir":"v"},
+        {"from":"router","to":"handler","color":"blue"},
+        {"from":"handler","to":"service","color":"blue"},
+        {"from":"service","to":"repo","color":"blue"},
+        {"from":"repo","to":"sqlc","color":"blue"},
         {"from":"sqlc","to":"db","color":"green"}]'>
         <div class="jd-node rf-client c-muted" data-node="client">
           <span class="t">Client</span>
@@ -404,48 +397,52 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/users \
           <span class="k"><span lang="en">Global middleware — outer → inner</span><span lang="vi">Middleware chung — ngoài → trong</span></span>
           <span class="p" style="font:600 12px var(--mono);color:var(--muted);margin-left:8px">internal/router/router.go</span>
           <div class="rf-mw-grid">
-            <div class="jd-node c-green" data-node="mw1"><span class="t"><small>1</small>TracerDebug</span></div>
-            <div class="jd-node c-green" data-node="mw2"><span class="t"><small>2</small>Security</span></div>
-            <div class="jd-node c-green" data-node="mw3"><span class="t"><small>3</small>Trace</span></div>
-            <div class="jd-node c-green" data-node="mw4"><span class="t"><small>4</small>CORS</span></div>
-            <div class="jd-node c-green" data-node="mw5"><span class="t"><small>5</small>Gzip</span></div>
-            <div class="jd-node c-green" data-node="mw7"><span class="t"><small>6</small>AccessLog</span></div>
-            <div class="jd-node c-green" data-node="mw9"><span class="t"><small>7</small>Recover</span></div>
-            <div class="jd-node c-green" data-node="mw6"><span class="t"><small>8</small>Payload</span></div>
-            <div class="jd-node c-green" data-node="mwbn"><span class="t"><small>9</small>Banner</span></div>
-            <div class="jd-node c-green" data-node="mw8"><span class="t"><small>10</small>Limiter</span></div>
-            <div class="jd-node c-green" data-node="mwrp"><span class="t"><small>11</small>RoutePatterns</span></div>
+            <div class="jd-node c-blue" data-node="mw1"><span class="t"><small>1</small>TracerDebug</span></div>
+            <div class="jd-node c-blue" data-node="mw2"><span class="t"><small>2</small>Security</span></div>
+            <div class="jd-node c-blue" data-node="mw3"><span class="t"><small>3</small>Trace</span></div>
+            <div class="jd-node c-blue" data-node="mw4"><span class="t"><small>4</small>CORS</span></div>
+            <div class="jd-node c-blue" data-node="mw5"><span class="t"><small>5</small>Gzip</span></div>
+            <div class="jd-node c-blue" data-node="mw7"><span class="t"><small>6</small>AccessLog</span></div>
+            <div class="jd-node c-blue" data-node="mw9"><span class="t"><small>7</small>Recover</span></div>
+            <div class="jd-node is-opt c-blue" data-node="mwbn"><span class="t"><small>8</small>Banner</span></div>
+            <div class="jd-node c-blue" data-node="mw8"><span class="t"><small>9</small>Limiter</span></div>
+            <div class="jd-node c-blue" data-node="mw6"><span class="t"><small>10</small>Payload</span></div>
+            <div class="jd-node c-blue" data-node="mwrp"><span class="t"><small>11</small>RoutePatterns</span></div>
           </div>
         </div>
 
-        <div class="jd-node c-green" data-node="router">
+        <div class="jd-node c-blue" data-node="router">
           <span class="t">Router</span><span class="p">router/v1/</span>
-          <div class="d" lang="en">URL match · BearerAuth · Guard (permission)</div><div class="d" lang="vi">Khớp URL · BearerAuth · Guard (permission)</div>
+          <div class="d" lang="en">URL match, then:</div><div class="d" lang="vi">Khớp URL, rồi:</div>
+          <div style="display:grid;gap:16px;margin-top:8px">
+            <div class="jd-node c-purple" data-node="auth" style="padding:5px 6px;box-shadow:none"><span class="t mono" style="font-size:11px;margin:0">BearerAuth</span></div>
+            <div class="jd-node c-purple" data-node="guard" style="padding:5px 6px;box-shadow:none"><span class="t mono" style="font-size:11px;margin:0">Guard</span></div>
+          </div>
         </div>
-        <div class="jd-node is-tint c-green" data-node="handler">
+        <div class="jd-node is-tint c-blue" data-node="handler">
           <span class="t">Handler</span><span class="p">handler/v1 + dto/v1</span>
           <div class="d" lang="en">HTTP in → validate DTO → service → JSON</div><div class="d" lang="vi">Nhận HTTP → validate DTO → gọi service → trả JSON</div>
         </div>
-        <div class="jd-node is-tint c-green" data-node="service">
+        <div class="jd-node is-tint c-blue" data-node="service">
           <span class="t">Service</span><span class="p">service/</span>
-          <div class="d" lang="en">Business rules & validation</div><div class="d" lang="vi">Chứa toàn bộ logic nghiệp vụ cốt lõi</div>
+          <div class="d" lang="en">Business rules & validation</div><div class="d" lang="vi">Quy tắc nghiệp vụ & kiểm tra</div>
         </div>
-        <div class="jd-node is-tint c-green" data-node="repo">
+        <div class="jd-node is-tint c-blue" data-node="repo">
           <span class="t">Repository</span><span class="p">repository/</span>
           <div class="d" lang="en">Data access & transactions</div><div class="d" lang="vi">Truy xuất dữ liệu & quản lý transaction</div>
         </div>
-        <div class="jd-node is-tint c-green" data-node="sqlc">
+        <div class="jd-node is-tint c-blue" data-node="sqlc">
           <span class="t">sqlc</span><span class="p">database/primary/sqlc</span>
           <div class="d" lang="en">Type-safe SQL query code</div><div class="d" lang="vi">Code Go an toàn kiểu sinh từ file .sql</div>
         </div>
         <div class="jd-node rf-db c-green" data-node="db">
-          <span class="t">PostgreSQL</span><span class="p">users table</span>
+          <span class="t">PostgreSQL</span><span class="p"><span lang="en">users table</span><span lang="vi">bảng users</span></span>
         </div>
 
         <div class="rf-domain">
           <code>domain/</code>
-          <span lang="en">— The heart of Clean Architecture: entities + interfaces (UserService, UserRepository). Pure Go: no Gin, no SQL driver. Outer layers only talk through these interfaces, making unit testing and mocking trivial.</span>
-          <span lang="vi">— Trái tim của Clean Architecture: định nghĩa Entity & Interface (UserService, UserRepository). Go thuần túy: không dính Gin hay SQL driver. Các tầng ngoài chỉ giao tiếp qua interface này, giúp code tách biệt hoàn toàn và cực kỳ dễ mock khi viết Unit Test.</span>
+          <span lang="en">— entities and interfaces (UserService, UserRepository). Plain Go: no Gin, no SQL driver. Outer layers talk only through these interfaces, so tests can swap in fakes.</span>
+          <span lang="vi">— entity và interface (UserService, UserRepository). Go thuần: không Gin, không SQL driver. Các tầng ngoài chỉ giao tiếp qua các interface này, nên test có thể thay bằng bản giả.</span>
         </div>
       </div>
 
@@ -459,10 +456,32 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/users \
       <div class="jd-caption"></div>
     </div>
 
+    <h3 id="mw-order" style="margin-top:26px"><span lang="en">Global middleware, in order</span><span lang="vi">Middleware chung, theo thứ tự</span></h3>
+    <div class="jd-tablewrap"><table class="jd-params c-blue">
+      <tr><th>#</th><th>middleware</th><th><span lang="en">what it does in Jungo</span><span lang="vi">làm gì trong Jungo</span></th><th><span lang="en">ends the request with</span><span lang="vi">kết thúc request với</span></th></tr>
+      <tr><td>1</td><td>TracerDebug</td><td><span lang="en">URL carries the debug key (<code>?&lt;TRACER_DEBUG_KEY&gt;=&lt;TRACER_DEBUG_VALUE&gt;</code>, e.g. <code>?t_debug=…</code>) and <code>X-Internal-Secret</code> matches → the request still runs, but returns a debug report (SQL + timing). See <a href="build-a-feature.html#debug">Debug</a>.</span><span lang="vi">URL có debug key (<code>?&lt;TRACER_DEBUG_KEY&gt;=&lt;TRACER_DEBUG_VALUE&gt;</code>, vd. <code>?t_debug=…</code>) và <code>X-Internal-Secret</code> khớp → request vẫn chạy nhưng trả về báo cáo debug (SQL + thời gian). Xem <a href="build-a-feature.html#debug">Debug</a>.</span></td><td>—</td></tr>
+      <tr><td>2</td><td>Security</td><td><span lang="en">Security headers on the response: X-Frame-Options, X-Content-Type-Options, Referrer-Policy…</span><span lang="vi">Header bảo mật trên response: X-Frame-Options, X-Content-Type-Options, Referrer-Policy…</span></td><td>—</td></tr>
+      <tr><td>3</td><td>Trace</td><td><span lang="en">A trace ID per request (header <code>X-Trace-Id</code>) so its logs can be found later.</span><span lang="vi">Một trace ID cho mỗi request (header <code>X-Trace-Id</code>) để sau này tìm lại log của nó.</span></td><td>—</td></tr>
+      <tr><td>4</td><td>CORS</td><td><span lang="en">Checks the browser's Origin against the allowed origins in <code>.env</code>.</span><span lang="vi">Kiểm tra Origin của trình duyệt với danh sách origin được phép trong <code>.env</code>.</span></td><td>—</td></tr>
+      <tr><td>5</td><td>Gzip</td><td><span lang="en">Compresses the response body when the client sent <code>Accept-Encoding: gzip</code>.</span><span lang="vi">Nén body response khi client gửi <code>Accept-Encoding: gzip</code>.</span></td><td>—</td></tr>
+      <tr><td>6</td><td>AccessLog</td><td><span lang="en">Logs method, path, status and latency to the <code>http</code> log, sensitive fields masked.</span><span lang="vi">Ghi method, path, status và thời gian vào log <code>http</code>, che các trường nhạy cảm.</span></td><td>—</td></tr>
+      <tr><td>7</td><td>Recover</td><td><span lang="en">Safety net: a panic in anything after it (Banner, Limiter, Payload, auth, handler…) becomes a <code>500</code> instead of a crash, and queues an alert (sent only in production with Telegram configured). It sits inside AccessLog, so that 500 is still logged.</span><span lang="vi">Lưới an toàn: panic ở bất kỳ thứ gì sau nó (Banner, Limiter, Payload, xác thực, handler…) thành <code>500</code> thay vì sập server, và đưa một cảnh báo vào hàng đợi (chỉ gửi ở production khi có cấu hình Telegram). Nó nằm bên trong AccessLog nên response 500 đó vẫn được ghi log.</span></td><td>500 <span lang="en">(panic)</span><span lang="vi">(panic)</span></td></tr>
+      <tr><td>8</td><td>Banner</td><td><span lang="en">Only when <code>BANNER_ENABLED=true</code> (the default). Blocks clients that probe the API: a path only scanners ask for (<code>/.env</code>, <code>/wp-admin</code>…), an attack payload in the URL or a scanner's User-Agent bans at once; <code>BANNER_MAX_STRIKES</code> (30) answers of 401/403/404/405/429 within <code>BANNER_STRIKE_WINDOW</code> (1 min) ban too. <code>LIMITER_IP_WHITELIST</code> is never banned.</span><span lang="vi">Chỉ khi <code>BANNER_ENABLED=true</code> (mặc định). Chặn client đang dò API: gọi đường dẫn chỉ kẻ quét mới gọi (<code>/.env</code>, <code>/wp-admin</code>…), gửi payload tấn công trong URL hoặc dùng User-Agent của tool quét thì bị ban ngay; nhận <code>BANNER_MAX_STRIKES</code> (30) response 401/403/404/405/429 trong <code>BANNER_STRIKE_WINDOW</code> (1 phút) cũng bị ban. <code>LIMITER_IP_WHITELIST</code> không bao giờ bị ban.</span></td><td>403 <span lang="en">(banned)</span><span lang="vi">(bị ban)</span></td></tr>
+      <tr><td>9</td><td>Limiter</td><td><span lang="en">Rate limit per client (IP, or the IPv6 /64) (<code>LIMITER_RPS</code> 10, <code>LIMITER_BURST</code> 30). Banner and Limiter run before Payload, so a banned or limited client never makes the server read its body.</span><span lang="vi">Giới hạn tốc độ theo client (IP, hoặc khối IPv6 /64) (<code>LIMITER_RPS</code> 10, <code>LIMITER_BURST</code> 30). Banner và Limiter chạy trước Payload, nên client bị ban hoặc bị giới hạn không bao giờ khiến server phải đọc body.</span></td><td>429</td></tr>
+      <tr><td>10</td><td>Payload</td><td><span lang="en">Caps the body size (<code>SECURITY_MAX_BODY_SIZE</code>, 2 MB, or a larger limit an upload route declares) and caches the body once, so the handler and the access log can reuse it.</span><span lang="vi">Giới hạn kích thước body (<code>SECURITY_MAX_BODY_SIZE</code>, 2 MB, hoặc giới hạn lớn hơn mà route upload tự khai báo) và lưu body một lần để handler và access log dùng lại.</span></td><td>413</td></tr>
+      <tr><td>11</td><td>RoutePatterns</td><td><span lang="en"><code>:uuid</code> must be a real UUID, <code>:id</code> a positive integer, <code>:slug</code> a slug — checked before auth or the handler.</span><span lang="vi"><code>:uuid</code> phải là UUID thật, <code>:id</code> là số nguyên dương, <code>:slug</code> là slug — kiểm tra trước xác thực và handler.</span></td><td>404</td></tr>
+    </table></div>
+
+    <div class="jd-callout c-blue" style="margin-top:18px">
+      <b lang="en">Note:</b><b lang="vi">Ghi chú:</b>
+      <span lang="en">the chain is registered in <code>internal/router/router.go</code> (<code>registerGlobalMiddlewares</code>). <code>/uploads/*</code> is registered before it and only gets Security (cross-origin) and Recover — no gzip, access log, limiter or body parsing. An unknown path answers <code>404</code> (<code>api_not_found</code>), a known path with the wrong method <code>405</code> (<code>method_not_allowed</code>). Each middleware's options: <a href="../junkit/middleware.html">junkit middleware</a>.</span>
+      <span lang="vi">chuỗi này được đăng ký trong <code>internal/router/router.go</code> (<code>registerGlobalMiddlewares</code>). <code>/uploads/*</code> được đăng ký trước nó và chỉ có Security (cross-origin) và Recover — không gzip, access log, limiter hay đọc body. Đường dẫn không tồn tại trả <code>404</code> (<code>api_not_found</code>), đúng đường dẫn nhưng sai method trả <code>405</code> (<code>method_not_allowed</code>). Tùy chọn của từng middleware: <a href="../junkit/middleware.html">junkit middleware</a>.</span>
+    </div>
+
     <div class="jd-grid-2" style="margin-top:30px">
       <div>
         <h3><span lang="en">Every response has the same shape</span><span lang="vi">Mọi response có cùng một dạng</span></h3>
-        <div class="jd-tabs c-green">
+        <div class="jd-tabs">
           <div class="jd-tablist">
             <button class="jd-tab" type="button" aria-selected="true">200 · <span lang="en">found</span><span lang="vi">tìm thấy</span></button>
             <button class="jd-tab" type="button" aria-selected="false">404 · <span lang="en">not found</span><span lang="vi">không thấy</span></button>
@@ -533,11 +552,13 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/users \
       </div>
       <div>
         <h3><span lang="en">Good to know</span><span lang="vi">Nên biết</span></h3>
+        <p class="jd-sub" lang="en">Full envelope and code mapping: <a href="../junkit/response.html">response</a>.</p>
+        <p class="jd-sub" lang="vi">Cấu trúc đầy đủ và cách ánh xạ code: <a href="../junkit/response.html">response</a>.</p>
         <dl class="jd-kv">
           <dt>code</dt>
           <dd>BAD_REQUEST · UNAUTHORIZED · FORBIDDEN · NOT_FOUND · METHOD_NOT_ALLOWED · CONFLICT · UNPROCESSABLE_ENTITY · UNSUPPORTED_MEDIA_TYPE · PAYLOAD_TOO_LARGE · TOO_MANY_REQUESTS · INTERNAL_SERVER_ERROR<br><span lang="en">On every error response (status ≥ 400): from <code>response.New</code> errors, and derived from the HTTP status for everything else — middleware rejections, validation (422, which also carries an <code>error</code> field), unknown routes (404).</span><span lang="vi">Có trong mọi response lỗi (status ≥ 400): lấy từ lỗi <code>response.New</code>, còn lại thì suy ra từ HTTP status — lỗi do middleware trả về, validation (422, kèm thêm field <code>error</code>), route không tồn tại (404).</span></dd>
           <dt>message</dt>
-          <dd><span lang="en">Translated text (i18n key → sentence).</span><span lang="vi">Câu đã dịch (i18n key → câu chữ).</span></dd>
+          <dd><span lang="en">Translated text (message key → sentence).</span><span lang="vi">Câu đã dịch (message key → câu chữ).</span></dd>
           <dt>api_info</dt>
           <dd><span lang="en">Added to every response: <code>trace_id</code> (same as the <code>X-Trace-Id</code> header — use it to find the request in the logs), <code>timestamp</code>, <code>latency</code>, <code>version</code>, <code>env</code>.</span><span lang="vi">Có trong mọi response: <code>trace_id</code> (giống header <code>X-Trace-Id</code> — dùng để tìm request trong log), <code>timestamp</code>, <code>latency</code>, <code>version</code>, <code>env</code>.</span></dd>
           <dt>/health</dt>
@@ -546,9 +567,9 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/users \
           <dd><span lang="en">Uploaded files (e.g. avatars).</span><span lang="vi">File đã upload (vd. avatar).</span></dd>
         </dl>
         <div class="jd-callout c-green" style="margin-top:18px">
-          <b lang="en">Debug any request:</b><b lang="vi">Debug bất kỳ request nào:</b>
-          <span lang="en">append <code>?t_debug=&lt;TRACER_DEBUG_VALUE&gt;</code> to the URL and send <code>X-Internal-Secret: &lt;AUTH_INTERNAL_SECRET&gt;</code> → every SQL query, its rows and a timing waterfall: an HTML page in a browser, JSON from curl. Works in any environment, only for callers holding the secret.</span>
-          <span lang="vi">thêm <code>?t_debug=&lt;TRACER_DEBUG_VALUE&gt;</code> vào URL và gửi <code>X-Internal-Secret: &lt;AUTH_INTERNAL_SECRET&gt;</code> → mọi câu SQL, dữ liệu trả về và biểu đồ thời gian: trang HTML khi mở bằng trình duyệt, JSON khi gọi bằng curl. Dùng được ở mọi môi trường, chỉ với ai có secret.</span>
+          <b lang="en">Tip:</b><b lang="vi">Mẹo:</b>
+          <span lang="en">to debug one request, find it in the logs by <code>trace_id</code>, or replay it with the debug key (<code>?&lt;TRACER_DEBUG_KEY&gt;=&lt;TRACER_DEBUG_VALUE&gt;</code> + <code>X-Internal-Secret</code>) to see every SQL query and a timeline — see <a href="build-a-feature.html#debug">Debug</a>.</span>
+          <span lang="vi">để debug một request, tìm nó trong log bằng <code>trace_id</code>, hoặc gửi lại kèm debug key (<code>?&lt;TRACER_DEBUG_KEY&gt;=&lt;TRACER_DEBUG_VALUE&gt;</code> + <code>X-Internal-Secret</code>) để xem mọi câu SQL và timeline — xem <a href="build-a-feature.html#debug">Debug</a>.</span>
         </div>
       </div>
     </div>
@@ -560,44 +581,12 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/users \
       <span class="jd-badge">3</span>
       <div>
         <h2><span lang="en">Add a feature</span><span lang="vi">Thêm một feature mới</span></h2>
-        <p class="jd-sub" lang="en">One command generates a complete CRUD feature matching <code>internal/features/user</code> — with Clean Architecture layers, migration, SQL queries, and automatic Fx wiring.</p>
-        <p class="jd-sub" lang="vi">Một lệnh tạo ngay bộ API CRUD hoàn chỉnh, đúng chuẩn cấu trúc Clean Architecture như <code>internal/features/user</code> — tự động đăng ký dependency injection với Uber Fx.</p>
+        <p class="jd-sub" lang="en"><code>make feature NAME=product</code> generates a CRUD feature shaped like <code>internal/features/user</code>, with its migration, queries, permissions and Fx wiring. The full workflow — generate, read every layer, call it, remove it — is on <a href="build-a-feature.html">Build a feature</a>.</p>
+        <p class="jd-sub" lang="vi"><code>make feature NAME=product</code> sinh một feature CRUD theo cấu trúc của <code>internal/features/user</code>, kèm migration, query, permission và đăng ký Fx. Quy trình đầy đủ — sinh, đọc từng tầng, gọi thử, gỡ bỏ — ở trang <a href="build-a-feature.html">Tạo feature</a>.</p>
       </div>
     </div>
 
-    <div class="jd-flow" style="margin-top:22px" data-wires='[
-      {"from":"f1","to":"f2","color":"pink"},
-      {"from":"f2","to":"f3","color":"pink"},
-      {"from":"f3","to":"f4","color":"pink"}]'>
-      <div class="jd-node is-tint c-pink" data-node="f1">
-        <span class="k"><span lang="en">1 · Generate</span><span lang="vi">1 · Sinh mã nguồn</span></span>
-        <span class="t mono">make feature NAME=product</span>
-        <div class="d" lang="en">Generates <code>features/product/</code> (all 4 layers), DB migration, SQL queries, and registers the module in <code>app/fx.go</code>. Writing the files is all or nothing: if any file fails to render or write, the ones already written are removed. Registration in fx.go comes last — if it fails, the files stay (see <a href="../junkit/scaffold.html">scaffold</a>).</div>
-        <div class="d" lang="vi">Sinh toàn bộ thư mục <code>features/product/</code> (đủ 4 tầng), file migration, file SQL, và tự động đăng ký module vào <code>app/fx.go</code>. Việc ghi file là tất cả hoặc không gì cả: chỉ cần một file render hay ghi lỗi là các file đã ghi bị xoá. Bước đăng ký vào fx.go chạy sau cùng — nếu lỗi, các file vẫn nằm lại (xem <a href="../junkit/scaffold.html">scaffold</a>).</div>
-      </div>
-      <div class="jd-node is-tint c-pink" data-node="f2">
-        <span class="k"><span lang="en">2 · Create table + Go code</span><span lang="vi">2 · Tạo bảng DB + code Go</span></span>
-        <span class="t mono">make migrate-up &amp;&amp; make sqlc</span>
-        <div class="d" lang="en">Creates the table and its <code>products:*</code> permissions, then generates <code>sqlc/product.sql.go</code> — the project doesn't compile until you do. The app hot-reloads automatically.</div>
-        <div class="d" lang="vi">Tạo bảng và các permission <code>products:*</code>, rồi sinh <code>sqlc/product.sql.go</code> — chưa chạy thì project không biên dịch được. Ứng dụng tự động hot-reload.</div>
-      </div>
-      <div class="jd-node is-tint c-pink" data-node="f3">
-        <span class="k"><span lang="en">3 · Test CRUD</span><span lang="vi">3 · Gọi thử CRUD</span></span>
-        <span class="t mono">/api/v1/products</span>
-        <div class="d">POST · GET · GET /:uuid · PATCH · DELETE</div>
-        <div class="d" lang="en">Fully functional CRUD endpoints ready immediately. Login + a <code>products:*</code> permission required, like users — the four permissions come with the feature (consts, labels, and the SQL in its migration), so <code>make migrate-up</code> is enough (<a href="access.html#integrate">details</a>).</div><div class="d" lang="vi">Có sẵn trọn bộ CRUD hoàn chỉnh. Bắt đăng nhập + permission <code>products:*</code>, giống users — bốn permission đi kèm feature (const, nhãn, và câu SQL trong migration của nó), nên chỉ cần <code>make migrate-up</code> (<a href="access.html#integrate">chi tiết</a>).</div>
-      </div>
-      <div class="jd-node is-tint c-pink" data-node="f4">
-        <span class="k"><span lang="en">4 · Customize</span><span lang="vi">4 · Tùy biến nghiệp vụ</span></span>
-        <span class="t mono"><span lang="en">tailor the logic</span><span lang="vi">tùy chỉnh theo yêu cầu</span></span>
-        <div class="d" lang="en">Columns → migration + <code>queries/product.sql</code> → <code>make sqlc</code>. Business rules → <code>service/</code>. Public endpoint → register it outside the BearerAuth group in <code>router/v1/</code>, wrapped in <code>guard.Public</code>. Full walkthrough: <a href="build-a-feature.html">Build a feature</a>.</div>
-        <div class="d" lang="vi">Thêm cột → sửa migration + <code>queries/product.sql</code> → chạy <code>make sqlc</code>. Logic → viết trong <code>service/</code>. Endpoint public → đăng ký ngoài group BearerAuth trong <code>router/v1/</code>, bọc bằng <code>guard.Public</code>. Hướng dẫn đầy đủ: <a href="build-a-feature.html">Tạo feature</a>.</div>
-      </div>
-    </div>
-
-    <div class="jd-grid-2" style="margin-top:30px">
-      <div>
-        <h3><span lang="en">Architecture mapping: folder → responsibility</span><span lang="vi">Ánh xạ kiến trúc: thư mục → vai trò</span></h3>
+    <h3 style="margin-top:22px"><span lang="en">Folder → responsibility</span><span lang="vi">Thư mục → vai trò</span></h3>
         <div class="jd-folder-map">
           <div class="jd-fmap-row">
             <span class="jd-fmap-path">router/v1/</span>
@@ -642,50 +631,6 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/users \
             <span class="jd-fmap-desc"><span lang="en">Registers providers into DI container</span><span lang="vi">Đăng ký provider vào DI container tự động</span></span>
           </div>
         </div>
-      </div>
-      <div>
-        <h3><span lang="en">Options & Customization</span><span lang="vi">Tùy chọn & Lưu ý</span></h3>
-        <div class="jd-term" data-copy="commands" lang="en">
-          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
-<pre data-hl="bash">
-# Custom table name (default: English plural of NAME —
-# product → products, category → categories, box → boxes).
-# The URL still follows NAME (/api/v1/products); the sqlc model follows the table (sqlc.Item)
-$ make feature NAME=product TABLE=items
-
-# Undo — deletes features/product/, queries/product.sql, sqlc/product.sql.go
-# and the fx.go entry; the table and migration files stay. Finish by hand:
-#   make migrate-down   (rolls back only the LAST migration — check it is this table's;
-#                        drops the table and its products:* permissions)
-#   rm internal/database/primary/migrations/*_products.{up,down}.sql   (*_items.* with TABLE=items)
-#   make sqlc
-$ make feature-remove NAME=product
-</pre>
-        </div>
-        <div class="jd-term" data-copy="commands" lang="vi">
-          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
-<pre data-hl="bash">
-# Đổi tên bảng theo ý muốn (mặc định: số nhiều tiếng Anh của NAME —
-# product → products, category → categories, box → boxes).
-# URL vẫn theo NAME (/api/v1/products); model sqlc theo tên bảng (sqlc.Item)
-$ make feature NAME=product TABLE=items
-
-# Hoàn tác — xóa features/product/, queries/product.sql, sqlc/product.sql.go
-# và dòng đăng ký trong fx.go; bảng và file migration vẫn giữ nguyên. Tự dọn tiếp:
-#   make migrate-down   (chỉ rollback migration CUỐI CÙNG — kiểm tra đúng là của bảng này;
-#                        xóa bảng và các permission products:*)
-#   rm internal/database/primary/migrations/*_products.{up,down}.sql   (*_items.* nếu dùng TABLE=items)
-#   make sqlc
-$ make feature-remove NAME=product
-</pre>
-        </div>
-        <div class="jd-callout c-green" style="margin-top:16px">
-          <b lang="en">Generated routes require login.</b><b lang="vi">Route sinh ra bắt đăng nhập.</b>
-          <span lang="en">The generated router applies <code>middleware.BearerAuth</code> to the whole group, the same as <code>features/user/router/v1/user_router.go</code> (no valid access token → <code>401</code>), and wraps each handler in <code>guard.Can(…, domain.Products…)</code> (missing permission → <code>403</code>). Those four permissions are declared in the feature's own <code>domain/permission.go</code> (labels in its <code>module.go</code>) and inserted by its migration, granted to <code>super_admin</code> — so <code>make migrate-up</code> is all it takes, and removing the feature removes them too. To leave one endpoint public, register it outside that group with <code>guard.Public</code>, as <code>auth_router.go</code> does for <code>/auth/login</code>.</span>
-          <span lang="vi">Router sinh ra gắn <code>middleware.BearerAuth</code> cho cả group, giống <code>features/user/router/v1/user_router.go</code> (không có access token hợp lệ → <code>401</code>), và bọc từng handler bằng <code>guard.Can(…, domain.Products…)</code> (thiếu permission → <code>403</code>). Bốn permission đó được khai báo trong <code>domain/permission.go</code> của chính feature (nhãn nằm trong <code>module.go</code> của nó) và được migration của feature chèn vào, cấp cho <code>super_admin</code> — nên chỉ cần <code>make migrate-up</code>, và gỡ feature thì chúng cũng đi theo. Muốn để một endpoint public, đăng ký nó ngoài group đó với <code>guard.Public</code>, như <code>auth_router.go</code> làm với <code>/auth/login</code>.</span>
-        </div>
-      </div>
-    </div>
   </section>
 
   <!-- ============================================================ 4. CLI -->
@@ -694,8 +639,8 @@ $ make feature-remove NAME=product
       <span class="jd-badge">4</span>
       <div>
         <h2><span lang="en">CLI commands (console)</span><span lang="vi">Lệnh CLI (console)</span></h2>
-        <p class="jd-sub" lang="en">A second entrypoint, <code>cmd/console</code>, for one-off jobs — creating the first admin, cleanups, backfills, reports. Shares the exact same config, DB and services as the API, but without starting the HTTP server.</p>
-        <p class="jd-sub" lang="vi">Entrypoint thứ hai, <code>cmd/console</code>, chuyên dùng cho các tác vụ chạy 1 lần — tạo admin đầu tiên, dọn dẹp token, bù dữ liệu, chạy báo cáo. Dùng chung 100% cấu hình, DB và service với API, nhưng không chạy HTTP server.</p>
+        <p class="jd-sub" lang="en">A second entrypoint, <code>cmd/console</code>, for one-off jobs — migrations, cleanups, backfills, reports. It builds the same config, DB and services as the API (<code>CoreModules</code>), but no HTTP server.</p>
+        <p class="jd-sub" lang="vi">Entrypoint thứ hai, <code>cmd/console</code>, cho các tác vụ chạy một lần — migration, dọn dẹp, bù dữ liệu, báo cáo. Nó dựng cùng cấu hình, DB và service như API (<code>CoreModules</code>), nhưng không có HTTP server.</p>
       </div>
     </div>
 
@@ -706,24 +651,24 @@ $ make feature-remove NAME=product
       {"from":"c3","to":"c4","color":"orange"},
       {"from":"c4","to":"c5","color":"orange"}]'>
       <div class="jd-node is-tint c-orange" data-node="c1">
-        <span class="k">you</span><span class="t mono" style="font-size:14px">make console CMD="user:list"</span>
-        <div class="d" lang="en">Runs inside the active app container.</div><div class="d" lang="vi">Chạy trực tiếp bên trong container của app đang hoạt động.</div>
+        <span class="k"><span lang="en">you</span><span lang="vi">bạn</span></span><span class="t mono" style="font-size:14px">make console CMD="health:check"</span>
+        <div class="d" lang="en">Runs inside the running app container (dev: <code>go run ./cmd/console</code>, prod: <code>./console</code>).</div><div class="d" lang="vi">Chạy bên trong container app đang chạy (dev: <code>go run ./cmd/console</code>, prod: <code>./console</code>).</div>
       </div>
       <div class="jd-node is-tint c-orange" data-node="c2">
         <span class="k">entrypoint</span><span class="t mono">cmd/console</span>
-        <div class="d" lang="en">Same binary layout as the API, no HTTP listener.</div><div class="d" lang="vi">Khởi tạo tương tự API server nhưng không mở port HTTP.</div>
+        <div class="d" lang="en"><code>app.NewConsoleFx()</code>: no HTTP listener; logs go to files unless <code>--verbose</code> / <code>--debug</code>.</div><div class="d" lang="vi"><code>app.NewConsoleFx()</code>: không mở port HTTP; log ghi vào file trừ khi có <code>--verbose</code> / <code>--debug</code>.</div>
       </div>
       <div class="jd-node is-tint c-orange" data-node="c3">
         <span class="k">Fx</span><span class="t"><span lang="en">Same core</span><span lang="vi">Dùng chung core</span></span>
-        <div class="d" lang="en">Config, DB, cache, every feature's services. Zero HTTP overhead.</div><div class="d" lang="vi">Đầy đủ Config, DB, Cache, Service của mọi feature. Không tốn tài nguyên HTTP.</div>
+        <div class="d" lang="en">Config, DB, cache, every feature's services.</div><div class="d" lang="vi">Config, DB, cache, service của mọi feature.</div>
       </div>
       <div class="jd-node is-tint c-orange" data-node="c4">
-        <span class="k">kernel</span><span class="t mono" style="font-size:14px">Signature() == "user:list"</span>
+        <span class="k">kernel</span><span class="t mono" style="font-size:14px">Signature() == "health:check"</span>
         <div class="d" lang="en">Picks the matching command from the group "commands".</div><div class="d" lang="vi">Tự động chọn lệnh tương ứng từ group "commands" theo signature.</div>
       </div>
       <div class="jd-node is-tint c-orange" data-node="c5">
         <span class="k">command</span><span class="t mono" style="font-size:14px">Run(ctx, args)</span>
-        <div class="d" lang="en">Executes business logic, prints output, then exits cleanly.</div><div class="d" lang="vi">Thực thi nghiệp vụ, in kết quả ra terminal rồi kết thúc gọn gàng.</div>
+        <div class="d" lang="en">Runs, prints its output, then the app shuts down.</div><div class="d" lang="vi">Chạy, in kết quả, rồi app tự tắt.</div>
       </div>
     </div>
 
@@ -736,42 +681,36 @@ $ make feature-remove NAME=product
 # is the database reachable? (prints the user count)
 $ make console CMD="health:check"
 
-# list users
-$ make console CMD="user:list"
+# apply the migrations and SQL functions built into the binary
+$ make console CMD="db:migrate"
 
-# create the first admin outside development
-# (asks for the password when -password is omitted)
-$ make console CMD="user:create" ARGS="-email=ops@jungo.com -first-name=Ops -last-name=Admin"
-
-# delete old tokens — schedule it daily with cron
+# delete expired / revoked tokens — schedule it daily with cron
 $ make console CMD="auth:cleanup-tokens"
 
 # logs go to storage/logs only; print them with a flag inside CMD
-$ make console CMD="user:list --verbose"   # app logs + executed SQL
-$ make console CMD="user:list --debug"     # everything, Fx events included
+$ make console CMD="health:check --verbose"   # app logs + executed SQL
+$ make console CMD="health:check --debug"     # everything, Fx events included
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" lang="vi">
           <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
 <pre data-hl="bash">
-# kiểm tra kết nối database? (in ra số lượng user)
+# database có kết nối được không? (in ra số user)
 $ make console CMD="health:check"
 
-# liệt kê danh sách user
-$ make console CMD="user:list"
+# áp dụng migration và SQL function đóng gói trong binary
+$ make console CMD="db:migrate"
 
-# tạo tài khoản admin đầu tiên khi triển khai ngoài dev
-# (sẽ hỏi mật khẩu nếu không truyền cờ -password)
-$ make console CMD="user:create" ARGS="-email=ops@jungo.com -first-name=Ops -last-name=Admin"
-
-# dọn dẹp các token cũ — lên lịch chạy hàng ngày bằng cron
+# xóa token đã hết hạn / bị thu hồi — lên lịch chạy hằng ngày bằng cron
 $ make console CMD="auth:cleanup-tokens"
 
 # log chỉ ghi vào storage/logs; muốn in ra màn hình thì thêm cờ vào trong CMD
-$ make console CMD="user:list --verbose"   # log app + SQL đã chạy
-$ make console CMD="user:list --debug"     # in hết, kể cả event Fx
+$ make console CMD="health:check --verbose"   # log app + SQL đã chạy
+$ make console CMD="health:check --debug"     # in hết, kể cả event Fx
 </pre>
         </div>
+        <p class="jd-sub" style="margin-top:10px" lang="en">There is no command to create users: outside development the first admin is created with SQL — see <a href="access.html#ops">Permissions &amp; roles</a>.</p>
+        <p class="jd-sub" style="margin-top:10px" lang="vi">Không có lệnh tạo user: ngoài development, admin đầu tiên được tạo bằng SQL — xem <a href="access.html#ops">Phân quyền</a>.</p>
       </div>
       <div>
         <h3><span lang="en">Write your own</span><span lang="vi">Tự viết lệnh mới</span></h3>
@@ -800,7 +739,6 @@ func NewSyncProductsCommand() *SyncProductsCommand { … }
 func (c *SyncProductsCommand) Signature() string { return "product:sync" }
 
 func (c *SyncProductsCommand) Run(ctx context.Context, args []string) error {
-    // TODO: implement product:sync.
     console.Infof("TODO: implement product:sync")
     return nil
 }
@@ -817,7 +755,6 @@ func NewSyncProductsCommand() *SyncProductsCommand { … }
 func (c *SyncProductsCommand) Signature() string { return "product:sync" }
 
 func (c *SyncProductsCommand) Run(ctx context.Context, args []string) error {
-    // TODO: implement product:sync.  ← viết logic ở đây
     console.Infof("TODO: implement product:sync")
     return nil
 }
@@ -832,7 +769,7 @@ func (c *SyncProductsCommand) Run(ctx context.Context, args []string) error {
     <div class="jd-section-head">
       <span class="jd-badge">⌘</span>
       <div>
-        <h2>Cheat sheet</h2>
+        <h2><span lang="en">Cheat sheet</span><span lang="vi">Tra cứu nhanh</span></h2>
         <p class="jd-sub" lang="en">Every command you'll use day to day. <code>make help</code> prints the full list.</p>
         <p class="jd-sub" lang="vi">Mọi lệnh bạn dùng hằng ngày. <code>make help</code> in ra danh sách đầy đủ.</p>
       </div>
@@ -862,7 +799,7 @@ func (c *SyncProductsCommand) Run(ctx context.Context, args []string) error {
         <div class="jd-cheat-row"><code>make feature NAME=product</code><span><span lang="en">new feature</span><span lang="vi">feature mới</span></span></div>
         <div class="jd-cheat-row"><code>make feature-remove NAME=product</code><span><span lang="en">remove a feature</span><span lang="vi">xóa feature</span></span></div>
         <div class="jd-cheat-row"><code>make command NAME=x SIGNATURE=a:b</code><span><span lang="en">new CLI command</span><span lang="vi">lệnh CLI mới</span></span></div>
-        <div class="jd-cheat-row"><code>make console CMD="user:list"</code><span><span lang="en">run a CLI command</span><span lang="vi">chạy lệnh CLI</span></span></div>
+        <div class="jd-cheat-row"><code>make console CMD="health:check"</code><span><span lang="en">run a CLI command</span><span lang="vi">chạy lệnh CLI</span></span></div>
       </div>
       <div class="jd-cheat-group c-purple">
         <h4><span lang="en">Go checks</span><span lang="vi">Kiểm tra Go</span></h4>
@@ -876,9 +813,8 @@ func (c *SyncProductsCommand) Run(ctx context.Context, args []string) error {
   </section>
 
   <footer class="jd-footer">
-    <span>Jundoc · Jungo overview</span>
-    <span lang="en">Source of truth: the Jungo repository — this page explains it, the code decides.</span>
-    <span lang="vi">Nguồn chuẩn: repo Jungo — trang này giải thích, code mới là quyết định.</span>
+    <span>Jundoc · Jungo · <span lang="en">Overview</span><span lang="vi">Tổng quan</span></span>
+    <span><a href="build-a-feature.html"><span lang="en">Build a feature</span><span lang="vi">Tạo feature</span> →</a></span>
   </footer>
 </article>
 </div>
@@ -890,42 +826,18 @@ document.addEventListener("jd:ready", function () {
     { node: "client", token: "GET /users/:uuid", color: req, ms: 2200,
       text: { en: "<b>Client</b> sends <code>GET /api/v1/users/:uuid</code> with header <code>Authorization: Bearer &lt;access_token&gt;</code>.",
               vi: "<b>Client</b> gửi <code>GET /api/v1/users/:uuid</code> kèm header <code>Authorization: Bearer &lt;access_token&gt;</code>." } },
-    { node: "mw1", token: "request", color: req,
-      text: { en: "<b>TracerDebug</b> — if the URL has <code>?t_debug=…</code> and the <code>X-Internal-Secret</code> header matches, this request returns a debug report (SQL + timing) instead of the normal response — HTML in a browser, JSON from curl.",
-              vi: "<b>TracerDebug</b> — nếu URL có <code>?t_debug=…</code> và header <code>X-Internal-Secret</code> khớp, request này trả về báo cáo debug (SQL + thời gian) thay cho response bình thường — HTML trên trình duyệt, JSON khi dùng curl." } },
-    { node: "mw2", token: "request", color: req,
-      text: { en: "<b>Security</b> — adds security headers to the response: X-Frame-Options, X-Content-Type-Options, Referrer-Policy…",
-              vi: "<b>Security</b> — thêm các header bảo mật vào response: X-Frame-Options, X-Content-Type-Options, Referrer-Policy…" } },
-    { node: "mw3", token: "trace_id", color: req,
-      text: { en: "<b>Trace</b> — gives the request a trace ID (header <code>X-Trace-Id</code>) so its logs can be found later.",
-              vi: "<b>Trace</b> — gắn cho request một trace ID (header <code>X-Trace-Id</code>) để sau này tìm lại log của nó." } },
-    { node: "mw4", token: "request", color: req,
-      text: { en: "<b>CORS</b> — checks the browser's Origin against the allowed origins in <code>.env</code>.",
-              vi: "<b>CORS</b> — kiểm tra Origin của trình duyệt với danh sách origin được phép trong <code>.env</code>." } },
-    { node: "mw5", token: "Accept-Encoding", color: req,
-      text: { en: "<b>Gzip</b> — if the client sent <code>Accept-Encoding: gzip</code> (browsers always do), the response body will be gzip-compressed.",
-              vi: "<b>Gzip</b> — nếu client gửi <code>Accept-Encoding: gzip</code> (trình duyệt luôn gửi), body response sẽ được nén gzip." } },
-    { node: "mw7", token: "request", color: req,
-      text: { en: "<b>AccessLog</b> — will log method, path, status and latency to the <code>http</code> log (sensitive fields masked).",
-              vi: "<b>AccessLog</b> — sẽ ghi method, path, status và thời gian vào log <code>http</code> (che các trường nhạy cảm)." } },
-    { node: "mw9", token: "request", color: req,
-      text: { en: "<b>Recover</b> — safety net: if anything below panics (Payload, Limiter, auth, handler…), it answers <code>500</code> and sends an alert instead of crashing the server. It sits inside AccessLog, so that 500 is still logged.",
-              vi: "<b>Recover</b> — lưới an toàn: nếu bên dưới bị panic (Payload, Limiter, xác thực, handler…), nó trả <code>500</code> và gửi cảnh báo thay vì làm sập server. Nó nằm bên trong AccessLog nên response 500 đó vẫn được ghi log." } },
-    { node: "mw6", token: "body", color: req,
-      text: { en: "<b>Payload</b> — caps the body size (2 MB, or a larger limit an upload route declares) and reads the JSON body once, so later steps can reuse it.",
-              vi: "<b>Payload</b> — giới hạn kích thước body (2 MB, hoặc giới hạn lớn hơn mà route upload tự khai báo) và đọc JSON body một lần để các bước sau dùng lại." } },
-    { node: "mwbn", token: "request", color: req,
-      text: { en: "<b>Banner</b> — blocks clients that probe the API. Already banned → <code>403</code> right here. A path only scanners ask for (<code>/.env</code>, <code>/wp-admin</code>…), an attack payload in the URL or a scanner's User-Agent bans at once; too many 401/403/404/429 answers in a minute ban too.",
-              vi: "<b>Banner</b> — chặn client đang dò API. Đang bị ban → trả <code>403</code> ngay tại đây. Gọi đường dẫn chỉ kẻ quét mới gọi (<code>/.env</code>, <code>/wp-admin</code>…), gửi payload tấn công trong URL hoặc dùng User-Agent của tool quét thì bị ban ngay; nhận quá nhiều response 401/403/404/429 trong một phút cũng bị ban." } },
-    { node: "mw8", token: "request", color: req,
-      text: { en: "<b>Limiter</b> — rate limit per IP. Too many requests → <code>429</code> right here; the handler never runs.",
-              vi: "<b>Limiter</b> — giới hạn tốc độ theo IP. Quá nhiều request → trả <code>429</code> ngay tại đây; handler không bao giờ chạy." } },
-    { node: "mwrp", token: ":uuid", color: req,
-      text: { en: "<b>RoutePatterns</b> — <code>:uuid</code> must be a real UUID (likewise <code>:id</code> a positive integer, <code>:slug</code> a slug). This UUID is valid, so it passes; <code>/users/abc</code> would get <code>404</code> here, before auth or the handler.",
-              vi: "<b>RoutePatterns</b> — <code>:uuid</code> phải là UUID thật (tương tự <code>:id</code> là số nguyên dương, <code>:slug</code> là slug). UUID ở đây hợp lệ nên đi tiếp; còn <code>/users/abc</code> sẽ nhận <code>404</code> ngay tại đây, trước khi xác thực hay vào handler." } },
+    { node: "mw", token: "11 middleware", color: req, ms: 3200,
+      text: { en: "The <b>global middleware</b> run in this order, outer → inner, on every request (table below). Each can end the request early: banned → <code>403</code> (Banner), too many requests → <code>429</code> (Limiter), body too large → <code>413</code> (Payload), malformed <code>:uuid</code> → <code>404</code> (RoutePatterns). This request passes them all.",
+              vi: "Các <b>middleware chung</b> chạy theo thứ tự này, ngoài → trong, trên mọi request (bảng bên dưới). Mỗi cái có thể kết thúc request sớm: bị ban → <code>403</code> (Banner), quá nhiều request → <code>429</code> (Limiter), body quá lớn → <code>413</code> (Payload), <code>:uuid</code> sai định dạng → <code>404</code> (RoutePatterns). Request này đi qua tất cả." } },
     { node: "router", token: "/users/:uuid", color: req, ms: 2200,
-      text: { en: "<b>Router</b> matches <code>GET /api/v1/users/:uuid</code>. The users group uses <code>BearerAuth</code>: no valid access token → <code>401</code>. The route is <code>guard.Authenticated</code>: you may read yourself, anyone else needs <code>users:read</code>.",
-              vi: "<b>Router</b> khớp <code>GET /api/v1/users/:uuid</code>. Group users dùng <code>BearerAuth</code>: không có access token hợp lệ → <code>401</code>. Route dùng <code>guard.Authenticated</code>: xem chính mình thì được, xem người khác cần <code>users:read</code>." } },
+      text: { en: "<b>Router</b> matches <code>GET /api/v1/users/:uuid</code> and runs that group's middleware, then the route's handler chain.",
+              vi: "<b>Router</b> khớp <code>GET /api/v1/users/:uuid</code> và chạy middleware của group đó, rồi tới chuỗi handler của route." } },
+    { node: "auth", token: "Bearer …", color: req, ms: 2400,
+      text: { en: "The users group uses <code>BearerAuth</code>: no valid access token → <code>401</code>. Otherwise it puts the caller's identity in the context. See <a href=\"auth.html#inside\">Authentication</a>.",
+              vi: "Group users dùng <code>BearerAuth</code>: không có access token hợp lệ → <code>401</code>. Ngược lại nó đặt identity của người gọi vào context. Xem <a href=\"auth.html#inside\">Xác thực</a>." } },
+    { node: "guard", token: "Actor", color: req, ms: 2400,
+      text: { en: "The route is <code>guard.Authenticated</code>: the Guard loads your permissions and puts the Actor in the context; the service then lets you read yourself, and anyone else only with <code>users:read</code> (otherwise <code>404</code>). See <a href=\"access.html#inside\">Permissions &amp; roles</a>.",
+              vi: "Route dùng <code>guard.Authenticated</code>: Guard nạp permission của bạn và đặt Actor vào context; sau đó service cho xem chính mình, còn xem người khác thì cần <code>users:read</code> (nếu không → <code>404</code>). Xem <a href=\"access.html#inside\">Phân quyền</a>." } },
     { node: "handler", token: "uuid", color: req, ms: 2200,
       text: { en: "<b>Handler</b> <code>GetUser</code> reads and validates <code>:uuid</code>, then calls the service. It knows HTTP, nothing about SQL.",
               vi: "<b>Handler</b> <code>GetUser</code> đọc và kiểm tra <code>:uuid</code>, rồi gọi service. Nó xử lý tầng HTTP, hoàn toàn không phụ thuộc SQL." } },

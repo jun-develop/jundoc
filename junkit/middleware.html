@@ -26,69 +26,43 @@
         style="background:radial-gradient(1000px 380px at 0% 0%, rgba(251,146,60,.5), transparent 60%),linear-gradient(135deg,#7c2d12,#c2410c 55%,#be123c)">
         <div class="jd-eyebrow">Junkit · middleware</div>
         <h1>middleware</h1>
-        <p lang="en">Eleven ready-made Gin middleware every app needs: a debug dashboard, security headers, trace IDs,
-          CORS, body limits, access logs, client banning, per-IP rate limiting, path-parameter checks, panic recovery
-          and gzip response compression. Authentication and permissions are app policy — in Jungo they live in
-          <code>jungo/internal/middleware</code>.</p>
-        <p lang="vi">Mười một middleware Gin dùng ngay mà app nào cũng cần: dashboard debug, header bảo mật, trace ID,
-          CORS, giới hạn body, access log, ban client, rate limit theo IP, kiểm tra path param, bắt panic và nén gzip cho response.
-          Xác thực và phân quyền là chính sách của app — ở Jungo chúng nằm trong <code>jungo/internal/middleware</code>.</p>
+        <p lang="en">Eleven Gin middleware for the part of an API that is the same in every app: a debug dashboard,
+          security headers, trace IDs, CORS, gzip, access logs, panic recovery, client banning, per-client rate
+          limiting, body limits and path-parameter checks — plus <code>SetIdentity</code> for your own auth
+          middleware.</p>
+        <p lang="vi">Mười một middleware Gin cho phần giống nhau ở mọi API: dashboard debug, header bảo mật, trace ID,
+          CORS, gzip, access log, bắt panic, ban client, rate limit theo client, giới hạn body và kiểm tra path param —
+          cùng <code>SetIdentity</code> cho middleware auth của riêng bạn.</p>
         <div class="jd-chips">
-          <span class="jd-chip">github.com/jun-develop/junkit/middleware</span>
-          <span class="jd-chip"><span lang="en">no Fx Module — construct per route group</span><span lang="vi">không có
-              Fx Module — tự tạo cho từng route group</span></span>
-          <span class="jd-chip">gin · zap · x/time/rate · google/uuid</span>
-          <span class="jd-chip"><span lang="en">uses Junkit response, logger, tracer, security, notification</span><span
-              lang="vi">dùng Junkit response, logger, tracer, security, notification</span></span>
-        </div>
-      </header>
+      <span class="jd-chip">github.com/jun-develop/junkit/middleware</span>
+      <span class="jd-chip"><span lang="en">No Fx module</span><span lang="vi">Không có Fx module</span></span>
+      <span class="jd-chip"><span lang="en">Depends on: gin · uuid · x/time/rate · zap · junkit/cache · junkit/logger · junkit/notification · junkit/response · junkit/security · junkit/tracer</span><span lang="vi">Phụ thuộc: gin · uuid · x/time/rate · zap · junkit/cache · junkit/logger · junkit/notification · junkit/response · junkit/security · junkit/tracer</span></span>
+    </div>
+  </header>
 
       <!-- ============================================================ 1. WHAT -->
-      <section id="what" class="jd-section c-orange">
+      <section id="what" class="jd-section c-blue">
         <div class="jd-section-head">
           <span class="jd-badge">1</span>
           <div>
-            <h2><span lang="en">What is in the box</span><span lang="vi">Trong package có gì</span></h2>
-            <p class="jd-sub" lang="en">Eleven middleware that form the global chain — the protection and plumbing every
-              app needs. Authentication and permissions are <b>not</b> here: they are app policy and live in the app
-              (see below). Each one is a plain <code>gin.HandlerFunc</code>: code before <code>c.Next()</code> runs on
-              the way in, code after it on the way out. Press ▶ to follow one request.</p>
-            <p class="jd-sub" lang="vi">Mười một middleware tạo thành chuỗi chung — lớp bảo vệ và hạ tầng mà app nào cũng
-              cần. Xác thực và phân quyền <b>không</b> nằm ở đây: chúng là chính sách của app và nằm trong app (xem bên
-              dưới). Mỗi cái là một <code>gin.HandlerFunc</code> bình thường: code trước <code>c.Next()</code> chạy lúc
-              đi vào, code sau nó chạy lúc đi ra. Bấm ▶ để theo dõi một request.</p>
+            <h2><span lang="en">What it does</span><span lang="vi">Nó làm gì</span></h2>
+            <p class="jd-sub" lang="en">Eleven <code>gin.HandlerFunc</code>s that protect and instrument every request:
+              code before <code>c.Next()</code> runs on the way in, code after it on the way out. Press ▶ to follow one
+              request through the recommended order.</p>
+            <p class="jd-sub" lang="vi">Mười một <code>gin.HandlerFunc</code> bảo vệ và đo đạc mọi request: code trước
+              <code>c.Next()</code> chạy lúc đi vào, code sau nó chạy lúc đi ra. Bấm ▶ để theo một request qua thứ tự
+              khuyến nghị.</p>
           </div>
         </div>
 
-        <h3><span lang="en">Two places for middleware</span><span lang="vi">Hai nơi chứa middleware</span></h3>
-        <div class="jd-vs">
-          <div style="--c:var(--green)">
-            <code class="big">junkit/middleware</code>
-            <p lang="en"><b>Required, the same in every app.</b> Security headers, tracing, CORS, gzip, access log,
-              panic recovery, body limits, rate limiting, route patterns, debug switch. They protect the system and
-              save you plumbing. You configure them (options in <code>router.go</code>) — you don't rewrite them.</p>
-            <p lang="vi"><b>Bắt buộc, giống nhau ở mọi app.</b> Header bảo mật, trace, CORS, gzip, access log, bắt
-              panic, giới hạn body, rate limit, route pattern, công tắc debug. Chúng bảo vệ hệ thống và giúp bạn khỏi
-              viết lại phần hạ tầng. Bạn cấu hình chúng (options trong <code>router.go</code>) — không viết lại.</p>
-          </div>
-          <div style="--c:var(--purple)">
-            <code class="big">jungo/internal/middleware</code>
-            <p lang="en"><b>Yours to customise.</b> Who may call what: <code>BearerAuth</code> (token → identity),
-              <code>RequireSecret</code> (service-to-service), and the permission <code>Guard</code>. Every app decides
-              this differently, so the code lives in the app — read it, change it, add your own. See <a
-                href="../jungo/access.html">Jungo · permissions &amp; roles</a>.</p>
-            <p lang="vi"><b>Tùy biến theo app.</b> Ai được gọi gì: <code>BearerAuth</code> (token → identity),
-              <code>RequireSecret</code> (giữa các service), và <code>Guard</code> phân quyền. Mỗi app quyết định điều
-              này một kiểu, nên code nằm trong app — đọc, sửa, thêm của riêng bạn. Xem <a
-                href="../jungo/access.html">Jungo · phân quyền</a>.</p>
-          </div>
-        </div>
-        <p class="jd-sub" style="margin-top:12px" lang="en">Rule of thumb: a middleware that decides <b>who may do
-            what</b> goes in the app; one that protects or instruments <b>every</b> request, whatever the app, belongs
-          in junkit.</p>
-        <p class="jd-sub" style="margin-top:12px" lang="vi">Quy tắc nhanh: middleware quyết định <b>ai được làm
-            gì</b> thì đặt trong app; middleware bảo vệ hoặc đo đạc <b>mọi</b> request, bất kể app nào, thì thuộc về
-          junkit.</p>
+        <p lang="en">Authentication and permissions are not here: they are app policy and run after this chain, per
+          route group. In Jungo they live in <code>internal/middleware</code> — see <a href="../jungo/auth.html">Jungo ·
+          auth</a> and <a href="../jungo/access.html">Jungo · permissions &amp; roles</a>. This package gives them
+          <a href="#setidentity"><code>SetIdentity</code></a>.</p>
+        <p lang="vi">Xác thực và phân quyền không nằm ở đây: chúng là chính sách của app và chạy sau chuỗi này, theo
+          từng route group. Ở Jungo chúng nằm trong <code>internal/middleware</code> — xem <a
+            href="../jungo/auth.html">Jungo · auth</a> và <a href="../jungo/access.html">Jungo · phân quyền</a>. Package
+          này cung cấp cho chúng <a href="#setidentity"><code>SetIdentity</code></a>.</p>
 
         <div class="jd-player c-orange" id="mw-player" style="margin-top:26px">
           <div class="jd-stage rf" data-wires='[
@@ -103,28 +77,28 @@
               <span class="k"><span lang="en">r.Use(…) — outer → inner</span><span lang="vi">r.Use(…) — ngoài →
                   trong</span></span>
               <span class="p"
-                style="font:600 12px var(--mono);color:var(--muted);margin-left:8px">jungo/internal/router/router.go</span>
+                style="font:600 12px var(--mono);color:var(--muted);margin-left:8px"><span lang="en">recommended order (Jungo: <a href="../jungo/overview.html#flow">request flow</a>)</span><span lang="vi">thứ tự khuyến nghị (Jungo: <a href="../jungo/overview.html#flow">luồng request</a>)</span></span>
               <div class="rf-mw-grid">
-                <div class="jd-node c-green" data-node="mw1"><span class="t"><small>1</small>TracerDebug</span></div>
-                <div class="jd-node c-green" data-node="mw2"><span class="t"><small>2</small>Security</span></div>
-                <div class="jd-node c-green" data-node="mw3"><span class="t"><small>3</small>Trace</span></div>
-                <div class="jd-node c-green" data-node="mw4"><span class="t"><small>4</small>CORS</span></div>
-                <div class="jd-node c-green" data-node="mw5"><span class="t"><small>5</small>Gzip</span></div>
-                <div class="jd-node c-green" data-node="mw7"><span class="t"><small>6</small>AccessLog</span></div>
-                <div class="jd-node c-green" data-node="mw9"><span class="t"><small>7</small>Recover</span></div>
-                <div class="jd-node c-green" data-node="mwbn"><span class="t"><small>8</small>Banner</span></div>
-                <div class="jd-node c-green" data-node="mw8"><span class="t"><small>9</small>Limiter</span></div>
-                <div class="jd-node c-green" data-node="mw6"><span class="t"><small>10</small>Payload</span></div>
-                <div class="jd-node c-green" data-node="mwrp"><span class="t"><small>11</small>RoutePatterns</span></div>
+                <div class="jd-node c-blue" data-node="mw1"><span class="t"><small>1</small>TracerDebug</span></div>
+                <div class="jd-node c-blue" data-node="mw2"><span class="t"><small>2</small>Security</span></div>
+                <div class="jd-node c-blue" data-node="mw3"><span class="t"><small>3</small>Trace</span></div>
+                <div class="jd-node c-blue" data-node="mw4"><span class="t"><small>4</small>CORS</span></div>
+                <div class="jd-node c-blue" data-node="mw5"><span class="t"><small>5</small>Gzip</span></div>
+                <div class="jd-node c-blue" data-node="mw7"><span class="t"><small>6</small>AccessLog</span></div>
+                <div class="jd-node c-blue" data-node="mw9"><span class="t"><small>7</small>Recover</span></div>
+                <div class="jd-node is-opt c-blue" data-node="mwbn"><span class="t"><small>8</small>Banner</span></div>
+                <div class="jd-node c-blue" data-node="mw8"><span class="t"><small>9</small>Limiter</span></div>
+                <div class="jd-node c-blue" data-node="mw6"><span class="t"><small>10</small>Payload</span></div>
+                <div class="jd-node c-blue" data-node="mwrp"><span class="t"><small>11</small>RoutePatterns</span></div>
               </div>
             </div>
             <div class="jd-node is-tint c-purple" data-node="group" style="grid-column:2 / 4">
-              <span class="t"><span lang="en">App middleware</span><span lang="vi">Middleware của app</span></span><span class="p">BearerAuth · Guard</span>
-              <div class="d" lang="en">per group, from <code>jungo/internal/middleware</code></div>
-              <div class="d" lang="vi">theo từng group, từ <code>jungo/internal/middleware</code></div>
+              <span class="t"><span lang="en">App middleware</span><span lang="vi">Middleware của app</span></span><span class="p">Authenticate · Guard</span>
+              <div class="d" lang="en">per route group, from the app (Jungo: <code>internal/middleware</code>)</div>
+              <div class="d" lang="vi">theo từng route group, từ app (Jungo: <code>internal/middleware</code>)</div>
             </div>
             <div class="jd-node is-tint c-blue" data-node="handler" style="grid-column:5 / 7">
-              <span class="t">Handler</span><span class="p">your code</span>
+              <span class="t">Handler</span><span class="p"><span lang="en">your code</span><span lang="vi">code của bạn</span></span>
               <div class="d" lang="en">GetPayload · MustGetIdentity</div>
               <div class="d" lang="vi">GetPayload · MustGetIdentity</div>
             </div>
@@ -144,351 +118,212 @@
         <div class="jd-tablewrap" style="margin-top:22px">
           <table class="jd-params c-orange">
             <tr>
+              <th>#</th>
               <th>middleware</th>
               <th><span lang="en">job</span><span lang="vi">nhiệm vụ</span></th>
               <th><span lang="en">can stop the request with</span><span lang="vi">có thể chặn request bằng</span></th>
             </tr>
             <tr>
+              <td>1</td>
               <td>TracerDebug</td>
-              <td lang="en">Replaces the response with the tracer dashboard when <code>?key=value</code> and the secret
-                header both match.</td>
-              <td lang="vi">Thay response bằng dashboard tracer khi cả <code>?key=value</code> và header secret
-                đều khớp.</td>
+              <td lang="en">Replaces the response with the <a href="tracer.html">tracer</a> dashboard when the debug query pair and the secret header both match.</td>
+              <td lang="vi">Thay response bằng dashboard <a href="tracer.html">tracer</a> khi cặp query debug và header secret đều khớp.</td>
               <td><span lang="en">— (always 200 when active)</span><span lang="vi">— (luôn 200 khi bật)</span></td>
             </tr>
             <tr>
+              <td>2</td>
               <td>Security</td>
               <td lang="en">Security response headers.</td>
               <td lang="vi">Header bảo mật cho response.</td>
               <td>—</td>
             </tr>
             <tr>
+              <td>3</td>
               <td>Trace</td>
-              <td lang="en"><code>X-Trace-Id</code> + data for <code>api_info</code>.</td>
+              <td lang="en"><code>X-Trace-Id</code> + the data for <code>api_info</code>.</td>
               <td lang="vi"><code>X-Trace-Id</code> + dữ liệu cho <code>api_info</code>.</td>
               <td>—</td>
             </tr>
             <tr>
+              <td>4</td>
               <td>CORS</td>
               <td lang="en">CORS headers; answers preflight.</td>
               <td lang="vi">Header CORS; trả lời preflight.</td>
               <td>204 (OPTIONS)</td>
             </tr>
             <tr>
-              <td>Payload</td>
-              <td lang="en">Limits, reads and caches the body.</td>
-              <td lang="vi">Giới hạn, đọc và cache body.</td>
-              <td>413 · 400</td>
+              <td>5</td>
+              <td>Gzip</td>
+              <td lang="en">Gzip-compresses responses for clients that accept it.</td>
+              <td lang="vi">Nén gzip response cho client chấp nhận.</td>
+              <td>—</td>
             </tr>
             <tr>
+              <td>6</td>
               <td>AccessLog</td>
               <td lang="en">One structured log line per request.</td>
               <td lang="vi">Một dòng log có cấu trúc cho mỗi request.</td>
               <td>—</td>
             </tr>
             <tr>
-              <td>Banner</td>
-              <td lang="en">Bans a client that probes the API: a scanner-only path such as <code>/.env</code>, an
-                attack payload in the URL, a scanner's User-Agent, or too many 401/403/404/405/429 responses in a
-                short time.</td>
-              <td lang="vi">Ban client đang dò API: gọi đường dẫn chỉ kẻ quét mới gọi như <code>/.env</code>, gửi
-                payload tấn công trong URL, dùng User-Agent của tool quét, hoặc nhận quá nhiều response
-                401/403/404/405/429 trong thời gian ngắn.</td>
-              <td>403</td>
-            </tr>
-            <tr>
-              <td>Limiter</td>
-              <td lang="en">Token bucket per client IP.</td>
-              <td lang="vi">Token bucket theo IP client.</td>
-              <td>429</td>
-            </tr>
-            <tr>
-              <td>RoutePatterns</td>
-              <td lang="en">Rejects path parameters that break their rule (<code>:uuid</code>, <code>:id</code>,
-                <code>:slug</code>).</td>
-              <td lang="vi">Chặn path param sai rule của nó (<code>:uuid</code>, <code>:id</code>,
-                <code>:slug</code>).</td>
-              <td>404</td>
-            </tr>
-            <tr>
+              <td>7</td>
               <td>Recover</td>
-              <td lang="en">Turns panics into 500 + log + alert.</td>
+              <td lang="en">Turns a panic into 500 + log + alert.</td>
               <td lang="vi">Biến panic thành 500 + log + cảnh báo.</td>
               <td>500</td>
             </tr>
             <tr>
-              <td>Gzip</td>
-              <td lang="en">Gzip-compresses responses for clients that accept it. Skip it if a proxy in front already
-                compresses.</td>
-              <td lang="vi">Nén gzip response cho client chấp nhận nó. Bỏ đi nếu proxy phía trước đã nén.</td>
-              <td>—</td>
+              <td>8</td>
+              <td>Banner</td>
+              <td lang="en">Bans a client that probes the API: a scanner-only path such as <code>/.env</code>, an attack payload in the URL, a scanner User-Agent, or too many 401/403/404/405/429 responses in a short time.</td>
+              <td lang="vi">Ban client đang dò API: đường dẫn chỉ tool quét mới gọi như <code>/.env</code>, payload tấn công trong URL, User-Agent của tool quét, hoặc quá nhiều response 401/403/404/405/429 trong thời gian ngắn.</td>
+              <td>403</td>
+            </tr>
+            <tr>
+              <td>9</td>
+              <td>Limiter</td>
+              <td lang="en">Token bucket per client (IP, or IPv6 /64).</td>
+              <td lang="vi">Token bucket theo client (IP, hoặc khối /64 của IPv6).</td>
+              <td>429</td>
+            </tr>
+            <tr>
+              <td>10</td>
+              <td>Payload</td>
+              <td lang="en">Limits, reads and caches the body.</td>
+              <td lang="vi">Giới hạn, đọc và cache body.</td>
+              <td>413 · 400</td>
+            </tr>
+            <tr>
+              <td>11</td>
+              <td>RoutePatterns</td>
+              <td lang="en">Rejects path parameters that break their rule (<code>:uuid</code>, <code>:id</code>, <code>:slug</code>).</td>
+              <td lang="vi">Chặn path param sai rule (<code>:uuid</code>, <code>:id</code>, <code>:slug</code>).</td>
+              <td>404</td>
             </tr>
           </table>
         </div>
       </section>
 
       <!-- ============================================================ 2. SETUP -->
-      <section id="setup" class="jd-section c-blue">
+      <section id="setup" class="jd-section c-purple">
         <div class="jd-section-head">
           <span class="jd-badge">2</span>
           <div>
-            <h2><span lang="en">How Jungo registers them</span><span lang="vi">Jungo đăng ký chúng thế nào</span></h2>
-            <p class="jd-sub" lang="en">There is no <code>middleware.Module</code>: you call the constructors where
-              routes are registered. Jungo does it in two places — once globally, and per feature router for auth.</p>
-            <p class="jd-sub" lang="vi">Không có <code>middleware.Module</code>: bạn gọi constructor ngay chỗ đăng ký
-              route. Jungo làm ở hai nơi — một lần cho toàn bộ, và trong router của từng feature cho phần xác thực.</p>
+            <h2><span lang="en">Setup</span><span lang="vi">Cài đặt</span></h2>
+            <p class="jd-sub" lang="en">There is no Fx module: call the constructors where you build the router, with
+              <code>r.Use(…)</code> in this order (the first runs outermost). Jungo's own chain, with its config, is on
+              <a href="../jungo/overview.html#flow">Jungo · request flow</a>.</p>
+            <p class="jd-sub" lang="vi">Không có Fx module: gọi constructor ngay chỗ tạo router, bằng
+              <code>r.Use(…)</code> theo thứ tự này (cái đầu tiên ở ngoài cùng). Chuỗi của chính Jungo, cùng cấu hình,
+              nằm ở <a href="../jungo/overview.html#flow">Jungo · luồng request</a>.</p>
           </div>
         </div>
-
-        <h3><span lang="en">Global chain — internal/router/router.go</span><span lang="vi">Chuỗi chung —
-            internal/router/router.go</span></h3>
-        <div class="jd-grid-2">
-          <div>
-            <div class="jd-sticky">
-              <div class="jd-term" data-copy>
-                <div class="jd-term-bar"><i></i><i></i><i></i><span>internal/router/router.go</span></div>
-                <pre data-hl="go" id="code-router">
-func registerGlobalMiddlewares(p Params, bodyLimits map[string]int64) {
-    cfg := p.Config
-    debug := middleware.TracerDebugOptions{
-        QueryKey:     cfg.TracerDebugKey,
-        QueryValue:   cfg.TracerDebugValue,
-        SecretHeader: "X-Internal-Secret",
-        Secret:       cfg.Auth.InternalSecret,
-    }
-
-    p.Router.Use(
-        middleware.TracerDebug(debug),
-        middleware.Security(middleware.SecurityOptions{ForceHSTS: cfg.Security.ForceHSTS}),
-        middleware.Trace(middleware.TraceOptions{
-            Version:     cfg.Version,
-            Commit:      cfg.Commit,
-            Environment: cfg.Environment,
-        }),
-        middleware.CORS(middleware.CORSOptions{
-            AllowOrigins:     cfg.CORS.AllowOrigins,
-            AllowMethods:     cfg.CORS.AllowMethods,
-            AllowHeaders:     cfg.CORS.AllowHeaders,
-            AllowCredentials: cfg.CORS.AllowCredentials,
-            MaxAge:           cfg.CORS.MaxAge,
-        }),
-        middleware.Gzip(middleware.GzipOptions{Level: gzip.BestSpeed}),
-        middleware.AccessLog(middleware.AccessLogOptions{
-            SkipIf:            debug.Matches,
-            BodiesOnErrorOnly: true,
-        }, p.HTTPLogger),
-        middleware.Recover(middleware.RecoverOptions{Debug: debug}, p.HTTPLogger, p.Notifier, p.Responder),
-    )
-
-    if cfg.Banner.Enabled {
-        p.Router.Use(middleware.Banner(middleware.BannerOptions{
-            Cache:        cache.New[int64](p.Cache.OrMemory()),
-            MaxStrikes:   cfg.Banner.MaxStrikes,
-            StrikeWindow: cfg.Banner.StrikeWindow,
-            BanDurations: cfg.Banner.BanDurations,
-            IPWhitelist:  cfg.Limiter.IPWhitelist,
-        }, p.LimiterLogger, p.Responder, p.Notifier))
-    }
-
-    p.Router.Use(
-        middleware.Limiter(middleware.LimiterOptions{
-            RequestsPerSecond: cfg.Limiter.RequestsPerSecond,
-            Burst:             cfg.Limiter.Burst,
-            NumShards:         cfg.Limiter.NumShards,
-            CleanupInterval:   cfg.Limiter.CleanupInterval,
-            ClientTTL:         cfg.Limiter.ClientTTL,
-            LogTTL:            cfg.Limiter.LogTTL,
-            IPWhitelist:       cfg.Limiter.IPWhitelist,
-        }, p.LimiterLogger, p.Responder, p.Notifier),
-        middleware.Payload(middleware.PayloadOptions{
-            MaxBodySize: cfg.Security.MaxRequestBodySize,
-            RouteLimits: bodyLimits,
-        }, p.Responder),
-        middleware.RoutePatterns(map[string]func(string) bool{
-            "uuid": middleware.IsUUID,
-            "id":   middleware.IsID,
-            "slug": middleware.IsSlug,
-        }, p.Responder),
-    )
-}
-</pre>
-              </div>
-            </div>
-          </div>
-          <div class="jd-explain">
-            <p class="jd-hint" lang="en">Why each position matters (router.go only comments on where Recover
-              sits; the rest is reasoned from the code):</p>
-            <p class="jd-hint" lang="vi">Vì sao mỗi vị trí quan trọng (router.go chỉ comment về vị trí của Recover;
-              phần còn lại suy ra từ code):</p>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="3-8,11"><span class="n">1</span><span
-                class="w">TracerDebug — outermost</span><span class="x" lang="en">It swaps the response writer and
-                request context before anything else runs, so every layer below records into the tracer, and its
-                deferred render runs last, replacing whatever was written. It also catches <code>tracer.Stop()</code>
-                breakpoints from anywhere below.</span><span class="x" lang="vi">Nó thay response writer và request
-                context trước khi mọi thứ khác chạy, nên mọi lớp bên dưới đều ghi vào tracer, và hàm render (defer) chạy
-                cuối cùng, thay thế mọi thứ đã được ghi. Nó cũng bắt breakpoint <code>tracer.Stop()</code> từ bất kỳ đâu
-                bên dưới.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="12"><span class="n">2</span><span
-                class="w">Security — before anything can answer</span><span class="x" lang="en">Headers are set before
-                <code>c.Next()</code>, so even early answers (204 preflight, 413, 429, 401, 500) carry them.</span><span
-                class="x" lang="vi">Header được đặt trước <code>c.Next()</code>, nên cả những câu trả lời sớm (204
-                preflight, 413, 429, 401, 500) cũng có chúng.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="13-17"><span class="n">3</span><span
-                class="w">Trace — before any responder call</span><span class="x" lang="en"><code>responder.Send</code>
-                reads the trace ID from the request context and start time, version and env from the Gin context to
-                fill <code>api_info</code>; AccessLog reads the trace ID too. Anything that answers before Trace gets no <code>trace_id</code> and
-                no <code>X-Trace-Id</code>.</span><span class="x" lang="vi"><code>responder.Send</code> đọc trace ID
-                từ request context, thời điểm bắt đầu, version và env từ Gin context để điền <code>api_info</code>; AccessLog cũng đọc trace
-                ID. Cái gì trả lời trước Trace sẽ không có <code>trace_id</code> và không có
-                <code>X-Trace-Id</code>.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="18-24"><span class="n">4</span><span
-                class="w">CORS — before body, limits and auth</span><span class="x" lang="en">Preflight
-                <code>OPTIONS</code> is answered 204 before the body is read, before a rate-limit token is spent and
-                before auth. And error answers from later layers (413/429/401/500) still carry
-                <code>Access-Control-Allow-Origin</code>, so the browser lets the front-end read them.</span><span
-                class="x" lang="vi">Preflight <code>OPTIONS</code> được trả 204 trước khi đọc body, trước khi tốn token
-                rate limit và trước khi xác thực. Và lỗi từ các lớp sau (413/429/401/500) vẫn có
-                <code>Access-Control-Allow-Origin</code>, nên trình duyệt cho front-end đọc được.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="25"><span class="n">5</span><span
-                class="w">Gzip — after CORS, around everything that writes a body</span><span class="x"
-                lang="en">Preflights (204, no body) are answered before it. Every body written later — 413, 429, 401,
-                500 and handler JSON — is compressed when the client sent <code>Accept-Encoding: gzip</code>. AccessLog
-                sits inside it, so it still logs the plain body. <code>BestSpeed</code>: JSON compresses well even at
-                the cheapest level.</span><span class="x" lang="vi">Preflight (204, không có body) được trả lời trước
-                nó. Mọi body ghi sau đó — 413, 429, 401, 500 và JSON của handler — đều được nén khi client gửi
-                <code>Accept-Encoding: gzip</code>. AccessLog nằm bên trong nó nên vẫn log body gốc.
-                <code>BestSpeed</code>: JSON nén tốt ngay cả ở mức rẻ nhất.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="26-29"><span class="n">6</span><span
-                class="w">AccessLog — wraps Recover, Banner, Limiter, Payload, handler</span><span class="x" lang="en">It logs
-                after <code>c.Next()</code> returns (not in a <code>defer</code>), so it sees the final status —
-                including 403 from Banner, 429 from Limiter, 413 from Payload and 500 from Recover. <code>SkipIf</code>
-                keeps debug-dashboard requests out of the log; <code>BodiesOnErrorOnly</code> logs payloads only for
-                status ≥ 400.</span><span class="x" lang="vi">Nó ghi log sau khi
-                <code>c.Next()</code> trả về (không dùng <code>defer</code>), nên thấy status cuối cùng — kể cả 403 từ
-                Banner, 429 từ Limiter, 413 từ Payload và 500 từ Recover. <code>SkipIf</code> loại các request dashboard
-                debug khỏi log; <code>BodiesOnErrorOnly</code> chỉ ghi payload khi status ≥ 400.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="30"><span class="n">7</span><span
-                class="w">Recover — right inside AccessLog</span><span class="x" lang="en">It catches panics from
-                everything after it: Banner, Limiter, Payload, RoutePatterns, the app's auth middleware and handlers. It
-                must sit <b>inside</b> AccessLog — a panic unwinding through AccessLog would skip its logging — and its
-                500 still flows out through Gzip, CORS, Trace and Security. The 500 is written first; the Telegram
-                alert is only queued, so a slow Telegram never delays the response. On a debug request it hands the panic to the
-                tracer instead, so TracerDebug can show it.</span><span class="x" lang="vi">Nó bắt panic từ mọi thứ
-                sau nó: Banner, Limiter, Payload, RoutePatterns, middleware auth của app và handler. Nó phải nằm <b>bên
-                trong</b> AccessLog — panic đi xuyên qua AccessLog sẽ làm mất dòng log — và response 500 của nó vẫn đi ra
-                qua Gzip, CORS, Trace và Security. Response 500 được ghi trước; cảnh báo Telegram chỉ được đưa vào hàng
-                đợi, nên Telegram chậm không bao giờ làm chậm response. Với request debug, nó chuyển panic cho tracer để TracerDebug hiển
-                thị.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="33-41"><span class="n">8</span><span
-                class="w">Banner — before Limiter and Payload</span><span class="x" lang="en">A banned client gets 403 here
-                without spending a rate-limit token or having its body read, and since it reads the status after <code>c.Next()</code>, the
-                429s Limiter returns count as strikes: a client that keeps sending after being limited ends up banned.
-                It is a separate <code>Use</code> call only because <code>BANNER_ENABLED=false</code> leaves it out;
-                <code>Use</code> appends, so the order stays the same.</span><span class="x" lang="vi">Client đã bị
-                ban nhận 403 tại đây mà không tốn token rate limit hay bị đọc body, và vì nó đọc status sau <code>c.Next()</code>,
-                các response 429 từ Limiter được tính là lỗi: client đã bị giới hạn mà vẫn gửi tiếp sẽ bị ban. Nó nằm
-                trong một lệnh <code>Use</code> riêng chỉ để <code>BANNER_ENABLED=false</code> bỏ được nó;
-                <code>Use</code> nối thêm vào cuối nên thứ tự không đổi.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="43-52"><span class="n">9</span><span
-                class="w">Limiter — before the expensive part</span><span class="x" lang="en">A rejected request gets
-                429 before its body is read and without touching handlers or the database, and the rejection is still
-                access-logged.</span><span class="x" lang="vi">Request bị từ chối nhận 429 trước khi body được đọc, không
-                chạm tới handler hay database, và việc từ chối vẫn được ghi access log.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="53-56"><span class="n">10</span><span
-                class="w">Payload — after Limiter, before handlers</span><span class="x" lang="en">Only requests that
-                passed the ban and the rate limit get their body read, so a flood cannot make the server buffer bodies.
-                Oversized bodies are cut off with 413 (any other read failure: 400). The limit is
-                <code>MaxBodySize</code>, or the route's own one from <code>RouteLimits</code> (filled from
-                <code>router.BodyLimited</code> routes, e.g. the 5 MB avatar upload). It caches the body so AccessLog
-                can log <code>request_payload</code> and handlers can still bind it; multipart uploads are limited but
-                not buffered.</span><span class="x" lang="vi">Chỉ request đã qua bước ban và rate limit mới bị đọc
-                body, nên một đợt flood không bắt server giữ body trong bộ nhớ. Body quá lớn bị chặn với 413 (lỗi đọc
-                khác: 400). Giới hạn là <code>MaxBodySize</code>, hoặc giới hạn riêng của route trong
-                <code>RouteLimits</code> (lấy từ các route implement <code>router.BodyLimited</code>, ví dụ upload
-                avatar 5 MB). Nó cache body để AccessLog ghi được <code>request_payload</code> và handler vẫn bind được;
-                upload multipart bị giới hạn nhưng không bị đọc trước vào bộ nhớ.</span></div>
-            <div class="jd-ex c-blue" data-code="#code-router" data-show="57-61"><span class="n">11</span><span
-                class="w">RoutePatterns — after Limiter, before auth</span><span class="x" lang="en">Junk URLs such as
-                <code>/users/abc</code> still spend a rate-limit token, then get 404 before the app's auth middleware or the handler
-                runs.</span><span class="x" lang="vi">URL rác như <code>/users/abc</code> vẫn tốn token rate limit, rồi
-                nhận 404 trước khi middleware auth của app hay handler chạy.</span></div>
-          </div>
+        <div class="jd-tablewrap" style="margin-top:16px">
+          <table class="jd-params c-blue">
+            <tr>
+              <th>#</th>
+              <th>middleware</th>
+              <th><span lang="en">place it</span><span lang="vi">đặt ở đâu</span></th>
+              <th><span lang="en">why — what breaks if it moves</span><span lang="vi">vì sao — dời đi thì hỏng gì</span></th>
+            </tr>
+            <tr>
+              <td>1</td>
+              <td>TracerDebug</td>
+              <td lang="en">outermost</td>
+              <td lang="vi">ngoài cùng</td>
+              <td lang="en">It swaps the writer and request context before anything runs, so every layer records into the tracer; its deferred render runs last and also catches <code>tracer.Stop()</code> from below.</td>
+              <td lang="vi">Nó thay writer và request context trước mọi thứ, nên mọi lớp đều ghi vào tracer; hàm render (defer) chạy cuối và bắt cả <code>tracer.Stop()</code> từ bên dưới.</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>Security</td>
+              <td lang="en">before anything that can answer</td>
+              <td lang="vi">trước mọi thứ có thể trả lời</td>
+              <td lang="en">Headers are set before <code>c.Next()</code>, so early answers (204, 403, 413, 429, 500) carry them.</td>
+              <td lang="vi">Header được đặt trước <code>c.Next()</code>, nên cả câu trả lời sớm (204, 403, 413, 429, 500) cũng có.</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Trace</td>
+              <td lang="en">before any responder call and AccessLog</td>
+              <td lang="vi">trước mọi lời gọi responder và AccessLog</td>
+              <td lang="en">The responder fills <code>api_info</code> from it and AccessLog logs its <code>trace_id</code>; anything that answers earlier has no trace ID.</td>
+              <td lang="vi">Responder lấy dữ liệu từ nó để điền <code>api_info</code> và AccessLog ghi <code>trace_id</code>; cái gì trả lời sớm hơn thì không có trace ID.</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>CORS</td>
+              <td lang="en">before Gzip, body, limits and auth</td>
+              <td lang="vi">trước Gzip, body, giới hạn và auth</td>
+              <td lang="en">A preflight gets 204 without reading the body or spending a rate-limit token, and later error answers still carry <code>Access-Control-Allow-Origin</code>.</td>
+              <td lang="vi">Preflight nhận 204 mà không đọc body hay tốn token rate limit, và lỗi từ các lớp sau vẫn có <code>Access-Control-Allow-Origin</code>.</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>Gzip</td>
+              <td lang="en">after CORS, outside AccessLog</td>
+              <td lang="vi">sau CORS, bao ngoài AccessLog</td>
+              <td lang="en">Every later body is compressed; AccessLog inside it still logs the plain body and the uncompressed <code>resp_size</code>.</td>
+              <td lang="vi">Mọi body ghi sau đó đều được nén; AccessLog nằm bên trong vẫn log body gốc và <code>resp_size</code> chưa nén.</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>AccessLog</td>
+              <td lang="en">outside Recover, Banner, Limiter, Payload</td>
+              <td lang="vi">bao ngoài Recover, Banner, Limiter, Payload</td>
+              <td lang="en">It logs after <code>c.Next()</code> returns, so it sees the final status, including their 500, 403, 429 and 413.</td>
+              <td lang="vi">Nó ghi log sau khi <code>c.Next()</code> trả về, nên thấy status cuối cùng, kể cả 500, 403, 429 và 413 của chúng.</td>
+            </tr>
+            <tr>
+              <td>7</td>
+              <td>Recover</td>
+              <td lang="en">directly inside AccessLog</td>
+              <td lang="vi">ngay bên trong AccessLog</td>
+              <td lang="en">It catches panics from everything after it. AccessLog logs without <code>defer</code>, so a panic passing through it would lose the log line.</td>
+              <td lang="vi">Nó bắt panic từ mọi thứ phía sau. AccessLog ghi log không dùng <code>defer</code>, nên panic đi xuyên qua nó sẽ mất dòng log.</td>
+            </tr>
+            <tr>
+              <td>8</td>
+              <td>Banner</td>
+              <td lang="en">before Limiter and Payload</td>
+              <td lang="vi">trước Limiter và Payload</td>
+              <td lang="en">A banned client gets 403 without spending a token or having its body read; it reads the status after <code>c.Next()</code>, so Limiter's 429s count as strikes.</td>
+              <td lang="vi">Client bị ban nhận 403 mà không tốn token hay bị đọc body; nó đọc status sau <code>c.Next()</code>, nên 429 của Limiter được tính là strike.</td>
+            </tr>
+            <tr>
+              <td>9</td>
+              <td>Limiter</td>
+              <td lang="en">before Payload</td>
+              <td lang="vi">trước Payload</td>
+              <td lang="en">A rejected request gets 429 before its body is read.</td>
+              <td lang="vi">Request bị từ chối nhận 429 trước khi body được đọc.</td>
+            </tr>
+            <tr>
+              <td>10</td>
+              <td>Payload</td>
+              <td lang="en">after Limiter, before route middleware and handlers</td>
+              <td lang="vi">sau Limiter, trước middleware của route và handler</td>
+              <td lang="en">Only admitted requests get their body buffered. A route middleware cannot raise the limit — use <code>RouteLimits</code>.</td>
+              <td lang="vi">Chỉ request được cho qua mới bị đọc body vào bộ nhớ. Middleware của route không nới giới hạn được — dùng <code>RouteLimits</code>.</td>
+            </tr>
+            <tr>
+              <td>11</td>
+              <td>RoutePatterns</td>
+              <td lang="en">after Limiter, before auth</td>
+              <td lang="vi">sau Limiter, trước auth</td>
+              <td lang="en">A malformed <code>:uuid</code> / <code>:id</code> / <code>:slug</code> gets 404 before the app's auth middleware or handler runs (it still spends a token).</td>
+              <td lang="vi"><code>:uuid</code> / <code>:id</code> / <code>:slug</code> sai định dạng nhận 404 trước khi middleware auth của app hay handler chạy (vẫn tốn token).</td>
+            </tr>
+          </table>
         </div>
-
-        <h3><span lang="en">After the chain — the app's own middleware</span><span lang="vi">Sau chuỗi chung —
-            middleware của chính app</span></h3>
-        <p class="jd-sub" lang="en">Route groups add the app's access policy on top of the chain. In Jungo it comes from
-          <code>jungo/internal/middleware</code>, not from junkit:</p>
-        <p class="jd-sub" lang="vi">Các route group đặt chính sách truy cập của app lên trên chuỗi chung. Ở Jungo nó đến
-          từ <code>jungo/internal/middleware</code>, không phải junkit:</p>
-        <div class="jd-grid-2">
-          <div class="jd-term" data-copy>
-            <div class="jd-term-bar"><i></i><i></i><i></i><span>features/user/router/v1/user_router.go</span></div>
-            <pre data-hl="go">
-import "jungo/internal/middleware" // the app's, not junkit's
-
-func (r *UserRoutes) Register(group *gin.RouterGroup) {
-    users := group.Group("/users")
-    users.Use(middleware.BearerAuth(r.authenticator, r.responder, middleware.BearerAuthOptions{}))
-    users.POST("", r.guard.Can(r.handler.CreateUser, domain.UsersCreate))
-    users.GET("/:uuid", r.guard.Authenticated(r.handler.GetUser))
-    // …
-}
-</pre>
-          </div>
-          <div class="jd-tablewrap">
-            <table class="jd-params c-purple">
-              <tr>
-                <th>jungo/internal/middleware</th>
-                <th><span lang="en">does</span><span lang="vi">làm gì</span></th>
-              </tr>
-              <tr>
-                <td>BearerAuth</td>
-                <td lang="en"><code>Authorization: Bearer …</code> → identity (401 otherwise). See <a href="../jungo/auth.html">auth</a>.</td>
-                <td lang="vi"><code>Authorization: Bearer …</code> → identity (không thì 401). Xem <a href="../jungo/auth.html">auth</a>.</td>
-              </tr>
-              <tr>
-                <td>RequireSecret</td>
-                <td lang="en">Shared-secret header for <code>/api/internal/*</code> (403 otherwise).</td>
-                <td lang="vi">Header shared secret cho <code>/api/internal/*</code> (không thì 403).</td>
-              </tr>
-              <tr>
-                <td>Guard</td>
-                <td lang="en"><code>Can</code> / <code>Authenticated</code> / <code>Public</code> on every versioned route (<code>/api/v1/...</code>; 403 without the permission). See <a href="../jungo/access.html">permissions</a>.</td>
-                <td lang="vi"><code>Can</code> / <code>Authenticated</code> / <code>Public</code> cho mọi route có version (<code>/api/v1/...</code>; thiếu permission thì 403). Xem <a href="../jungo/access.html">phân quyền</a>.</td>
-              </tr>
-            </table>
-          </div>
-        </div>
-        <p class="jd-sub" style="margin-top:12px" lang="en">junkit still provides the pieces they are built from —
-          <code>security.TokenSealer</code>, <code>security.HashToken</code>, <code>security.SecureEqual</code>,
-          <code>middleware.SetIdentity</code> / <code>security.MustGetIdentity</code> and the i18n keys
-          <code>unauthorized_token</code>, <code>forbidden_internal_access</code>, <code>insufficient_permission</code>.
-          Building another app? Copy <code>jungo/internal/middleware/auth.go</code> as a starting point.</p>
-        <p class="jd-sub" style="margin-top:12px" lang="vi">junkit vẫn cung cấp các mảnh để xây chúng —
-          <code>security.TokenSealer</code>, <code>security.HashToken</code>, <code>security.SecureEqual</code>,
-          <code>middleware.SetIdentity</code> / <code>security.MustGetIdentity</code> và các key i18n
-          <code>unauthorized_token</code>, <code>forbidden_internal_access</code>, <code>insufficient_permission</code>.
-          Làm app khác? Chép <code>jungo/internal/middleware/auth.go</code> làm điểm khởi đầu.</p>
-        <div class="jd-sym c-blue" style="margin-top:12px">
-          <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">SetIdentity</span><span
-              class="jd-pill">identity.go</span></div>
-          <div class="jd-term">
-            <pre data-hl="go">func SetIdentity[T any](c *gin.Context, identity T)</pre>
-          </div>
-          <p lang="en">Called by the app's auth middleware once the caller is known: stores <code>identity</code> in
-            <code>c.Request</code>'s context (via <code>security.WithIdentity</code>), where
-            <code>security.GetIdentity</code> / <code>MustGetIdentity</code> find it — also in services that only get
-            a <code>context.Context</code>. Reading it straight from the <code>*gin.Context</code> works only when the
-            engine sets <code>ContextWithFallback = true</code> (Jungo's <code>provideGin</code> does); otherwise pass
-            <code>c.Request.Context()</code>.</p>
-          <p lang="vi">Middleware auth của app gọi hàm này khi đã biết người gọi: lưu <code>identity</code> vào context
-            của <code>c.Request</code> (qua <code>security.WithIdentity</code>), nơi
-            <code>security.GetIdentity</code> / <code>MustGetIdentity</code> tìm thấy nó — cả trong service chỉ nhận
-            <code>context.Context</code>. Đọc thẳng từ <code>*gin.Context</code> chỉ chạy khi engine đặt
-            <code>ContextWithFallback = true</code> (<code>provideGin</code> của Jungo có đặt); nếu không hãy truyền
-            <code>c.Request.Context()</code>.</p>
-        </div>
+        <p class="jd-sub" style="margin-top:12px" lang="en">Every constructor that answers (Payload, Limiter, Banner,
+          Recover, RoutePatterns) needs a <a href="response.html"><code>response.Responder</code></a>; Banner and Limiter
+          key clients by <code>c.ClientIP()</code>, so set the engine's trusted proxies (see <a
+            href="#gotchas">Good to know</a>). Invalid static options panic at construction, not per request.</p>
+        <p class="jd-sub" style="margin-top:12px" lang="vi">Mọi constructor có trả lời (Payload, Limiter, Banner, Recover,
+          RoutePatterns) cần một <a href="response.html"><code>response.Responder</code></a>; Banner và Limiter nhận diện
+          client bằng <code>c.ClientIP()</code>, nên phải đặt trusted proxies cho engine (xem <a href="#gotchas">Cần lưu
+            ý</a>). Option tĩnh sai sẽ panic lúc tạo, không phải ở từng request.</p>
       </section>
 
       <!-- ============================================================ 3. QUICK START -->
@@ -496,8 +331,7 @@ func (r *UserRoutes) Register(group *gin.RouterGroup) {
         <div class="jd-section-head">
           <span class="jd-badge">3</span>
           <div>
-            <h2><span lang="en">A minimal chain in 30 seconds</span><span lang="vi">Chuỗi tối thiểu trong 30 giây</span>
-            </h2>
+            <h2><span lang="en">Quick start</span><span lang="vi">Dùng nhanh</span></h2>
             <p class="jd-sub" lang="en">A complete <code>main.go</code> without Fx (imports omitted). Hover an explanation to
               light up its lines.</p>
             <p class="jd-sub" lang="vi">Một <code>main.go</code> hoàn chỉnh không dùng Fx (lược bỏ import). Rê chuột vào giải thích
@@ -546,18 +380,18 @@ func main() {
           </div>
           <div class="jd-explain">
             <div class="jd-ex c-green" data-code="#code-quick" data-show="2-3"><span class="n">1</span><span
-                class="w">logger + responder</span><span class="x" lang="en">Payload, Limiter and Recover answer through a <code>response.Responder</code>, so their messages are i18n texts in the
+                class="w"><span lang="en">logger + responder</span><span lang="vi">logger + responder</span></span><span class="x" lang="en">Payload, Limiter and Recover answer through a <code>response.Responder</code>, so their messages are i18n texts in the
                 standard envelope. Any <code>*zap.Logger</code> works.</span><span class="x" lang="vi">Payload, Limiter và
                 Recover trả lời qua <code>response.Responder</code>, nên message là text i18n trong
                 envelope chuẩn. <code>*zap.Logger</code> nào cũng được.</span></div>
             <div class="jd-ex c-green" data-code="#code-quick" data-show="7-8"><span class="n">2</span><span
-                class="w">gin.New + trusted proxies</span><span class="x" lang="en">Use <code>gin.New()</code> (no
+                class="w"><span lang="en">gin.New + trusted proxies</span><span lang="vi">gin.New + trusted proxies</span></span><span class="x" lang="en">Use <code>gin.New()</code> (no
                 built-in Logger/Recovery — Junkit replaces them). Limiter and AccessLog use <code>c.ClientIP()</code>,
                 which is only correct if trusted proxies are set right.</span><span class="x" lang="vi">Dùng
                 <code>gin.New()</code> (không có Logger/Recovery có sẵn — Junkit thay thế chúng). Limiter và AccessLog
                 dùng <code>c.ClientIP()</code>, chỉ đúng khi cấu hình trusted proxies đúng.</span></div>
             <div class="jd-ex c-green" data-code="#code-quick" data-show="4-5,10-12"><span class="n">3</span><span
-                class="w">debug · headers · trace</span><span class="x" lang="en">Pick your own debug value and secret. Trace's
+                class="w"><span lang="en">debug · headers · trace</span><span lang="vi">debug · header · trace</span></span><span class="x" lang="en">Pick your own debug value and secret. Trace's
                 version / env show up in every <code>api_info</code>.</span><span class="x" lang="vi">Tự chọn giá trị
                 debug và secret. Version / env của Trace xuất hiện trong mọi <code>api_info</code>.</span></div>
             <div class="jd-ex c-green" data-code="#code-quick" data-show="13-18"><span class="n">4</span><span
@@ -590,13 +424,13 @@ func main() {
           </div>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
-          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · post echo</span></div>
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
           <pre data-hl="bash">
 $ curl -i -X POST localhost:$API_SERVER_PORT/echo -H 'Content-Type: application/json' -d '{"a":1}'
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
-          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · json debug report</span></div>
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
           <pre data-hl="bash">
 $ curl -s -X POST "localhost:$API_SERVER_PORT/echo?t_debug=change-me" -H 'X-Internal-Secret: change-me-secret' \
     -H 'Content-Type: application/json' -d '{"a":1}' | jq
@@ -605,20 +439,17 @@ $ curl -s -X POST "localhost:$API_SERVER_PORT/echo?t_debug=change-me" -H 'X-Inte
       </section>
 
       <!-- ============================================================ 4. API -->
-      <section id="api" class="jd-section c-purple">
+      <section id="api" class="jd-section c-blue">
         <div class="jd-section-head">
           <span class="jd-badge">4</span>
           <div>
             <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
-            <p class="jd-sub" lang="en">One tab per middleware. Signatures are copied from
-              <code>junkit/middleware/*.go</code>; messages are the built-in English texts from
-              <code>junkit/i18n</code>.</p>
-            <p class="jd-sub" lang="vi">Mỗi tab một middleware. Chữ ký chép từ <code>junkit/middleware/*.go</code>;
-              message là text tiếng Anh có sẵn trong <code>junkit/i18n</code>.</p>
+            <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/middleware</code>. One tab per middleware; messages are the built-in English texts from <code>junkit/i18n</code>.</p>
+            <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/middleware</code>. Mỗi tab một middleware; message là text tiếng Anh có sẵn trong <code>junkit/i18n</code>.</p>
           </div>
         </div>
 
-        <div class="jd-tabs jd-ep-tabs c-purple" style="margin-top:18px">
+        <div class="jd-tabs jd-ep-tabs" style="margin-top:18px">
           <div class="jd-tablist">
             <button class="jd-tab" type="button" aria-selected="true">TracerDebug</button>
             <button class="jd-tab" type="button" aria-selected="false">Security</button>
@@ -695,7 +526,7 @@ func TracerDebug(opts TracerDebugOptions) gin.HandlerFunc</pre>
               <code>t_debug=0604</code>; giá trị lấy từ <code>TRACER_DEBUG_VALUE</code>, mỗi môi trường một số khác nhau), secret nằm trong <code>X-Internal-Secret</code> (Jungo dùng
               <code>AUTH_INTERNAL_SECRET</code>):</p>
             <div class="jd-term" data-copy="commands">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · Jungo</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
               <pre data-hl="bash">
 $ curl -s "localhost:$API_SERVER_PORT/api/v1/auth/me?t_debug=$TRACER_DEBUG_VALUE" -H "Authorization: Bearer $TOKEN" \
     -H "X-Internal-Secret: $AUTH_INTERNAL_SECRET" | jq
@@ -767,11 +598,7 @@ func Security(opts SecurityOptions) gin.HandlerFunc</pre>
                     class="jd-sym-name">SecurityOptions</span></div>
                 <div class="jd-tablewrap">
                   <table class="jd-params">
-                    <tr>
-                      <th>field</th>
-                      <th>type · default</th>
-                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-                    </tr>
+                    <tr><th>field</th><th><span lang="en">type · default</span><span lang="vi">kiểu · mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
                     <tr>
                       <td>ForceHSTS</td>
                       <td>bool · false</td>
@@ -839,11 +666,7 @@ func Security(opts SecurityOptions) gin.HandlerFunc</pre>
                 </div>
                 <div class="jd-tablewrap">
                   <table class="jd-params">
-                    <tr>
-                      <th>field</th>
-                      <th>type · default</th>
-                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-                    </tr>
+                    <tr><th>field</th><th><span lang="en">type · default</span><span lang="vi">kiểu · mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
                     <tr>
                       <td>Version</td>
                       <td>string · ""</td>
@@ -888,13 +711,13 @@ func Security(opts SecurityOptions) gin.HandlerFunc</pre>
             <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — Trace tự sinh ID; <code>X-Trace-Id</code>
               bạn gửi chỉ được dùng lại khi bật <code>TrustHeader</code> (Jungo để tắt):</p>
             <div class="jd-term" data-copy="commands">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · trace id tự sinh</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
               <pre data-hl="bash">
 $ curl -si localhost:$API_SERVER_PORT/api/v1/auth/me | grep -i x-trace-id
 </pre>
             </div>
             <div class="jd-term" data-copy="commands" style="margin-top:10px">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · echo trace id</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
               <pre data-hl="bash">
 # a new ID unless TrustHeader is on
 $ curl -si localhost:$API_SERVER_PORT/api/v1/auth/me -H 'X-Trace-Id: my-trace-123' | grep -i x-trace-id
@@ -959,11 +782,7 @@ $ curl -si localhost:$API_SERVER_PORT/api/v1/auth/me -H 'X-Trace-Id: my-trace-12
                 </div>
                 <div class="jd-tablewrap">
                   <table class="jd-params">
-                    <tr>
-                      <th>field</th>
-                      <th>type · default</th>
-                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-                    </tr>
+                    <tr><th>field</th><th><span lang="en">type · default</span><span lang="vi">kiểu · mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
                     <tr>
                       <td>AllowOrigins</td>
                       <td>[]string · nil</td>
@@ -1008,7 +827,7 @@ $ curl -si localhost:$API_SERVER_PORT/api/v1/auth/me -H 'X-Trace-Id: my-trace-12
             <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — CORS chỉ phản ứng khi có header
               <code>Origin</code> (trình duyệt tự gửi, curl thì không):</p>
             <div class="jd-term" data-copy="commands">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · preflight request</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
               <pre data-hl="bash">
 # preflight → 204 + Access-Control-Allow-*
 $ curl -i -X OPTIONS localhost:$API_SERVER_PORT/api/v1/users \
@@ -1018,7 +837,7 @@ $ curl -i -X OPTIONS localhost:$API_SERVER_PORT/api/v1/users \
 </pre>
             </div>
             <div class="jd-term" data-copy="commands" style="margin-top:10px">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · normal request</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
               <pre data-hl="bash">
 # normal request → response carries Access-Control-Allow-Origin
 $ curl -si localhost:$API_SERVER_PORT/api/v1/auth/me -H 'Origin: https://app.example.com' | grep -i access-control
@@ -1045,10 +864,12 @@ $ curl -si localhost:$API_SERVER_PORT/api/v1/auth/me -H 'Origin: https://app.exa
                     có khai báo, ngược lại là <code>MaxBodySize</code>.</li>
                   <li lang="en">Wraps the body in <code>http.MaxBytesReader(…, limit)</code>. A
                     <code>multipart/*</code> body stops there: it is limited but not buffered, so an upload is not held
-                    in memory twice.</li>
+                    in memory twice. Payload then never answers 413 for it — the limit trips later, as an error from
+                    <code>c.FormFile</code> / <code>ParseMultipartForm</code> in the handler, which must answer it.</li>
                   <li lang="vi">Bọc body bằng <code>http.MaxBytesReader(…, limit)</code>. Body
                     <code>multipart/*</code> dừng ở đó: bị giới hạn nhưng không đọc trước, để file upload không nằm
-                    trong bộ nhớ hai lần.</li>
+                    trong bộ nhớ hai lần. Khi đó Payload không bao giờ trả 413 — giới hạn chỉ vượt về sau, thành lỗi
+                    của <code>c.FormFile</code> / <code>ParseMultipartForm</code> trong handler, và handler phải tự trả lời.</li>
                   <li lang="en">Any other body is read <b>all into memory</b>. Over the limit → <b>413</b>
                     <code>PAYLOAD_TOO_LARGE</code> / <code>request_body_too_large</code> "Request body exceeds the
                     maximum allowed size"; any other read error (e.g. the client hung up) → <b>400</b>
@@ -1078,11 +899,7 @@ $ curl -si localhost:$API_SERVER_PORT/api/v1/auth/me -H 'Origin: https://app.exa
                     class="jd-sym-name">PayloadOptions</span></div>
                 <div class="jd-tablewrap">
                   <table class="jd-params">
-                    <tr>
-                      <th>field</th>
-                      <th>type · default</th>
-                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-                    </tr>
+                    <tr><th>field</th><th><span lang="en">type · default</span><span lang="vi">kiểu · mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
                     <tr>
                       <td>MaxBodySize</td>
                       <td>int64 · 1 MiB</td>
@@ -1150,14 +967,14 @@ const (
             <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — <code>GetPayload</code> chỉ parse body có
               <code>Content-Type</code> phù hợp:</p>
             <div class="jd-term" data-copy="commands">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · login payload</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
               <pre data-hl="bash">
 $ curl -i -X POST localhost:$API_SERVER_PORT/api/v1/auth/login -H 'Content-Type: application/json' \
     -d '{"email":"admin@example.com","password":"secret"}'
 </pre>
             </div>
             <div class="jd-term" data-copy="commands" style="margin-top:10px">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · body vượt giới hạn</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
               <pre data-hl="bash">
 # body over SECURITY_MAX_BODY_SIZE (2 MiB) → 413 request_body_too_large
 $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
@@ -1232,9 +1049,9 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                     <tr>
                       <td>error</td>
                       <td lang="en">Private <code>c.Errors</code> as a string (e.g. the cause of a
-                        <code>responder.Error</code> 500), else null.</td>
+                        <code>responder.Error</code> 500); <code>""</code> when only public errors were recorded; null when none.</td>
                       <td lang="vi"><code>c.Errors</code> loại private dạng chuỗi (vd. nguyên nhân của 500 từ
-                        <code>responder.Error</code>), không thì null.</td>
+                        <code>responder.Error</code>); <code>""</code> khi chỉ có lỗi public; null khi không có lỗi.</td>
                     </tr>
                     <tr>
                       <td>request_payload</td>
@@ -1256,11 +1073,7 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                     class="jd-sym-name">AccessLogOptions</span></div>
                 <div class="jd-tablewrap">
                   <table class="jd-params">
-                    <tr>
-                      <th>field</th>
-                      <th>type · default</th>
-                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-                    </tr>
+                    <tr><th>field</th><th><span lang="en">type · default</span><span lang="vi">kiểu · mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
                     <tr>
                       <td>ExcludedPaths</td>
                       <td>[]string · <code>/health</code>, <code>/metrics</code>, <code>/favicon.ico</code></td>
@@ -1337,11 +1150,12 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                     abort.</li>
                   <li lang="en"><b>Panics at setup</b> without <code>Cache</code>, a positive <code>MaxStrikes</code>
                     and <code>StrikeWindow</code>, or <code>BanDurations</code>.</li>
-                  <li lang="vi"><b>Panic lúc khởi tạo</b> nếu thiếu <code>Cache</code>, <code>MaxStrikes</code> và
-                    <code>StrikeWindow</code> dương, hoặc <code>BanDurations</code>.</li>
+                  
                   <li lang="vi">Đang bị ban → <b>403</b> <code>FORBIDDEN</code> / <code>access_denied</code> "Access
                     denied due to suspicious activity or IP restriction" kèm <code>Retry-After</code> (số giây còn
                     lại), rồi abort.</li>
+                  <li lang="vi"><b>Panic lúc khởi tạo</b> nếu thiếu <code>Cache</code>, <code>MaxStrikes</code> và
+                    <code>StrikeWindow</code> dương, hoặc <code>BanDurations</code>.</li>
                   <li lang="en"><b>Instant ban</b> on the first request when <code>ScannerAgents</code> match the
                     User-Agent, or — only for a request that matched no route — <code>TrapPaths</code> match the path
                     or <code>AttackPatterns</code> the path plus URL-decoded query. Real routes are never checked
@@ -1352,7 +1166,7 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                     hoặc — chỉ với request không trúng route nào — <code>TrapPaths</code> khớp với path hay
                     <code>AttackPatterns</code> khớp với path cộng query đã URL-decode. Route thật không bao giờ bị
                     kiểm tra bằng chúng: query của route thật chứa dữ liệu người dùng như từ khoá tìm kiếm. Mặc định
-                    chỉ chứa dấu hiệu mà client thật không bao giờ gửi; cái gì mơ hồ hơn để bộ đếm lỗi lo, vì đường dẫn
+                    chỉ chứa dấu hiệu mà client thật không bao giờ gửi; cái gì mơ hồ hơn để bộ đếm strike lo, vì đường dẫn
                     lạ vẫn trả 404.</li>
                   <li lang="en"><b>Embedded requests</b>: a browser's cross-site no-cors request
                     (<code>Sec-Fetch-Site: cross-site</code> + <code>Sec-Fetch-Mode: no-cors</code>, e.g. an
@@ -1360,21 +1174,21 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                     checked — so a third-party page cannot get its visitors banned.</li>
                   <li lang="vi"><b>Request bị nhúng</b>: request no-cors khác site của trình duyệt
                     (<code>Sec-Fetch-Site: cross-site</code> + <code>Sec-Fetch-Mode: no-cors</code>, vd. thẻ
-                    <code>&lt;img&gt;</code> mà site khác nhúng) không bao giờ bị ban hay tính lỗi — chỉ User-Agent được
+                    <code>&lt;img&gt;</code> mà site khác nhúng) không bao giờ bị ban hay tính strike — chỉ User-Agent được
                     kiểm tra — nên trang bên thứ ba không thể khiến khách của nó bị ban.</li>
-                  <li lang="en"><b>Speed</b>: patterns see lowercased input and each starts with a literal, which Go's
-                    <code>regexp</code> finds with a plain substring search before running its matcher. One big
-                    alternation would cost ~20 µs per string; this list costs ~1–2 µs per request. Real routes skip
-                    the path checks entirely. Keep custom patterns starting with a literal too.</li>
-                  <li lang="vi"><b>Tốc độ</b>: pattern nhận chuỗi đã viết thường và mỗi pattern bắt đầu bằng chữ cố
-                    định, để <code>regexp</code> của Go tìm chuỗi con nhanh trước khi chạy bộ khớp. Một regex lớn gồm
-                    nhiều nhánh <code>|</code> tốn ~20 µs mỗi chuỗi; danh sách này chỉ tốn ~1–2 µs mỗi request. Route
-                    thật bỏ qua hẳn phần kiểm tra path. Pattern tự thêm cũng nên bắt đầu bằng chữ cố định.</li>
+                  <li lang="en"><b>Cost</b>: patterns see lowercased input and each starts with a literal, which Go's
+                    <code>regexp</code> finds with a plain substring search before running its matcher — cheaper than
+                    one large alternation. Requests that matched a route skip the path and query checks entirely. Keep
+                    custom patterns starting with a literal too.</li>
+                  <li lang="vi"><b>Chi phí</b>: pattern nhận chuỗi đã viết thường và mỗi pattern bắt đầu bằng chữ cố
+                    định, để <code>regexp</code> của Go tìm chuỗi con trước khi chạy bộ khớp — rẻ hơn một regex lớn
+                    gồm nhiều nhánh <code>|</code>. Request đã khớp route bỏ qua hẳn phần kiểm tra path và query. Pattern
+                    tự thêm cũng nên bắt đầu bằng chữ cố định.</li>
                   <li lang="en"><b>Strikes</b>: after the handler, a status in <code>StrikeStatuses</code> adds a
                     strike; the <code>MaxStrikes</code>-th strike within <code>StrikeWindow</code> bans. The request
                     that hits the limit still gets its normal answer; the ban applies from the next one.</li>
-                  <li lang="vi"><b>Lỗi</b>: sau handler, status nằm trong <code>StrikeStatuses</code> được tính một
-                    lỗi; lỗi thứ <code>MaxStrikes</code> trong <code>StrikeWindow</code> sẽ ban. Request chạm ngưỡng
+                  <li lang="vi"><b>Strike</b>: sau handler, status nằm trong <code>StrikeStatuses</code> được tính một
+                    strike; strike thứ <code>MaxStrikes</code> trong <code>StrikeWindow</code> sẽ ban. Request chạm ngưỡng
                     vẫn nhận response bình thường; lệnh ban có hiệu lực từ request kế tiếp.</li>
                   <li lang="en"><b>Escalation</b>: the 1st ban lasts <code>BanDurations[0]</code>, the 2nd
                     <code>BanDurations[1]</code>, … the last one repeats. The ban count is forgotten twice the longest
@@ -1392,7 +1206,7 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                     Client Banned" được đưa vào hàng đợi (<code>notifier.Send(ctx, notification.LevelError, …)</code>). Request bị từ chối trong lúc ban không được Banner ghi log (AccessLog vẫn ghi).</li>
                   <li lang="en">A cache error never blocks anyone: a failed strike count is logged and the request
                     goes on.</li>
-                  <li lang="vi">Lỗi cache không bao giờ chặn nhầm ai: đếm lỗi thất bại thì ghi log và request đi tiếp.
+                  <li lang="vi">Lỗi cache không bao giờ chặn nhầm ai: đếm strike thất bại thì ghi log và request đi tiếp.
                   </li>
                 </ul>
               </div>
@@ -1401,18 +1215,14 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                     class="jd-sym-name">BannerOptions</span></div>
                 <div class="jd-tablewrap">
                   <table class="jd-params">
-                    <tr>
-                      <th>field</th>
-                      <th>type · default</th>
-                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-                    </tr>
+                    <tr><th>field</th><th><span lang="en">type · default</span><span lang="vi">kiểu · mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
                     <tr>
                       <td>Cache<span class="req">require</span></td>
                       <td>cache.Cache[int64] · —</td>
                       <td lang="en">Where strikes and bans live, e.g. <code>cache.New[int64](store.OrMemory())</code>. Redis
                         shares bans across instances; a memory cache works per instance; a no-op cache disables banning
                         (trap paths still get 403).</td>
-                      <td lang="vi">Nơi lưu lỗi và lệnh ban, vd. <code>cache.New[int64](store.OrMemory())</code>. Redis
+                      <td lang="vi">Nơi lưu strike và lệnh ban, vd. <code>cache.New[int64](store.OrMemory())</code>. Redis
                         dùng chung lệnh ban giữa các instance; memory cache hoạt động theo từng instance; cache no-op tắt
                         việc ban (đường dẫn bẫy vẫn nhận 403).</td>
                     </tr>
@@ -1420,13 +1230,13 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                       <td>MaxStrikes<span class="req">require</span></td>
                       <td>int64 · —</td>
                       <td lang="en">Strikes within <code>StrikeWindow</code> that ban.</td>
-                      <td lang="vi">Số lỗi trong <code>StrikeWindow</code> thì bị ban.</td>
+                      <td lang="vi">Số strike trong <code>StrikeWindow</code> thì bị ban.</td>
                     </tr>
                     <tr>
                       <td>StrikeWindow<span class="req">require</span></td>
                       <td>time.Duration · —</td>
                       <td lang="en">Fixed window strikes are counted in.</td>
-                      <td lang="vi">Cửa sổ cố định để đếm lỗi.</td>
+                      <td lang="vi">Cửa sổ cố định để đếm strike.</td>
                     </tr>
                     <tr>
                       <td>BanDurations<span class="req">require</span></td>
@@ -1484,7 +1294,7 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                       <td>StrikeStatuses</td>
                       <td>[]int · DefaultStrikeStatuses</td>
                       <td lang="en">Statuses that count as a strike: 401, 403, 404, 405, 429.</td>
-                      <td lang="vi">Status được tính là lỗi: 401, 403, 404, 405, 429.</td>
+                      <td lang="vi">Status được tính là strike: 401, 403, 404, 405, 429.</td>
                     </tr>
                     <tr>
                       <td>IPWhitelist</td>
@@ -1527,12 +1337,12 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                     <code>too_many_requests</code> "Too many requests. Please try again later.", then abort.</li>
                   <li lang="vi">Hết token → <b>429</b> <code>TOO_MANY_REQUESTS</code> /
                     <code>too_many_requests</code> "Too many requests. Please try again later.", rồi abort.</li>
-                  <li lang="en">At most once per IP per <code>LogTTL</code>:
+                  <li lang="en">At most once per client (IP, or IPv6 /64) per <code>LogTTL</code>:
                     <code>logger.Warn("middleware: rate limit exceeded")</code> with <code>ip</code>, <code>path</code>,
                     <code>limit_rps</code>, and — if <code>notifier != nil</code> — an async HTML alert "🚦 Rate Limit
                     Exceeded" (IP, method, path, time; IP, method and path are HTML-escaped) via
                     <code>notifier.Send(ctx, notification.LevelError, …)</code>.</li>
-                  <li lang="vi">Tối đa một lần mỗi IP trong mỗi <code>LogTTL</code>:
+                  <li lang="vi">Tối đa một lần mỗi client (IP, hoặc khối /64 của IPv6) trong mỗi <code>LogTTL</code>:
                     <code>logger.Warn("middleware: rate limit exceeded")</code> với <code>ip</code>, <code>path</code>,
                     <code>limit_rps</code>, và — nếu <code>notifier != nil</code> — một cảnh báo HTML bất đồng bộ "🚦
                     Rate Limit Exceeded" (IP, method, path, thời gian; IP, method và path được escape HTML) qua
@@ -1544,11 +1354,7 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                     class="jd-sym-name">LimiterOptions</span></div>
                 <div class="jd-tablewrap">
                   <table class="jd-params">
-                    <tr>
-                      <th>field</th>
-                      <th>type · default</th>
-                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-                    </tr>
+                    <tr><th>field</th><th><span lang="en">type · default</span><span lang="vi">kiểu · mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
                     <tr>
                       <td>RequestsPerSecond<span class="req">require</span></td>
                       <td>int · —</td>
@@ -1580,8 +1386,8 @@ $ head -c 3000000 /dev/zero | curl -i -X POST localhost:$API_SERVER_PORT/api/v1/
                     <tr>
                       <td>LogTTL</td>
                       <td>time.Duration · 1m (≤ 0)</td>
-                      <td lang="en">Max one warn/alert per IP per interval.</td>
-                      <td lang="vi">Tối đa một warn/cảnh báo mỗi IP trong mỗi khoảng.</td>
+                      <td lang="en">Max one warn/alert per client (IP, or IPv6 /64) per interval.</td>
+                      <td lang="vi">Tối đa một warn/cảnh báo mỗi client (IP, hoặc khối /64 IPv6) trong mỗi khoảng.</td>
                     </tr>
                     <tr>
                       <td>NumShards</td>
@@ -1692,8 +1498,8 @@ func IsSlug(v string) bool</pre>
               </div>
             </div>
             <div class="jd-callout c-orange" style="margin-top:14px">
-              <b lang="en">Convention: the parameter name is the type.</b><b lang="vi">Quy ước: tên param chính là
-                kiểu.</b>
+              <b lang="en">Important:</b><b lang="vi">Quan trọng:</b>
+              <span lang="en">the parameter name is the type.</span><span lang="vi">tên param chính là kiểu.</span>
               <span lang="en">Across the whole app <code>:id</code> is always a positive integer, <code>:uuid</code>
                 always a UUID, <code>:slug</code> always a slug. For a free-form value use another name, e.g.
                 <code>:key</code> or <code>:code</code>.</span>
@@ -1706,7 +1512,7 @@ func IsSlug(v string) bool</pre>
             <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — uuid sai định dạng trả 404 kể cả khi không
               có token:</p>
             <div class="jd-term" data-copy="commands">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · Jungo</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
               <pre data-hl="bash">
 $ curl -i localhost:$API_SERVER_PORT/api/v1/users/abc
 # 404 "API is not found"
@@ -1754,11 +1560,7 @@ $ curl -i localhost:$API_SERVER_PORT/api/v1/users/abc
                     class="jd-sym-name">RecoverOptions</span></div>
                 <div class="jd-tablewrap">
                   <table class="jd-params">
-                    <tr>
-                      <th>field</th>
-                      <th>type · default</th>
-                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-                    </tr>
+                    <tr><th>field</th><th><span lang="en">type · default</span><span lang="vi">kiểu · mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
                     <tr>
                       <td>Debug</td>
                       <td>TracerDebugOptions · {}</td>
@@ -1811,11 +1613,7 @@ $ curl -i localhost:$API_SERVER_PORT/api/v1/users/abc
                     class="jd-sym-name">GzipOptions</span><span class="jd-pill">gzip.go</span></div>
                 <div class="jd-tablewrap">
                   <table class="jd-params">
-                    <tr>
-                      <th>field</th>
-                      <th><span lang="en">type · default</span><span lang="vi">kiểu · mặc định</span></th>
-                      <th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th>
-                    </tr>
+                    <tr><th>field</th><th><span lang="en">type · default</span><span lang="vi">kiểu · mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
                     <tr>
                       <td>Level</td>
                       <td>int · <code>gzip.DefaultCompression</code></td>
@@ -1833,7 +1631,7 @@ $ curl -i localhost:$API_SERVER_PORT/api/v1/users/abc
             <p class="jd-hint" style="margin-top:14px" lang="vi">Thử ngay — chỉ nén khi request có
               <code>Accept-Encoding: gzip</code>:</p>
             <div class="jd-term" data-copy="commands">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · kiểm tra header nén</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
               <pre data-hl="bash">
 # headers only: look for Content-Encoding: gzip and Vary: Accept-Encoding
 $ curl -s -D - -o /dev/null localhost:$API_SERVER_PORT/api/v1/users -H "Authorization: Bearer $TOKEN" \
@@ -1841,14 +1639,14 @@ $ curl -s -D - -o /dev/null localhost:$API_SERVER_PORT/api/v1/users -H "Authoriz
 </pre>
             </div>
             <div class="jd-term" data-copy="commands" style="margin-top:10px">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · uncompressed bytes</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
               <pre data-hl="bash">
 # compare bytes on the wire (uncompressed)
 $ curl -s -o /dev/null -w 'uncompressed: %{size_download} bytes\n' localhost:$API_SERVER_PORT/api/v1/users -H "Authorization: Bearer $TOKEN"
 </pre>
             </div>
             <div class="jd-term" data-copy="commands" style="margin-top:10px">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · gzip compressed bytes</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
               <pre data-hl="bash">
 # compare bytes on the wire (gzip)
 $ curl -s -o /dev/null -w 'gzip: %{size_download} bytes\n' localhost:$API_SERVER_PORT/api/v1/users -H "Authorization: Bearer $TOKEN" \
@@ -1856,13 +1654,34 @@ $ curl -s -o /dev/null -w 'gzip: %{size_download} bytes\n' localhost:$API_SERVER
 </pre>
             </div>
             <div class="jd-term" data-copy="commands" style="margin-top:10px">
-              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · tải và giải nén</span></div>
+              <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
               <pre data-hl="bash">
 # --compressed sends the header and decompresses for you
 $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization: Bearer $TOKEN" | jq
 </pre>
             </div>
           </div>
+        </div>
+
+        <h3 id="setidentity"><span lang="en">Identity for your auth middleware</span><span lang="vi">Identity cho middleware auth của bạn</span></h3>
+        <div class="jd-sym c-blue">
+          <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">SetIdentity</span><span
+              class="jd-pill">identity.go</span></div>
+          <div class="jd-term">
+            <pre data-hl="go">func SetIdentity[T any](c *gin.Context, identity T)</pre>
+          </div>
+          <p lang="en">Call it from your auth middleware once the caller is known. It replaces <code>c.Request</code>
+            with a copy whose context carries <code>identity</code> (via <code>security.WithIdentity</code>).
+            <code>T</code> is inferred from the argument, and that exact type is what you read back with <a
+              href="security.html#api"><code>security.GetIdentity[T]</code> / <code>MustGetIdentity[T]</code></a> —
+            from <code>c.Request.Context()</code>, or from <code>c</code> itself when the engine sets
+            <code>ContextWithFallback = true</code>.</p>
+          <p lang="vi">Gọi từ middleware auth của bạn khi đã biết người gọi. Nó thay <code>c.Request</code> bằng bản sao
+            có context chứa <code>identity</code> (qua <code>security.WithIdentity</code>). <code>T</code> được suy ra
+            từ đối số, và đúng kiểu đó là kiểu bạn đọc lại bằng <a
+              href="security.html#api"><code>security.GetIdentity[T]</code> / <code>MustGetIdentity[T]</code></a> — từ
+            <code>c.Request.Context()</code>, hoặc từ chính <code>c</code> khi engine đặt
+            <code>ContextWithFallback = true</code>.</p>
         </div>
 
         <h3><span lang="en">What the rejections look like</span><span lang="vi">Các response từ chối trông thế
@@ -1964,8 +1783,10 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
           <span class="jd-badge">5</span>
           <div>
             <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
-            <p class="jd-sub" lang="en">Paths are relative to <code>jungo/internal</code>.</p>
-            <p class="jd-sub" lang="vi">Đường dẫn tính từ <code>jungo/internal</code>.</p>
+            <p class="jd-sub" lang="en">Jungo registers the chain once, globally; the full order with its
+              config is on <a href="../jungo/overview.html#flow">Jungo · request flow</a>.</p>
+            <p class="jd-sub" lang="vi">Jungo đăng ký chuỗi một lần, global; thứ tự đầy đủ cùng cấu hình nằm ở <a
+                href="../jungo/overview.html#flow">Jungo · luồng request</a>.</p>
           </div>
         </div>
         <div class="jd-tablewrap" style="margin-top:16px">
@@ -1975,49 +1796,45 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
               <th><span lang="en">what it does</span><span lang="vi">làm gì</span></th>
             </tr>
             <tr>
-              <td>router/router.go</td>
-              <td lang="en"><code>registerGlobalMiddlewares</code>: the 11-step chain above; Banner (left out when
-                <code>BANNER_ENABLED=false</code>) gets a Redis cache when <code>CACHE_REDIS_ENABLE=true</code>,
-                otherwise memory, and Limiter's whitelist; RoutePatterns gets the <code>uuid</code> / <code>id</code> /
-                <code>slug</code> rules. HTTPLogger is the zap logger
-                named <code>http</code>, Banner and Limiter get the one named <code>limiter</code>; Notifier is
-                <code>optional:"true"</code>. The <code>/uploads</code> file server gets its own
-                <code>Security(SecurityOptions{CrossOriginResourcePolicy: "cross-origin"})</code> so other sites can
-                embed uploaded images.</td>
-              <td lang="vi"><code>registerGlobalMiddlewares</code>: chuỗi 11 bước ở trên; Banner (bị bỏ khi
-                <code>BANNER_ENABLED=false</code>) dùng cache Redis khi <code>CACHE_REDIS_ENABLE=true</code>, không thì
-                memory, và dùng chung whitelist của Limiter; RoutePatterns nhận rule <code>uuid</code> / <code>id</code> /
-                <code>slug</code>. HTTPLogger là zap logger tên
-                <code>http</code>, Banner và Limiter nhận logger tên <code>limiter</code>; Notifier là
-                <code>optional:"true"</code>. File server <code>/uploads</code> có
-                <code>Security(SecurityOptions{CrossOriginResourcePolicy: "cross-origin"})</code> riêng để site khác
-                nhúng được ảnh đã upload.</td>
+              <td>internal/router/router.go</td>
+              <td lang="en"><code>registerGlobalMiddlewares</code> uses all eleven; the order and its config are on <a
+                  href="../jungo/overview.html#flow">Jungo · request flow</a>. Banner is left out when <code>BANNER_ENABLED=false</code>; its cache is
+                Redis when <code>CACHE_REDIS_ENABLED=true</code>, otherwise memory (<code>cache.Store.OrMemory</code>), and
+                it shares Limiter's whitelist. Banner and Limiter log to the <code>limiter</code> logger, the rest to
+                <code>http</code>; the notifier is optional. <code>registerUploads</code> gives <code>/uploads</code> its own
+                <code>Security</code> (<code>CrossOriginResourcePolicy: "cross-origin"</code>) and <code>Recover</code>,
+                registered before the global chain.</td>
+              <td lang="vi"><code>registerGlobalMiddlewares</code> dùng đủ mười một cái; thứ tự và cấu hình nằm ở <a
+                  href="../jungo/overview.html#flow">Jungo · luồng request</a>. Banner bị bỏ khi <code>BANNER_ENABLED=false</code>; cache của nó là Redis khi
+                <code>CACHE_REDIS_ENABLED=true</code>, không thì memory (<code>cache.Store.OrMemory</code>), và dùng chung
+                whitelist với Limiter. Banner và Limiter ghi log vào logger <code>limiter</code>, phần còn lại vào
+                <code>http</code>; notifier là tùy chọn. <code>registerUploads</code> cho <code>/uploads</code>
+                <code>Security</code> riêng (<code>CrossOriginResourcePolicy: "cross-origin"</code>) và <code>Recover</code>,
+                đăng ký trước chuỗi global.</td>
             </tr>
             <tr>
-              <td>app/fx.go</td>
-              <td lang="en"><code>provideGin</code>: <code>gin.New()</code> +
-                <code>SetTrustedProxies(SECURITY_TRUSTED_PROXIES)</code>, or <code>nil</code> when unset — what Banner,
-                Limiter and AccessLog see as the client IP — and <code>ContextWithFallback = true</code>, so
-                <code>security.GetIdentity(c)</code> finds the identity <code>middleware.SetIdentity</code> stored.</td>
-              <td lang="vi"><code>provideGin</code>: <code>gin.New()</code> +
-                <code>SetTrustedProxies(SECURITY_TRUSTED_PROXIES)</code>, hoặc <code>nil</code> khi không đặt — quyết
-                định IP client mà Banner, Limiter và AccessLog nhìn thấy — và <code>ContextWithFallback = true</code>, để
-                <code>security.GetIdentity(c)</code> tìm thấy identity mà <code>middleware.SetIdentity</code> đã lưu.</td>
+              <td>internal/app/fx.go</td>
+              <td lang="en"><code>provideGin</code>: <code>gin.New()</code>,
+                <code>SetTrustedProxies(SECURITY_TRUSTED_PROXIES)</code> (unset → none trusted; this decides the client
+                IP Banner, Limiter and AccessLog see) and <code>ContextWithFallback = true</code>.</td>
+              <td lang="vi"><code>provideGin</code>: <code>gin.New()</code>,
+                <code>SetTrustedProxies(SECURITY_TRUSTED_PROXIES)</code> (không đặt → không tin proxy nào; quyết định IP
+                client mà Banner, Limiter và AccessLog thấy) và <code>ContextWithFallback = true</code>.</td>
             </tr>
             <tr>
-              <td>middleware/</td>
-              <td lang="en">The app's own middleware, used per route group: <code>BearerAuth</code> on <code>/users</code> and
-                the protected <code>/auth</code> routes, <code>RequireSecret</code> on <code>/api/internal/auth/*</code>
-                (all 403 while <code>AUTH_INTERNAL_SECRET</code> is unset), and the permission <code>Guard</code> on every
-                <code>/api/v1</code> route. See <a href="../jungo/access.html">permissions &amp; roles</a>.</td>
-              <td lang="vi">Middleware riêng của app, dùng theo từng route group: <code>BearerAuth</code> cho <code>/users</code>
-                và các route <code>/auth</code> cần đăng nhập, <code>RequireSecret</code> cho <code>/api/internal/auth/*</code>
-                (luôn 403 khi chưa đặt <code>AUTH_INTERNAL_SECRET</code>), và <code>Guard</code> phân quyền cho mọi route
-                <code>/api/v1</code>. Xem <a href="../jungo/access.html">phân quyền</a>.</td>
+              <td>internal/middleware/</td>
+              <td lang="en">The app's own access policy: authentication (<code>BearerAuth</code>, injected as
+                <code>Authenticate</code>) and <code>RequireSecret</code> run per route group after the global chain;
+                <code>Guard</code> wraps each handler. Only <code>BearerAuth</code> calls <code>SetIdentity</code>. See <a href="../jungo/auth.html">Jungo ·
+                auth</a> and <a href="../jungo/access.html">Jungo · permissions &amp; roles</a>.</td>
+              <td lang="vi">Chính sách truy cập riêng của app: xác thực (<code>BearerAuth</code>, inject dưới dạng
+                <code>Authenticate</code>) và <code>RequireSecret</code> chạy theo từng route group sau chuỗi global;
+                <code>Guard</code> bọc từng handler. Chỉ <code>BearerAuth</code> gọi <code>SetIdentity</code>. Xem <a href="../jungo/auth.html">Jungo · auth</a>
+                và <a href="../jungo/access.html">Jungo · phân quyền</a>.</td>
             </tr>
             <tr>
-              <td>config/config.go</td>
-              <td lang="en">Env variables below.</td>
+              <td>internal/config/config.go</td>
+              <td lang="en">The env variables below.</td>
               <td lang="vi">Các biến môi trường bên dưới.</td>
             </tr>
           </table>
@@ -2025,14 +1842,10 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
 
         <div class="jd-tablewrap" style="margin-top:8px">
           <table class="jd-params c-orange">
-            <tr>
-              <th>env</th>
-              <th>default</th>
-              <th><span lang="en">feeds</span><span lang="vi">dùng cho</span></th>
-            </tr>
+            <tr><th>env</th><th><span lang="en">default</span><span lang="vi">mặc định</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
             <tr>
               <td>TRACER_DEBUG_KEY<br>TRACER_DEBUG_VALUE</td>
-              <td>t_debug · <span lang="en">(empty; app-init: random)</span><span lang="vi">(trống; app-init: ngẫu nhiên)</span></td>
+              <td><span lang="en">— · — (<code>.env.example</code>: <code>t_debug</code> · empty; <code>deploy/app-init.sh</code>: random 4 digits)</span><span lang="vi">— · — (<code>.env.example</code>: <code>t_debug</code> · trống; <code>deploy/app-init.sh</code>: 4 chữ số ngẫu nhiên)</span></td>
               <td>TracerDebug, Recover, AccessLog.SkipIf</td>
             </tr>
             <tr>
@@ -2106,28 +1919,28 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
         </div>
 
         <div class="jd-term" data-copy="commands" style="margin-top:14px">
-          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · security headers &amp; trace id</span></div>
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
           <pre data-hl="bash">
 # security headers + X-Trace-Id on every response
 $ curl -i localhost:$API_SERVER_PORT/health
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
-          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 401 authentication token</span></div>
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
           <pre data-hl="bash">
 # 401 "Authentication token is invalid or expired" (code UNAUTHORIZED)
 $ curl -i localhost:$API_SERVER_PORT/api/v1/users
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
-          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · 403 secret sai</span></div>
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
           <pre data-hl="bash">
 # 403 "Forbidden internal system access"
 $ curl -i -X POST localhost:$API_SERVER_PORT/api/internal/auth/revoke -H 'X-Internal-Secret: wrong'
 </pre>
         </div>
         <div class="jd-term" data-copy="commands" style="margin-top:10px">
-          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal · debug report json</span></div>
+          <div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
           <pre data-hl="bash">
 # debug report: JSON from curl, HTML dashboard in a browser (add the header with ModHeader or similar)
 $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" -H 'Authorization: Bearer &lt;access_token&gt;' \
@@ -2145,8 +1958,7 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
           </div>
         </div>
         <div class="jd-explain" style="margin-top:16px">
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w">Order is
-              behaviour</span><span class="x" lang="en">A middleware only affects what comes after it. In Jungo's order,
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w"><span lang="en">Order is behaviour</span><span lang="vi">Thứ tự quyết định hành vi</span></span><span class="x" lang="en">A middleware only affects what comes after it. In Jungo's order,
               CORS preflights (204) abort <b>before</b> AccessLog, so they are never access-logged (Banner's 403,
               Limiter's 429 and Payload's 413 are logged: they sit after AccessLog); anything that answers before Trace has no trace ID. Recover
               protects only what runs after it — a panic inside TracerDebug, Security, Trace, CORS, Gzip or AccessLog
@@ -2155,15 +1967,13 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
               được ghi access log (403 của Banner, 429 của Limiter và 413 của Payload thì có, vì chúng đứng sau AccessLog); cái gì trả lời trước Trace sẽ
               không có trace ID. Recover chỉ bảo vệ những gì chạy sau nó — panic trong TracerDebug, Security, Trace,
               CORS, Gzip hay AccessLog không được biến thành JSON 500.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w">Limiter: rate and burst
-              required</span><span class="x" lang="en"><code>RequestsPerSecond</code> or <code>Burst</code> ≤ 0 makes
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">Limiter: rate and burst required</span><span lang="vi">Limiter: bắt buộc rate và burst</span></span><span class="x" lang="en"><code>RequestsPerSecond</code> or <code>Burst</code> ≤ 0 makes
               <code>Limiter</code> panic at startup, so a missing config value fails fast instead of letting every
               request through. The durations default when ≤ 0 (sweep 1m, client TTL 10m, log TTL 1m).</span><span
               class="x" lang="vi"><code>RequestsPerSecond</code> hoặc <code>Burst</code> ≤ 0 làm <code>Limiter</code>
               panic lúc khởi động, nên thiếu cấu hình là lỗi ngay thay vì cho mọi request đi qua. Các khoảng thời gian
               dùng mặc định khi ≤ 0 (dọn 1m, TTL client 10m, TTL log 1m).</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w">Limiter keys on
-              ClientIP()</span><span class="x" lang="en">Behind a load balancer without
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">Limiter keys on ClientIP()</span><span lang="vi">Limiter dựa vào ClientIP()</span></span><span class="x" lang="en">Behind a load balancer without
               <code>SECURITY_TRUSTED_PROXIES</code>, every client has the balancer's IP and shares one bucket. Behind a
               reverse proxy on the same host, every request comes from <code>127.0.0.1</code> — and if you add it to
               <code>LIMITER_IP_WHITELIST</code> (empty by default), <b>nothing is limited</b>. Set trusted proxies to
@@ -2172,14 +1982,12 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
               mang IP của balancer và dùng chung một bucket. Đứng sau reverse proxy cùng máy, mọi request đến từ
               <code>127.0.0.1</code> — nếu bạn thêm địa chỉ này vào <code>LIMITER_IP_WHITELIST</code> (mặc định trống)
               thì <b>không có gì bị giới hạn</b>. Hãy đặt trusted proxies là địa chỉ proxy của bạn.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w">Limiter: per
-              process</span><span class="x" lang="en">Buckets live in process memory: with N instances, a client
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">Limiter: per process</span><span lang="vi">Limiter: theo từng process</span></span><span class="x" lang="en">Buckets live in process memory: with N instances, a client
               effectively gets N× the rate. Postman and tests are limited like any client — whitelist their IP if
               they need more.</span><span class="x" lang="vi">Bucket nằm trong bộ nhớ process: với N instance, một
               client thực tế được N lần tốc độ. Postman và test cũng bị giới hạn như mọi client — cần nhiều hơn thì
               whitelist IP của chúng.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w">CORS "*" +
-              credentials</span><span class="x" lang="en"><code>"*"</code> together with <code>AllowCredentials: true</code>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">5</span><span class="w"><span lang="en">CORS "*" + credentials</span><span lang="vi">CORS "*" + credentials</span></span><span class="x" lang="en"><code>"*"</code> together with <code>AllowCredentials: true</code>
               makes <code>CORS</code> panic at startup — it would let every website make credentialed calls. Jungo's
               <code>CORS_ALLOW_ORIGINS</code> defaults to <code>*</code> with credentials off; to turn credentials on,
               list the real origins. Also: disallowed origins are not blocked server-side, and every
@@ -2188,8 +1996,7 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
               cũng gọi kèm credentials được. <code>CORS_ALLOW_ORIGINS</code> của Jungo mặc định là <code>*</code> và
               tắt credentials; muốn bật credentials thì liệt kê origin thật. Ngoài ra: origin không được phép không bị
               chặn ở server, và mọi <code>OPTIONS</code> đều nhận 204.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w">Payload buffers
-              bodies</span><span class="x" lang="en">Every non-multipart body is read into memory, so each concurrent
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">6</span><span class="w"><span lang="en">Payload buffers bodies</span><span lang="vi">Payload đọc body vào bộ nhớ</span></span><span class="x" lang="en">Every non-multipart body is read into memory, so each concurrent
               request may hold up to its limit in RAM. Raise the limit only for the routes that need it
               (<code>RouteLimits</code>), never globally; a route middleware cannot raise it — Payload has already run.
               Multipart uploads are limited but streamed to the handler. 0 means the 1 MiB default. A client that
@@ -2198,15 +2005,13 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
               cần (<code>RouteLimits</code>), đừng nới global; middleware gắn trên route không nới được — Payload đã
               chạy trước rồi. Upload multipart bị giới hạn nhưng được stream tới handler. 0 nghĩa là mặc định 1 MiB.
               Client ngắt kết nối giữa chừng nhận 400, không phải 413.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w">AccessLog masking has
-              limits</span><span class="x" lang="en">Custom <code>SensitiveFields</code> / <code>ExcludedPaths</code>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">7</span><span class="w"><span lang="en">AccessLog masking has limits</span><span lang="vi">Che dữ liệu của AccessLog có giới hạn</span></span><span class="x" lang="en">Custom <code>SensitiveFields</code> / <code>ExcludedPaths</code>
               replace the defaults (add the defaults back yourself). Only names on the list or containing a credential word are
               masked — a secret under another name (e.g. <code>otp</code>) is logged; add it to the list. In the response, only JSON string values are masked. Masking edits the cached payload map in place, after the handler has run.</span><span class="x"
               lang="vi"><code>SensitiveFields</code> / <code>ExcludedPaths</code> tự đặt sẽ thay thế mặc định (tự thêm
               lại mặc định nếu cần). Chỉ tên có trong danh sách hoặc chứa từ chỉ thông tin đăng nhập mới bị che — secret mang tên khác (vd. <code>otp</code>) vẫn bị ghi; hãy thêm nó vào danh sách. Trong response chỉ giá trị JSON kiểu chuỗi được che. Việc che sửa trực tiếp
               map payload đã cache, sau khi handler chạy xong.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">8</span><span class="w">Debug mode in
-              production</span><span class="x" lang="en">Anyone with the key/value <b>and</b>
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">8</span><span class="w"><span lang="en">Debug mode in production</span><span lang="vi">Chế độ debug trên production</span></span><span class="x" lang="en">Anyone with the key/value <b>and</b>
               <code>AUTH_INTERNAL_SECRET</code> gets the full trace (SQL, timings) of any endpoint, and the handler
               really runs (writes still hit the database). Debug requests are not access-logged. Keep the secret
               strong; leaving <code>AUTH_INTERNAL_SECRET</code>, <code>TRACER_DEBUG_KEY</code> or
@@ -2215,23 +2020,20 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
               ra). Request debug không được ghi access log. Hãy dùng secret đủ mạnh; để
               <code>AUTH_INTERNAL_SECRET</code>, <code>TRACER_DEBUG_KEY</code> hoặc <code>TRACER_DEBUG_VALUE</code> rỗng
               là tắt chế độ debug.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">9</span><span class="w">HSTS behind a
-              proxy</span><span class="x" lang="en">By default <code>Strict-Transport-Security</code> is only sent when
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">9</span><span class="w"><span lang="en">HSTS behind a proxy</span><span lang="vi">HSTS sau proxy</span></span><span class="x" lang="en">By default <code>Strict-Transport-Security</code> is only sent when
               Go itself terminated TLS (<code>c.Request.TLS != nil</code>). Behind a TLS-terminating proxy, set
               <code>SecurityOptions.ForceHSTS</code> (Jungo: <code>SECURITY_FORCE_HSTS=true</code>) or set HSTS at the
               proxy.</span><span class="x" lang="vi">Mặc định <code>Strict-Transport-Security</code> chỉ được gửi khi
               chính Go xử lý TLS (<code>c.Request.TLS != nil</code>). Đứng sau proxy xử lý TLS thì bật
               <code>SecurityOptions.ForceHSTS</code> (Jungo: <code>SECURITY_FORCE_HSTS=true</code>) hoặc đặt HSTS ở
               proxy.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">10</span><span class="w">Trusted
-              inputs</span><span class="x" lang="en">With <code>TraceOptions.TrustHeader</code> on, a client can choose
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">10</span><span class="w"><span lang="en">Trusted inputs</span><span lang="vi">Đầu vào được tin cậy</span></span><span class="x" lang="en">With <code>TraceOptions.TrustHeader</code> on, a client can choose
               its own <code>X-Trace-Id</code> (any 1–64 letters, digits, <code>-</code>, <code>_</code>), so turn it on
               only behind a gateway that sets the header, and never treat the ID as unique or as proof of
               anything.</span><span class="x" lang="vi">Khi bật <code>TraceOptions.TrustHeader</code>, client tự chọn
               được <code>X-Trace-Id</code> (1–64 ký tự chữ, số, <code>-</code>, <code>_</code>), nên chỉ bật khi đứng
               sau gateway đặt header này, và đừng bao giờ coi ID là duy nhất hay là bằng chứng cho điều gì.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">11</span><span class="w">Gzip: compress
-              once</span><span class="x" lang="en">If nginx, an ingress or a CDN in front already compresses, leave
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">11</span><span class="w"><span lang="en">Gzip: compress once</span><span lang="vi">Gzip: chỉ nén một lần</span></span><span class="x" lang="en">If nginx, an ingress or a CDN in front already compresses, leave
               <code>Gzip</code> out — it costs CPU for nothing. Put it after CORS so preflights skip it; responses
               written by middleware before it (TracerDebug's dashboard) are not compressed. When Gzip runs before
               AccessLog, <code>resp_size</code> (<code>c.Writer.Size()</code>) is the uncompressed size.</span><span class="x" lang="vi">Nếu nginx, ingress hoặc CDN phía
@@ -2239,8 +2041,7 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
               response do middleware đứng trước ghi (dashboard của TracerDebug) không được nén.
               Khi Gzip chạy trước AccessLog, <code>resp_size</code> (<code>c.Writer.Size()</code>) là kích thước chưa
               nén.</span></div>
-          <div class="jd-ex c-red" style="cursor:default"><span class="n">12</span><span class="w">RoutePatterns: names
-              are global</span><span class="x" lang="en">A rule applies to every route with that parameter name. A
+          <div class="jd-ex c-red" style="cursor:default"><span class="n">12</span><span class="w"><span lang="en">RoutePatterns: names are global</span><span lang="vi">RoutePatterns: tên áp dụng toàn cục</span></span><span class="x" lang="en">A rule applies to every route with that parameter name. A
               route that takes free text in <code>:id</code> or <code>:slug</code> starts returning 404 — rename the
               parameter (<code>:key</code>, <code>:code</code>).</span><span class="x" lang="vi">Rule áp dụng cho mọi
               route có param cùng tên. Route nhận chuỗi tự do qua <code>:id</code> hay <code>:slug</code> sẽ bắt đầu trả
@@ -2249,10 +2050,9 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
       </section>
 
       <footer class="jd-footer">
-        <span>Jundoc · Junkit · middleware</span>
-        <span><a href="index.html">← <span lang="en">All Junkit packages</span><span lang="vi">Mọi package
-              Junkit</span></a></span>
-      </footer>
+    <span>Jundoc · Junkit · middleware</span>
+    <span><a href="security.html">← security</a> · <a href="apidoc.html">apidoc →</a></span>
+  </footer>
     </article>
   </div>
 
@@ -2271,7 +2071,7 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
           node: "mw1", token: "?t_debug", color: req,
           text: {
             en: "<b>TracerDebug</b> — no matching <code>?key=value</code> + <code>X-Internal-Secret</code>, so it just calls <code>c.Next()</code>. If both matched, it would start a tracer and swallow the real body.",
-            vi: "<b>TracerDebug</b> — không có <code>?key=value</code> + <code>X-Internal-Secret</code> khớp, nên chỉ chuyển tiếp bằng <code>c.Next()</code>. Nếu cả hai khớp, middleware sẽ bật tracer và nuốt body thật (handler vẫn chạy)."
+            vi: "<b>TracerDebug</b> — không có <code>?key=value</code> + <code>X-Internal-Secret</code> khớp, nên chỉ chuyển tiếp bằng <code>c.Next()</code>. Nếu cả hai khớp, middleware sẽ bật tracer và nuốt body thật."
           }
         },
         {
@@ -2320,7 +2120,7 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
           node: "mwbn", token: "banned?", color: req,
           text: {
             en: "<b>Banner</b> — is this client banned? Yes → <code>403</code> and abort. A scanner-only path such as <code>/.env</code>, an attack payload in the URL or a scanner's User-Agent bans it on the spot. On the way back out it counts a 401/403/404/405/429 answer as a strike; too many strikes → banned.",
-            vi: "<b>Banner</b> — client này có đang bị ban không? Có → <code>403</code> và abort. Đường dẫn chỉ kẻ quét mới gọi như <code>/.env</code>, payload tấn công trong URL hoặc User-Agent của tool quét sẽ ban ngay. Lúc đi ra, nó tính response 401/403/404/405/429 là một lỗi; quá nhiều lỗi → bị ban."
+            vi: "<b>Banner</b> — client này có đang bị ban không? Có → <code>403</code> và abort. Đường dẫn chỉ kẻ quét mới gọi như <code>/.env</code>, payload tấn công trong URL hoặc User-Agent của tool quét sẽ ban ngay. Lúc đi ra, nó tính response 401/403/404/405/429 là một strike; quá nhiều strike → bị ban."
           }
         },
         {
@@ -2347,8 +2147,8 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?t_debug=$TRACER_DEBUG_VALUE" 
         {
           node: "group", token: "Bearer …", color: req, ms: 2200,
           text: {
-            en: "The chain is done. The <b>app's own middleware</b> takes over (Jungo: <code>internal/middleware</code>) — <code>BearerAuth</code> on the <code>/users</code> group (bad token → <code>401</code>), then the permission <code>Guard</code> (missing permission → <code>403</code>).",
-            vi: "Chuỗi chung đã xong. <b>Middleware của app</b> tiếp quản (Jungo: <code>internal/middleware</code>) — <code>BearerAuth</code> trên group <code>/users</code> (sai token → <code>401</code>), rồi <code>Guard</code> phân quyền (thiếu permission → <code>403</code>)."
+            en: "The chain is done. The <b>app's own middleware</b> takes over (Jungo: <code>internal/middleware</code>) — authentication on the <code>/users</code> group (bad token → <code>401</code>), then the permission <code>Guard</code> (missing permission → <code>403</code>).",
+            vi: "Chuỗi chung đã xong. <b>Middleware của app</b> tiếp quản (Jungo: <code>internal/middleware</code>) — xác thực trên group <code>/users</code> (sai token → <code>401</code>), rồi <code>Guard</code> phân quyền (thiếu permission → <code>403</code>)."
           }
         },
         {
