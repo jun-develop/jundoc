@@ -183,6 +183,7 @@
  ✅ Created internal/features/product/repository/product_repository.go
  ✅ Created internal/features/product/service/product_service.go
  ✅ Created internal/features/product/service/product_service_test.go
+ ✅ Created internal/features/product/service/fakes_test.go
  ✅ Created internal/features/product/dto/v1/product_dto.go
  ✅ Created internal/features/product/handler/v1/product_handler.go
  ✅ Created internal/features/product/router/v1/product_router.go
@@ -669,31 +670,66 @@ func registerTranslations(translator *i18n.Translator) {
       <div class="bf-step c-pink">
         <span class="n">3.9</span>
         <h3><span lang="en">Test — without a database</span><span lang="vi">Unit test — không cần database</span></h3>
-        <div class="file">internal/features/product/service/product_service_test.go</div>
-        <p lang="en">The generated test file has a hand-written fake repository: each method calls a function field you set per test (an unset one panics). It ships tests for <code>CreateProduct</code>, <code>GetProduct</code>, <code>ListProducts</code> and <code>DeleteProduct</code>. Below, the <code>UpdateProduct</code> test you would add next. If you add a method to an interface, add it to the fake too, or the tests stop compiling.</p>
-        <p lang="vi">File test sinh ra có một fake repository viết tay: mỗi method gọi một field hàm do bạn đặt trong từng test (chưa đặt thì panic). Nó có sẵn test cho <code>CreateProduct</code>, <code>GetProduct</code>, <code>ListProducts</code> và <code>DeleteProduct</code>. Bên dưới là test <code>UpdateProduct</code> bạn sẽ thêm tiếp. Nếu thêm method vào interface, hãy thêm vào fake, nếu không test sẽ không biên dịch.</p>
-        <div class="jd-grid-2">
+        <div class="file">internal/features/product/service/product_service_test.go · fakes_test.go</div>
+        <p lang="en">Two files. <code>product_service_test.go</code> opens with a <b>Test Case Overview</b>: every scenario and its expected result in one table, so you know what is covered without reading the tests. Then one test per service method, <code>UpdateProduct</code> included. <code>fakes_test.go</code> holds the fake repository: each method calls a function field (<code>UpdateFunc</code>, …) that the test sets, so the test itself shows what the database answers; calling one that is unset panics. The rules (names, one check per assertion, a fake never re-implements SQL) are in the project's <code>TESTING.md</code>.</p>
+        <p lang="vi">Hai file. <code>product_service_test.go</code> mở đầu bằng <b>Test Case Overview</b>: mọi scenario và kết quả mong đợi nằm trong một bảng, nên biết test bao phủ gì mà không cần đọc từng test. Tiếp theo là mỗi method của service một test, kể cả <code>UpdateProduct</code>. <code>fakes_test.go</code> chứa fake repository: mỗi method gọi một field hàm (<code>UpdateFunc</code>, …) do test đặt, nên nhìn test là biết database trả lời gì; gọi field chưa đặt thì panic. Quy ước (tên test, mỗi assertion một điều kiện, fake không bao giờ viết lại SQL) nằm trong <code>TESTING.md</code> của project.</p>
+        <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>product_service_test.go · overview</span></div>
+<pre data-hl="go" data-lines="9-10">
+// =============================================================================
+// TEST CASE OVERVIEW
+// =============================================================================
+//
+// File: product_service_test.go
+// Purpose: Verify that ProductService hands each call to the repository and returns its answer.
+// Type: Unit (Func-field fakes)
+//
+// Test functions: 5
+// Total scenarios: 6
+//
+// #  Test Case                                            Scenario         Expected Result
+// 1  TestProductService_CreateProduct_StoresInput         Valid input      Repository receives the input; its record is returned
+// 2  TestProductService_GetProduct_ReturnsFromRepository  Existing record  Repository asked for the UUID; its record is returned
+// 3  TestProductService_GetProduct_ReturnsFromRepository  Unknown UUID     Returns ErrProductNotFound
+// 4  TestProductService_ListProducts_PassesFilter         Search filter    Repository receives the filter; page and total returned
+// 5  TestProductService_UpdateProduct_StoresChanges       New name         Repository receives the UUID and changes; result returned
+// 6  TestProductService_DeleteProduct_DeletesByUUID       Existing record  Repository asked to delete the UUID; returns nil
+//
+// =============================================================================
+</pre></div>
+        <div class="jd-grid-2" style="margin-top:12px">
           <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>product_service_test.go</span></div>
-<pre data-hl="go" data-lines="4-9">
-func TestProductService_UpdateProduct(t *testing.T) {
-    name := "Iced coffee"
+<pre data-hl="go" data-lines="9-14">
+func TestProductService_UpdateProduct_StoresChanges(t *testing.T) {
+    uid := uuid.New()
+    input := domain.UpdateProductInput{Name: new("renamed")}
+    want := &amp;domain.Product{UUID: uid, Name: "renamed"}
+    var (
+        askedUID   uuid.UUID
+        askedInput domain.UpdateProductInput
+    )
     repo := &amp;fakeProductRepository{
-        UpdateFunc: func(_ context.Context, _ uuid.UUID, input domain.UpdateProductInput) (*domain.Product, error) {
-            if input.Name == nil || *input.Name != name {
-                t.Errorf("Update called with Name = %v, want %q", input.Name, name)
-            }
-
-            return &amp;domain.Product{Name: *input.Name}, nil
+        UpdateFunc: func(_ context.Context, id uuid.UUID, in domain.UpdateProductInput) (*domain.Product, error) {
+            askedUID, askedInput = id, in
+            return want, nil
         },
     }
 
-    got, err := NewProductService(repo).UpdateProduct(context.Background(), uuid.New(), domain.UpdateProductInput{Name: &amp;name})
+    got, err := NewProductService(repo).UpdateProduct(context.Background(), uid, input)
+
     if err != nil {
-        t.Fatalf("UpdateProduct() error = %v, want nil", err)
+        t.Fatalf("UpdateProduct() error = %v", err)
     }
 
-    if got.Name != name {
-        t.Errorf("UpdateProduct() name = %q, want %q", got.Name, name)
+    if askedUID != uid {
+        t.Errorf("repository updated %v, want %v", askedUID, uid)
+    }
+
+    if askedInput != input {
+        t.Errorf("repository received %+v, want %+v", askedInput, input)
+    }
+
+    if got != want {
+        t.Errorf("UpdateProduct() = %+v, want the repository's record %+v", got, want)
     }
 }
 </pre></div>
@@ -718,6 +754,8 @@ $ make vet
 </pre></div>
             <p class="jd-hint" style="margin-top:10px" lang="en">Keep one test per branch of the service: once you add a rule in 3.4, test both the allowed and the refused case.</p>
             <p class="jd-hint" style="margin-top:10px" lang="vi">Giữ thói quen mỗi nhánh của service một test: khi thêm quy tắc ở 3.4, test cả trường hợp được phép và bị từ chối.</p>
+            <p class="jd-hint" style="margin-top:10px" lang="en">Added, removed or renamed a scenario? Update the overview's rows and both counts in the same commit: CI fails when they disagree with the tests that ran. Added a method to an interface? Add it to the fake too, or the tests stop compiling.</p>
+            <p class="jd-hint" style="margin-top:10px" lang="vi">Thêm, xóa hay đổi tên một scenario? Sửa các dòng và hai con số trong overview ngay trong cùng commit: CI sẽ báo lỗi khi chúng lệch với các test thực chạy. Thêm method vào interface? Thêm vào fake luôn, nếu không test sẽ không biên dịch.</p>
           </div>
         </div>
       </div>
