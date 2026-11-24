@@ -67,7 +67,7 @@
       <tr><th>column</th><th><span lang="en">type</span><span lang="vi">kiểu</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
       <tr><td>id</td><td>BIGINT</td><td lang="en">Entry ID.</td><td lang="vi">ID của bản ghi.</td></tr>
       <tr><td>created_at</td><td>TIMESTAMPTZ</td><td lang="en">When the entry was written (<code>now()</code>: the transaction's start time).</td><td lang="vi">Lúc bản ghi được ghi (<code>now()</code>: thời điểm bắt đầu transaction).</td></tr>
-      <tr><td>actor_id</td><td>VARCHAR(64)</td><td lang="en">UUID of the logged-in user; <code>null</code> when there is none (a console command).</td><td lang="vi">UUID của user đang đăng nhập; <code>null</code> khi không có (một console command).</td></tr>
+      <tr><td>actor_uuid</td><td>UUID</td><td lang="en">UUID of the logged-in user; <code>null</code> when there is none (a console command).</td><td lang="vi">UUID của user đang đăng nhập; <code>null</code> khi không có (một console command).</td></tr>
       <tr><td>action</td><td>VARCHAR(50)</td><td lang="en"><code>create</code> · <code>update</code> · <code>delete</code>, or a feature's own action such as <code>set_roles</code>.</td><td lang="vi"><code>create</code> · <code>update</code> · <code>delete</code>, hoặc action riêng của feature như <code>set_roles</code>.</td></tr>
       <tr><td>entity_type</td><td>VARCHAR(63)</td><td lang="en">What changed, by table name: <code>users</code>, <code>roles</code>.</td><td lang="vi">Thứ bị thay đổi, theo tên bảng: <code>users</code>, <code>roles</code>.</td></tr>
       <tr><td>entity_id</td><td>VARCHAR(64)</td><td lang="en">Its UUID.</td><td lang="vi">UUID của nó.</td></tr>
@@ -207,7 +207,7 @@ $ curl -s -G localhost:$API_SERVER_PORT/api/v1/audit-logs \
           <tr><th>param</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
           <tr><td>entity_type<span class="opt">optional</span><span class="rule">≤ 63</span></td><td lang="en"><code>users</code> or <code>roles</code> (or your feature's).</td><td lang="vi"><code>users</code> hoặc <code>roles</code> (hoặc của feature bạn).</td></tr>
           <tr><td>entity_id<span class="opt">optional</span><span class="rule">≤ 64</span></td><td lang="en">The entity's UUID. Needs <code>entity_type</code>.</td><td lang="vi">UUID của entity. Cần có <code>entity_type</code>.</td></tr>
-          <tr><td>actor_id<span class="opt">optional</span><span class="rule">≤ 64</span></td><td lang="en">The UUID of the user who made the changes.</td><td lang="vi">UUID của user đã thực hiện thay đổi.</td></tr>
+          <tr><td>actor_uuid<span class="opt">optional</span><span class="rule">uuid</span></td><td lang="en">The UUID of the user who made the changes.</td><td lang="vi">UUID của user đã thực hiện thay đổi.</td></tr>
           <tr><td>page, page_size<span class="opt">optional</span><span class="rule">≤ 100</span></td><td lang="en">Pagination, as in every list (default 1 and 10).</td><td lang="vi">Phân trang, như mọi danh sách khác (mặc định 1 và 10).</td></tr>
         </table></div>
       </div>
@@ -229,7 +229,7 @@ $ curl -s -G localhost:$API_SERVER_PORT/api/v1/audit-logs \
       {
         "id": 1842,
         "created_at": "2026-11-24T09:12:03.512Z",
-        "actor_id": "0f8c2d4e-…",
+        "actor_uuid": "0f8c2d4e-…",
         "action": "update",
         "entity_type": "users",
         "entity_id": "9b2f1c1e-…",

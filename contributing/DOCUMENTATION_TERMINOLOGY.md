@@ -64,7 +64,7 @@ translation is listed.
 |---|---|---|
 | audit log | history log, activity log, change log | Jungo's record of who changed what, written by the services through `auditlog.Recorder`, in the `audit_logs` table (`jungo/audit.html`) |
 | audit entry | audit record, log line | One row of `audit_logs` |
-| actor | | Code term only: `internal/common/actor` and the `actor_id` column. In prose about a request, say **identity** (see Auth and access); about an entry, say "who made the change" |
+| actor | | Code term only: `internal/common/actor` and the `actor_uuid` column. In prose about a request, say **identity** (see Auth and access); about an entry, say "who made the change" |
 
 Here too, `trace_id` is the **trace ID** (not request ID).
 Vietnamese keeps "audit log" in English; "audit entry" is "bản ghi audit".
