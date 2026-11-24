@@ -9,7 +9,7 @@ translation is listed.
 |---|---|---|
 | **Jungo** | jungo framework, the app | The Go application skeleton (Gin + Uber Fx) you clone and build on. Lower-case `jungo` only for the module/repo name |
 | **Junkit** | junkit framework, the library | The set of infrastructure packages Jungo imports. Lower-case `junkit` for the module path |
-| **package** (Junkit) | module, lib, component | One importable Go package, e.g. `junkit/cache`. Junkit has 22 top-level packages; `database/postgres` is a sub-package of `database` |
+| **package** (Junkit) | module, lib, component | One importable Go package, e.g. `junkit/cache`. Junkit has 23 top-level packages; `database/postgres` is a sub-package of `database` |
 | **Fx module** | provider module, fx bundle | An exported `fx.Option` (usually `Module`) that wires a package into Fx |
 | **feature** (Jungo) | module, domain, app | A folder under `internal/features/<name>` with handler, service, repository, router |
 
@@ -57,6 +57,17 @@ translation is listed.
 | trace ID | request ID, correlation ID | Per-request ID set by `middleware.Trace`, logged as `trace_id` |
 | debug key | t_debug key | Secret that enables `TracerDebug` for one request (`TRACER_DEBUG_KEY`) |
 | channel (logger) | stream, sink | A named logger writing to its own file |
+
+## Audit
+
+| Term | Not | Meaning |
+|---|---|---|
+| audit log | history log, activity log, change log | Jungo's record of who changed what, written by the services through `auditlog.Recorder`, in the `audit_logs` table (`jungo/audit.html`) |
+| audit entry | audit record, log line | One row of `audit_logs` |
+| actor | | Code term only: `internal/common/actor` and the `actor_id` column. In prose about a request, say **identity** (see Auth and access); about an entry, say "who made the change" |
+
+Here too, `trace_id` is the **trace ID** (not request ID).
+Vietnamese keeps "audit log" in English; "audit entry" is "bản ghi audit".
 
 ## Writing conventions
 

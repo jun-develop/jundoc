@@ -432,7 +432,7 @@ $ make console CMD="nope"
 
   <script>
     document.addEventListener("jd:ready", function () {
-      // Mirrors ensureUpper / ensureLower: change the first rune only if it isn't already in that case.
+      // Mirrors stringx.UpperFirst / stringx.LowerFirst: change the first rune only if it isn't already in that case.
       function recase(s, up) {
         if (!s) return "";
         var r = String.fromCodePoint(s.codePointAt(0)), rest = s.slice(r.length);
@@ -449,8 +449,8 @@ $ make console CMD="nope"
         return f.replace(/%[svdq%]/g, function (v) { return v === "%%" ? "%" : v === "%q" ? JSON.stringify(arg) : arg; });
       }
       function line(fn, format, arg) { var c = FN[fn]; return c[1] + sprintf(recase(format, c[2]), arg); }
-      console.assert(recase("đẹp trai", true) === "Đẹp trai" && recase("Hello", true) === "Hello", "ensureUpper");
-      console.assert(recase("Hello", false) === "hello" && recase("", false) === "", "ensureLower");
+      console.assert(recase("đẹp trai", true) === "Đẹp trai" && recase("Hello", true) === "Hello", "UpperFirst");
+      console.assert(recase("Hello", false) === "hello" && recase("", false) === "", "LowerFirst");
       console.assert(line("Warnf", "Something looks off", "") === "⚠️  Warning: something looks off", "Warnf");
       console.assert(line("Infof", "starting migration for %s", "users") === "⚡ Starting migration for users", "Infof");
       console.assert(line("Infof", "%s ready", "db") === "⚡ db ready", "verbs are not cased");

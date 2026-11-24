@@ -26,7 +26,7 @@
       <span class="jd-chip">internal/features/access</span>
       <span class="jd-chip">internal/middleware</span>
       <span class="jd-chip"><span lang="en">RBAC, checked by permission</span><span lang="vi">RBAC, kiểm tra theo permission</span></span>
-      <span class="jd-chip"><span lang="en">9 endpoints · 9 permissions</span><span lang="vi">9 endpoint · 9 permission</span></span>
+      <span class="jd-chip"><span lang="en">9 endpoints · 10 permissions</span><span lang="vi">9 endpoint · 10 permission</span></span>
       <span class="jd-chip"><span lang="en">deny by default · no escalation</span><span lang="vi">mặc định từ chối · không leo thang quyền</span></span>
     </div>
   </header>
@@ -128,7 +128,7 @@
 
     <div class="jd-grid-2" style="margin-top:18px">
       <div>
-        <h3><span lang="en">The 9 permissions</span><span lang="vi">9 permission</span></h3>
+        <h3><span lang="en">The 10 permissions</span><span lang="vi">10 permission</span></h3>
         <div class="jd-tablewrap"><table class="jd-params c-blue">
           <tr><th>permission</th><th><span lang="en">group</span><span lang="vi">nhóm</span></th><th><span lang="en">guards</span><span lang="vi">bảo vệ</span></th></tr>
           <tr><td>users:read</td><td>users</td><td lang="en"><code>GET /users</code>; reading <b>another</b> user</td><td lang="vi"><code>GET /users</code>; xem user <b>khác</b></td></tr>
@@ -140,6 +140,7 @@
           <tr><td>roles:update</td><td>access</td><td><code>PATCH /roles/:uuid</code>, <code>PUT /roles/:uuid/permissions</code></td></tr>
           <tr><td>roles:delete</td><td>access</td><td><code>DELETE /roles/:uuid</code></td></tr>
           <tr><td>roles:assign</td><td>access</td><td><code>PUT /users/:uuid/roles</code></td></tr>
+          <tr><td>audit_logs:read</td><td>audit_logs</td><td lang="en"><code>GET /audit-logs</code>: who changed users and roles — see <a href="audit.html#endpoints">Audit log</a></td><td lang="vi"><code>GET /audit-logs</code>: ai đã thay đổi user và role — xem <a href="audit.html#endpoints">Audit log</a></td></tr>
         </table></div>
         <p class="jd-sub" lang="en"><code>roles:assign</code> is kept apart from <code>roles:update</code> on purpose: whoever assigns roles can raise other people's access, so it deserves its own decision.</p>
         <p class="jd-sub" lang="vi"><code>roles:assign</code> được cố ý tách khỏi <code>roles:update</code>: người gán role có thể nâng quyền của người khác, nên cần được cấp riêng và cân nhắc kỹ.</p>
@@ -148,7 +149,7 @@
         <h3><span lang="en">Demo accounts</span><span lang="vi">Tài khoản demo</span></h3>
         <div class="jd-tablewrap"><table class="jd-params c-green">
           <tr><th><span lang="en">account</span><span lang="vi">tài khoản</span></th><th>role</th><th><span lang="en">permissions</span><span lang="vi">permission</span></th></tr>
-          <tr><td>admin@jungo.com</td><td>super_admin <span class="rule">system</span></td><td lang="en">all 9</td><td lang="vi">cả 9</td></tr>
+          <tr><td>admin@jungo.com</td><td>super_admin <span class="rule">system</span></td><td lang="en">all 10</td><td lang="vi">cả 10</td></tr>
           <tr><td>manager@jungo.com</td><td>manager</td><td>users:read, users:create, users:update, roles:read</td></tr>
           <tr><td>member@jungo.com</td><td>member</td><td>users:read</td></tr>
           <tr><td>user@jungo.com</td><td>—</td><td lang="en">none — only themself</td><td lang="vi">không có — chỉ chính mình</td></tr>
@@ -177,6 +178,7 @@
       <tr><td>PATCH /roles/:uuid, PUT …/permissions</td><td>Can(roles:update)</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
       <tr><td>DELETE /roles/:uuid</td><td>Can(roles:delete)</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
       <tr><td>PUT /users/:uuid/roles</td><td>Can(roles:assign)</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
+      <tr><td>GET /audit-logs</td><td>Can(audit_logs:read)</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
     </table></div>
 
     <h3><span lang="en">The four tables</span><span lang="vi">Bốn bảng</span></h3>
@@ -189,7 +191,7 @@
         <tr><td>user_roles</td><td lang="en">User ↔ role. Deleting a role, or deleting a user row in SQL, cascades. The API only soft-deletes users, so their rows stay.</td><td lang="vi">User ↔ role. Xóa role, hoặc xóa hẳn dòng user bằng SQL, sẽ xóa dây chuyền. API chỉ xóa mềm user, nên các dòng này vẫn còn.</td></tr>
       </table></div>
       <div class="jd-explain">
-        <div class="jd-ex c-purple" style="cursor:default"><span class="n">ⓘ</span><span class="w"><span lang="en">Migrations 000001_access · 000002_users</span><span lang="vi">Migration 000001_access · 000002_users</span></span><span class="x" lang="en"><code>000001_access</code> runs first: <code>permissions</code>, <code>roles</code>, <code>role_permissions</code>, the only system role <code>super_admin</code>, and the <code>roles:*</code> codes. <code>000002_users</code> adds <code>users</code>, <code>user_roles</code> (it needs both tables) and the <code>users:*</code> codes. Each grants its own codes to <code>super_admin</code>, in every environment, so production has them too.</span><span class="x" lang="vi"><code>000001_access</code> chạy đầu tiên: <code>permissions</code>, <code>roles</code>, <code>role_permissions</code>, role hệ thống duy nhất <code>super_admin</code>, và các mã <code>roles:*</code>. <code>000002_users</code> thêm <code>users</code>, <code>user_roles</code> (cần cả hai bảng) và các mã <code>users:*</code>. Mỗi migration tự cấp mã của mình cho <code>super_admin</code>, ở mọi môi trường, nên production cũng có.</span></div>
+        <div class="jd-ex c-purple" style="cursor:default"><span class="n">ⓘ</span><span class="w"><span lang="en">Migrations 000001_access · 000002_users</span><span lang="vi">Migration 000001_access · 000002_users</span></span><span class="x" lang="en"><code>000001_access</code> creates <code>permissions</code>, <code>roles</code>, <code>role_permissions</code>, the only system role <code>super_admin</code>, and the <code>roles:*</code> codes. <code>000002_users</code> adds <code>users</code>, <code>user_roles</code> (it needs both tables) and the <code>users:*</code> codes; <code>000005_audit_logs</code> adds <code>audit_logs:read</code>. Each grants its own codes to <code>super_admin</code>, in every environment, so production has them too.</span><span class="x" lang="vi"><code>000001_access</code> tạo <code>permissions</code>, <code>roles</code>, <code>role_permissions</code>, role hệ thống duy nhất <code>super_admin</code>, và các mã <code>roles:*</code>. <code>000002_users</code> thêm <code>users</code>, <code>user_roles</code> (cần cả hai bảng) và các mã <code>users:*</code>; <code>000005_audit_logs</code> thêm <code>audit_logs:read</code>. Mỗi migration tự cấp mã của mình cho <code>super_admin</code>, ở mọi môi trường, nên production cũng có.</span></div>
         <div class="jd-ex c-purple" style="cursor:default"><span class="n">⇄</span><span class="w"><span lang="en">Database first, code follows</span><span lang="vi">Database trước, code theo sau</span></span><span class="x" lang="en">Every feature inserts its permission codes in its own migration and grants them to <code>super_admin</code>; the seeder <code>002_access.sql</code> only adds the demo roles. At startup the app only <b>reads</b> this table and stops if a permission the code uses is missing. <code>make migrate-up</code> runs the seeder only in development (other servers: see <a href="#ops">ops</a>).</span><span class="x" lang="vi">Mỗi feature thêm mã permission trong migration của chính nó và cấp cho <code>super_admin</code>; seeder <code>002_access.sql</code> chỉ thêm role demo. Khi khởi động app chỉ <b>đọc</b> bảng này và dừng nếu thiếu permission mà code dùng. <code>make migrate-up</code> chỉ chạy seeder ở development (server khác: xem <a href="#ops">vận hành</a>).</span></div>
       </div>
     </div>
@@ -261,6 +263,13 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/permissions \
       ]
     },
     {
+      "code": "audit_logs",
+      "name": "Audit log",
+      "permissions": [
+        { "code": "audit_logs:read", "name": "View the audit log" }
+      ]
+    },
+    {
       "code": "users",
       "name": "Users",
       "permissions": [
@@ -316,7 +325,7 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/roles \
       "code": "super_admin",
       "name": "Super Admin",
       "is_system": true,
-      "permissions": ["roles:assign", "roles:create", "roles:delete", "roles:read",
+      "permissions": ["audit_logs:read", "roles:assign", "roles:create", "roles:delete", "roles:read",
                       "roles:update", "users:create", "users:delete", "users:read", "users:update"],
       "user_count": 1,
       "created_at": "2026-10-21T07:30:46Z"
@@ -913,7 +922,7 @@ var Permissions = []string{
     …, ReportsExport,
 }
 </pre></div>
-        <div class="jd-term" data-copy style="margin-top:12px"><div class="jd-term-bar"><i></i><i></i><i></i><span>migrations/000005_reports_export.up.sql</span></div>
+        <div class="jd-term" data-copy style="margin-top:12px"><div class="jd-term-bar"><i></i><i></i><i></i><span>migrations/000006_reports_export.up.sql</span></div>
 <pre data-hl="sql">
 INSERT INTO permissions (code, group_code) VALUES ('reports:export', 'reports')
 ON CONFLICT (code) DO NOTHING;
@@ -994,7 +1003,7 @@ ON CONFLICT DO NOTHING;
 
   <footer class="jd-footer">
     <span>Jundoc · Jungo · <span lang="en">Permissions &amp; roles</span><span lang="vi">Phân quyền</span></span>
-    <span><a href="auth.html">← <span lang="en">Authentication</span><span lang="vi">Xác thực</span></a> · <a href="multi-database.html"><span lang="en">Multiple databases</span><span lang="vi">Nhiều database</span> →</a></span>
+    <span><a href="auth.html">← <span lang="en">Authentication</span><span lang="vi">Xác thực</span></a> · <a href="audit.html">Audit log →</a></span>
   </footer>
 </article>
 </div>

@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Audit log · Jundoc</title>
+  <meta name="description" content="Jungo's audit log: services record who changed users and roles, and the new values, with auditlog.Recorder in the same transaction; the read API, adding it to a feature, and the 30-day retention.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+<body>
+<div id="jd-app" data-root="..">
+<article class="jd-content">
+
+  <!-- ============================================================ HERO -->
+  <header class="jd-hero">
+    <div class="jd-eyebrow">Jungo · Audit log</div>
+    <h1>Audit log</h1>
+    <p lang="en">A record of who changed what and when. The services write it themselves with <code>auditlog.Recorder</code>, inside the transaction that makes the change, so the change and its entry commit together or not at all. Out of the box it covers changes to users and roles made through the API. Entries are kept 30 days.</p>
+    <p lang="vi">Bản ghi cho biết ai đã thay đổi gì và lúc nào. Các service tự ghi bằng <code>auditlog.Recorder</code>, trong chính transaction thực hiện thay đổi, nên thay đổi và bản ghi audit cùng commit hoặc cùng không. Mặc định có sẵn cho các thay đổi user và role đi qua API. Bản ghi được giữ 30 ngày.</p>
+    <div class="jd-chips">
+      <span class="jd-chip">internal/common/auditlog</span>
+      <span class="jd-chip">internal/features/audit</span>
+      <span class="jd-chip">migrations/000005_audit_logs.up.sql</span>
+      <span class="jd-chip">audit_logs:read</span>
+      <span class="jd-chip"><span lang="en">Kept 30 days</span><span lang="vi">Giữ 30 ngày</span></span>
+    </div>
+  </header>
+
+  <nav class="jd-quickmap" aria-label="Sections">
+    <a class="jd-quick c-red" href="#concepts"><span class="num">1</span>
+      <b lang="en">Concepts</b><b lang="vi">Khái niệm</b>
+      <span lang="en">The audit_logs table</span><span lang="vi">Bảng audit_logs</span></a>
+    <a class="jd-quick c-blue" href="#flow"><span class="num">2</span>
+      <b lang="en">How it is recorded</b><b lang="vi">Được ghi thế nào</b>
+      <span lang="en">Recorder, in the transaction</span><span lang="vi">Recorder, trong transaction</span></a>
+    <a class="jd-quick c-green" href="#coverage"><span class="num">3</span>
+      <b lang="en">What is recorded</b><b lang="vi">Ghi những gì</b>
+      <span lang="en">Users, roles, your feature</span><span lang="vi">User, role, feature của bạn</span></a>
+    <a class="jd-quick c-orange" href="#endpoints"><span class="num">4</span>
+      <b lang="en">Endpoint</b><b lang="vi">Endpoint</b>
+      <span lang="en">GET /audit-logs</span><span lang="vi">GET /audit-logs</span></a>
+    <a class="jd-quick c-purple" href="#retention"><span class="num">5</span>
+      <b lang="en">Retention</b><b lang="vi">Thời gian lưu</b>
+      <span lang="en">30 days, audit:cleanup-logs</span><span lang="vi">30 ngày, audit:cleanup-logs</span></a>
+    <a class="jd-quick c-muted" href="#limits"><span class="num">6</span>
+      <b lang="en">Limits</b><b lang="vi">Giới hạn</b>
+      <span lang="en">What it does not cover</span><span lang="vi">Những gì không được ghi</span></a>
+  </nav>
+
+  <!-- ============================================================ 1. CONCEPTS -->
+  <section id="concepts" class="jd-section c-red">
+    <div class="jd-section-head">
+      <span class="jd-badge">1</span>
+      <div>
+        <h2><span lang="en">Concepts</span><span lang="vi">Khái niệm</span></h2>
+        <p class="jd-sub" lang="en">The technical logs (<code>storage/logs</code>) say what the server did. The audit log says what happened to the data: one audit entry per recorded change, in the <code>audit_logs</code> table.</p>
+        <p class="jd-sub" lang="vi">Log kỹ thuật (<code>storage/logs</code>) cho biết server đã làm gì. Audit log cho biết dữ liệu đã thay đổi ra sao: mỗi thay đổi được ghi là một bản ghi audit, trong bảng <code>audit_logs</code>.</p>
+      </div>
+    </div>
+
+    <div class="jd-tablewrap" style="margin-top:18px"><table class="jd-params c-red">
+      <tr><th>column</th><th><span lang="en">type</span><span lang="vi">kiểu</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+      <tr><td>id</td><td>BIGINT</td><td lang="en">Entry ID.</td><td lang="vi">ID của bản ghi.</td></tr>
+      <tr><td>created_at</td><td>TIMESTAMPTZ</td><td lang="en">When the entry was written (<code>now()</code>: the transaction's start time).</td><td lang="vi">Lúc bản ghi được ghi (<code>now()</code>: thời điểm bắt đầu transaction).</td></tr>
+      <tr><td>actor_id</td><td>VARCHAR(64)</td><td lang="en">UUID of the logged-in user; <code>null</code> when there is none (a console command).</td><td lang="vi">UUID của user đang đăng nhập; <code>null</code> khi không có (một console command).</td></tr>
+      <tr><td>action</td><td>VARCHAR(50)</td><td lang="en"><code>create</code> · <code>update</code> · <code>delete</code>, or a feature's own action such as <code>set_roles</code>.</td><td lang="vi"><code>create</code> · <code>update</code> · <code>delete</code>, hoặc action riêng của feature như <code>set_roles</code>.</td></tr>
+      <tr><td>entity_type</td><td>VARCHAR(63)</td><td lang="en">What changed, by table name: <code>users</code>, <code>roles</code>.</td><td lang="vi">Thứ bị thay đổi, theo tên bảng: <code>users</code>, <code>roles</code>.</td></tr>
+      <tr><td>entity_id</td><td>VARCHAR(64)</td><td lang="en">Its UUID.</td><td lang="vi">UUID của nó.</td></tr>
+      <tr><td>changes</td><td>JSONB</td><td lang="en">The new values, as the service recorded them: <code>{"first_name": "An"}</code>. No old values. <code>{}</code> for a delete. Never a secret.</td><td lang="vi">Các giá trị mới, như service đã ghi: <code>{"first_name": "An"}</code>. Không có giá trị cũ. <code>{}</code> với delete. Không bao giờ chứa bí mật.</td></tr>
+      <tr><td>trace_id</td><td>VARCHAR(64)</td><td lang="en">The request's trace ID, the same as in the technical logs and the <code>X-Trace-Id</code> header; <code>null</code> outside a request.</td><td lang="vi">Trace ID của request, giống trong log kỹ thuật và header <code>X-Trace-Id</code>; <code>null</code> khi không nằm trong request.</td></tr>
+    </table></div>
+    <p class="jd-sub" lang="en">To see the state before a change, read the previous entries of the same entity: there is no <code>before</code> column. To see the request's details (IP, user agent, every SQL query), look up <code>trace_id</code> in the technical logs.</p>
+    <p class="jd-sub" lang="vi">Muốn biết trạng thái trước một thay đổi, hãy đọc các bản ghi trước đó của cùng entity: không có cột <code>before</code>. Muốn biết chi tiết request (IP, user agent, mọi câu SQL), tra <code>trace_id</code> trong log kỹ thuật.</p>
+  </section>
+
+  <!-- ============================================================ 2. FLOW -->
+  <section id="flow" class="jd-section c-blue">
+    <div class="jd-section-head">
+      <span class="jd-badge">2</span>
+      <div>
+        <h2><span lang="en">How a change is recorded</span><span lang="vi">Một thay đổi được ghi thế nào</span></h2>
+        <p class="jd-sub" lang="en">The service makes the change and calls <code>Record</code> in the same <code>WithTransaction</code>. If recording fails, the change rolls back.</p>
+        <p class="jd-sub" lang="vi">Service thực hiện thay đổi và gọi <code>Record</code> trong cùng một <code>WithTransaction</code>. Nếu ghi audit lỗi, thay đổi bị rollback.</p>
+      </div>
+    </div>
+
+    <div class="jd-term" style="margin-top:18px"><div class="jd-term-bar"><i></i><i></i><i></i><span>internal/common/auditlog/auditlog.go</span></div>
+<pre data-hl="go">
+// Entry is one change to record. Who acted and the trace ID are taken from the context.
+type Entry struct {
+	Action     string
+	EntityType string
+	EntityID   string
+	Changes    map[string]any
+}
+
+// Recorder writes entries to the audit log.
+type Recorder interface {
+	Record(ctx context.Context, e Entry) error
+}
+</pre></div>
+
+    <div class="jd-tablewrap" style="margin-top:18px"><table class="jd-params c-blue">
+      <tr><th><span lang="en">step</span><span lang="vi">bước</span></th><th><span lang="en">what happens</span><span lang="vi">chuyện gì xảy ra</span></th></tr>
+      <tr><td>1. service</td><td lang="en">Inside <code>s.repo.WithTransaction(ctx, …)</code>, writes the row, then calls <code>s.audit.Record(ctx, auditlog.Entry{…})</code>.</td><td lang="vi">Trong <code>s.repo.WithTransaction(ctx, …)</code>, ghi dòng dữ liệu, rồi gọi <code>s.audit.Record(ctx, auditlog.Entry{…})</code>.</td></tr>
+      <tr><td>2. AuditService.Record</td><td lang="en">Takes the actor from <code>actor.From(ctx)</code> (the logged-in user's UUID) and the trace ID from <code>logger.GetTraceID(ctx)</code>; nil <code>Changes</code> becomes <code>{}</code>.</td><td lang="vi">Lấy actor từ <code>actor.From(ctx)</code> (UUID của user đang đăng nhập) và trace ID từ <code>logger.GetTraceID(ctx)</code>; <code>Changes</code> nil thành <code>{}</code>.</td></tr>
+      <tr><td>3. AuditRepository.Create</td><td lang="en">One <code>INSERT INTO audit_logs</code> through <code>db.Queries(ctx)</code>, so it joins the transaction in <code>ctx</code>.</td><td lang="vi">Một lệnh <code>INSERT INTO audit_logs</code> qua <code>db.Queries(ctx)</code>, nên nó tham gia transaction trong <code>ctx</code>.</td></tr>
+    </table></div>
+
+    <h3 style="margin-top:26px"><span lang="en">The audit feature is optional</span><span lang="vi">Feature audit là tùy chọn</span></h3>
+    <p lang="en"><code>audit.Module</code> provides the Recorder under the name <code>audit</code>; <code>provideAuditRecorder</code> (<code>internal/app/fx.go</code>) hands it to the features. Remove <code>audit.Module</code> and the features get <code>auditlog.Nop</code>, a Recorder that records nothing, with no other change.</p>
+    <p lang="vi"><code>audit.Module</code> cung cấp Recorder với tên <code>audit</code>; <code>provideAuditRecorder</code> (<code>internal/app/fx.go</code>) đưa nó cho các feature. Bỏ <code>audit.Module</code> thì các feature nhận <code>auditlog.Nop</code>, một Recorder không ghi gì, mà không cần sửa gì khác.</p>
+  </section>
+
+  <!-- ============================================================ 3. COVERAGE -->
+  <section id="coverage" class="jd-section c-green">
+    <div class="jd-section-head">
+      <span class="jd-badge">3</span>
+      <div>
+        <h2><span lang="en">What is recorded</span><span lang="vi">Ghi những gì</span></h2>
+        <p class="jd-sub" lang="en">Only what a service records. Out of the box:</p>
+        <p class="jd-sub" lang="vi">Chỉ những gì service ghi. Mặc định:</p>
+      </div>
+    </div>
+
+    <div class="jd-tablewrap" style="margin-top:18px"><table class="jd-params c-green">
+      <tr><th><span lang="en">change</span><span lang="vi">thay đổi</span></th><th>entity_type</th><th>action</th><th>changes</th></tr>
+      <tr><td>UserService.CreateUser</td><td>users</td><td>create</td><td><code>email</code>, <code>first_name</code>, <code>last_name</code></td></tr>
+      <tr><td>UserService.UpdateUser</td><td>users</td><td>update</td><td lang="en">The fields sent (<code>auditlog.Changes(input)</code>): <code>first_name</code>, <code>last_name</code>, <code>phone_number</code>, <code>avatar_url</code>, <code>status</code></td><td lang="vi">Các field được gửi (<code>auditlog.Changes(input)</code>): <code>first_name</code>, <code>last_name</code>, <code>phone_number</code>, <code>avatar_url</code>, <code>status</code></td></tr>
+      <tr><td>UserService.DeleteUser</td><td>users</td><td>delete</td><td><code>{}</code></td></tr>
+      <tr><td>AccessService.SetUserRoles</td><td>users</td><td>set_roles</td><td><code>roles</code> <span lang="en">(role codes)</span><span lang="vi">(code của role)</span></td></tr>
+      <tr><td>AccessService.CreateRole</td><td>roles</td><td>create</td><td><code>code</code>, <code>name</code>, <code>permissions</code></td></tr>
+      <tr><td>AccessService.RenameRole</td><td>roles</td><td>update</td><td><code>name</code></td></tr>
+      <tr><td>AccessService.ReplaceRolePermissions</td><td>roles</td><td>update</td><td><code>permissions</code></td></tr>
+      <tr><td>AccessService.DeleteRole</td><td>roles</td><td>delete</td><td><code>{}</code></td></tr>
+    </table></div>
+    <p class="jd-sub" lang="en">Not recorded: logins, logouts and sessions; password changes and resets; avatar upload and removal; the lock after too many failed logins; anything written with SQL by hand (psql, DBeaver, a migration).</p>
+    <p class="jd-sub" lang="vi">Không được ghi: đăng nhập, đăng xuất và session; đổi và đặt lại mật khẩu; tải lên và xóa avatar; khóa tài khoản sau nhiều lần đăng nhập sai; mọi thứ ghi bằng SQL tay (psql, DBeaver, migration).</p>
+
+    <h3 style="margin-top:26px"><span lang="en">Recording in your feature</span><span lang="vi">Ghi audit trong feature của bạn</span></h3>
+    <p lang="en"><code>make feature</code> does not add auditing. Take <code>auditlog.Recorder</code> in the service's params and call it in the transaction that makes the change:</p>
+    <p lang="vi"><code>make feature</code> không thêm audit. Nhận <code>auditlog.Recorder</code> trong params của service và gọi nó trong transaction thực hiện thay đổi:</p>
+    <div class="jd-term" data-copy><div class="jd-term-bar"><i></i><i></i><i></i><span>internal/features/order/service/order_service.go</span></div>
+<pre data-hl="go">
+err := s.repo.WithTransaction(ctx, func(ctx context.Context) error {
+	if err := s.repo.UpdateName(ctx, id, name); err != nil {
+		return err
+	}
+
+	return s.audit.Record(ctx, auditlog.Entry{
+		Action: auditlog.ActionUpdate, EntityType: "orders", EntityID: id.String(),
+		Changes: map[string]any{"name": name},
+	})
+})
+</pre></div>
+    <div class="jd-rules" style="margin-top:14px">
+      <div class="jd-rule"><span class="n">1</span>
+        <p lang="en"><b>Never put a secret in <code>Changes</code></b>: no password, hash or token. Nothing masks it later.</p>
+        <p lang="vi"><b>Không bao giờ đưa bí mật vào <code>Changes</code></b>: không mật khẩu, hash hay token. Sau này không có gì che nó đi.</p></div>
+      <div class="jd-rule"><span class="n">2</span>
+        <p lang="en"><b>Partial updates:</b> <code>auditlog.Changes(input)</code> returns the non-nil pointer fields of a struct, keyed in snake_case (<code>stringx.ToSnake</code>); a field tagged <code>audit:"-"</code> is skipped.</p>
+        <p lang="vi"><b>Cập nhật một phần:</b> <code>auditlog.Changes(input)</code> trả về các field con trỏ khác nil của một struct, key dạng snake_case (<code>stringx.ToSnake</code>); field có tag <code>audit:"-"</code> bị bỏ qua.</p></div>
+      <div class="jd-rule"><span class="n">3</span>
+        <p lang="en"><b>Pass the transaction's <code>ctx</code></b>, not <code>context.Background()</code>: otherwise the entry is written outside the transaction and loses the actor and trace ID.</p>
+        <p lang="vi"><b>Truyền <code>ctx</code> của transaction</b>, không phải <code>context.Background()</code>: nếu không, bản ghi được ghi ngoài transaction và mất actor cùng trace ID.</p></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 4. ENDPOINTS -->
+  <section id="endpoints" class="jd-section c-orange">
+    <div class="jd-section-head">
+      <span class="jd-badge">4</span>
+      <div>
+        <h2><span lang="en">Endpoint</span><span lang="vi">Endpoint</span></h2>
+        <p class="jd-sub" lang="en">Read only. Needs <code>Authorization: Bearer &lt;access_token&gt;</code> and <code>audit_logs:read</code> (granted to <code>super_admin</code>). Without a token → <code>401 Authentication token is invalid or expired</code> (other token errors: <a href="auth.html#endpoints">Authentication</a>); without the permission → <code>403 You do not have permission to perform this action</code>.</p>
+        <p class="jd-sub" lang="vi">Chỉ đọc. Cần <code>Authorization: Bearer &lt;access_token&gt;</code> và <code>audit_logs:read</code> (cấp cho <code>super_admin</code>). Thiếu token → <code>401 Authentication token is invalid or expired</code> (các lỗi token khác: <a href="auth.html#endpoints">Xác thực</a>); thiếu permission → <code>403 You do not have permission to perform this action</code>.</p>
+      </div>
+    </div>
+
+    <div class="jd-ep-head" style="margin-top:20px"><span class="jd-method">GET</span><span class="jd-ep-path">/api/v1/audit-logs</span><span class="jd-auth need">audit_logs:read</span></div>
+    <p class="jd-ep-desc" lang="en">The history of one entity, or what one user did. Every filter is optional and they combine; with none, every entry. Newest first (<code>created_at</code>, then <code>id</code>), paginated.</p>
+    <p class="jd-ep-desc" lang="vi">Lịch sử của một entity, hoặc những gì một user đã làm. Mọi bộ lọc đều tùy chọn và kết hợp được với nhau; không có bộ lọc nào thì trả mọi bản ghi. Mới nhất trước (theo <code>created_at</code>, rồi <code>id</code>), có phân trang.</p>
+    <div class="jd-grid-2">
+      <div>
+        <h3>Request</h3>
+        <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="bash">
+$ curl -s -G localhost:$API_SERVER_PORT/api/v1/audit-logs \
+    --data-urlencode entity_type=users \
+    --data-urlencode entity_id=$USER_UUID \
+    -H "Authorization: Bearer $ADMIN" | jq
+</pre></div>
+        <h3>Query</h3>
+        <div class="jd-tablewrap"><table class="jd-params">
+          <tr><th>param</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+          <tr><td>entity_type<span class="opt">optional</span><span class="rule">≤ 63</span></td><td lang="en"><code>users</code> or <code>roles</code> (or your feature's).</td><td lang="vi"><code>users</code> hoặc <code>roles</code> (hoặc của feature bạn).</td></tr>
+          <tr><td>entity_id<span class="opt">optional</span><span class="rule">≤ 64</span></td><td lang="en">The entity's UUID. Needs <code>entity_type</code>.</td><td lang="vi">UUID của entity. Cần có <code>entity_type</code>.</td></tr>
+          <tr><td>actor_id<span class="opt">optional</span><span class="rule">≤ 64</span></td><td lang="en">The UUID of the user who made the changes.</td><td lang="vi">UUID của user đã thực hiện thay đổi.</td></tr>
+          <tr><td>page, page_size<span class="opt">optional</span><span class="rule">≤ 100</span></td><td lang="en">Pagination, as in every list (default 1 and 10).</td><td lang="vi">Phân trang, như mọi danh sách khác (mặc định 1 và 10).</td></tr>
+        </table></div>
+      </div>
+      <div>
+        <h3>Response</h3>
+        <div class="jd-tabs">
+          <div class="jd-tablist">
+            <button class="jd-tab" type="button" aria-selected="true">200</button>
+            <button class="jd-tab c-red" type="button" aria-selected="false"><span lang="en">errors</span><span lang="vi">lỗi</span></button>
+          </div>
+          <div class="jd-tabpanel">
+            <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>200 OK</span></div>
+<pre data-hl="json">
+{
+  "status": "success",
+  "message": "Audit entries listed successfully",
+  "data": {
+    "items": [
+      {
+        "id": 1842,
+        "created_at": "2026-11-24T09:12:03.512Z",
+        "actor_id": "0f8c2d4e-…",
+        "action": "update",
+        "entity_type": "users",
+        "entity_id": "9b2f1c1e-…",
+        "changes": { "first_name": "An" },
+        "trace_id": "eb9b3d81-…"
+      }
+    ],
+    "pagination": {
+      "page": 1, "page_size": 10,
+      "total_items": 1, "total_pages": 1,
+      "has_next": false, "has_prev": false,
+      "next_page": null, "prev_page": null
+    }
+  },
+  "api_info": { … }
+}
+</pre></div>
+          </div>
+          <div class="jd-tabpanel" hidden>
+            <div class="jd-errlist">
+              <div class="jd-errrow"><span class="code">422</span><div><b>entity_id needs entity_type</b><span class="do" lang="en"><code>entity_id</code> given without <code>entity_type</code>.</span><span class="do" lang="vi">Có <code>entity_id</code> mà thiếu <code>entity_type</code>.</span></div></div>
+              <div class="jd-errrow"><span class="code">422</span><div><b>Validation error</b><span class="do" lang="en">A value too long, or <code>page</code> / <code>page_size</code> out of range.</span><span class="do" lang="vi">Giá trị quá dài, hoặc <code>page</code> / <code>page_size</code> ngoài phạm vi.</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 5. RETENTION -->
+  <section id="retention" class="jd-section c-purple">
+    <div class="jd-section-head">
+      <span class="jd-badge">5</span>
+      <div>
+        <h2><span lang="en">Retention</span><span lang="vi">Thời gian lưu</span></h2>
+        <p class="jd-sub" lang="en">Entries are kept 30 days (<code>domain.Retention</code> in <code>internal/features/audit/domain/audit.go</code>; change it there). <code>audit:cleanup-logs</code> deletes older ones; schedule it daily so each run deletes about one day's rows.</p>
+        <p class="jd-sub" lang="vi">Bản ghi được giữ 30 ngày (<code>domain.Retention</code> trong <code>internal/features/audit/domain/audit.go</code>; muốn đổi thì sửa ở đó). <code>audit:cleanup-logs</code> xóa các bản ghi cũ hơn; hãy lên lịch chạy hằng ngày để mỗi lần chỉ xóa khoảng một ngày dữ liệu.</p>
+      </div>
+    </div>
+    <div class="jd-term" data-copy="commands" style="margin-top:18px"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="bash">
+$ make console CMD="audit:cleanup-logs"
+ ✅ Deleted 312 expired audit entries
+</pre></div>
+  </section>
+
+  <!-- ============================================================ 6. LIMITS -->
+  <section id="limits" class="jd-section c-muted">
+    <div class="jd-section-head">
+      <span class="jd-badge">6</span>
+      <div>
+        <h2><span lang="en">Limits</span><span lang="vi">Giới hạn</span></h2>
+      </div>
+    </div>
+    <div class="jd-rules" style="margin-top:14px">
+      <div class="jd-rule"><span class="n">1</span>
+        <p lang="en"><b>It records what the code records.</b> A change made outside the services (SQL by hand, a migration, a service method that does not call <code>Record</code>) leaves no entry.</p>
+        <p lang="vi"><b>Chỉ ghi những gì code ghi.</b> Thay đổi ngoài service (SQL tay, migration, method service không gọi <code>Record</code>) không để lại bản ghi nào.</p></div>
+      <div class="jd-rule"><span class="n">2</span>
+        <p lang="en"><b>Entries are ordinary rows.</b> Anyone who can write to the database can change or delete them, including the app's own database login (<code>DB_USER</code>, a superuser in the dev stack).</p>
+        <p lang="vi"><b>Bản ghi chỉ là dòng dữ liệu bình thường.</b> Ai ghi được vào database đều sửa hoặc xóa được chúng, kể cả login database của chính app (<code>DB_USER</code>, là superuser trong stack dev).</p></div>
+      <div class="jd-rule"><span class="n">3</span>
+        <p lang="en"><b>No undo.</b> Only new values are stored, so a row cannot be restored from one entry; fix bad data through the API (that fix is recorded too) or by hand.</p>
+        <p lang="vi"><b>Không có undo.</b> Chỉ lưu giá trị mới, nên không khôi phục được một dòng từ một bản ghi; hãy sửa dữ liệu sai qua API (lần sửa đó cũng được ghi lại) hoặc bằng tay.</p></div>
+    </div>
+  </section>
+
+  <footer class="jd-footer">
+    <span>Jundoc · Jungo · Audit log</span>
+    <span><a href="access.html">← <span lang="en">Permissions &amp; roles</span><span lang="vi">Phân quyền</span></a> · <a href="multi-database.html"><span lang="en">Multiple databases</span><span lang="vi">Nhiều database</span> →</a></span>
+  </footer>
+</article>
+</div>
+</body>
+</html>

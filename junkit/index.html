@@ -19,11 +19,11 @@
   <header class="jd-hero" style="background:radial-gradient(1000px 380px at 0% 0%, rgba(52,211,153,.5), transparent 60%),radial-gradient(900px 380px at 100% 0%, rgba(96,165,250,.45), transparent 60%),linear-gradient(135deg,#064e3b,#065f46 45%,#1e3a8a)">
     <div class="jd-eyebrow">Junkit · <span lang="en">Overview</span><span lang="vi">Tổng quan</span></div>
     <h1>Junkit</h1>
-    <p lang="en">22 top-level infrastructure packages (plus the <code>database/postgres</code> sub-package) for Go backends built on Gin and Uber Fx — logging, database, cache, responses, validation, security, middleware and more. Jungo is built on them; outside Jungo, take only the packages you need — the <a href="#modules">Modules table</a> lists what each one needs.</p>
-    <p lang="vi">22 package hạ tầng cấp cao nhất (cộng sub-package <code>database/postgres</code>) cho Go backend xây dựng trên Gin và Uber Fx — logging, database, cache, response chuẩn, validation, bảo mật, middleware và hơn thế nữa. Jungo xây trên các package này; ngoài Jungo, chỉ cần lấy package bạn cần — <a href="#modules">bảng Module</a> liệt kê mỗi package cần gì.</p>
+    <p lang="en">23 top-level infrastructure packages (plus the <code>database/postgres</code> sub-package) for Go backends built on Gin and Uber Fx — logging, database, cache, responses, validation, security, middleware and more. Jungo is built on them; outside Jungo, take only the packages you need — the <a href="#modules">Modules table</a> lists what each one needs.</p>
+    <p lang="vi">23 package hạ tầng cấp cao nhất (cộng sub-package <code>database/postgres</code>) cho Go backend xây dựng trên Gin và Uber Fx — logging, database, cache, response chuẩn, validation, bảo mật, middleware và hơn thế nữa. Jungo xây trên các package này; ngoài Jungo, chỉ cần lấy package bạn cần — <a href="#modules">bảng Module</a> liệt kê mỗi package cần gì.</p>
     <div class="jd-chips">
       <span class="jd-chip">go get github.com/jun-develop/junkit</span>
-      <span class="jd-chip">Go 1.26.5+</span>
+      <span class="jd-chip">Go 1.27.4+</span>
       <span class="jd-chip"><span lang="en">Fx optional</span><span lang="vi">Fx không bắt buộc</span></span>
     </div>
   </header>
@@ -106,8 +106,8 @@
       <tr><td>mailer.Module</td><td>mailer.Options, *zap.Logger, *http.Client (optional)</td><td>mailer.Sender</td><td>✓</td></tr>
       <tr><td>recaptcha.Module</td><td>recaptcha.Options, *http.Client (optional)</td><td>recaptcha.Verifier</td><td>✓</td></tr>
     </table></div>
-    <p lang="en" style="margin-top:14px"><b>No Module:</b> <code>console</code> · <code>pagination</code> · <code>database</code> · <code>sqlfmt</code> · <code>upload</code> · <code>slicex</code> · <code>middleware</code> · <code>tracer</code> · <code>apidoc</code> · <code>scaffold</code>. They are plain functions, per-route constructors, request-scoped context or build-time tooling: import and call them directly.</p>
-    <p lang="vi" style="margin-top:14px"><b>Không có Module:</b> <code>console</code> · <code>pagination</code> · <code>database</code> · <code>sqlfmt</code> · <code>upload</code> · <code>slicex</code> · <code>middleware</code> · <code>tracer</code> · <code>apidoc</code> · <code>scaffold</code>. Đây là hàm tiện ích, middleware tạo theo route, context gắn theo request hoặc công cụ lúc build: chỉ cần import và gọi trực tiếp.</p>
+    <p lang="en" style="margin-top:14px"><b>No Module:</b> <code>console</code> · <code>pagination</code> · <code>database</code> · <code>sqlfmt</code> · <code>upload</code> · <code>slicex</code> · <code>stringx</code> · <code>middleware</code> · <code>tracer</code> · <code>apidoc</code> · <code>scaffold</code>. They are plain functions, per-route constructors, request-scoped context or build-time tooling: import and call them directly.</p>
+    <p lang="vi" style="margin-top:14px"><b>Không có Module:</b> <code>console</code> · <code>pagination</code> · <code>database</code> · <code>sqlfmt</code> · <code>upload</code> · <code>slicex</code> · <code>stringx</code> · <code>middleware</code> · <code>tracer</code> · <code>apidoc</code> · <code>scaffold</code>. Đây là hàm tiện ích, middleware tạo theo route, context gắn theo request hoặc công cụ lúc build: chỉ cần import và gọi trực tiếp.</p>
   </section>
 
   <footer class="jd-footer">
@@ -124,7 +124,7 @@ document.addEventListener("jd:ready", function () {
     { t: { en: "Data", vi: "Dữ liệu" }, p: ["database", "cache", "storage", "upload", "sqlfmt"] },
     { t: { en: "Outside services", vi: "Dịch vụ bên ngoài" }, p: ["httpclient", "telegram", "notification", "mailer", "recaptcha"] },
     { t: { en: "HTTP & security", vi: "HTTP & bảo mật" }, p: ["security", "middleware", "tracer", "apidoc"] },
-    { t: { en: "Tooling", vi: "Công cụ" }, p: ["slicex", "scaffold"] }
+    { t: { en: "Tooling", vi: "Công cụ" }, p: ["slicex", "stringx", "scaffold"] }
   ];
   var byName = {};
   (window.JUNDOC_NAV || []).forEach(function (g) { g.items.forEach(function (it) { if (it.pkg) byName[it.title.en] = it; }); });

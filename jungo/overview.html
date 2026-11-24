@@ -66,11 +66,11 @@
     <div class="jd-tablewrap"><table class="jd-params is-prose">
       <tr><th><span lang="en">Tool</span><span lang="vi">Công cụ</span></th><th><span lang="en">Used for</span><span lang="vi">Dùng để làm gì</span></th></tr>
       <tr><td>Docker Desktop</td><td><span lang="en">Runs the API, PostgreSQL and Redis in containers. It must be <b>open</b> before you run <code>make app-dev-bg</code>.</span><span lang="vi">Chạy API, PostgreSQL, Redis trong container. Phải <b>mở sẵn</b> Docker Desktop trước khi chạy <code>make app-dev-bg</code>.</span></td></tr>
-      <tr><td><span lang="en">Go (latest)</span><span lang="vi">Go (mới nhất)</span></td><td><span lang="en"><code>make feature</code> / <code>make command</code> run the scaffold on your machine; also needed for your editor's Go support. Minimum 1.26.5.</span><span lang="vi"><code>make feature</code> / <code>make command</code> chạy scaffold trên máy bạn; editor cũng cần Go để gợi ý code. Tối thiểu 1.26.5.</span></td></tr>
+      <tr><td><span lang="en">Go (latest)</span><span lang="vi">Go (mới nhất)</span></td><td><span lang="en"><code>make feature</code> / <code>make command</code> run the scaffold on your machine; also needed for your editor's Go support. Minimum 1.27.4.</span><span lang="vi"><code>make feature</code> / <code>make command</code> chạy scaffold trên máy bạn; editor cũng cần Go để gợi ý code. Tối thiểu 1.27.4.</span></td></tr>
       <tr><td>git</td><td><span lang="en">Cloning the repo. On Windows it also brings <b>Git Bash</b>, where you run every <code>make</code> command.</span><span lang="vi">Clone repo. Trên Windows nó còn cài kèm <b>Git Bash</b> — nơi bạn chạy mọi lệnh <code>make</code>.</span></td></tr>
       <tr><td>make</td><td><span lang="en">Runs every <code>make …</code> command in this guide.</span><span lang="vi">Chạy mọi lệnh <code>make …</code> trong hướng dẫn này.</span></td></tr>
       <tr><td>migrate</td><td><span lang="en">(golang-migrate) <code>make migrate-up</code>, <code>migrate-down</code>, <code>migrate-create</code>. Runs from your machine against the Postgres inside Docker.</span><span lang="vi">(golang-migrate) <code>make migrate-up</code>, <code>migrate-down</code>, <code>migrate-create</code>. Chạy từ máy bạn vào Postgres trong Docker.</span></td></tr>
-      <tr><td>psql</td><td><span lang="en">PostgreSQL client. <code>make migrate-up</code> uses it to apply SQL functions and demo users.</span><span lang="vi">PostgreSQL client. <code>make migrate-up</code> dùng nó để nạp SQL function và user demo.</span></td></tr>
+      <tr><td>psql</td><td><span lang="en">PostgreSQL client. <code>make migrate-up</code> uses it to apply SQL functions and load demo users.</span><span lang="vi">PostgreSQL client. <code>make migrate-up</code> dùng nó để nạp SQL function và nạp user demo.</span></td></tr>
       <tr><td>jq</td><td><span lang="en">Pretty-prints JSON in the <code>curl … | jq</code> examples. Those examples also read <code>$API_SERVER_PORT</code> and other values from <code>.env</code>, so load it into your shell first: <code>set -a; source .env; set +a</code>.</span><span lang="vi">Định dạng JSON cho dễ đọc trong các ví dụ <code>curl … | jq</code>. Các ví dụ đó còn đọc <code>$API_SERVER_PORT</code> và các giá trị khác trong <code>.env</code>, nên hãy nạp file này vào shell trước: <code>set -a; source .env; set +a</code>.</span></td></tr>
       <tr><td>sqlc</td><td><span lang="en"><code>make sqlc</code> — generates Go code from <code>.sql</code> queries. Needed after <code>make feature</code> or any query change.</span><span lang="vi"><code>make sqlc</code> — sinh code Go từ câu query <code>.sql</code>. Cần sau mỗi lần <code>make feature</code> hoặc sửa query.</span></td></tr>
     </table></div>
@@ -257,7 +257,7 @@ $ cd jungo
       <div class="jd-node is-tint c-blue" data-node="s3">
         <span class="k"><span lang="en">Step 3</span><span lang="vi">Bước 3</span></span>
         <span class="t mono">make migrate-up</span>
-        <div class="d" lang="en">Creates tables, permissions, SQL functions and demo users (admin, manager, member, user). Run it now: the API refuses to start until the permissions it uses are in the database.</div>
+        <div class="d" lang="en">Creates tables, permissions, SQL functions and loads demo users (admin, manager, member, user). Run it now: the API refuses to start until the permissions it uses are in the database.</div>
         <div class="d" lang="vi">Tạo bảng, permission, SQL function và nạp user demo (admin, manager, member, user). Chạy ngay bây giờ: API không chịu khởi động cho tới khi các permission nó dùng có trong database.</div>
       </div>
       <div class="jd-node is-tint c-orange" data-node="s4">
@@ -687,6 +687,9 @@ $ make console CMD="db:migrate"
 # delete expired / revoked tokens — schedule it daily with cron
 $ make console CMD="auth:cleanup-tokens"
 
+# audit log: delete entries older than 30 days — daily, off-peak
+$ make console CMD="audit:cleanup-logs"
+
 # logs go to storage/logs only; print them with a flag inside CMD
 $ make console CMD="health:check --verbose"   # app logs + executed SQL
 $ make console CMD="health:check --debug"     # everything, Fx events included
@@ -703,6 +706,9 @@ $ make console CMD="db:migrate"
 
 # xóa token đã hết hạn / bị thu hồi — lên lịch chạy hằng ngày bằng cron
 $ make console CMD="auth:cleanup-tokens"
+
+# audit log: xóa bản ghi cũ hơn 30 ngày — hằng ngày, giờ thấp điểm
+$ make console CMD="audit:cleanup-logs"
 
 # log chỉ ghi vào storage/logs; muốn in ra màn hình thì thêm cờ vào trong CMD
 $ make console CMD="health:check --verbose"   # log app + SQL đã chạy

@@ -233,8 +233,8 @@ type FeatureData struct {
 }
 </pre></div>
         <ul>
-          <li lang="en">Pascal: split on <code>_</code>, upper-case each part's first byte, drop empty parts. Camel: Pascal with the first byte lower-cased.</li>
-          <li lang="vi">Pascal: tách theo <code>_</code>, viết hoa byte đầu của mỗi phần, bỏ phần rỗng. Camel: Pascal với byte đầu viết thường.</li>
+          <li lang="en">Pascal: split on <code>_</code>, upper-case each part's first letter (rune), drop empty parts. Camel: Pascal with the first letter lower-cased.</li>
+          <li lang="vi">Pascal: tách theo <code>_</code>, viết hoa chữ cái đầu (rune) của mỗi phần, bỏ phần rỗng. Camel: Pascal với chữ cái đầu viết thường.</li>
           <li lang="en">Plural: regular English rules only — consonant + <code>y</code> → <code>ies</code> (<code>category</code> → <code>categories</code>), <code>s x z ch sh</code> → <code>+es</code> (<code>box</code> → <code>boxes</code>), else <code>+s</code>. Irregular nouns (<code>person</code> → <code>persons</code>) are not handled — pass <code>table</code> for those.</li>
           <li lang="vi">Plural: chỉ theo quy tắc tiếng Anh thông thường — phụ âm + <code>y</code> → <code>ies</code> (<code>category</code> → <code>categories</code>), <code>s x z ch sh</code> → <code>+es</code> (<code>box</code> → <code>boxes</code>), còn lại <code>+s</code>. Danh từ bất quy tắc (<code>person</code> → <code>persons</code>) không được xử lý — hãy truyền <code>table</code> cho chúng.</li>
           <li lang="en">Model: <code>Table</code> singularized the way sqlc names its structs, then Pascal (<code>items</code> → <code>Item</code>, <code>categories</code> → <code>Category</code>). Irregular plurals (<code>people</code>, <code>children</code>) are not covered. No validation of the name.</li>
@@ -337,16 +337,17 @@ type File struct {
 
   <footer class="jd-footer">
     <span>Jundoc · Junkit · scaffold</span>
-    <span><a href="slicex.html">← slicex</a></span>
+    <span><a href="stringx.html">← stringx</a></span>
   </footer>
 </article>
 </div>
 
 <script>
 document.addEventListener("jd:ready", function () {
-  // Mirrors NewFeatureData (toPascalCase / toCamelCase / pluralize / singularize) and addImportLine + addModuleLine.
-  function pascal(s) { return s.split("_").filter(Boolean).map(function (p) { return p[0].toUpperCase() + p.slice(1); }).join(""); }
-  function camel(s) { var p = pascal(s); return p ? p[0].toLowerCase() + p.slice(1) : p; }
+  // Mirrors NewFeatureData (stringx.ToPascal / stringx.ToCamel / pluralize / singularize) and addImportLine + addModuleLine.
+  function upperFirst(p) { var c = Array.from(p); return c.length ? c[0].toUpperCase() + c.slice(1).join("") : p; }
+  function pascal(s) { return s.split("_").map(upperFirst).join(""); }
+  function camel(s) { var c = Array.from(pascal(s)); return c.length ? c[0].toLowerCase() + c.slice(1).join("") : ""; }
   function pluralize(s) {
     if (s.length > 1 && /y$/.test(s) && "aeiou".indexOf(s[s.length - 2]) < 0) return s.slice(0, -1) + "ies";
     return /(s|x|z|ch|sh)$/.test(s) ? s + "es" : s + "s";

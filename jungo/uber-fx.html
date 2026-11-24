@@ -577,6 +577,8 @@ func CoreModules(cfg *config.Config) []fx.Option {
         fx.Provide(provideCacheOptions),
         cache.Module,
         // … i18n, response, validation, security, storage, mailer, …
+        fx.Provide(provideAuditRecorder),
+        audit.Module,
         access.Module,
         auth.Module,
         user.Module,
@@ -610,7 +612,7 @@ func NewConsoleFx() *fx.App {
 </pre></div>
       </div></div>
       <div class="jd-explain">
-        <div class="jd-ex c-blue" data-code="#code-fx" data-show="1-2,20-21"><span class="n">1</span>
+        <div class="jd-ex c-blue" data-code="#code-fx" data-show="1-2,22-23"><span class="n">1</span>
           <span class="w">[]fx.Option</span>
           <span class="x"><span lang="en">List of dependency declarations (Provides, Invokes, Modules). These functions return options without running them immediately. Splitting Core and HTTP allows API and Console to share 100% of the core logic.</span><span lang="vi">Danh sách các gói linh kiện (Provides, Invokes, Modules). Hàm chỉ trả về danh sách chỉ dẫn mà chưa chạy ngay. Việc chia thành <code>CoreModules</code> và <code>HTTPModules</code> giúp cả Web API lẫn dòng lệnh Console (CLI) dùng chung 100% logic lõi mà không bị trùng lặp.</span></span></div>
         <div class="jd-ex c-blue" data-code="#code-fx" data-show="3"><span class="n">2</span>
@@ -625,16 +627,16 @@ func NewConsoleFx() *fx.App {
         <div class="jd-ex c-blue" data-code="#code-fx" data-show="6-9"><span class="n">5</span>
           <span class="w">fx.Decorate + `name:"sql"`</span>
           <span class="x"><span lang="en">Local override (Module scope): By default, the entire app shares a global logger. Inside the database module only, <code>fx.Decorate</code> swaps that default with the specialized <code>"sql"</code> logger. Outside development this routes all database query logs to a dedicated file (<code>storage/logs/sql.log</code>) without cluttering the main application log; in development every channel, <code>sql</code> included, prints to the console.</span><span lang="vi">Thay thế linh kiện cục bộ (Chỉ riêng module này): Bình thường toàn bộ app dùng chung Logger mặc định. Nhưng riêng bên trong module Database, <code>fx.Decorate</code> sẽ "tráo" Logger mặc định bằng Logger chuyên biệt (<code>name:"sql"</code>). Nhờ đó, ngoài môi trường development, mọi câu lệnh truy vấn SQL được ghi ra file log riêng (<code>storage/logs/sql.log</code>) mà không làm ngập rác file log chính của ứng dụng; còn ở development, mọi kênh log (kể cả <code>sql</code>) đều in ra console.</span></span></div>
-        <div class="jd-ex c-blue" data-code="#code-fx" data-show="13-15"><span class="n">6</span>
-          <span class="w">access.Module, auth.Module, user.Module</span>
-          <span class="x"><span lang="en">Feature enablement. Add a module to activate a feature, or comment it out to disable. <code>make feature NAME=...</code> registers your new module here automatically.</span><span lang="vi">Công tắc bật/tắt tính năng: Muốn dùng tính năng nào chỉ việc thêm một dòng Module ở đây, muốn tạm tắt thì chú thích (comment) lại. Lệnh <code>make feature NAME=...</code> sẽ tự động đăng ký dòng này cho bạn.</span></span></div>
-        <div class="jd-ex c-blue" data-code="#code-fx" data-show="23-25,27"><span class="n">7</span>
+        <div class="jd-ex c-blue" data-code="#code-fx" data-show="13-17"><span class="n">6</span>
+          <span class="w">audit.Module, access.Module, auth.Module, user.Module</span>
+          <span class="x"><span lang="en">Feature enablement. Add a module to activate a feature, or comment it out to disable. <code>make feature NAME=...</code> registers your new module here automatically. <code>provideAuditRecorder</code> gives the features the audit Recorder, or <code>auditlog.Nop</code> when <code>audit.Module</code> is removed (<a href="audit.html#flow">Audit log</a>).</span><span lang="vi">Công tắc bật/tắt tính năng: Muốn dùng tính năng nào chỉ việc thêm một dòng Module ở đây, muốn tạm tắt thì chú thích (comment) lại. Lệnh <code>make feature NAME=...</code> sẽ tự động đăng ký dòng này cho bạn. <code>provideAuditRecorder</code> đưa Recorder của audit cho các feature, hoặc <code>auditlog.Nop</code> khi bỏ <code>audit.Module</code> (<a href="audit.html#flow">Audit log</a>).</span></span></div>
+        <div class="jd-ex c-blue" data-code="#code-fx" data-show="25-27,29"><span class="n">7</span>
           <span class="w">fx.Invoke(router.RegisterAll) · PermissionCheck</span>
           <span class="x"><span lang="en">Startup triggers: <code>router.RegisterAll</code> mounts every route onto Gin (its Guard comes from <code>middleware.NewGuard</code>); <code>access.PermissionCheck</code> adds an OnStart hook that stops the app if a permission the code uses is missing from the database; <code>(*App).Run</code> adds the OnStart hook that starts the HTTP server. OnStart hooks run in the order they were added. Without these Invokes, lazy providers would never be built.</span><span lang="vi">Các điểm kích hoạt khởi động: <code>router.RegisterAll</code> gắn mọi route lên Gin (Guard của nó lấy từ <code>middleware.NewGuard</code>); <code>access.PermissionCheck</code> thêm hook OnStart dừng app nếu database thiếu permission mà code dùng; <code>(*App).Run</code> thêm hook OnStart bật HTTP server. Các hook OnStart chạy theo thứ tự được thêm. Không có các Invoke này, provider lazy sẽ không bao giờ được tạo.</span></span></div>
-        <div class="jd-ex c-blue" data-code="#code-fx" data-show="31-34"><span class="n">8</span>
+        <div class="jd-ex c-blue" data-code="#code-fx" data-show="33-36"><span class="n">8</span>
           <span class="w">fx.New(…)  →  .Run()</span>
           <span class="x"><span lang="en">Assembles the dependency graph, checks that everything the Invokes need (directly or indirectly) can be built, triggers OnStart lifecycle hooks, and blocks until a termination signal is received.</span><span lang="vi">Khởi động cỗ máy: Lắp ráp các linh kiện mà các Invoke cần (trực tiếp hoặc gián tiếp), kiểm tra nếu thiếu thứ gì thì báo lỗi dừng ngay lập tức (Fail Fast), kích hoạt các dịch vụ (OnStart) và giữ ứng dụng luôn chạy cho đến khi nhận lệnh tắt.</span></span></div>
-        <div class="jd-ex c-blue" data-code="#code-fx" data-show="36-42"><span class="n">9</span>
+        <div class="jd-ex c-blue" data-code="#code-fx" data-show="38-44"><span class="n">9</span>
           <span class="w">NewConsoleFx</span>
           <span class="x"><span lang="en">Shares identical CoreModules (DB, cache, services) but replaces the HTTP server with console command dispatching. Used by <code>make console</code>. Logs go to files only, whatever the environment; add <code>--verbose</code> (app logs + SQL) or <code>--debug</code> (everything, Fx events included) inside <code>CMD</code> to print them. It leaves out <code>access.PermissionCheck</code>, so <code>db:migrate</code> can run before the permissions exist.</span><span lang="vi">Bản chạy cho dòng lệnh (CLI): Dùng chung 100% CoreModules (Database, Cache, Service...) y hệt API, nhưng không bật HTTP Server mà chỉ chạy lệnh console được chọn (thông qua lệnh <code>make console</code>). Log chỉ ghi vào file, dù môi trường là gì; thêm <code>--verbose</code> (log app + SQL) hoặc <code>--debug</code> (in hết, kể cả event Fx) vào trong <code>CMD</code> để in ra màn hình. Nó không có <code>access.PermissionCheck</code>, nên <code>db:migrate</code> chạy được khi permission chưa có.</span></span></div>
       </div>

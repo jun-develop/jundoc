@@ -33,6 +33,7 @@ Each topic has one home. Other pages give one sentence and a link.
 | Validation messages catalog | `junkit/validation.html` | `i18n.html` links |
 | Identity on context | `junkit/security.html` (`WithIdentity`/`GetIdentity`) | `middleware.html` (`SetIdentity`) links |
 | `make feature` workflow | `jungo/build-a-feature.html` | overview: one line; `scaffold.html`: the engine |
+| Audit log: what is recorded, recording in a feature, read API, retention | `jungo/audit.html` | `auth.html`, `access.html`, `build-a-feature.html#generate`, `overview.html#cli`: one sentence + link |
 | Telegram client vs ops alerts | `telegram.html` (client), `notification.html` (alerts) | each links the other once |
 
 ## 2. Accuracy

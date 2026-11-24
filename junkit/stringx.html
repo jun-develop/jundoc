@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junkit stringx · Jundoc</title>
+  <meta name="description" content="junkit/stringx: string helpers the standard strings package lacks — case conversion (snake, Pascal, camel) and rune-safe first-letter casing.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/jundoc.css">
+  <script src="../assets/js/nav.js"></script>
+  <script src="../assets/js/jundoc.js"></script>
+</head>
+<body>
+<div id="jd-app" data-root="..">
+<article class="jd-content">
+
+  <!-- ============================================================ HERO -->
+  <header class="jd-hero" style="background:radial-gradient(1000px 380px at 0% 0%, rgba(148,163,184,.45), transparent 60%),linear-gradient(135deg,#1e293b,#334155 55%,#0e7490)">
+    <div class="jd-eyebrow">Junkit · stringx</div>
+    <h1>stringx</h1>
+    <p lang="en">String helpers the standard <code>strings</code> package lacks: convert identifiers between <code>snake_case</code>, <code>PascalCase</code> and <code>camelCase</code>, and change the case of the first letter only. The first-letter helpers work on runes, so Vietnamese text is safe.</p>
+    <p lang="vi">Các hàm cho chuỗi mà package chuẩn <code>strings</code> chưa có: chuyển tên định danh giữa <code>snake_case</code>, <code>PascalCase</code> và <code>camelCase</code>, và chỉ đổi hoa/thường chữ cái đầu. Các hàm chữ cái đầu làm việc theo rune, nên an toàn với tiếng Việt.</p>
+    <div class="jd-chips">
+      <span class="jd-chip">github.com/jun-develop/junkit/stringx</span>
+      <span class="jd-chip"><span lang="en">No Fx module</span><span lang="vi">Không có Fx module</span></span>
+      <span class="jd-chip"><span lang="en">Depends on: standard library only</span><span lang="vi">Phụ thuộc: chỉ thư viện chuẩn</span></span>
+    </div>
+  </header>
+
+  <!-- ============================================================ 1. QUICK START -->
+  <section id="quick" class="jd-section c-green">
+    <div class="jd-section-head">
+      <span class="jd-badge">1</span>
+      <div>
+        <h2><span lang="en">Quick start</span><span lang="vi">Dùng nhanh</span></h2>
+        <p class="jd-sub" lang="en">Turn Go field names into JSON keys, feature names into Go identifiers, and fix the first letter of a message.</p>
+        <p class="jd-sub" lang="vi">Biến tên field Go thành key JSON, tên feature thành định danh Go, và sửa chữ cái đầu của một thông báo.</p>
+      </div>
+    </div>
+    <div class="jd-grid-2" style="margin-top:18px">
+      <div><div class="jd-sticky">
+        <div class="jd-term" data-copy><div class="jd-term-bar"><i></i><i></i><i></i><span>main.go</span></div>
+<pre data-hl="go" id="code-quick">
+stringx.ToSnake("AvatarURL")  // "avatar_url"
+stringx.ToSnake("APIKey")     // "api_key"
+stringx.ToSnake("UserID")     // "user_id"
+
+stringx.ToPascal("order_item") // "OrderItem"
+stringx.ToCamel("order_item")  // "orderItem"
+
+stringx.UpperFirst("đẹp trai") // "Đẹp trai"
+stringx.LowerFirst("Hello")    // "hello"
+</pre></div>
+      </div></div>
+      <div class="jd-explain">
+        <div class="jd-ex c-blue" data-code="#code-quick" data-show="1-3"><span class="n">1</span><span class="w"><span lang="en">Go name → snake_case</span><span lang="vi">Tên Go → snake_case</span></span><span class="x" lang="en">An acronym stays one word: <code>URL</code>, <code>API</code> and <code>ID</code> are not split letter by letter.</span><span class="x" lang="vi">Từ viết tắt được giữ thành một từ: <code>URL</code>, <code>API</code> và <code>ID</code> không bị tách từng chữ.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick" data-show="5-6"><span class="n">2</span><span class="w"><span lang="en">snake_case → Go name</span><span lang="vi">snake_case → tên Go</span></span><span class="x" lang="en">Splits on <code>_</code> and upper-cases each part's first letter. <code>ToCamel</code> then lower-cases the first letter.</span><span class="x" lang="vi">Tách theo <code>_</code> và viết hoa chữ cái đầu của mỗi phần. <code>ToCamel</code> sau đó viết thường chữ cái đầu.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick" data-show="8-9"><span class="n">3</span><span class="w"><span lang="en">First letter only</span><span lang="vi">Chỉ chữ cái đầu</span></span><span class="x" lang="en">The rest of the string is unchanged. A multi-byte first letter such as <code>đ</code> is handled as one rune.</span><span class="x" lang="vi">Phần còn lại của chuỗi giữ nguyên. Chữ cái đầu nhiều byte như <code>đ</code> được xử lý như một rune.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 2. API -->
+  <section id="api" class="jd-section c-blue">
+    <div class="jd-section-head">
+      <span class="jd-badge">2</span>
+      <div>
+        <h2><span lang="en">API reference</span><span lang="vi">Tham chiếu API</span></h2>
+        <p class="jd-sub" lang="en">Everything the package exports — signatures copied from <code>junkit/stringx</code>.</p>
+        <p class="jd-sub" lang="vi">Mọi thứ package export — chữ ký chép từ <code>junkit/stringx</code>.</p>
+      </div>
+    </div>
+    <div class="jd-syms" style="margin-top:18px">
+      <div class="jd-sym c-green">
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">ToSnake</span></div>
+        <div class="jd-term"><pre data-hl="go">func ToSnake(s string) string</pre></div>
+        <ul>
+          <li lang="en">Converts a PascalCase or camelCase identifier to snake_case; every letter is lower-cased.</li><li lang="vi">Chuyển định danh PascalCase hoặc camelCase sang snake_case; mọi chữ cái đều viết thường.</li>
+          <li lang="en">Inserts <code>_</code> before a capital that follows a lower-case letter or a digit (<code>Item2Name</code> → <code>item2_name</code>), and before the last capital of an acronym that starts a new word (<code>HTTPServer</code> → <code>http_server</code>).</li><li lang="vi">Chèn <code>_</code> trước chữ hoa đứng sau chữ thường hoặc chữ số (<code>Item2Name</code> → <code>item2_name</code>), và trước chữ hoa cuối của một từ viết tắt khi nó mở đầu từ mới (<code>HTTPServer</code> → <code>http_server</code>).</li>
+          <li lang="en">Works on Unicode capitals too, not only ASCII: <code>ĐơnHàng</code> → <code>đơn_hàng</code>.</li><li lang="vi">Áp dụng cho cả chữ hoa Unicode, không chỉ ASCII: <code>ĐơnHàng</code> → <code>đơn_hàng</code>.</li>
+        </ul>
+      </div>
+      <div class="jd-sym c-green">
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">ToPascal</span></div>
+        <div class="jd-term"><pre data-hl="go">func ToPascal(s string) string</pre></div>
+        <ul>
+          <li lang="en">Splits <code>s</code> on <code>_</code> and joins the parts with each part's first letter upper-cased (<code>UpperFirst</code>).</li><li lang="vi">Tách <code>s</code> theo <code>_</code> rồi nối các phần, mỗi phần viết hoa chữ cái đầu (<code>UpperFirst</code>).</li>
+          <li lang="en">Empty parts from <code>__</code> or a leading/trailing <code>_</code> disappear: <code>__a__b</code> → <code>AB</code>.</li><li lang="vi">Phần rỗng do <code>__</code> hoặc <code>_</code> ở đầu/cuối biến mất: <code>__a__b</code> → <code>AB</code>.</li>
+        </ul>
+      </div>
+      <div class="jd-sym c-green">
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">ToCamel</span></div>
+        <div class="jd-term"><pre data-hl="go">func ToCamel(s string) string</pre></div>
+        <ul>
+          <li lang="en"><code>ToPascal(s)</code> with the first letter lower-cased: <code>order_item</code> → <code>orderItem</code>.</li><li lang="vi"><code>ToPascal(s)</code> với chữ cái đầu viết thường: <code>order_item</code> → <code>orderItem</code>.</li>
+        </ul>
+      </div>
+      <div class="jd-sym c-green">
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">UpperFirst</span></div>
+        <div class="jd-term"><pre data-hl="go">func UpperFirst(s string) string</pre></div>
+        <ul>
+          <li lang="en">Returns <code>s</code> with its first rune upper-cased; the rest is unchanged.</li><li lang="vi">Trả về <code>s</code> với rune đầu tiên viết hoa; phần còn lại giữ nguyên.</li>
+          <li lang="en">An empty string, or one whose first rune is already upper-case, is returned as is.</li><li lang="vi">Chuỗi rỗng, hoặc chuỗi có rune đầu đã viết hoa, được trả về nguyên vẹn.</li>
+        </ul>
+      </div>
+      <div class="jd-sym c-green">
+        <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">LowerFirst</span></div>
+        <div class="jd-term"><pre data-hl="go">func LowerFirst(s string) string</pre></div>
+        <ul>
+          <li lang="en">Returns <code>s</code> with its first rune lower-cased; the rest is unchanged (<code>URL</code> → <code>uRL</code>).</li><li lang="vi">Trả về <code>s</code> với rune đầu tiên viết thường; phần còn lại giữ nguyên (<code>URL</code> → <code>uRL</code>).</li>
+          <li lang="en">An empty string, or one whose first rune is already lower-case, is returned as is.</li><li lang="vi">Chuỗi rỗng, hoặc chuỗi có rune đầu đã viết thường, được trả về nguyên vẹn.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ 3. IN JUNGO -->
+  <section id="jungo" class="jd-section c-orange">
+    <div class="jd-section-head">
+      <span class="jd-badge">3</span>
+      <div>
+        <h2><span lang="en">In Jungo</span><span lang="vi">Trong Jungo</span></h2>
+        <p class="jd-sub" lang="en">Where Jungo and other Junkit packages call it.</p>
+        <p class="jd-sub" lang="vi">Những chỗ Jungo và các package Junkit khác gọi nó.</p>
+      </div>
+    </div>
+    <div class="jd-tablewrap" style="margin-top:16px"><table class="jd-params c-orange">
+      <tr><th>file</th><th><span lang="en">what it does</span><span lang="vi">làm gì</span></th></tr>
+      <tr><td>internal/common/auditlog/changes.go</td><td lang="en"><code>Changes</code> keys each changed field by <code>stringx.ToSnake(field.Name)</code>, so <code>AvatarURL</code> is logged as <code>avatar_url</code>.</td><td lang="vi"><code>Changes</code> đặt key cho mỗi field thay đổi bằng <code>stringx.ToSnake(field.Name)</code>, nên <code>AvatarURL</code> được ghi là <code>avatar_url</code>.</td></tr>
+      <tr><td>cmd/scaffold/templates.go</td><td lang="en"><code>ToPascal</code> for <code>PASCAL_PLURAL</code>; <code>UpperFirst</code> for the <code>NAME_WORDS</code> and <code>PLURAL_TITLE</code> messages.</td><td lang="vi"><code>ToPascal</code> cho <code>PASCAL_PLURAL</code>; <code>UpperFirst</code> cho các thông báo <code>NAME_WORDS</code> và <code>PLURAL_TITLE</code>.</td></tr>
+      <tr><td>junkit/validation/helper.go · validation.go</td><td lang="en"><code>ToSnake</code> turns Go field paths into the keys of the 422 error map (see <a href="validation.html">validation</a>).</td><td lang="vi"><code>ToSnake</code> biến đường dẫn field Go thành key của map lỗi 422 (xem <a href="validation.html">validation</a>).</td></tr>
+      <tr><td>junkit/scaffold/scaffold.go</td><td lang="en"><code>NewFeatureData</code> builds <code>Pascal</code>, <code>Camel</code> and <code>Model</code> with <code>ToPascal</code> / <code>ToCamel</code> (see <a href="scaffold.html">scaffold</a>).</td><td lang="vi"><code>NewFeatureData</code> tạo <code>Pascal</code>, <code>Camel</code> và <code>Model</code> bằng <code>ToPascal</code> / <code>ToCamel</code> (xem <a href="scaffold.html">scaffold</a>).</td></tr>
+      <tr><td>junkit/console/console.go</td><td lang="en"><code>Infof</code>, <code>Successf</code>, <code>Stepf</code> use <code>UpperFirst</code>; <code>Warnf</code>, <code>Fatalf</code> use <code>LowerFirst</code> (see <a href="console.html">console</a>).</td><td lang="vi"><code>Infof</code>, <code>Successf</code>, <code>Stepf</code> dùng <code>UpperFirst</code>; <code>Warnf</code>, <code>Fatalf</code> dùng <code>LowerFirst</code> (xem <a href="console.html">console</a>).</td></tr>
+    </table></div>
+  </section>
+
+  <!-- ============================================================ GOTCHAS -->
+  <section id="gotchas" class="jd-section c-red">
+    <div class="jd-section-head">
+      <span class="jd-badge">!</span>
+      <div>
+        <h2><span lang="en">Good to know</span><span lang="vi">Cần lưu ý</span></h2>
+      </div>
+    </div>
+    <div class="jd-explain" style="margin-top:16px">
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w"><span lang="en">Plural acronyms split</span><span lang="vi">Từ viết tắt số nhiều bị tách</span></span><span class="x" lang="en">A lower-case letter right after an acronym starts a new word, so <code>UserIDs</code> → <code>user_i_ds</code>. Name the field <code>UserIds</code> or set the key yourself.</span><span class="x" lang="vi">Chữ thường ngay sau từ viết tắt mở đầu từ mới, nên <code>UserIDs</code> → <code>user_i_ds</code>. Hãy đặt tên field là <code>UserIds</code> hoặc tự đặt key.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">Not a round trip</span><span lang="vi">Không chuyển ngược lại được</span></span><span class="x" lang="en"><code>ToPascal</code> does not know acronyms: <code>ToPascal(ToSnake("UserID"))</code> is <code>UserId</code>, not <code>UserID</code>.</span><span class="x" lang="vi"><code>ToPascal</code> không biết từ viết tắt: <code>ToPascal(ToSnake("UserID"))</code> là <code>UserId</code>, không phải <code>UserID</code>.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">Only <code>_</code> separates</span><span lang="vi">Chỉ <code>_</code> là dấu tách</span></span><span class="x" lang="en"><code>ToPascal</code> and <code>ToCamel</code> split on <code>_</code> only; spaces and <code>-</code> stay (<code>ToPascal("order item")</code> → <code>Order item</code>). <code>ToSnake</code> adds <code>_</code> only before capitals and leaves other characters as they are.</span><span class="x" lang="vi"><code>ToPascal</code> và <code>ToCamel</code> chỉ tách theo <code>_</code>; khoảng trắng và <code>-</code> giữ nguyên (<code>ToPascal("order item")</code> → <code>Order item</code>). <code>ToSnake</code> chỉ thêm <code>_</code> trước chữ hoa và để nguyên các ký tự khác.</span></div>
+    </div>
+  </section>
+
+  <footer class="jd-footer">
+    <span>Jundoc · Junkit · stringx</span>
+    <span><a href="slicex.html">← slicex</a> · <a href="scaffold.html">scaffold →</a></span>
+  </footer>
+</article>
+</div>
+</body>
+</html>

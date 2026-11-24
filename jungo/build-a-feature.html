@@ -163,8 +163,8 @@
       </div>
       <div class="jd-node is-tint c-pink" data-node="g3">
         <span class="k">3</span><span class="t mono" style="font-size:14px">make migrate-up</span>
-        <div class="d" lang="en">Creates the <code>products</code> table, adds <code>products:*</code> to <code>permissions</code> and gives them to <code>super_admin</code>. Then the app starts.</div>
-        <div class="d" lang="vi">Tạo bảng <code>products</code>, thêm <code>products:*</code> vào <code>permissions</code> và cấp cho <code>super_admin</code>. Xong bước này app chạy được.</div>
+        <div class="d" lang="en">Creates the <code>products</code> table, adds <code>products:*</code> to <code>permissions</code> and gives them to <code>super_admin</code>. Then the app starts. A generated feature records nothing in the audit log; to record its changes, call <code>auditlog.Recorder</code> in the service (<a href="audit.html#coverage">Audit log</a>).</div>
+        <div class="d" lang="vi">Tạo bảng <code>products</code>, thêm <code>products:*</code> vào <code>permissions</code> và cấp cho <code>super_admin</code>. Xong bước này app chạy được. Feature sinh ra không ghi gì vào audit log; muốn ghi lại thay đổi của nó, hãy gọi <code>auditlog.Recorder</code> trong service (<a href="audit.html#coverage">Audit log</a>).</div>
       </div>
     </div>
 
@@ -173,9 +173,9 @@
         <h3><span lang="en">What the generator prints</span><span lang="vi">Generator in ra những gì</span></h3>
         <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>make feature NAME=product</span></div>
 <pre data-hl="bash">
-⚡ Generating feature "product" (table "products", migration 000005)...
- ✅ Created internal/database/primary/migrations/000005_products.up.sql
- ✅ Created internal/database/primary/migrations/000005_products.down.sql
+⚡ Generating feature "product" (table "products", migration 000006)...
+ ✅ Created internal/database/primary/migrations/000006_products.up.sql
+ ✅ Created internal/database/primary/migrations/000006_products.down.sql
  ✅ Created internal/database/primary/queries/product.sql
  ✅ Created internal/features/product/domain/product.go
  ✅ Created internal/features/product/domain/errors.go

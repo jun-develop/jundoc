@@ -422,7 +422,7 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/auth/me \
       "expires_at": "2026-11-15T09:00:00Z",
       "status": "active"
     },
-    "permissions": ["roles:assign", "roles:create", "roles:delete", "roles:read",
+    "permissions": ["audit_logs:read", "roles:assign", "roles:create", "roles:delete", "roles:read",
                     "roles:update", "users:create", "users:delete", "users:read", "users:update"]
   },
   "api_info": { … }
@@ -937,6 +937,8 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/revoke-all \
         <tr><td>password_reset</td><td lang="en">The user reset their password: every session ends.</td><td lang="vi">User đã reset mật khẩu: mọi session đều kết thúc.</td></tr>
       </table></div>
     </div>
+    <p class="jd-sub" lang="en">Logins, logouts, sessions and password changes or resets are not recorded in the audit log: see <a href="audit.html#coverage">Audit log</a>.</p>
+    <p class="jd-sub" lang="vi">Đăng nhập, đăng xuất, session và việc đổi hay đặt lại mật khẩu không được ghi vào audit log: xem <a href="audit.html#coverage">Audit log</a>.</p>
   </section>
 
   <!-- ============================================================ 5. INTEGRATE -->
