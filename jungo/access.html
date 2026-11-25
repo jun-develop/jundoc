@@ -582,20 +582,21 @@ $ curl -s -X PUT localhost:$API_SERVER_PORT/api/v1/users/$USER_UUID/roles \
 {
   "status": "error",
   "code": "FORBIDDEN",
+  "reason": "insufficient_permission",
   "message": "You do not have permission to perform this action",
   "api_info": { … }
 }
 </pre></div>
       <h3 style="margin-top:22px"><span lang="en">Telling 403s apart</span><span lang="vi">Phân biệt các lỗi 403</span></h3>
-      <p class="jd-sub" lang="en">All have <code>"code": "FORBIDDEN"</code>; the <code>message</code> says why.</p>
-      <p class="jd-sub" lang="vi">Tất cả đều có <code>"code": "FORBIDDEN"</code>; <code>message</code> cho biết lý do.</p>
+      <p class="jd-sub" lang="en">All have <code>"code": "FORBIDDEN"</code>; <code>reason</code> says why. Branch on <code>reason</code>, show <code>message</code> (it is translated and may change).</p>
+      <p class="jd-sub" lang="vi">Tất cả đều có <code>"code": "FORBIDDEN"</code>; <code>reason</code> cho biết lý do. Rẽ nhánh theo <code>reason</code>, hiển thị <code>message</code> (đã được dịch và có thể đổi).</p>
       <div class="jd-tablewrap"><table class="jd-params">
-        <tr><th>message</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
-        <tr><td>You do not have permission to perform this action</td><td><span lang="en">The route's permission is missing (hide that button).</span><span lang="vi">Thiếu permission của route (ẩn nút đó đi).</span></td></tr>
-        <tr><td>This change involves a permission you do not hold yourself</td><td><span lang="en">The route was allowed, but a role or permission you add or remove has a permission you lack.</span><span lang="vi">Route được phép, nhưng role hoặc permission bạn thêm/gỡ có permission bạn không có.</span></td></tr>
-        <tr><td>System roles cannot be changed</td><td><span lang="en">The change touches <code>super_admin</code>.</span><span lang="vi">Thao tác đụng tới <code>super_admin</code>.</span></td></tr>
-        <tr><td>This user holds permissions you do not hold yourself</td><td><span lang="en">The target user is stronger than you (<code>/users/:uuid…</code>).</span><span lang="vi">User đích mạnh hơn bạn (<code>/users/:uuid…</code>).</span></td></tr>
-        <tr><td>You cannot change your own roles · You cannot change your own status · You cannot delete your own account</td><td><span lang="en">Self-changes are refused.</span><span lang="vi">Không được tự thay đổi chính mình.</span></td></tr>
+        <tr><th>reason</th><th>message</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+        <tr><td>insufficient_permission</td><td>You do not have permission to perform this action</td><td><span lang="en">The route's permission is missing (hide that button).</span><span lang="vi">Thiếu permission của route (ẩn nút đó đi).</span></td></tr>
+        <tr><td>cannot_grant_unheld_permission</td><td>This change involves a permission you do not hold yourself</td><td><span lang="en">The route was allowed, but a role or permission you add or remove has a permission you lack.</span><span lang="vi">Route được phép, nhưng role hoặc permission bạn thêm/gỡ có permission bạn không có.</span></td></tr>
+        <tr><td>system_role_immutable</td><td>System roles cannot be changed</td><td><span lang="en">The change touches <code>super_admin</code>.</span><span lang="vi">Thao tác đụng tới <code>super_admin</code>.</span></td></tr>
+        <tr><td>cannot_manage_stronger_user</td><td>This user holds permissions you do not hold yourself</td><td><span lang="en">The target user is stronger than you (<code>/users/:uuid…</code>).</span><span lang="vi">User đích mạnh hơn bạn (<code>/users/:uuid…</code>).</span></td></tr>
+        <tr><td>cannot_change_own_roles · cannot_change_own_status · cannot_delete_self</td><td>You cannot change your own roles · You cannot change your own status · You cannot delete your own account</td><td><span lang="en">Self-changes are refused.</span><span lang="vi">Không được tự thay đổi chính mình.</span></td></tr>
       </table></div>
     </div>
   </section>

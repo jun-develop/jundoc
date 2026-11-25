@@ -1693,6 +1693,7 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
 {
   "status": "error",
   "code": "TOO_MANY_REQUESTS",
+  "reason": "too_many_requests",
   "message": "Too many requests. Please try again later.",
   "api_info": {
     "trace_id": "…",
@@ -1767,11 +1768,13 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
             </div>
             <p class="jd-sub" lang="en">Every error carries a <code>"code"</code>: <code>responder.Error</code> takes it from the
               <code>AppError</code>, and <code>responder.Send</code> derives it from the HTTP status (e.g.
-              Limiter's 429 → <code>TOO_MANY_REQUESTS</code>). The response envelope is described on <a
+              Limiter's 429 → <code>TOO_MANY_REQUESTS</code>), plus a <code>"reason"</code>: the untranslated key
+              (<code>too_many_requests</code>). The response envelope is described on <a
                 href="response.html">response</a>.</p>
             <p class="jd-sub" lang="vi">Mọi lỗi đều có <code>"code"</code>: <code>responder.Error</code> lấy từ
               <code>AppError</code>, còn <code>responder.Send</code> suy ra từ HTTP status (vd. 429 của
-              Limiter → <code>TOO_MANY_REQUESTS</code>). Envelope response được mô
+              Limiter → <code>TOO_MANY_REQUESTS</code>), kèm <code>"reason"</code>: key chưa dịch
+              (<code>too_many_requests</code>). Envelope response được mô
               tả ở <a href="response.html">response</a>.</p>
           </div>
         </div>

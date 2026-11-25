@@ -262,6 +262,7 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
 {
   "status": "error",
   "code": "UNAUTHORIZED",
+  "reason": "invalid_credentials",
   "message": "Invalid email or password",
   "api_info": { … }
 }
@@ -271,6 +272,7 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/login \
 {
   "status": "error",
   "code": "UNPROCESSABLE_ENTITY",
+  "reason": "validation_error",
   "message": "Validation error",
   "error": {
     "email": "email must be a valid email format",
@@ -771,13 +773,13 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/revoke-all \
     </div>
 
     <h3 style="margin-top:22px"><span lang="en">Telling 401s apart</span><span lang="vi">Phân biệt các lỗi 401</span></h3>
-    <p class="jd-sub" lang="en">Every token error has <code>"code": "UNAUTHORIZED"</code>; the <code>message</code> says which one.</p>
-    <p class="jd-sub" lang="vi">Mọi lỗi token đều có <code>"code": "UNAUTHORIZED"</code>; <code>message</code> cho biết là lỗi nào.</p>
+    <p class="jd-sub" lang="en">Every token error has <code>"code": "UNAUTHORIZED"</code>; <code>reason</code> says which one. Branch on <code>reason</code>: <code>message</code> is translated (<code>API_LANGUAGE</code>) and its wording may change. See <a href="../junkit/response.html">response</a>.</p>
+    <p class="jd-sub" lang="vi">Mọi lỗi token đều có <code>"code": "UNAUTHORIZED"</code>; <code>reason</code> cho biết là lỗi nào. Rẽ nhánh theo <code>reason</code>: <code>message</code> đã được dịch (<code>API_LANGUAGE</code>) và câu chữ có thể đổi. Xem <a href="../junkit/response.html">response</a>.</p>
     <div class="jd-tablewrap"><table class="jd-params">
-      <tr><th>message</th><th><span lang="en">client action</span><span lang="vi">client làm gì</span></th></tr>
-      <tr><td>Token has expired</td><td><span lang="en">Refresh, then retry.</span><span lang="vi">Refresh rồi gọi lại.</span></td></tr>
-      <tr><td>Token has been revoked</td><td><span lang="en">If the request used an access token your app has since replaced (a refresh finished while it was in flight), retry once with the newest token. Otherwise log in again.</span><span lang="vi">Nếu request dùng access token mà app đã thay sau đó (một lần refresh xong trong lúc request đang chạy), gọi lại một lần với token mới nhất. Nếu không, đăng nhập lại.</span></td></tr>
-      <tr><td><span lang="en">any other 401</span><span lang="vi">mọi 401 khác</span></td><td><span lang="en">Clear the tokens and log in again.</span><span lang="vi">Xóa token và đăng nhập lại.</span></td></tr>
+      <tr><th>reason</th><th>message</th><th><span lang="en">client action</span><span lang="vi">client làm gì</span></th></tr>
+      <tr><td>token_expired</td><td>Token has expired</td><td><span lang="en">Refresh, then retry.</span><span lang="vi">Refresh rồi gọi lại.</span></td></tr>
+      <tr><td>token_revoked</td><td>Token has been revoked</td><td><span lang="en">If the request used an access token your app has since replaced (a refresh finished while it was in flight), retry once with the newest token. Otherwise log in again.</span><span lang="vi">Nếu request dùng access token mà app đã thay sau đó (một lần refresh xong trong lúc request đang chạy), gọi lại một lần với token mới nhất. Nếu không, đăng nhập lại.</span></td></tr>
+      <tr><td><span lang="en">any other 401</span><span lang="vi">mọi 401 khác</span></td><td>—</td><td><span lang="en">Clear the tokens and log in again.</span><span lang="vi">Xóa token và đăng nhập lại.</span></td></tr>
     </table></div>
   </section>
 
@@ -979,11 +981,11 @@ export async function api(path, init = {}) {
   const sent = store.access;
   let res = await call(sent);
   if (res.status === 401) {
-    const { message } = await res.clone().json();
-    if (message === "Token has expired" && store.access === sent) {
+    const { reason } = await res.clone().json();
+    if (reason === "token_expired" && store.access === sent) {
       refreshing ??= refresh().finally(() => (refreshing = null));
     }
-    if (message === "Token has expired" || message === "Token has been revoked") {
+    if (reason === "token_expired" || reason === "token_revoked") {
       await refreshing; // wait for a refresh already running, if any
       if (store.access !== sent) res = await call(store.access); // retry once with the newest token
     }
@@ -1015,11 +1017,11 @@ export async function api(path, init = {}) {
   const sent = store.access;
   let res = await call(sent);
   if (res.status === 401) {
-    const { message } = await res.clone().json();
-    if (message === "Token has expired" && store.access === sent) {
+    const { reason } = await res.clone().json();
+    if (reason === "token_expired" && store.access === sent) {
       refreshing ??= refresh().finally(() => (refreshing = null));
     }
-    if (message === "Token has expired" || message === "Token has been revoked") {
+    if (reason === "token_expired" || reason === "token_revoked") {
       await refreshing; // chờ lần refresh đang chạy (nếu có)
       if (store.access !== sent) res = await call(store.access); // thử lại 1 lần với token mới nhất
     }
@@ -1035,7 +1037,7 @@ export async function api(path, init = {}) {
           <div class="jd-ex c-pink" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">Send X-Device-ID</span><span lang="vi">Gửi X-Device-ID</span></span><span class="x" lang="en">Generate a UUID once per install, send it on login and refresh.</span><span class="x" lang="vi">Tạo một UUID mỗi lần cài app, gửi khi login và refresh.</span></div>
           <div class="jd-ex c-pink" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">Replace both tokens</span><span lang="vi">Thay cả hai token</span></span><span class="x" lang="en">After every refresh. The old refresh token is dead.</span><span class="x" lang="vi">Sau mỗi lần refresh, refresh token cũ bị vô hiệu hóa ngay — client bắt buộc phải lưu đè cả hai token mới.</span></div>
           <div class="jd-ex c-pink" style="cursor:default"><span class="n">4</span><span class="w"><span lang="en">One refresh at a time (Queue / Mutex)</span><span lang="vi">Mỗi lúc chỉ một lần refresh (Hàng đợi / Mutex)</span></span><span class="x" lang="en">When multiple requests fail with 401 simultaneously, they must share a single refresh call (<code>refreshing ??=</code>). Firing two parallel refreshes with the same token triggers reuse detection and revokes the whole session.</span><span class="x" lang="vi">Khi nhiều request cùng nhận 401, chúng phải dùng chung một lần refresh (<code>refreshing ??=</code>). Hai lần refresh song song với cùng token sẽ bị coi là dùng lại và hủy cả session.</span></div>
-          <div class="jd-ex c-pink" style="cursor:default"><span class="n">5</span><span class="w"><span lang="en">Only "Token has expired" refreshes</span><span lang="vi">Chỉ "Token has expired" mới refresh</span></span><span class="x" lang="en">A refresh revokes the old access token, so requests still in flight with it get "Token has been revoked" — retry those once with the newest token (the <code>store.access !== sent</code> check). Any other 401 → clear tokens and show login. 403 inactive → explain, then log out.</span><span class="x" lang="vi">Refresh thu hồi access token cũ, nên các request còn đang chạy với nó nhận "Token has been revoked" — gọi lại các request đó một lần với token mới nhất (phép kiểm <code>store.access !== sent</code>). Mọi 401 khác → xóa token và hiện màn hình login. 403 bị khóa → giải thích, rồi logout.</span></div>
+          <div class="jd-ex c-pink" style="cursor:default"><span class="n">5</span><span class="w"><span lang="en">Only <code>token_expired</code> refreshes</span><span lang="vi">Chỉ <code>token_expired</code> mới refresh</span></span><span class="x" lang="en">A refresh revokes the old access token, so requests still in flight with it get <code>token_revoked</code> — retry those once with the newest token (the <code>store.access !== sent</code> check). Any other 401 → clear tokens and show login. 403 inactive → explain, then log out.</span><span class="x" lang="vi">Refresh thu hồi access token cũ, nên các request còn đang chạy với nó nhận <code>token_revoked</code> — gọi lại các request đó một lần với token mới nhất (phép kiểm <code>store.access !== sent</code>). Mọi 401 khác → xóa token và hiện màn hình login. 403 bị khóa → giải thích, rồi logout.</span></div>
           <div class="jd-ex c-pink" style="cursor:default"><span class="n">6</span><span class="w"><span lang="en">Log out properly</span><span lang="vi">Logout đúng cách</span></span><span class="x" lang="en">Call /auth/logout, then delete tokens — even if the call fails.</span><span class="x" lang="vi">Gọi <code>POST /auth/logout</code> lên server, rồi xóa sạch token ở client — kể cả khi request gặp lỗi mạng.</span></div>
         </div>
       </div>
@@ -1214,9 +1216,9 @@ document.addEventListener("jd:ready", function () {
   var c = { short: 0, long: 0 };
   var out = document.getElementById("bf-out"), log = document.getElementById("bf-log");
 
-  function answer(status, code, msg, data) {
+  function answer(status, code, reason, msg, data) {
     var o = { status: status === 200 ? "success" : "error" };
-    if (code) o.code = code;
+    if (code) { o.code = code; o.reason = reason; }
     o.message = msg;
     if (data) o.data = data;
     out.innerHTML = JD.highlight(status + "\n" + JSON.stringify(o, null, 2), "json");
@@ -1226,15 +1228,15 @@ document.addEventListener("jd:ready", function () {
     log.prepend(line);
   }
   function attempt(c, ok) {
-    if (c.long >= LIM.long) return [429, "Your IP has been temporarily blocked due to repeated failed logins"];
+    if (c.long >= LIM.long) return [429, "Your IP has been temporarily blocked due to repeated failed logins", "ip_temporarily_blocked"];
     c.short++; // every attempt counts, before the password is checked
-    if (c.short > LIM.short) return [429, "Too many failed login attempts, please try again later"];
+    if (c.short > LIM.short) return [429, "Too many failed login attempts, please try again later", "too_many_login_attempts"];
     var remaining = LIM.short - c.short;
     if (ok) { c.short = 0; return [200, "Logged in successfully"]; } // the 24 h counter is kept on purpose
     c.long++;
-    return [401, remaining <= warnBelow
-      ? "Invalid email or password. Further failed attempts will temporarily block logins from your IP"
-      : "Invalid email or password"];
+    return remaining <= warnBelow
+      ? [401, "Invalid email or password. Further failed attempts will temporarily block logins from your IP", "invalid_credentials_warning"]
+      : [401, "Invalid email or password", "invalid_credentials"];
   }
   (function selfCheck() {
     var t = { short: 0, long: 0 }, got = [];
@@ -1253,7 +1255,7 @@ document.addEventListener("jd:ready", function () {
   }
   function run(ok) {
     var r = attempt(c, ok);
-    answer(r[0], r[0] === 200 ? null : r[0] === 429 ? "TOO_MANY_REQUESTS" : "UNAUTHORIZED", r[1],
+    answer(r[0], r[0] === 200 ? null : r[0] === 429 ? "TOO_MANY_REQUESTS" : "UNAUTHORIZED", r[2], r[1],
       r[0] === 200 ? { access_token: "v1.…", refresh_token: "v1.…", token_type: "Bearer", expires_in: 899, refresh_expires_in: 2591999 } : null);
     paint();
   }

@@ -69,9 +69,9 @@
           </div>
           <div class="jd-node is-tint c-blue" data-node="r3"><span class="k"><span lang="en">3 · envelope</span><span lang="vi">3 · envelope</span></span><span class="t mono"
               style="font-size:15px">response.Response</span>
-            <div class="d" lang="en">status, code, message, data / error, plus <code>api_info</code> read from the gin
+            <div class="d" lang="en">status, code, reason, message, data / error, plus <code>api_info</code> read from the gin
               context.</div>
-            <div class="d" lang="vi">status, code, message, data / error, cộng <code>api_info</code> đọc từ gin context.
+            <div class="d" lang="vi">status, code, reason, message, data / error, cộng <code>api_info</code> đọc từ gin context.
             </div>
           </div>
           <div class="jd-node is-tint c-blue" data-node="r4"><span class="k"><span lang="en">4 · JSON</span><span lang="vi">4 · JSON</span></span><span class="t mono"
@@ -154,6 +154,7 @@
 {
   "status": "error",
   "code": "UNPROCESSABLE_ENTITY",
+  "reason": "validation_error",
   "message": "Validation error",
   "error": {
     "email": "email must be a valid email format",
@@ -177,15 +178,22 @@
 {
   "status": "error",
   "code": "CONFLICT",
+  "reason": "email_already_exists",
   "message": "This email is already registered",
   "api_info": { "trace_id": "…", "timestamp": "…", "latency": "6.530ms", "version": "v0.1.0", "env": "development" }
 }
 </pre>
             </div>
             <p class="jd-sub" lang="en">Error responses (status ≥ 400) have a <code>"code"</code>: <code>Error</code> takes it from
-              the <code>*AppError</code>, <code>Send</code> / <code>SendWithData</code> derive it from the status.</p>
+              the <code>*AppError</code>, <code>Send</code> / <code>SendWithData</code> derive it from the status. They also have a
+              <code>"reason"</code>: the untranslated key (<code>AppError.Message</code>, or the key passed to
+              <code>Send</code> / <code>SendWithData</code>). Many errors share a <code>code</code>; clients branch on
+              <code>reason</code>, never on <code>message</code>, whose wording follows the language.</p>
             <p class="jd-sub" lang="vi">Response lỗi (status ≥ 400) có <code>"code"</code>: <code>Error</code> lấy từ
-              <code>*AppError</code>, <code>Send</code> / <code>SendWithData</code> suy ra từ status.</p>
+              <code>*AppError</code>, <code>Send</code> / <code>SendWithData</code> suy ra từ status. Chúng cũng có
+              <code>"reason"</code>: key chưa dịch (<code>AppError.Message</code>, hoặc key truyền vào
+              <code>Send</code> / <code>SendWithData</code>). Nhiều lỗi dùng chung một <code>code</code>; client rẽ nhánh theo
+              <code>reason</code>, không bao giờ theo <code>message</code>, vì câu chữ thay đổi theo ngôn ngữ.</p>
           </div>
           <div class="jd-tabpanel" hidden>
             <div class="jd-term">
@@ -195,6 +203,7 @@
 {
   "status": "error",
   "code": "INTERNAL_SERVER_ERROR",
+  "reason": "internal_server_error",
   "message": "Internal Server Error",
   "api_info": { "trace_id": "…", "timestamp": "…", "latency": "3.004ms", "version": "v0.1.0", "env": "development" }
 }
@@ -239,6 +248,15 @@
               <td lang="vi">Có ở mọi status ≥ 400 trừ khi gửi bằng <code>Pagination</code> — <code>ErrorCode</code> của <code>AppError</code>, hoặc suy ra từ
                 status với <code>Send</code> / <code>SendWithData</code> (4xx không có trong bảng →
                 <code>"BAD_REQUEST"</code>, 5xx → <code>"INTERNAL_SERVER_ERROR"</code>). Không có khi thành công.</td>
+            </tr>
+            <tr>
+              <td>reason</td>
+              <td lang="en">Exactly when <code>code</code> appears: the untranslated key, e.g. <code>"token_expired"</code> —
+                <code>AppError.Message</code> for <code>Error</code>, the key argument for <code>Send</code> /
+                <code>SendWithData</code>, <code>"internal_server_error"</code> for a plain error. Absent on success.</td>
+              <td lang="vi">Đúng khi có <code>code</code>: key chưa dịch, ví dụ <code>"token_expired"</code> —
+                <code>AppError.Message</code> với <code>Error</code>, key truyền vào với <code>Send</code> /
+                <code>SendWithData</code>, <code>"internal_server_error"</code> với error thường. Không có khi thành công.</td>
             </tr>
             <tr>
               <td>message</td>
@@ -522,10 +540,10 @@ type Responder interface {
               <pre data-hl="go">Send(c *gin.Context, statusCode int, key string, args ...any)</pre>
             </div>
             <p lang="en">Message-only response: <code>status</code>, <code>message</code>, <code>api_info</code>, plus
-              <code>code</code> derived from the status when it is ≥ 400. Used by Jungo for 404 <code>"api_not_found"</code>, <code>"user_deleted"</code>,
+              <code>code</code> derived from the status and <code>reason</code> = <code>key</code> when it is ≥ 400. Used by Jungo for 404 <code>"api_not_found"</code>, <code>"user_deleted"</code>,
               <code>"invalid_uuid"</code>…</p>
             <p lang="vi">Response chỉ có message: <code>status</code>, <code>message</code>, <code>api_info</code>, kèm
-              <code>code</code> suy ra từ status khi ≥ 400. Jungo dùng cho 404 <code>"api_not_found"</code>, <code>"user_deleted"</code>,
+              <code>code</code> suy ra từ status và <code>reason</code> = <code>key</code> khi ≥ 400. Jungo dùng cho 404 <code>"api_not_found"</code>, <code>"user_deleted"</code>,
               <code>"invalid_uuid"</code>…</p>
           </div>
           <div class="jd-sym c-blue">
@@ -538,9 +556,9 @@ type Responder interface {
               <li lang="en"><code>statusCode &lt; 400</code> → <code>data</code> goes into <code>"data"</code>.</li>
               <li lang="vi"><code>statusCode &lt; 400</code> → <code>data</code> vào <code>"data"</code>.</li>
               <li lang="en"><code>statusCode &gt;= 400</code> → <code>data</code> goes into <code>"error"</code>, <code>code</code> is
-                derived from the status. This is how 422 validation errors are sent.</li>
+                derived from the status, <code>reason</code> = <code>key</code>. This is how 422 validation errors are sent.</li>
               <li lang="vi"><code>statusCode &gt;= 400</code> → <code>data</code> vào <code>"error"</code>, <code>code</code> suy
-                ra từ status. Đây là cách gửi lỗi validation 422.</li>
+                ra từ status, <code>reason</code> = <code>key</code>. Đây là cách gửi lỗi validation 422.</li>
               <li lang="en"><code>omitempty</code> on <code>Data any</code> drops only a <code>nil</code> interface.
                 Empty values are still sent: <code>[]</code> → <code>"data":[]</code>, <code>{}</code> →
                 <code>"data":{}</code>, <code>""</code> → <code>"data":""</code>, a typed nil pointer →
@@ -584,11 +602,13 @@ type Responder interface {
             </div>
             <ul>
               <li lang="en"><code>errors.As(err, &amp;*AppError)</code> succeeds → HTTP status from its
-                <code>Code</code> (table below), <code>"code"</code> = the code, <code>"message"</code> = translation of
+                <code>Code</code> (table below), <code>"code"</code> = the code, <code>"reason"</code> =
+                <code>AppError.Message</code> as-is, <code>"message"</code> = translation of
                 <code>AppError.Message</code> (no args). When the status is 5xx or the <code>AppError</code> has a
                 <code>Cause</code>, the error is also recorded with <code>c.Error(err)</code> for the access log.</li>
               <li lang="vi"><code>errors.As(err, &amp;*AppError)</code> thành công → HTTP status theo <code>Code</code>
-                (bảng dưới), <code>"code"</code> = code, <code>"message"</code> = bản dịch của
+                (bảng dưới), <code>"code"</code> = code, <code>"reason"</code> = nguyên văn
+                <code>AppError.Message</code>, <code>"message"</code> = bản dịch của
                 <code>AppError.Message</code> (không args). Khi status là 5xx hoặc <code>AppError</code> có
                 <code>Cause</code>, lỗi còn được ghi bằng <code>c.Error(err)</code> cho access log.</li>
               <li lang="en">Otherwise → <code>c.Error(err)</code> (recorded for logging) and
@@ -771,6 +791,7 @@ ErrDatabaseConnection = New(Internal, "database_connection_error")
 type Response struct {
     Status  string    `json:"status"`
     Code    ErrorCode `json:"code,omitempty"`
+    Reason  string    `json:"reason,omitempty"`
     Message string    `json:"message,omitempty"`
     Data    any       `json:"data,omitempty"`
     Error   any       `json:"error,omitempty"`
@@ -1070,11 +1091,11 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/nothing-here | jq
         var info = { trace_id: "…", timestamp: "…", latency: "…", version: "v0.1.0", env: "development" };
         if (call === "apperr") {
           var st = STATUS[code] || 500;
-          return { http: st, body: { status: "error", code: code, message: msg(key), api_info: info } };
+          return { http: st, body: { status: "error", code: code, reason: key, message: msg(key), api_info: info } };
         }
         if (call === "plain") { call = "send"; status = 500; key = "internal_server_error"; }
         var body = { status: statusText(status) };
-        if (codeFor(status)) body.code = codeFor(status);
+        if (codeFor(status)) { body.code = codeFor(status); body.reason = key; }
         var m = msg(key); if (m) body.message = m;
         if (call === "data") { if (status >= 400) body.error = data; else body.data = data; }
         body.api_info = info;
@@ -1091,6 +1112,10 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/nothing-here | jq
       console.assert(respond("data", 422, "validation_error", "", d).body.code === "UNPROCESSABLE_ENTITY", "422 → code");
       console.assert(respond("send", 418, "x").body.code === "BAD_REQUEST", "unmapped 4xx → BAD_REQUEST");
       console.assert(!("code" in respond("send", 200, "x").body), "success has no code");
+      console.assert(!("reason" in respond("send", 200, "x").body), "success has no reason");
+      console.assert(respond("send", 404, "api_not_found").body.reason === "api_not_found", "error reason = key");
+      console.assert(respond("apperr", 0, "token_expired", "UNAUTHORIZED").body.reason === "token_expired", "AppError reason = its key");
+      console.assert(p.body.reason === "internal_server_error", "plain error → internal_server_error reason");
 
       var ids = ["rs-call", "rs-status", "rs-key", "rs-code"];
       function paint() {
