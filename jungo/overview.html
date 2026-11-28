@@ -498,9 +498,15 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/users \
     "email": "admin@jungo.com",
     "first_name": "Admin",
     "last_name": "Jungo",
+    "phone_number": null,
+    "avatar_url": null,
     "status": "active",
     "active": true,
-    "created_at": "2026-10-14T03:05:22Z"
+    "created_at": "2026-10-14T03:05:22Z",
+    "updated_at": null,
+    "roles": [
+      { "uuid": "076ddda1-…", "code": "super_admin", "name": "Super Admin", "is_system": true }
+    ]
   },
   "api_info": {
     "trace_id": "eb9b3d81-…",
@@ -518,6 +524,7 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/users \
 {
   "status": "error",
   "code": "NOT_FOUND",
+  "reason": "user_not_found",
   "message": "User not found",
   "api_info": {
     "trace_id": "eb9b3d81-…",

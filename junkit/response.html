@@ -719,6 +719,18 @@ type Responder interface {
             </div>
           </div>
           <div class="jd-sym c-red">
+            <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">(ErrorCode) HTTPStatus</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func (code ErrorCode) HTTPStatus() int</pre>
+            </div>
+            <p lang="en">The HTTP status an error with this code is answered with: the HTTP column above, 500 for any
+              other value. <code>Error</code> uses it; <a href="apidoc.html#api"><code>apidoc</code></a> uses it to group
+              a route's errors by status.</p>
+            <p lang="vi">HTTP status mà lỗi mang code này được trả về: cột HTTP ở bảng trên, 500 với mọi giá trị khác.
+              <code>Error</code> dùng nó; <a href="apidoc.html#api"><code>apidoc</code></a> dùng nó để nhóm lỗi của route
+              theo status.</p>
+          </div>
+          <div class="jd-sym c-red">
             <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">AppError</span></div>
             <div class="jd-term">
               <pre data-hl="go">

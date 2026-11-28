@@ -1684,6 +1684,25 @@ $ curl -s --compressed localhost:$API_SERVER_PORT/api/v1/users -H "Authorization
             <code>ContextWithFallback = true</code>.</p>
         </div>
 
+        <h3><span lang="en">Exported errors</span><span lang="vi">Các lỗi được export</span></h3>
+        <div class="jd-sym c-red">
+          <div class="jd-sym-head"><span class="jd-kind">var</span><span class="jd-sym-name">ErrAccessDenied · ErrTooManyRequests · ErrAPINotFound · ErrBodyTooLarge · ErrInvalidBody</span><span
+              class="jd-pill">errors.go</span></div>
+          <div class="jd-term">
+            <pre data-hl="go">
+ErrAccessDenied    = response.New(response.Forbidden, "access_denied")              // Banner: banned client
+ErrTooManyRequests = response.New(response.TooManyRequests, "too_many_requests")    // Limiter: over its rate
+ErrAPINotFound     = response.New(response.NotFound, "api_not_found")               // RoutePatterns: param breaks its rule
+ErrBodyTooLarge    = response.New(response.PayloadTooLarge, "request_body_too_large") // Payload: body over its limit
+ErrInvalidBody     = response.New(response.BadRequest, "invalid_request")           // Payload: body it cannot read
+</pre>
+          </div>
+          <p lang="en">The errors the middlewares answer with, sent through <code>responder.Error</code> and exported so
+            an app can list them in its API docs (<a href="apidoc.html#api"><code>apidoc.Route.Errors</code></a>).</p>
+          <p lang="vi">Các lỗi mà middleware trả về, gửi qua <code>responder.Error</code> và được export để app liệt kê
+            trong tài liệu API (<a href="apidoc.html#api"><code>apidoc.Route.Errors</code></a>).</p>
+        </div>
+
         <h3><span lang="en">What the rejections look like</span><span lang="vi">Các response từ chối trông thế
             nào</span></h3>
         <div class="jd-grid-2">

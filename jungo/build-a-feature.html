@@ -594,20 +594,22 @@ func (r *ProductRoutes) Register(group *gin.RouterGroup) {
 }
 </pre></div>
         <div id="docs"></div>
-        <p class="jd-hint" style="margin-top:10px" lang="en"><b>Every route also needs one line in <code>Docs()</code></b>, right below <code>Register</code> — the generator writes it for you. It names the body, query and response structs; field names, rules (<code>binding</code>), samples (<code>example</code>) and the permission (from the Guard) are read from the code. A route under <code>/api</code> without a doc, or a doc for a route that doesn't exist, stops the app at startup. Read the result at <code>http://localhost:$API_SERVER_PORT/docs</code> (development only) — see <a href="../junkit/apidoc.html">apidoc</a>.</p>
-        <p class="jd-hint" style="margin-top:10px" lang="vi"><b>Mỗi route cũng cần một dòng trong <code>Docs()</code></b>, ngay dưới <code>Register</code> — generator đã viết sẵn. Dòng đó chỉ ra struct body, query và response; tên field, luật (<code>binding</code>), giá trị mẫu (<code>example</code>) và permission (lấy từ Guard) được đọc từ code. Route dưới <code>/api</code> thiếu docs, hoặc docs cho route không tồn tại, đều làm app dừng khi khởi động. Xem kết quả tại <code>http://localhost:$API_SERVER_PORT/docs</code> (chỉ ở development) — xem <a href="../junkit/apidoc.html">apidoc</a>.</p>
+        <p class="jd-hint" style="margin-top:10px" lang="en"><b>Every route also needs one line in <code>Docs()</code></b>, right below <code>Register</code> — the generator writes it for you. It gives the route a unique <code>ID</code> (the operationId), names the body, query and response structs, and lists in <code>Errors</code> what the handler and service answer; field names, rules (<code>binding</code>), samples (<code>example</code>), the permission (from the Guard) and the errors of the middlewares in front of the route are read from the code. Add a new domain error to <code>Errors</code> when a route starts returning it. A route under <code>/api</code> without a doc, or a doc for a route that doesn't exist, stops the app at startup. Read the result at <code>http://localhost:$API_SERVER_PORT/docs</code> (development only) — see <a href="../junkit/apidoc.html">apidoc</a>.</p>
+        <p class="jd-hint" style="margin-top:10px" lang="vi"><b>Mỗi route cũng cần một dòng trong <code>Docs()</code></b>, ngay dưới <code>Register</code> — generator đã viết sẵn. Dòng đó đặt cho route một <code>ID</code> không trùng (operationId), chỉ ra struct body, query và response, và liệt kê trong <code>Errors</code> những lỗi handler và service trả; tên field, luật (<code>binding</code>), giá trị mẫu (<code>example</code>), permission (lấy từ Guard) và lỗi của các middleware đứng trước route được đọc từ code. Khi route bắt đầu trả một lỗi domain mới, thêm lỗi đó vào <code>Errors</code>. Route dưới <code>/api</code> thiếu docs, hoặc docs cho route không tồn tại, đều làm app dừng khi khởi động. Xem kết quả tại <code>http://localhost:$API_SERVER_PORT/docs</code> (chỉ ở development) — xem <a href="../junkit/apidoc.html">apidoc</a>.</p>
         <div class="jd-term" data-copy="code"><div class="jd-term-bar"><i></i><i></i><i></i><span>router/v1/product_router.go</span></div>
 <pre data-hl="go">
 // Docs implements router.Documented; it describes every route Register adds (the API docs at /docs).
 func (r *ProductRoutes) Docs() []apidoc.Route {
     item := v1dto.ProductResponse{}
+    notFound := []*response.AppError{domain.ErrProductNotFound}
 
+    // Errors lists what the handler and service answer; the router adds the middlewares' own.
     return []apidoc.Route{
-        {Method: http.MethodPost, Path: "/products", Summary: "Create a product", Body: v1dto.CreateProductRequest{}, Status: http.StatusCreated, Response: item},
-        {Method: http.MethodGet, Path: "/products", Summary: "List products", Query: v1dto.ListProductsRequest{}, Response: item, Paginated: true},
-        {Method: http.MethodGet, Path: "/products/:uuid", Summary: "Get a product", Response: item},
-        {Method: http.MethodPatch, Path: "/products/:uuid", Summary: "Update a product", Body: v1dto.UpdateProductRequest{}, Response: item},
-        {Method: http.MethodDelete, Path: "/products/:uuid", Summary: "Delete a product"},
+        {ID: "createProduct", Method: http.MethodPost, Path: "/products", Summary: "Create a product", Body: v1dto.CreateProductRequest{}, Status: http.StatusCreated, Response: item},
+        {ID: "listProducts", Method: http.MethodGet, Path: "/products", Summary: "List products", Query: v1dto.ListProductsRequest{}, Response: item, Paginated: true},
+        {ID: "getProduct", Method: http.MethodGet, Path: "/products/:uuid", Summary: "Get a product", Response: item, Errors: notFound},
+        {ID: "updateProduct", Method: http.MethodPatch, Path: "/products/:uuid", Summary: "Update a product", Body: v1dto.UpdateProductRequest{}, Response: item, Errors: notFound},
+        {ID: "deleteProduct", Method: http.MethodDelete, Path: "/products/:uuid", Summary: "Delete a product", Errors: notFound},
     }
 }
 </pre></div>
@@ -756,6 +758,13 @@ $ make vet
             <p class="jd-hint" style="margin-top:10px" lang="vi">Giữ thói quen mỗi nhánh của service một test: khi thêm quy tắc ở 3.4, test cả trường hợp được phép và bị từ chối.</p>
             <p class="jd-hint" style="margin-top:10px" lang="en">Added, removed or renamed a scenario? Update the overview's rows and both counts in the same commit: CI fails when they disagree with the tests that ran. Added a method to an interface? Add it to the fake too, or the tests stop compiling.</p>
             <p class="jd-hint" style="margin-top:10px" lang="vi">Thêm, xóa hay đổi tên một scenario? Sửa các dòng và hai con số trong overview ngay trong cùng commit: CI sẽ báo lỗi khi chúng lệch với các test thực chạy. Thêm method vào interface? Thêm vào fake luôn, nếu không test sẽ không biên dịch.</p>
+            <h4 style="margin-top:16px"><span lang="en">Repository tests on a real database</span><span lang="vi">Test repository trên database thật</span></h4>
+            <p class="jd-hint" lang="en">A fake never re-implements SQL, so a query whose filtering is the point (search, sort, a join) gets a repository test instead, as <code>access_repository_test.go</code> does. <code>dbtest.Open(t)</code> (<code>internal/database/primary/dbtest</code>) opens and migrates the database at <code>TEST_DATABASE_URL</code>, and skips the test when it is unset, so <code>go test ./...</code> still runs without a database. <code>dbtest.InRollback(t, db, func(ctx context.Context) { … })</code> runs the test in a transaction that is always rolled back, even when it stops with <code>t.Fatal</code>, so it leaves nothing behind.</p>
+            <p class="jd-hint" lang="vi">Fake không bao giờ viết lại SQL, nên query mà việc lọc là trọng tâm (search, sort, join) cần một test repository, như <code>access_repository_test.go</code>. <code>dbtest.Open(t)</code> (<code>internal/database/primary/dbtest</code>) mở và migrate database ở <code>TEST_DATABASE_URL</code>, và bỏ qua test khi biến này trống, nên <code>go test ./...</code> vẫn chạy được khi không có database. <code>dbtest.InRollback(t, db, func(ctx context.Context) { … })</code> chạy test trong một transaction luôn bị rollback, kể cả khi test dừng bằng <code>t.Fatal</code>, nên không để lại gì.</p>
+            <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="bash">
+$ TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/jungo_test?sslmode=disable go test ./...
+</pre></div>
           </div>
         </div>
       </div>

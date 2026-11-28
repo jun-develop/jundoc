@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Audit log · Jundoc</title>
-  <meta name="description" content="Jungo's audit log: services record who changed users and roles, and the new values, with auditlog.Recorder in the same transaction; the read API, adding it to a feature, and the 30-day retention.">
+  <meta name="description" content="Jungo's audit log: services record who changed users and roles, with before and after values, with auditlog.Recorder in the same transaction; the read API, adding it to a feature, and the 30-day retention.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -68,10 +68,10 @@
       <tr><td>id</td><td>BIGINT</td><td lang="en">Entry ID.</td><td lang="vi">ID của bản ghi.</td></tr>
       <tr><td>created_at</td><td>TIMESTAMPTZ</td><td lang="en">When the entry was written (<code>now()</code>: the transaction's start time).</td><td lang="vi">Lúc bản ghi được ghi (<code>now()</code>: thời điểm bắt đầu transaction).</td></tr>
       <tr><td>actor_uuid</td><td>UUID</td><td lang="en">UUID of the logged-in user; <code>null</code> when there is none (a console command).</td><td lang="vi">UUID của user đang đăng nhập; <code>null</code> khi không có (một console command).</td></tr>
-      <tr><td>action</td><td>VARCHAR(50)</td><td lang="en"><code>create</code> · <code>update</code> · <code>delete</code>, or a feature's own action such as <code>set_roles</code>.</td><td lang="vi"><code>create</code> · <code>update</code> · <code>delete</code>, hoặc action riêng của feature như <code>set_roles</code>.</td></tr>
+      <tr><td>action</td><td>VARCHAR(50)</td><td lang="en"><code>create</code> · <code>update</code> · <code>delete</code>, or a feature's own action such as <code>set_roles</code> or <code>change_password</code>.</td><td lang="vi"><code>create</code> · <code>update</code> · <code>delete</code>, hoặc action riêng của feature như <code>set_roles</code> hay <code>change_password</code>.</td></tr>
       <tr><td>entity_type</td><td>VARCHAR(63)</td><td lang="en">What changed, by table name: <code>users</code>, <code>roles</code>.</td><td lang="vi">Thứ bị thay đổi, theo tên bảng: <code>users</code>, <code>roles</code>.</td></tr>
       <tr><td>entity_id</td><td>VARCHAR(64)</td><td lang="en">Its UUID.</td><td lang="vi">UUID của nó.</td></tr>
-      <tr><td>changes</td><td>JSONB</td><td lang="en">Each value that changed, old and new: <code>{"first_name": {"before": "Ann", "after": "An"}}</code>. <code>before</code> is <code>null</code> for a create, <code>after</code> for a delete. Never a secret.</td><td lang="vi">Mỗi giá trị đã đổi, cả cũ lẫn mới: <code>{"first_name": {"before": "Ann", "after": "An"}}</code>. <code>before</code> là <code>null</code> với create, <code>after</code> là <code>null</code> với delete. Không bao giờ chứa bí mật.</td></tr>
+      <tr><td>changes</td><td>JSONB</td><td lang="en">Each value that changed, old and new: <code>{"first_name": {"before": "Ann", "after": "An"}}</code>. <code>before</code> is <code>null</code> for a create, <code>after</code> for a delete; <code>{}</code> for an event that records no values (<code>change_password</code>). Never a secret.</td><td lang="vi">Mỗi giá trị đã đổi, cả cũ lẫn mới: <code>{"first_name": {"before": "Ann", "after": "An"}}</code>. <code>before</code> là <code>null</code> với create, <code>after</code> là <code>null</code> với delete; <code>{}</code> với sự kiện không ghi giá trị nào (<code>change_password</code>). Không bao giờ chứa bí mật.</td></tr>
       <tr><td>trace_id</td><td>VARCHAR(64)</td><td lang="en">The request's trace ID, the same as in the technical logs and the <code>X-Trace-Id</code> header; <code>null</code> outside a request.</td><td lang="vi">Trace ID của request, giống trong log kỹ thuật và header <code>X-Trace-Id</code>; <code>null</code> khi không nằm trong request.</td></tr>
     </table></div>
     <p class="jd-sub" lang="en">To see the request's details (IP, user agent, every SQL query), look up <code>trace_id</code> in the technical logs.</p>
@@ -109,7 +109,7 @@ type Recorder interface {
     <div class="jd-tablewrap" style="margin-top:18px"><table class="jd-params c-blue">
       <tr><th><span lang="en">step</span><span lang="vi">bước</span></th><th><span lang="en">what happens</span><span lang="vi">chuyện gì xảy ra</span></th></tr>
       <tr><td>1. service</td><td lang="en">Inside <code>s.repo.WithTransaction(ctx, …)</code>, writes the row, then calls <code>s.audit.Record(ctx, auditlog.Entry{…})</code>.</td><td lang="vi">Trong <code>s.repo.WithTransaction(ctx, …)</code>, ghi dòng dữ liệu, rồi gọi <code>s.audit.Record(ctx, auditlog.Entry{…})</code>.</td></tr>
-      <tr><td>2. AuditService.Record</td><td lang="en">Takes the actor from <code>actor.From(ctx)</code> (the logged-in user's UUID) and the trace ID from <code>logger.GetTraceID(ctx)</code>, and turns <code>Before</code> and <code>After</code> into <code>changes</code>: each key of <code>After</code> (of <code>Before</code> for a delete) whose value differs, as <code>{"before": …, "after": …}</code>. Values compare as JSON, so a field sent with its current value is left out.</td><td lang="vi">Lấy actor từ <code>actor.From(ctx)</code> (UUID của user đang đăng nhập) và trace ID từ <code>logger.GetTraceID(ctx)</code>, rồi biến <code>Before</code> và <code>After</code> thành <code>changes</code>: mỗi key của <code>After</code> (của <code>Before</code> với delete) có giá trị khác nhau, dạng <code>{"before": …, "after": …}</code>. Giá trị được so dưới dạng JSON, nên field gửi lên trùng giá trị hiện tại sẽ bị bỏ qua.</td></tr>
+      <tr><td>2. AuditService.Record</td><td lang="en">Takes the actor from <code>actor.From(ctx)</code> (the logged-in user's UUID) and the trace ID from <code>logger.GetTraceID(ctx)</code>, and turns <code>Before</code> and <code>After</code> into <code>changes</code>: each key of <code>After</code> (of <code>Before</code> for a delete) whose value differs, as <code>{"before": …, "after": …}</code>. Values compare as JSON, so a field sent with its current value is left out. When <code>Before</code> and <code>After</code> are both set and no value differs, nothing is recorded; an entry with neither (<code>change_password</code>) is recorded with empty <code>changes</code>.</td><td lang="vi">Lấy actor từ <code>actor.From(ctx)</code> (UUID của user đang đăng nhập) và trace ID từ <code>logger.GetTraceID(ctx)</code>, rồi biến <code>Before</code> và <code>After</code> thành <code>changes</code>: mỗi key của <code>After</code> (của <code>Before</code> với delete) có giá trị khác nhau, dạng <code>{"before": …, "after": …}</code>. Giá trị được so dưới dạng JSON, nên field gửi lên trùng giá trị hiện tại sẽ bị bỏ qua. Khi cả <code>Before</code> và <code>After</code> đều có mà không giá trị nào khác, không có gì được ghi; bản ghi không có cả hai (<code>change_password</code>) vẫn được ghi với <code>changes</code> rỗng.</td></tr>
       <tr><td>3. AuditRepository.Create</td><td lang="en">One <code>INSERT INTO audit_logs</code> through <code>db.Queries(ctx)</code>, so it joins the transaction in <code>ctx</code>.</td><td lang="vi">Một lệnh <code>INSERT INTO audit_logs</code> qua <code>db.Queries(ctx)</code>, nên nó tham gia transaction trong <code>ctx</code>.</td></tr>
     </table></div>
 
@@ -131,17 +131,19 @@ type Recorder interface {
 
     <div class="jd-tablewrap" style="margin-top:18px"><table class="jd-params c-green">
       <tr><th><span lang="en">change</span><span lang="vi">thay đổi</span></th><th>entity_type</th><th>action</th><th>changes</th></tr>
-      <tr><td>UserService.CreateUser</td><td>users</td><td>create</td><td><code>email</code>, <code>first_name</code>, <code>last_name</code>, <code>phone_number</code>, <code>avatar_url</code>, <code>status</code></td></tr>
-      <tr><td>UserService.UpdateUser</td><td>users</td><td>update</td><td lang="en">The fields sent that changed (<code>auditlog.Changes(input)</code> against the row read under lock): <code>first_name</code>, <code>last_name</code>, <code>phone_number</code>, <code>avatar_url</code>, <code>status</code></td><td lang="vi">Các field được gửi và thực sự đổi (<code>auditlog.Changes(input)</code> so với dòng đọc khi đã khóa): <code>first_name</code>, <code>last_name</code>, <code>phone_number</code>, <code>avatar_url</code>, <code>status</code></td></tr>
+      <tr><td>UserService.CreateUser</td><td>users</td><td>create</td><td lang="en"><code>email</code>, <code>first_name</code>, <code>last_name</code>, <code>phone_number</code>, <code>avatar_url</code>, <code>status</code> (by name: <code>"active"</code> / <code>"inactive"</code>, as the API shows it)</td><td lang="vi"><code>email</code>, <code>first_name</code>, <code>last_name</code>, <code>phone_number</code>, <code>avatar_url</code>, <code>status</code> (theo tên: <code>"active"</code> / <code>"inactive"</code>, như API hiển thị)</td></tr>
+      <tr><td>UserService.UpdateUser</td><td>users</td><td>update</td><td lang="en">The fields that changed, comparing the user's values read under lock with the updated ones (same fields as create). <code>PATCH /users/:uuid</code> and <code>PATCH /auth/me</code> both go through it</td><td lang="vi">Các field đã đổi, so giá trị của user đọc khi đã khóa với giá trị sau cập nhật (cùng các field như create). Cả <code>PATCH /users/:uuid</code> và <code>PATCH /auth/me</code> đều đi qua đây</td></tr>
+      <tr><td>UserService.UploadAvatar · DeleteAvatar</td><td>users</td><td>update</td><td lang="en"><code>avatar_url</code> (also through <code>/auth/me/avatar</code>)</td><td lang="vi"><code>avatar_url</code> (cả qua <code>/auth/me/avatar</code>)</td></tr>
       <tr><td>UserService.DeleteUser</td><td>users</td><td>delete</td><td lang="en">The same fields as create, with <code>after</code> <code>null</code></td><td lang="vi">Các field như create, với <code>after</code> là <code>null</code></td></tr>
-      <tr><td>AccessService.SetUserRoles</td><td>users</td><td>set_roles</td><td><code>roles</code> <span lang="en">(sorted codes of the non-system roles)</span><span lang="vi">(code đã sắp xếp của các role không phải hệ thống)</span></td></tr>
+      <tr><td>AccessService.SetUserRoles</td><td>users</td><td>set_roles</td><td><code>roles</code> <span lang="en">(sorted codes of the non-system roles, before and after; <code>[]</code>, not <code>null</code>, for none)</span><span lang="vi">(code đã sắp xếp của các role không phải hệ thống, trước và sau; <code>[]</code>, không phải <code>null</code>, khi không có)</span></td></tr>
       <tr><td>AccessService.CreateRole</td><td>roles</td><td>create</td><td><code>code</code>, <code>name</code>, <code>permissions</code></td></tr>
       <tr><td>AccessService.RenameRole</td><td>roles</td><td>update</td><td><code>name</code></td></tr>
       <tr><td>AccessService.ReplaceRolePermissions</td><td>roles</td><td>update</td><td><code>permissions</code></td></tr>
       <tr><td>AccessService.DeleteRole</td><td>roles</td><td>delete</td><td><code>code</code>, <code>name</code>, <code>permissions</code></td></tr>
+      <tr><td>AuthService.ChangePassword</td><td>users</td><td>change_password</td><td lang="en"><code>{}</code>: no values, never the password</td><td lang="vi"><code>{}</code>: không có giá trị, không bao giờ có mật khẩu</td></tr>
     </table></div>
-    <p class="jd-sub" lang="en">Not recorded: logins, logouts and sessions; password changes and resets; avatar upload and removal; the lock after too many failed logins; anything written with SQL by hand (psql, DBeaver, a migration).</p>
-    <p class="jd-sub" lang="vi">Không được ghi: đăng nhập, đăng xuất và session; đổi và đặt lại mật khẩu; tải lên và xóa avatar; khóa tài khoản sau nhiều lần đăng nhập sai; mọi thứ ghi bằng SQL tay (psql, DBeaver, migration).</p>
+    <p class="jd-sub" lang="en">Not recorded: logins, logouts and sessions; password resets; the lock after too many failed logins; anything written with SQL by hand (psql, DBeaver, a migration).</p>
+    <p class="jd-sub" lang="vi">Không được ghi: đăng nhập, đăng xuất và session; đặt lại mật khẩu; khóa tài khoản sau nhiều lần đăng nhập sai; mọi thứ ghi bằng SQL tay (psql, DBeaver, migration).</p>
 
     <h3 style="margin-top:26px"><span lang="en">Recording in your feature</span><span lang="vi">Ghi audit trong feature của bạn</span></h3>
     <p lang="en"><code>make feature</code> does not add auditing. Take <code>auditlog.Recorder</code> in the service's params and call it in the transaction that makes the change:</p>
@@ -170,8 +172,8 @@ err := s.repo.WithTransaction(ctx, func(ctx context.Context) error {
         <p lang="en"><b>Never put a secret in <code>Before</code> or <code>After</code></b>: no password, hash or token. Nothing masks it later.</p>
         <p lang="vi"><b>Không bao giờ đưa bí mật vào <code>Before</code> hay <code>After</code></b>: không mật khẩu, hash hay token. Sau này không có gì che nó đi.</p></div>
       <div class="jd-rule"><span class="n">2</span>
-        <p lang="en"><b>Before and After:</b> <code>Before</code> is <code>nil</code> for a create, <code>After</code> for a delete. Read the old values in the transaction, after locking the row, so they are the ones the change replaces. For a partial update, <code>auditlog.Changes(input)</code> builds <code>After</code> from the non-nil pointer fields of a struct, keyed in snake_case (<code>stringx.ToSnake</code>); a field tagged <code>audit:"-"</code> is skipped.</p>
-        <p lang="vi"><b>Before và After:</b> <code>Before</code> là <code>nil</code> với create, <code>After</code> là <code>nil</code> với delete. Đọc giá trị cũ trong transaction, sau khi đã khóa dòng, để đó đúng là giá trị bị thay thế. Với cập nhật một phần, <code>auditlog.Changes(input)</code> tạo <code>After</code> từ các field con trỏ khác nil của một struct, key dạng snake_case (<code>stringx.ToSnake</code>); field có tag <code>audit:"-"</code> bị bỏ qua.</p></div>
+        <p lang="en"><b>Before and After:</b> <code>Before</code> is <code>nil</code> for a create, <code>After</code> for a delete. Read the old values in the transaction, after locking the row, so they are the ones the change replaces. For a partial update, <code>auditlog.Changes(input)</code> builds <code>After</code> from the non-nil pointer fields of a struct, keyed in snake_case (<code>stringx.ToSnake</code>); a field tagged <code>audit:"-"</code> is skipped. Record values as the API shows them: a status by name (<code>"active"</code>, not <code>1</code>), an empty list as <code>[]</code>, not <code>null</code>.</p>
+        <p lang="vi"><b>Before và After:</b> <code>Before</code> là <code>nil</code> với create, <code>After</code> là <code>nil</code> với delete. Đọc giá trị cũ trong transaction, sau khi đã khóa dòng, để đó đúng là giá trị bị thay thế. Với cập nhật một phần, <code>auditlog.Changes(input)</code> tạo <code>After</code> từ các field con trỏ khác nil của một struct, key dạng snake_case (<code>stringx.ToSnake</code>); field có tag <code>audit:"-"</code> bị bỏ qua. Ghi giá trị như API hiển thị: status theo tên (<code>"active"</code>, không phải <code>1</code>), danh sách rỗng là <code>[]</code>, không phải <code>null</code>.</p></div>
       <div class="jd-rule"><span class="n">3</span>
         <p lang="en"><b>Pass the transaction's <code>ctx</code></b>, not <code>context.Background()</code>: otherwise the entry is written outside the transaction and loses the actor and trace ID.</p>
         <p lang="vi"><b>Truyền <code>ctx</code> của transaction</b>, không phải <code>context.Background()</code>: nếu không, bản ghi được ghi ngoài transaction và mất actor cùng trace ID.</p></div>
@@ -190,8 +192,8 @@ err := s.repo.WithTransaction(ctx, func(ctx context.Context) error {
     </div>
 
     <div class="jd-ep-head" style="margin-top:20px"><span class="jd-method">GET</span><span class="jd-ep-path">/api/v1/audit-logs</span><span class="jd-auth need">audit_logs:read</span></div>
-    <p class="jd-ep-desc" lang="en">The history of one entity, or what one user did. Every filter is optional and they combine; with none, every entry. Newest first (<code>created_at</code>, then <code>id</code>), paginated.</p>
-    <p class="jd-ep-desc" lang="vi">Lịch sử của một entity, hoặc những gì một user đã làm. Mọi bộ lọc đều tùy chọn và kết hợp được với nhau; không có bộ lọc nào thì trả mọi bản ghi. Mới nhất trước (theo <code>created_at</code>, rồi <code>id</code>), có phân trang.</p>
+    <p class="jd-ep-desc" lang="en">The history of one entity, or what one user did. Every filter is optional and they combine; with none, every entry. Newest first (<code>created_at</code>, then <code>id</code>) unless <code>sort_order=asc</code>, paginated. Each entry carries its <code>actor</code> and an <code>entity_label</code>, joined at read time, so a client needs no other read to show it.</p>
+    <p class="jd-ep-desc" lang="vi">Lịch sử của một entity, hoặc những gì một user đã làm. Mọi bộ lọc đều tùy chọn và kết hợp được với nhau; không có bộ lọc nào thì trả mọi bản ghi. Mới nhất trước (theo <code>created_at</code>, rồi <code>id</code>) trừ khi <code>sort_order=asc</code>, có phân trang. Mỗi bản ghi kèm <code>actor</code> và <code>entity_label</code>, được join lúc đọc, nên client không cần gọi thêm để hiển thị.</p>
     <div class="jd-grid-2">
       <div>
         <h3>Request</h3>
@@ -200,15 +202,27 @@ err := s.repo.WithTransaction(ctx, func(ctx context.Context) error {
 $ curl -s -G localhost:$API_SERVER_PORT/api/v1/audit-logs \
     --data-urlencode entity_type=users \
     --data-urlencode entity_id=$USER_UUID \
+    --data-urlencode action=update --data-urlencode action=set_roles \
+    --data-urlencode from=2026-11-01T00:00:00Z \
     -H "Authorization: Bearer $ADMIN" | jq
 </pre></div>
         <h3>Query</h3>
         <div class="jd-tablewrap"><table class="jd-params">
           <tr><th>param</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
-          <tr><td>entity_type<span class="opt">optional</span><span class="rule">≤ 63</span></td><td lang="en"><code>users</code> or <code>roles</code> (or your feature's).</td><td lang="vi"><code>users</code> hoặc <code>roles</code> (hoặc của feature bạn).</td></tr>
+          <tr><td>entity_type<span class="opt">optional</span><span class="rule">users | roles</span></td><td lang="en"><code>users</code> or <code>roles</code>; a feature recording a new type adds it to the <code>oneof</code> in <code>audit_dto.go</code>.</td><td lang="vi"><code>users</code> hoặc <code>roles</code>; feature ghi một loại mới thì thêm nó vào <code>oneof</code> trong <code>audit_dto.go</code>.</td></tr>
           <tr><td>entity_id<span class="opt">optional</span><span class="rule">≤ 64</span></td><td lang="en">The entity's UUID. Needs <code>entity_type</code>.</td><td lang="vi">UUID của entity. Cần có <code>entity_type</code>.</td></tr>
           <tr><td>actor_uuid<span class="opt">optional</span><span class="rule">uuid</span></td><td lang="en">The UUID of the user who made the changes.</td><td lang="vi">UUID của user đã thực hiện thay đổi.</td></tr>
+          <tr><td>action<span class="opt">optional</span><span class="rule">repeatable</span></td><td lang="en"><code>create</code> · <code>update</code> · <code>delete</code> · <code>set_roles</code> · <code>change_password</code>. Repeat it (<code>?action=create&amp;action=delete</code>) for entries of any of them.</td><td lang="vi"><code>create</code> · <code>update</code> · <code>delete</code> · <code>set_roles</code> · <code>change_password</code>. Lặp lại (<code>?action=create&amp;action=delete</code>) để lấy bản ghi thuộc bất kỳ action nào trong đó.</td></tr>
+          <tr><td>from, to<span class="opt">optional</span><span class="rule">RFC 3339</span></td><td lang="en">Bound <code>created_at</code>, both inclusive. <code>to</code> counts at the precision sent, so end a day with <code>T23:59:59.999999Z</code>.</td><td lang="vi">Giới hạn <code>created_at</code>, cả hai đều bao gồm. <code>to</code> tính theo độ chính xác được gửi, nên kết thúc một ngày bằng <code>T23:59:59.999999Z</code>.</td></tr>
+          <tr><td>search<span class="opt">optional</span><span class="rule">≤ 100</span></td><td lang="en">Part of the actor's email or full name (case-insensitive).</td><td lang="vi">Một phần email hoặc họ tên đầy đủ của actor (không phân biệt hoa thường).</td></tr>
+          <tr><td>sort_order<span class="opt">optional</span><span class="rule">asc | desc</span></td><td lang="en">Default <code>desc</code> (newest first).</td><td lang="vi">Mặc định <code>desc</code> (mới nhất trước).</td></tr>
           <tr><td>page, page_size<span class="opt">optional</span><span class="rule">≤ 100</span></td><td lang="en">Pagination, as in every list (default 1 and 10).</td><td lang="vi">Phân trang, như mọi danh sách khác (mặc định 1 và 10).</td></tr>
+        </table></div>
+        <h3><span lang="en">Read-time fields</span><span lang="vi">Field được join lúc đọc</span></h3>
+        <div class="jd-tablewrap"><table class="jd-params">
+          <tr><th>field</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+          <tr><td>actor</td><td lang="en"><code>{uuid, email, first_name, last_name}</code> of the user <code>actor_uuid</code> names, soft-deleted users included; <code>null</code> without one (a console command).</td><td lang="vi"><code>{uuid, email, first_name, last_name}</code> của user mà <code>actor_uuid</code> trỏ tới, kể cả user đã xóa mềm; <code>null</code> khi không có (một console command).</td></tr>
+          <tr><td>entity_label</td><td lang="en">A name to show for the entity: a user's email, a role's name (for a deleted role, the last name an entry recorded); <code>null</code> if unknown. Not stored in <code>audit_logs</code>.</td><td lang="vi">Tên để hiển thị cho entity: email của user, tên của role (role đã xóa thì lấy tên cuối cùng mà một bản ghi đã ghi); <code>null</code> nếu không biết. Không lưu trong <code>audit_logs</code>.</td></tr>
         </table></div>
       </div>
       <div>
@@ -230,9 +244,16 @@ $ curl -s -G localhost:$API_SERVER_PORT/api/v1/audit-logs \
         "id": 1842,
         "created_at": "2026-11-24T09:12:03.512Z",
         "actor_uuid": "0f8c2d4e-…",
+        "actor": {
+          "uuid": "0f8c2d4e-…",
+          "email": "admin@jungo.com",
+          "first_name": "Admin",
+          "last_name": "Jungo"
+        },
         "action": "update",
         "entity_type": "users",
         "entity_id": "9b2f1c1e-…",
+        "entity_label": "member@jungo.com",
         "changes": { "first_name": { "before": "Ann", "after": "An" } },
         "trace_id": "eb9b3d81-…"
       }
@@ -251,7 +272,7 @@ $ curl -s -G localhost:$API_SERVER_PORT/api/v1/audit-logs \
           <div class="jd-tabpanel" hidden>
             <div class="jd-errlist">
               <div class="jd-errrow"><span class="code">422</span><div><b>entity_id needs entity_type</b><span class="do" lang="en"><code>entity_id</code> given without <code>entity_type</code>.</span><span class="do" lang="vi">Có <code>entity_id</code> mà thiếu <code>entity_type</code>.</span></div></div>
-              <div class="jd-errrow"><span class="code">422</span><div><b>Validation error</b><span class="do" lang="en">A value too long, or <code>page</code> / <code>page_size</code> out of range.</span><span class="do" lang="vi">Giá trị quá dài, hoặc <code>page</code> / <code>page_size</code> ngoài phạm vi.</span></div></div>
+              <div class="jd-errrow"><span class="code">422</span><div><b>Validation error</b><span class="do" lang="en">An unknown <code>entity_type</code> or <code>action</code> (named <code>action[0]</code>, …), a malformed <code>actor_uuid</code>, <code>from</code> or <code>to</code>, a value too long, or <code>page</code> / <code>page_size</code> out of range.</span><span class="do" lang="vi"><code>entity_type</code> hoặc <code>action</code> không hợp lệ (tên lỗi <code>action[0]</code>, …), <code>actor_uuid</code>, <code>from</code> hoặc <code>to</code> sai định dạng, giá trị quá dài, hoặc <code>page</code> / <code>page_size</code> ngoài phạm vi.</span></div></div>
             </div>
           </div>
         </div>
@@ -292,8 +313,8 @@ $ make console CMD="audit:cleanup-logs"
         <p lang="en"><b>Entries are ordinary rows.</b> Anyone who can write to the database can change or delete them, including the app's own database login (<code>DB_USER</code>, a superuser in the dev stack).</p>
         <p lang="vi"><b>Bản ghi chỉ là dòng dữ liệu bình thường.</b> Ai ghi được vào database đều sửa hoặc xóa được chúng, kể cả login database của chính app (<code>DB_USER</code>, là superuser trong stack dev).</p></div>
       <div class="jd-rule"><span class="n">3</span>
-        <p lang="en"><b>No undo.</b> Only new values are stored, so a row cannot be restored from one entry; fix bad data through the API (that fix is recorded too) or by hand.</p>
-        <p lang="vi"><b>Không có undo.</b> Chỉ lưu giá trị mới, nên không khôi phục được một dòng từ một bản ghi; hãy sửa dữ liệu sai qua API (lần sửa đó cũng được ghi lại) hoặc bằng tay.</p></div>
+        <p lang="en"><b>No undo.</b> Entries are not replayed: nothing restores a row from them; fix bad data through the API (that fix is recorded too) or by hand.</p>
+        <p lang="vi"><b>Không có undo.</b> Không có gì phát lại các bản ghi để khôi phục một dòng; hãy sửa dữ liệu sai qua API (lần sửa đó cũng được ghi lại) hoặc bằng tay.</p></div>
     </div>
   </section>
 

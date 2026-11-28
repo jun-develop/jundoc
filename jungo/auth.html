@@ -24,7 +24,7 @@
     <p lang="vi">Gửi email + mật khẩu, nhận về hai token. Trang này giải thích mọi khái niệm, mọi endpoint (header, body, từng field của response, mọi lỗi) và những gì xảy ra bên trong — để bạn gọi được, xây tiếp được và debug được.</p>
     <div class="jd-chips">
       <span class="jd-chip">internal/features/auth</span>
-      <span class="jd-chip"><span lang="en">11 endpoints</span><span lang="vi">11 endpoint</span></span>
+      <span class="jd-chip"><span lang="en">17 endpoints</span><span lang="vi">17 endpoint</span></span>
       <span class="jd-chip"><span lang="en">opaque tokens, not JWT</span><span lang="vi">opaque token, không phải JWT</span></span>
       <span class="jd-chip"><span lang="en">refresh rotation + reuse detection</span><span lang="vi">xoay vòng refresh + phát hiện dùng lại</span></span>
     </div>
@@ -174,8 +174,12 @@
         <button class="jd-tab" type="button" aria-selected="true">login</button>
         <button class="jd-tab" type="button" aria-selected="false">refresh</button>
         <button class="jd-tab" type="button" aria-selected="false">me</button>
+        <button class="jd-tab" type="button" aria-selected="false">update me</button>
+        <button class="jd-tab" type="button" aria-selected="false">change-password</button>
         <button class="jd-tab" type="button" aria-selected="false">sessions</button>
+        <button class="jd-tab" type="button" aria-selected="false">revoke session</button>
         <button class="jd-tab" type="button" aria-selected="false">logout</button>
+        <button class="jd-tab" type="button" aria-selected="false">logout-others</button>
         <button class="jd-tab" type="button" aria-selected="false">logout-all</button>
         <button class="jd-tab" type="button" aria-selected="false">forgot-password</button>
         <button class="jd-tab" type="button" aria-selected="false">reset-password</button>
@@ -345,7 +349,7 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/refresh \
                   <div class="jd-errrow"><span class="code">401</span><div><b>Invalid token</b><span class="do" lang="en">Not a Jungo token, edited, or signed with other keys (e.g. after a key rotation) → log in.</span><span class="do" lang="vi">Không phải token của Jungo, bị sửa, hoặc ký bằng key khác (vd. sau khi đổi key) → đăng nhập lại.</span></div></div>
                   <div class="jd-errrow"><span class="code">401</span><div><b>Invalid token type</b><span class="do" lang="en">You sent the access token. Send the refresh token.</span><span class="do" lang="vi">Bạn đã gửi access token. Hãy gửi refresh token.</span></div></div>
                   <div class="jd-errrow"><span class="code">401</span><div><b>Token has expired</b><span class="do" lang="en">Refresh token older than 30 days → log in.</span><span class="do" lang="vi">Refresh token quá 30 ngày → đăng nhập lại.</span></div></div>
-                  <div class="jd-errrow"><span class="code">401</span><div><b>Token has been revoked</b><span class="do" lang="en">Session ended (logout, logout-all, admin, password reset) → log in. A disabled user gets the 403 below; a deleted user gets "Invalid token".</span><span class="do" lang="vi">Session đã kết thúc (logout, logout-all, admin, reset mật khẩu) → đăng nhập lại. User bị khóa nhận lỗi 403 bên dưới; user bị xóa nhận "Invalid token".</span></div></div>
+                  <div class="jd-errrow"><span class="code">401</span><div><b>Token has been revoked</b><span class="do" lang="en">Session ended (logout, logout-all, logout-others, admin, password change or reset) → log in. A disabled user gets the 403 below; a deleted user gets "Invalid token".</span><span class="do" lang="vi">Session đã kết thúc (logout, logout-all, logout-others, admin, đổi hoặc reset mật khẩu) → đăng nhập lại. User bị khóa nhận lỗi 403 bên dưới; user bị xóa nhận "Invalid token".</span></div></div>
                   <div class="jd-errrow"><span class="code">401</span><div><b>Refresh token was already used; the session has been revoked, please log in again</b><span class="do" lang="en">Reuse detected — see "Refresh rotation" below. Usually a client that refreshed twice in parallel.</span><span class="do" lang="vi">Phát hiện dùng lại — xem "Xoay vòng refresh" bên dưới. Thường do client refresh hai lần song song.</span></div></div>
                   <div class="jd-errrow"><span class="code">403</span><div><b>Your account is not active</b><span class="do" lang="en">The account was disabled after login.</span><span class="do" lang="vi">Tài khoản bị vô hiệu hóa sau khi đăng nhập.</span></div></div>
                   <div class="jd-errrow"><span class="code">422</span><div><b>Validation error</b><span class="do" lang="en"><code>refresh_token</code> missing.</span><span class="do" lang="vi">Thiếu <code>refresh_token</code>.</span></div></div>
@@ -377,11 +381,11 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/auth/me \
             <h3><span lang="en">Response fields</span><span lang="vi">Các field trả về</span></h3>
             <div class="jd-tablewrap"><table class="jd-params">
               <tr><th>field</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
-              <tr><td>user.*</td><td lang="en">The logged-in user. <code>avatar_url</code> is null without an avatar; <code>active</code> is always true here (inactive users get 403).</td><td lang="vi">User đang đăng nhập. <code>avatar_url</code> là null nếu chưa có avatar; <code>active</code> ở đây luôn true (user bị khóa nhận 403).</td></tr>
+              <tr><td>user.*</td><td lang="en">The logged-in user: <code>uuid</code>, <code>email</code>, <code>first_name</code>, <code>last_name</code>, <code>phone_number</code>, <code>avatar_url</code>, <code>active</code>. <code>phone_number</code> and <code>avatar_url</code> are null when unset; <code>active</code> is always true here (inactive users get 403).</td><td lang="vi">User đang đăng nhập: <code>uuid</code>, <code>email</code>, <code>first_name</code>, <code>last_name</code>, <code>phone_number</code>, <code>avatar_url</code>, <code>active</code>. <code>phone_number</code> và <code>avatar_url</code> là null nếu chưa có; <code>active</code> ở đây luôn true (user bị khóa nhận 403).</td></tr>
               <tr><td>session.family_uuid</td><td lang="en">ID of this login session. Stays the same across refreshes.</td><td lang="vi">ID của session đăng nhập này. Giữ nguyên qua các lần refresh.</td></tr>
               <tr><td>session.ip_address<br>session.user_agent<br>session.device_id</td><td lang="en">The client seen at the last login / refresh. <code>null</code> when unknown.</td><td lang="vi">Client được ghi nhận ở lần login / refresh gần nhất. <code>null</code> nếu không biết.</td></tr>
               <tr><td>session.created_at</td><td lang="en">When the session started (first login on this device).</td><td lang="vi">Thời điểm session bắt đầu (lần login đầu tiên trên thiết bị này).</td></tr>
-              <tr><td>access_token.*<br>refresh_token.*</td><td lang="en"><code>uuid</code> = public ID of the token (never the token itself), <code>expires_at</code>, <code>status</code> = active | expired | revoked, <code>revoked_at</code> only when revoked.</td><td lang="vi"><code>uuid</code> = ID công khai của token (không bao giờ là chính token), <code>expires_at</code>, <code>status</code> = active | expired | revoked, <code>revoked_at</code> chỉ có khi đã bị thu hồi.</td></tr>
+              <tr><td>access_token.*<br>refresh_token.*</td><td lang="en"><code>uuid</code> = public ID of the token (never the token itself), <code>expires_at</code>, <code>status</code> = active | expired | revoked, <code>revoked_at</code> = <code>null</code> unless revoked.</td><td lang="vi"><code>uuid</code> = ID công khai của token (không bao giờ là chính token), <code>expires_at</code>, <code>status</code> = active | expired | revoked, <code>revoked_at</code> = <code>null</code> trừ khi đã bị thu hồi.</td></tr>
               <tr><td>permissions</td><td lang="en">Sorted permission codes the user holds through their roles; <code>[]</code> without a role. Use it to show or hide buttons — the server still checks every request (see <a href="access.html">Permissions &amp; roles</a>).</td><td lang="vi">Các mã permission user đang có qua role của họ, đã sắp xếp; <code>[]</code> nếu không có role. Dùng để ẩn/hiện nút — server vẫn kiểm tra mọi request (xem <a href="access.html">Phân quyền</a>).</td></tr>
             </table></div>
           </div>
@@ -404,6 +408,7 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/auth/me \
       "email": "admin@jungo.com",
       "first_name": "Admin",
       "last_name": "Jungo",
+      "phone_number": null,
       "avatar_url": null,
       "active": true
     },
@@ -417,11 +422,13 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/auth/me \
     "access_token": {
       "uuid": "9d2a…",
       "expires_at": "2026-10-16T09:15:00Z",
+      "revoked_at": null,
       "status": "active"
     },
     "refresh_token": {
       "uuid": "c47e…",
       "expires_at": "2026-11-15T09:00:00Z",
+      "revoked_at": null,
       "status": "active"
     },
     "permissions": ["audit_logs:read", "roles:assign", "roles:create", "roles:delete", "roles:read",
@@ -439,9 +446,144 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/auth/me \
                   <div class="jd-errrow"><span class="code">401</span><div><b>Invalid token</b><span class="do" lang="en">Garbage, edited or foreign token, a token already deleted by <code>auth:cleanup-tokens</code>, or one whose user was deleted → log in.</span><span class="do" lang="vi">Token rác, bị sửa hoặc của nơi khác, token đã bị <code>auth:cleanup-tokens</code> xóa, hoặc token của user đã bị xóa → đăng nhập lại.</span></div></div>
                   <div class="jd-errrow"><span class="code">401</span><div><b>Invalid token type</b><span class="do" lang="en">A refresh token was sent as Bearer. Use the access token.</span><span class="do" lang="vi">Gửi refresh token làm Bearer. Hãy dùng access token.</span></div></div>
                   <div class="jd-errrow"><span class="code w">401</span><div><b>Token has expired</b><span class="do" lang="en">Normal after 15 min → call <code>/auth/refresh</code>, then retry.</span><span class="do" lang="vi">Bình thường sau 15 phút → gọi <code>/auth/refresh</code>, rồi gọi lại.</span></div></div>
-                  <div class="jd-errrow"><span class="code">401</span><div><b>Token has been revoked</b><span class="do" lang="en">Logged out, replaced by a refresh or by a new login on the same device, ended by an admin, a password reset or a reuse detection. If your app refreshed meanwhile (a request still in flight with the old token), retry once with the newest token; otherwise → log in.</span><span class="do" lang="vi">Đã logout, bị thay bởi một lần refresh hoặc một lần login mới trên cùng thiết bị, bị kết thúc bởi admin, reset mật khẩu hoặc cơ chế phát hiện dùng lại. Nếu app vừa refresh trong lúc đó (request còn đang chạy với token cũ), gọi lại một lần với token mới nhất; nếu không → đăng nhập lại.</span></div></div>
+                  <div class="jd-errrow"><span class="code">401</span><div><b>Token has been revoked</b><span class="do" lang="en">Logged out, replaced by a refresh or by a new login on the same device, ended by an admin, by a password change on another device, a password reset or a reuse detection. If your app refreshed meanwhile (a request still in flight with the old token), retry once with the newest token; otherwise → log in.</span><span class="do" lang="vi">Đã logout, bị thay bởi một lần refresh hoặc một lần login mới trên cùng thiết bị, bị kết thúc bởi admin, bởi việc đổi mật khẩu trên thiết bị khác, reset mật khẩu hoặc cơ chế phát hiện dùng lại. Nếu app vừa refresh trong lúc đó (request còn đang chạy với token cũ), gọi lại một lần với token mới nhất; nếu không → đăng nhập lại.</span></div></div>
                   <div class="jd-errrow"><span class="code">403</span><div><b>Your account is not active</b><span class="do" lang="en">Account disabled → show a message, then log out.</span><span class="do" lang="vi">Tài khoản bị khóa → hiện thông báo, rồi logout.</span></div></div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------------- update me -->
+      <div class="jd-tabpanel" hidden>
+        <div class="jd-ep-head"><span class="jd-method patch">PATCH</span><span class="jd-ep-path">/api/v1/auth/me</span><span class="jd-auth need">Bearer access_token</span></div>
+        <div class="jd-ep-head"><span class="jd-method post">POST</span><span class="jd-ep-path">/api/v1/auth/me/avatar</span><span class="jd-auth need">Bearer access_token</span></div>
+        <div class="jd-ep-head"><span class="jd-method delete">DELETE</span><span class="jd-ep-path">/api/v1/auth/me/avatar</span><span class="jd-auth need">Bearer access_token</span></div>
+        <p class="jd-ep-desc" lang="en">The logged-in user edits their own profile, with no permission needed: the same changes as <code>PATCH /users/:uuid</code> and <code>/users/:uuid/avatar</code> on yourself, for a client that does not know your UUID. Email, status and roles cannot be changed here. Each answers with the user, as <code>GET /users/:uuid</code> does. Implemented by the user feature; who may edit whom: <a href="access.html#catalog">Permissions &amp; roles</a>.</p>
+        <p class="jd-ep-desc" lang="vi">User đang đăng nhập tự sửa hồ sơ của mình, không cần permission: cùng các thay đổi như <code>PATCH /users/:uuid</code> và <code>/users/:uuid/avatar</code> trên chính mình, cho client không biết UUID của bạn. Không đổi được email, status hay role ở đây. Mỗi route trả về user, giống <code>GET /users/:uuid</code>. Do feature user cài đặt; ai được sửa ai: <a href="access.html#catalog">Phân quyền</a>.</p>
+        <div class="jd-grid-2">
+          <div>
+            <h3>Request</h3>
+            <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="bash">
+$ curl -s -X PATCH localhost:$API_SERVER_PORT/api/v1/auth/me \
+    -H 'Authorization: Bearer v1.kX9f2Qm…' \
+    -H 'Content-Type: application/json' \
+    -d '{"first_name":"Ann"}' | jq
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/me/avatar \
+    -H 'Authorization: Bearer v1.kX9f2Qm…' \
+    -F avatar=@me.jpg | jq
+</pre></div>
+            <h3><span lang="en">Body (PATCH)</span><span lang="vi">Body (PATCH)</span></h3>
+            <div class="jd-tablewrap"><table class="jd-params">
+              <tr><th>field</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+              <tr><td>first_name<span class="opt">optional</span><span class="rule">2–50</span></td><td lang="en">Left out or <code>null</code> → kept.</td><td lang="vi">Bỏ trống hoặc <code>null</code> → giữ nguyên.</td></tr>
+              <tr><td>last_name<span class="opt">optional</span><span class="rule">2–50</span></td><td lang="en">Left out or <code>null</code> → kept.</td><td lang="vi">Bỏ trống hoặc <code>null</code> → giữ nguyên.</td></tr>
+              <tr><td>phone_number<span class="opt">optional</span><span class="rule">phone_advanced</span></td><td lang="en"><code>""</code> clears the phone; left out or <code>null</code> → kept.</td><td lang="vi"><code>""</code> xóa số điện thoại; bỏ trống hoặc <code>null</code> → giữ nguyên.</td></tr>
+            </table></div>
+            <p class="jd-sub" lang="en"><code>POST /auth/me/avatar</code> takes a multipart file field <code>avatar</code> (JPEG, PNG or WebP, up to 5 MB; checks: <a href="../junkit/upload.html">upload</a>); <code>DELETE</code> has no body.</p>
+            <p class="jd-sub" lang="vi"><code>POST /auth/me/avatar</code> nhận field file multipart <code>avatar</code> (JPEG, PNG hoặc WebP, tối đa 5 MB; cách kiểm tra: <a href="../junkit/upload.html">upload</a>); <code>DELETE</code> không có body.</p>
+          </div>
+          <div>
+            <h3>Response</h3>
+            <div class="jd-tabs">
+              <div class="jd-tablist">
+                <button class="jd-tab" type="button" aria-selected="true">200</button>
+                <button class="jd-tab c-red" type="button" aria-selected="false"><span lang="en">errors</span><span lang="vi">lỗi</span></button>
+              </div>
+              <div class="jd-tabpanel">
+                <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>200 OK</span></div>
+<pre data-hl="json">
+{
+  "status": "success",
+  "message": "User updated successfully",
+  "data": {
+    "uuid": "5b1e2c4a-…",
+    "email": "member@jungo.com",
+    "first_name": "Ann",
+    "last_name": "Member",
+    "phone_number": null,
+    "avatar_url": null,
+    "status": "active",
+    "active": true,
+    "created_at": "2026-10-01T08:00:00Z",
+    "updated_at": "2026-11-28T10:02:11Z",
+    "roles": [
+      { "uuid": "7a3c…", "code": "member", "name": "Member", "is_system": false }
+    ]
+  },
+  "api_info": { … }
+}
+</pre></div>
+                <p class="jd-sub" lang="en">The avatar routes answer <code>Avatar uploaded successfully</code> / <code>Avatar deleted successfully</code> with the same user.</p>
+                <p class="jd-sub" lang="vi">Các route avatar trả <code>Avatar uploaded successfully</code> / <code>Avatar deleted successfully</code> kèm cùng dạng user.</p>
+              </div>
+              <div class="jd-tabpanel" hidden>
+                <div class="jd-errlist">
+                  <div class="jd-errrow"><span class="code">400</span><div><b>Invalid avatar file (allowed: jpg, jpeg, png, webp; max 5MB)</b><span class="do" lang="en"><code>POST /auth/me/avatar</code>: no <code>avatar</code> file, or not an accepted image.</span><span class="do" lang="vi"><code>POST /auth/me/avatar</code>: không có file <code>avatar</code>, hoặc không phải ảnh được chấp nhận.</span></div></div>
+                  <div class="jd-errrow"><span class="code">404</span><div><b>User not found</b><span class="do" lang="en">Your account was deleted meanwhile.</span><span class="do" lang="vi">Tài khoản của bạn vừa bị xóa.</span></div></div>
+                  <div class="jd-errrow"><span class="code">422</span><div><b>Validation error</b><span class="do" lang="en"><code>PATCH</code>: a field out of length, or a phone number that is not valid.</span><span class="do" lang="vi"><code>PATCH</code>: field sai độ dài, hoặc số điện thoại không hợp lệ.</span></div></div>
+                </div>
+                <p class="jd-sub" lang="en">Plus the token errors of the <code>me</code> tab.</p>
+                <p class="jd-sub" lang="vi">Cộng các lỗi token ở tab <code>me</code>.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------------- change-password -->
+      <div class="jd-tabpanel" hidden>
+        <div class="jd-ep-head"><span class="jd-method post">POST</span><span class="jd-ep-path">/api/v1/auth/change-password</span><span class="jd-auth need">Bearer access_token</span></div>
+        <p class="jd-ep-desc" lang="en">Sets a new password once the current one is verified. In the same transaction every <b>other</b> session of the user ends (<code>revoked_reason = password_change</code>) and the change is recorded in the audit log (<code>change_password</code>, no values); this session stays logged in.</p>
+        <p class="jd-ep-desc" lang="vi">Đặt mật khẩu mới sau khi xác minh mật khẩu hiện tại. Trong cùng transaction, mọi session <b>khác</b> của user bị kết thúc (<code>revoked_reason = password_change</code>) và thay đổi được ghi vào audit log (<code>change_password</code>, không có giá trị); session này vẫn đăng nhập.</p>
+        <div class="jd-grid-2">
+          <div>
+            <h3>Request</h3>
+            <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="bash">
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/change-password \
+    -H 'Authorization: Bearer v1.kX9f2Qm…' \
+    -H 'Content-Type: application/json' \
+    -d '{"current_password":"Password@123","new_password":"N3w-Password!"}' | jq
+</pre></div>
+            <h3>Body</h3>
+            <div class="jd-tablewrap"><table class="jd-params">
+              <tr><th>field</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+              <tr><td>current_password<span class="req">required</span><span class="rule">string · ≤72</span></td><td lang="en">The password in use now.</td><td lang="vi">Mật khẩu đang dùng.</td></tr>
+              <tr><td>new_password<span class="req">required</span><span class="rule">string · 8–72 · strong</span></td><td lang="en">Same rules as creating a user (upper, lower, digit, special character); at most 72 <b>bytes</b>; must differ from the current one.</td><td lang="vi">Cùng quy tắc như khi tạo user (chữ hoa, chữ thường, số, ký tự đặc biệt); tối đa 72 <b>byte</b>; phải khác mật khẩu hiện tại.</td></tr>
+            </table></div>
+            <p class="jd-sub" lang="en">Each call counts as a login attempt from the client's IP, and a wrong <code>current_password</code> as a failed login (the same limits as <code>/auth/login</code>), so a stolen access token cannot be used to guess the password.</p>
+            <p class="jd-sub" lang="vi">Mỗi lần gọi được tính là một lần thử login từ IP của client, và <code>current_password</code> sai được tính là login sai (cùng giới hạn với <code>/auth/login</code>), nên access token bị lộ không thể dùng để dò mật khẩu.</p>
+          </div>
+          <div>
+            <h3>Response</h3>
+            <div class="jd-tabs">
+              <div class="jd-tablist">
+                <button class="jd-tab" type="button" aria-selected="true">200</button>
+                <button class="jd-tab c-red" type="button" aria-selected="false"><span lang="en">errors</span><span lang="vi">lỗi</span></button>
+              </div>
+              <div class="jd-tabpanel">
+                <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>200 OK</span></div>
+<pre data-hl="json">
+{
+  "status": "success",
+  "message": "Password changed successfully; your other sessions have been logged out",
+  "api_info": { … }
+}
+</pre></div>
+              </div>
+              <div class="jd-tabpanel" hidden>
+                <div class="jd-errlist">
+                  <div class="jd-errrow"><span class="code">400</span><div><b>Current password is incorrect</b><span class="do" lang="en"><code>invalid_current_password</code>: ask for the current password again.</span><span class="do" lang="vi"><code>invalid_current_password</code>: hỏi lại mật khẩu hiện tại.</span></div></div>
+                  <div class="jd-errrow"><span class="code">422</span><div><b>New password must differ from the current one</b><span class="do" lang="en"><code>new_password_same_as_current</code>: pick another password.</span><span class="do" lang="vi"><code>new_password_same_as_current</code>: chọn mật khẩu khác.</span></div></div>
+                  <div class="jd-errrow"><span class="code">422</span><div><b>Password is too long (max 72 bytes; accented characters count as more than one)</b><span class="do" lang="en"><code>new_password</code> over 72 bytes; checked before anything else.</span><span class="do" lang="vi"><code>new_password</code> quá 72 byte; được kiểm tra trước mọi thứ khác.</span></div></div>
+                  <div class="jd-errrow"><span class="code">422</span><div><b>Validation error</b><span class="do" lang="en">A field missing, too long, or a new password that is not strong.</span><span class="do" lang="vi">Thiếu field, quá dài, hoặc mật khẩu mới không đủ mạnh.</span></div></div>
+                  <div class="jd-errrow"><span class="code">429</span><div><b>Too many failed login attempts, please try again later · Your IP has been temporarily blocked due to repeated failed logins</b><span class="do" lang="en">The login limits of this IP, as on the <code>login</code> tab.</span><span class="do" lang="vi">Giới hạn login của IP này, như ở tab <code>login</code>.</span></div></div>
+                </div>
+                <p class="jd-sub" lang="en">Plus the token errors of the <code>me</code> tab.</p>
+                <p class="jd-sub" lang="vi">Cộng các lỗi token ở tab <code>me</code>.</p>
               </div>
             </div>
           </div>
@@ -451,8 +593,8 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/auth/me \
       <!-- ---------------- sessions -->
       <div class="jd-tabpanel" hidden>
         <div class="jd-ep-head"><span class="jd-method">GET</span><span class="jd-ep-path">/api/v1/auth/sessions</span><span class="jd-auth need">Bearer access_token</span></div>
-        <p class="jd-ep-desc" lang="en">Every device where this user is currently logged in — for a "Where you're logged in" screen. Expired and revoked sessions are not listed. Newest first.</p>
-        <p class="jd-ep-desc" lang="vi">Mọi thiết bị mà user này đang đăng nhập — dùng cho màn hình "Bạn đang đăng nhập ở đâu". Session đã hết hạn hoặc bị thu hồi không được liệt kê. Mới nhất ở đầu.</p>
+        <p class="jd-ep-desc" lang="en">Every device where this user is currently logged in — for a "Where you're logged in" screen. Expired and revoked sessions are not listed. Newest first. End one with the <code>revoke session</code> tab.</p>
+        <p class="jd-ep-desc" lang="vi">Mọi thiết bị mà user này đang đăng nhập — dùng cho màn hình "Bạn đang đăng nhập ở đâu". Session đã hết hạn hoặc bị thu hồi không được liệt kê. Mới nhất ở đầu. Kết thúc một session bằng tab <code>revoke session</code>.</p>
         <div class="jd-grid-2">
           <div>
             <h3>Request</h3>
@@ -506,6 +648,33 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/auth/sessions \
         </div>
       </div>
 
+      <!-- ---------------- revoke session -->
+      <div class="jd-tabpanel" hidden>
+        <div class="jd-ep-head"><span class="jd-method delete">DELETE</span><span class="jd-ep-path">/api/v1/auth/sessions/:family_uuid</span><span class="jd-auth need">Bearer access_token</span></div>
+        <p class="jd-ep-desc" lang="en">Ends one of your own active sessions, by the <code>family_uuid</code> that <code>/auth/sessions</code> lists (<code>revoked_reason = logout</code>). Ending the session of this request is a logout. No body.</p>
+        <p class="jd-ep-desc" lang="vi">Kết thúc một session đang hoạt động của chính bạn, theo <code>family_uuid</code> mà <code>/auth/sessions</code> liệt kê (<code>revoked_reason = logout</code>). Kết thúc session của chính request này tương đương logout. Không có body.</p>
+        <div class="jd-grid-2">
+          <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="bash">
+$ curl -s -X DELETE localhost:$API_SERVER_PORT/api/v1/auth/sessions/a81d07c2-… \
+    -H 'Authorization: Bearer v1.kX9f2Qm…' | jq
+</pre></div>
+          <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>200 OK</span></div>
+<pre data-hl="json">
+{
+  "status": "success",
+  "message": "Session revoked successfully",
+  "api_info": { … }
+}
+</pre></div>
+        </div>
+        <div class="jd-errlist" style="margin-top:12px">
+          <div class="jd-errrow"><span class="code">404</span><div><b>Session not found</b><span class="do" lang="en"><code>session_not_found</code>: not one of your active sessions — someone else's, one that already ended, or not a UUID — so the answer reveals nothing about other users. Refresh the list.</span><span class="do" lang="vi"><code>session_not_found</code>: không phải session đang hoạt động của bạn — của người khác, đã kết thúc, hoặc không phải UUID — nên câu trả lời không lộ gì về user khác. Tải lại danh sách.</span></div></div>
+        </div>
+        <p class="jd-sub" style="margin-top:12px" lang="en">Plus the token errors of the <code>me</code> tab.</p>
+        <p class="jd-sub" style="margin-top:12px" lang="vi">Cộng các lỗi token ở tab <code>me</code>.</p>
+      </div>
+
       <!-- ---------------- logout -->
       <div class="jd-tabpanel" hidden>
         <div class="jd-ep-head"><span class="jd-method post">POST</span><span class="jd-ep-path">/api/v1/auth/logout</span><span class="jd-auth need">Bearer access_token</span></div>
@@ -530,11 +699,33 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/logout \
         <p class="jd-sub" style="margin-top:12px" lang="vi">Sau đó xóa cả hai token phía client. Lỗi: giống <code>/auth/me</code>.</p>
       </div>
 
+      <!-- ---------------- logout-others -->
+      <div class="jd-tabpanel" hidden>
+        <div class="jd-ep-head"><span class="jd-method post">POST</span><span class="jd-ep-path">/api/v1/auth/logout-others</span><span class="jd-auth need">Bearer access_token</span></div>
+        <p class="jd-ep-desc" lang="en">Ends every session of this user <b>except</b> this one (<code>revoked_reason = logout</code>). Use for "Log out other devices". No body. Errors: the same as <code>/auth/me</code>.</p>
+        <p class="jd-ep-desc" lang="vi">Kết thúc mọi session của user này <b>trừ</b> session này (<code>revoked_reason = logout</code>). Dùng cho "Đăng xuất các thiết bị khác". Không có body. Lỗi: giống <code>/auth/me</code>.</p>
+        <div class="jd-grid-2">
+          <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+<pre data-hl="bash">
+$ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/auth/logout-others \
+    -H 'Authorization: Bearer v1.kX9f2Qm…' | jq
+</pre></div>
+          <div class="jd-term"><div class="jd-term-bar"><i></i><i></i><i></i><span>200 OK</span></div>
+<pre data-hl="json">
+{
+  "status": "success",
+  "message": "Logged out from all other sessions successfully",
+  "api_info": { … }
+}
+</pre></div>
+        </div>
+      </div>
+
       <!-- ---------------- logout-all -->
       <div class="jd-tabpanel" hidden>
         <div class="jd-ep-head"><span class="jd-method post">POST</span><span class="jd-ep-path">/api/v1/auth/logout-all</span><span class="jd-auth need">Bearer access_token</span></div>
-        <p class="jd-ep-desc" lang="en">Ends <b>every</b> session of this user on every device — including this one. Use for "Log out everywhere" or after a password change. No body.</p>
-        <p class="jd-ep-desc" lang="vi">Kết thúc <b>mọi</b> session của user này trên mọi thiết bị — kể cả thiết bị này. Dùng cho "Đăng xuất khỏi mọi nơi" hoặc sau khi đổi mật khẩu. Không có body.</p>
+        <p class="jd-ep-desc" lang="en">Ends <b>every</b> session of this user on every device — including this one. Use for "Log out everywhere". A password change already ends the other sessions (see <code>change-password</code>). No body.</p>
+        <p class="jd-ep-desc" lang="vi">Kết thúc <b>mọi</b> session của user này trên mọi thiết bị — kể cả thiết bị này. Dùng cho "Đăng xuất khỏi mọi nơi". Đổi mật khẩu đã tự kết thúc các session khác (xem <code>change-password</code>). Không có body.</p>
         <div class="jd-grid-2">
           <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
 <pre data-hl="bash">
@@ -930,17 +1121,18 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/internal/auth/revoke-all \
       </table></div>
       <div class="jd-tablewrap"><table class="jd-params c-red">
         <tr><th>revoked_reason</th><th><span lang="en">when</span><span lang="vi">khi nào</span></th></tr>
-        <tr><td>logout</td><td lang="en">/auth/logout or /auth/logout-all.</td><td lang="vi">/auth/logout hoặc /auth/logout-all.</td></tr>
+        <tr><td>logout</td><td lang="en">/auth/logout, /auth/logout-others, /auth/logout-all or <code>DELETE /auth/sessions/:family_uuid</code>.</td><td lang="vi">/auth/logout, /auth/logout-others, /auth/logout-all hoặc <code>DELETE /auth/sessions/:family_uuid</code>.</td></tr>
         <tr><td>refresh</td><td lang="en">The pair was replaced by /auth/refresh (normal).</td><td lang="vi">Cặp token bị thay bởi /auth/refresh (bình thường).</td></tr>
         <tr><td>reuse</td><td lang="en">A used refresh token came back → whole session ended.</td><td lang="vi">Một refresh token đã dùng xuất hiện lại → kết thúc cả session.</td></tr>
         <tr><td>rotated</td><td lang="en">The pair was replaced by a new login on the same device. Like <code>refresh</code>, reusing its refresh token ends the session.</td><td lang="vi">Cặp token bị thay bởi một lần đăng nhập mới trên cùng thiết bị. Giống <code>refresh</code>, dùng lại refresh token của nó sẽ kết thúc session.</td></tr>
         <tr><td>admin</td><td lang="en">Internal revoke / revoke-all.</td><td lang="vi">Gọi internal revoke / revoke-all.</td></tr>
         <tr><td>user_disabled</td><td lang="en">The user was deactivated or deleted (user feature).</td><td lang="vi">User bị vô hiệu hóa hoặc bị xóa (feature user).</td></tr>
         <tr><td>password_reset</td><td lang="en">The user reset their password: every session ends.</td><td lang="vi">User đã reset mật khẩu: mọi session đều kết thúc.</td></tr>
+        <tr><td>password_change</td><td lang="en">The user changed their password: every session but the one that changed it ends.</td><td lang="vi">User đã đổi mật khẩu: mọi session trừ session thực hiện việc đổi đều kết thúc.</td></tr>
       </table></div>
     </div>
-    <p class="jd-sub" lang="en">Logins, logouts, sessions and password changes or resets are not recorded in the audit log: see <a href="audit.html#coverage">Audit log</a>.</p>
-    <p class="jd-sub" lang="vi">Đăng nhập, đăng xuất, session và việc đổi hay đặt lại mật khẩu không được ghi vào audit log: xem <a href="audit.html#coverage">Audit log</a>.</p>
+    <p class="jd-sub" lang="en">Logins, logouts, sessions and password resets are not recorded in the audit log; a password change is: see <a href="audit.html#coverage">Audit log</a>.</p>
+    <p class="jd-sub" lang="vi">Đăng nhập, đăng xuất, session và việc đặt lại mật khẩu không được ghi vào audit log; việc đổi mật khẩu thì có: xem <a href="audit.html#coverage">Audit log</a>.</p>
   </section>
 
   <!-- ============================================================ 5. INTEGRATE -->
@@ -1067,7 +1259,7 @@ export async function api(path, init = {}) {
       <tr><td>AUTH_ACCESS_TOKEN_TTL</td><td>15m</td><td lang="en">Access token lifetime.</td><td lang="vi">Thời gian sống của access token.</td></tr>
       <tr><td>AUTH_REFRESH_TOKEN_TTL</td><td>720h</td><td lang="en">Refresh token lifetime — how long a user stays logged in without opening the app.</td><td lang="vi">Thời gian sống của refresh token — user giữ đăng nhập bao lâu nếu không mở app.</td></tr>
       <tr><td>AUTH_SESSION_CACHE_TTL</td><td>3m</td><td lang="en">How long a session is cached in Redis (no cache without Redis). <code>0</code> turns the cache off. If clearing the cache fails on logout (it is logged), the old session can still work for up to this long.</td><td lang="vi">Session được cache trong Redis bao lâu (không có Redis thì không cache). <code>0</code> là tắt cache. Nếu xóa cache lỗi khi logout (có log), session cũ vẫn dùng được tối đa chừng này.</td></tr>
-      <tr><td>CACHE_REDIS_ENABLED</td><td>false</td><td lang="en"><code>false</code>: no cache — sessions and permissions are read from the DB on every request; login counters live in each process's memory. <code>true</code>: Redis, shared by every instance (start it with <code>make app-dev WITH=cache</code>). While Redis is down, login and forgot-password fail with <code>500</code> (the counters fail closed); sessions already open keep working.</td><td lang="vi"><code>false</code>: không cache — session và permission được đọc từ DB ở mọi request; bộ đếm login nằm trong memory của từng process. <code>true</code>: Redis, dùng chung cho mọi instance (chạy bằng <code>make app-dev WITH=cache</code>). Khi Redis sập, login và forgot-password trả <code>500</code> (bộ đếm từ chối khi lỗi); các session đang mở vẫn hoạt động.</td></tr>
+      <tr><td>CACHE_REDIS_ENABLED</td><td>false</td><td lang="en"><code>false</code>: no cache — sessions and permissions are read from the DB on every request; login counters live in each process's memory. <code>true</code>: Redis, shared by every instance (start it with <code>make app-dev WITH=cache</code>). While Redis is down, login, forgot-password and change-password fail with <code>500</code> (the counters fail closed); sessions already open keep working.</td><td lang="vi"><code>false</code>: không cache — session và permission được đọc từ DB ở mọi request; bộ đếm login nằm trong memory của từng process. <code>true</code>: Redis, dùng chung cho mọi instance (chạy bằng <code>make app-dev WITH=cache</code>). Khi Redis sập, login, forgot-password và change-password trả <code>500</code> (bộ đếm từ chối khi lỗi); các session đang mở vẫn hoạt động.</td></tr>
       <tr><td>AUTH_PERMISSION_CACHE_TTL</td><td>60s</td><td lang="en">How long a user's permissions are cached. See <a href="access.html">Permissions &amp; roles</a>.</td><td lang="vi">Permission của user được cache bao lâu. Xem <a href="access.html">Phân quyền</a>.</td></tr>
       <tr><td>AUTH_REVOKED_RETENTION</td><td>168h</td><td lang="en">How long expired / revoked tokens are kept before cleanup. Cleanup never deletes an exchanged refresh token before it would have expired, so reuse detection keeps working whatever the retention. It also keeps the rows a live session still needs (its first row and its latest access token). Password reset tokens use the same retention.</td><td lang="vi">Token hết hạn / bị thu hồi được giữ bao lâu trước khi dọn. Cleanup không bao giờ xóa refresh token đã đổi trước thời điểm nó lẽ ra hết hạn, nên việc phát hiện dùng lại vẫn hoạt động dù retention là bao nhiêu. Nó cũng giữ các dòng mà session còn sống cần (dòng đầu tiên và access token mới nhất). Token reset mật khẩu dùng cùng retention.</td></tr>
       <tr><td>AUTH_PASSWORD_COST</td><td>10</td><td lang="en">bcrypt cost. 10 on purpose (OWASP's minimum); each +1 doubles login CPU time.</td><td lang="vi">Độ khó bcrypt. Chủ ý để 10 (mức tối thiểu của OWASP); mỗi +1 gấp đôi thời gian CPU khi login.</td></tr>

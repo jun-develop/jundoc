@@ -166,6 +166,7 @@
       <tr><th>route</th><th>Guard</th><th>admin</th><th>manager</th><th>member</th><th>user</th></tr>
       <tr><td>POST /auth/login, /refresh</td><td>Public</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
       <tr><td>/auth/me, /sessions, /logout…</td><td>Authenticated</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+      <tr><td>PATCH /auth/me, POST · DELETE /auth/me/avatar</td><td>Authenticated</td><td>self <span class="rule">no email, status, roles</span></td><td>self</td><td>self</td><td>self</td></tr>
       <tr><td>GET /users</td><td>Can(users:read)</td><td>✓</td><td>✓</td><td>✓</td><td>✗</td></tr>
       <tr><td>POST /users</td><td>Can(users:create)</td><td>✓</td><td>✓</td><td>✗</td><td>✗</td></tr>
       <tr><td>GET /users/:uuid</td><td>Authenticated</td><td>✓</td><td>✓</td><td>✓</td><td>self</td></tr>
@@ -180,6 +181,10 @@
       <tr><td>PUT /users/:uuid/roles</td><td>Can(roles:assign)</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
       <tr><td>GET /audit-logs</td><td>Can(audit_logs:read)</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
     </table></div>
+
+    <h3><span lang="en">Users list and user responses</span><span lang="vi">Danh sách user và response của user</span></h3>
+    <p class="jd-sub" lang="en"><code>GET /api/v1/users</code> is paginated (<a href="../junkit/pagination.html">pagination</a>) and filters by <code>search</code> (email or name), <code>status=active|inactive</code> and <code>role_uuid</code> (repeatable: users holding any of those roles; an unknown UUID matches no one). It sorts by <code>sort_by=created_at|email|first_name|last_name|status</code> and <code>sort_order</code>, newest first by default. Every user in a response carries its <code>roles</code> (<code>uuid</code>, <code>code</code>, <code>name</code>, <code>is_system</code>, ordered by name), read for a whole page in one query. <code>PATCH /auth/me</code> and <code>/auth/me/avatar</code> are the same changes as on <code>/users/:uuid</code>, made on yourself (see <a href="auth.html#endpoints">Authentication</a>).</p>
+    <p class="jd-sub" lang="vi"><code>GET /api/v1/users</code> có phân trang (<a href="../junkit/pagination.html">pagination</a>) và lọc theo <code>search</code> (email hoặc tên), <code>status=active|inactive</code> và <code>role_uuid</code> (lặp lại được: user giữ bất kỳ role nào trong đó; UUID không tồn tại thì không khớp ai). Sắp xếp theo <code>sort_by=created_at|email|first_name|last_name|status</code> và <code>sort_order</code>, mặc định mới nhất trước. Mỗi user trong response kèm <code>roles</code> của nó (<code>uuid</code>, <code>code</code>, <code>name</code>, <code>is_system</code>, sắp theo tên), đọc cho cả trang bằng một query. <code>PATCH /auth/me</code> và <code>/auth/me/avatar</code> là cùng các thay đổi như trên <code>/users/:uuid</code>, thực hiện trên chính bạn (xem <a href="auth.html#endpoints">Xác thực</a>).</p>
 
     <h3><span lang="en">The four tables</span><span lang="vi">Bốn bảng</span></h3>
     <div class="jd-grid-2">
@@ -290,16 +295,26 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/permissions \
       <!-- ---------------- list roles -->
       <div class="jd-tabpanel" hidden>
         <div class="jd-ep-head"><span class="jd-method">GET</span><span class="jd-ep-path">/api/v1/roles</span><span class="jd-auth need">roles:read</span></div>
-        <p class="jd-ep-desc" lang="en">Every role with its permissions and how many users hold it. System roles first, then by code. Not paginated — roles are few.</p>
-        <p class="jd-ep-desc" lang="vi">Mọi role kèm permission và số user đang giữ. Role hệ thống đứng trước, sau đó theo code. Không phân trang — số role ít.</p>
+        <p class="jd-ep-desc" lang="en">A page of roles with their permissions and how many users hold them, paginated like <code>GET /users</code>: <code>data</code> is <code>{ items, pagination }</code>, no longer an array. Newest first by default.</p>
+        <p class="jd-ep-desc" lang="vi">Một trang role kèm permission và số user đang giữ, phân trang giống <code>GET /users</code>: <code>data</code> là <code>{ items, pagination }</code>, không còn là mảng. Mặc định mới nhất trước.</p>
         <div class="jd-grid-2">
           <div>
             <h3>Request</h3>
             <div class="jd-term" data-copy="commands"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
 <pre data-hl="bash">
-$ curl -s localhost:$API_SERVER_PORT/api/v1/roles \
+$ curl -s "localhost:$API_SERVER_PORT/api/v1/roles?sort_by=user_count" \
     -H "Authorization: Bearer $ADMIN" | jq
 </pre></div>
+            <h3>Query</h3>
+            <div class="jd-tablewrap"><table class="jd-params">
+              <tr><th>param</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
+              <tr><td>page, page_size<span class="opt">optional</span><span class="rule">≤ 100</span></td><td lang="en">Default 1 and 10.</td><td lang="vi">Mặc định 1 và 10.</td></tr>
+              <tr><td>search<span class="opt">optional</span></td><td lang="en">Part of the code or name (case-insensitive).</td><td lang="vi">Một phần của code hoặc name (không phân biệt hoa thường).</td></tr>
+              <tr><td>sort_by<span class="opt">optional</span><span class="rule">name | code | created_at | user_count</span></td><td lang="en">Default <code>created_at</code>; ties broken by ID.</td><td lang="vi">Mặc định <code>created_at</code>; trùng thì theo ID.</td></tr>
+              <tr><td>sort_order<span class="opt">optional</span><span class="rule">asc | desc</span></td><td lang="en">Default <code>desc</code>.</td><td lang="vi">Mặc định <code>desc</code>.</td></tr>
+            </table></div>
+            <p class="jd-sub" lang="en">Errors: 422 <b>Validation error</b> for an unknown <code>sort_by</code> / <code>sort_order</code> or <code>page</code> / <code>page_size</code> out of range.</p>
+            <p class="jd-sub" lang="vi">Lỗi: 422 <b>Validation error</b> khi <code>sort_by</code> / <code>sort_order</code> không hợp lệ hoặc <code>page</code> / <code>page_size</code> ngoài phạm vi.</p>
             <h3><span lang="en">Role fields (all role endpoints)</span><span lang="vi">Field của role (mọi endpoint role)</span></h3>
             <div class="jd-tablewrap"><table class="jd-params">
               <tr><th>field</th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
@@ -308,8 +323,8 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/roles \
               <tr><td>name</td><td lang="en">Display name; editable.</td><td lang="vi">Tên hiển thị; sửa được.</td></tr>
               <tr><td>is_system</td><td lang="en"><code>true</code> for <code>super_admin</code>: read-only through the API (see <a href="#safety">safety</a>).</td><td lang="vi"><code>true</code> với <code>super_admin</code>: chỉ đọc qua API (xem <a href="#safety">an toàn</a>).</td></tr>
               <tr><td>permissions</td><td lang="en">Sorted permission codes; <code>[]</code> when none.</td><td lang="vi">Các mã permission đã sắp xếp; <code>[]</code> nếu không có.</td></tr>
-              <tr><td>user_count</td><td lang="en">How many users hold the role.</td><td lang="vi">Số user đang giữ role.</td></tr>
-              <tr><td>created_at, updated_at</td><td lang="en"><code>updated_at</code> is omitted until the role is renamed. Changing its permissions does not set it.</td><td lang="vi"><code>updated_at</code> không có cho tới khi role được đổi tên. Đổi permission của role không cập nhật nó.</td></tr>
+              <tr><td>user_count</td><td lang="en">How many users hold the role; soft-deleted users are not counted.</td><td lang="vi">Số user đang giữ role; user đã xóa mềm không được đếm.</td></tr>
+              <tr><td>created_at, updated_at</td><td lang="en"><code>updated_at</code> is <code>null</code> until the role is renamed. Changing its permissions does not set it.</td><td lang="vi"><code>updated_at</code> là <code>null</code> cho tới khi role được đổi tên. Đổi permission của role không cập nhật nó.</td></tr>
             </table></div>
           </div>
           <div>
@@ -319,27 +334,37 @@ $ curl -s localhost:$API_SERVER_PORT/api/v1/roles \
 {
   "status": "success",
   "message": "Roles listed successfully",
-  "data": [
-    {
-      "uuid": "076ddda1-…",
-      "code": "super_admin",
-      "name": "Super Admin",
-      "is_system": true,
-      "permissions": ["audit_logs:read", "roles:assign", "roles:create", "roles:delete", "roles:read",
-                      "roles:update", "users:create", "users:delete", "users:read", "users:update"],
-      "user_count": 1,
-      "created_at": "2026-10-21T07:30:46Z"
-    },
-    {
-      "uuid": "5c1f…",
-      "code": "manager",
-      "name": "Manager",
-      "is_system": false,
-      "permissions": ["roles:read", "users:create", "users:read", "users:update"],
-      "user_count": 1,
-      "created_at": "2026-10-21T07:30:47Z"
+  "data": {
+    "items": [
+      {
+        "uuid": "5c1f…",
+        "code": "manager",
+        "name": "Manager",
+        "is_system": false,
+        "permissions": ["roles:read", "users:create", "users:read", "users:update"],
+        "user_count": 1,
+        "created_at": "2026-10-21T07:30:47Z",
+        "updated_at": null
+      },
+      {
+        "uuid": "076ddda1-…",
+        "code": "super_admin",
+        "name": "Super Admin",
+        "is_system": true,
+        "permissions": ["audit_logs:read", "roles:assign", "roles:create", "roles:delete", "roles:read",
+                        "roles:update", "users:create", "users:delete", "users:read", "users:update"],
+        "user_count": 1,
+        "created_at": "2026-10-21T07:30:46Z",
+        "updated_at": null
+      }
+    ],
+    "pagination": {
+      "page": 1, "page_size": 10,
+      "total_items": 2, "total_pages": 1,
+      "has_next": false, "has_prev": false,
+      "next_page": null, "prev_page": null
     }
-  ],
+  },
   "api_info": { … }
 }
 </pre></div>
@@ -408,7 +433,8 @@ $ curl -s -X POST localhost:$API_SERVER_PORT/api/v1/roles \
     "is_system": false,
     "permissions": ["users:read"],
     "user_count": 0,
-    "created_at": "2026-10-21T08:02:11Z"
+    "created_at": "2026-10-21T08:02:11Z",
+    "updated_at": null
   },
   "api_info": { … }
 }
@@ -640,7 +666,7 @@ curl -s -X POST $API/roles -H "Authorization: Bearer $MANAGER" -H 'Content-Type:
   -d '{"code":"mine","name":"Mine"}' | jq .message
 
 # 6. super_admin is read-only through the API                   → 403
-SUPER=$(curl -s $API/roles -H "Authorization: Bearer $ADMIN" | jq -r '.data[] | select(.code=="super_admin") | .uuid')
+SUPER=$(curl -s "$API/roles?search=super_admin" -H "Authorization: Bearer $ADMIN" | jq -r '.data.items[] | select(.code=="super_admin") | .uuid')
 curl -s -X PUT $API/users/$USER_UUID/roles -H "Authorization: Bearer $ADMIN" \
   -H 'Content-Type: application/json' -d "{\"role_uuids\":[\"$SUPER\"]}" | jq .message
 
@@ -675,7 +701,7 @@ curl -s -X POST $API/roles -H "Authorization: Bearer $MANAGER" -H 'Content-Type:
   -d '{"code":"mine","name":"Mine"}' | jq .message
 
 # 6. super_admin chỉ đọc qua API                                → 403
-SUPER=$(curl -s $API/roles -H "Authorization: Bearer $ADMIN" | jq -r '.data[] | select(.code=="super_admin") | .uuid')
+SUPER=$(curl -s "$API/roles?search=super_admin" -H "Authorization: Bearer $ADMIN" | jq -r '.data.items[] | select(.code=="super_admin") | .uuid')
 curl -s -X PUT $API/users/$USER_UUID/roles -H "Authorization: Bearer $ADMIN" \
   -H 'Content-Type: application/json' -d "{\"role_uuids\":[\"$SUPER\"]}" | jq .message
 

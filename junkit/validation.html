@@ -771,9 +771,9 @@ func BindQuery(ctx *gin.Context, responder response.Responder, validator *Valida
 </pre>
             </div>
             <p lang="en">Run <code>ShouldBindJSON</code> / <code>ShouldBindQuery</code> into <code>req</code>. On error:
-              422 <code>"validation_error"</code> with <code>GetValidationErrors</code> in <code>"error"</code>.</p>
+              422 <code>ErrValidation</code> (<code>"validation_error"</code>) with <code>GetValidationErrors</code> in <code>"error"</code>.</p>
             <p lang="vi">Chạy <code>ShouldBindJSON</code> / <code>ShouldBindQuery</code> vào <code>req</code>. Lỗi thì: 422
-              <code>"validation_error"</code> với kết quả <code>GetValidationErrors</code> trong <code>"error"</code>.</p>
+              <code>ErrValidation</code> (<code>"validation_error"</code>) với kết quả <code>GetValidationErrors</code> trong <code>"error"</code>.</p>
           </div>
           <div class="jd-sym c-green">
             <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">ParseUUID</span></div>
@@ -783,13 +783,52 @@ func BindQuery(ctx *gin.Context, responder response.Responder, validator *Valida
             <p lang="en">Reads the <code>:uuid</code> path parameter as a typed <code>uuid.UUID</code>; the route must name it
               <code>:uuid</code>. Not a UUID → 422 <code>{"uuid":"uuid must be a valid UUID"}</code>; no such parameter →
               422 <code>{"uuid":"uuid is required"}</code>; if <code>uuid.Parse</code> still fails after the
-              <code>uuid</code> tag passed → 400 <code>"invalid_uuid"</code>. Behind a global <a href="middleware.html#api"><code>RoutePatterns</code></a>
+              <code>uuid</code> tag passed → 400 <code>ErrInvalidUUID</code>. Behind a global <a href="middleware.html#api"><code>RoutePatterns</code></a>
               with an <code>IsUUID</code> rule (as in Jungo) a malformed <code>:uuid</code> gets 404 before the handler runs.</p>
             <p lang="vi">Đọc tham số đường dẫn <code>:uuid</code> thành <code>uuid.UUID</code> có kiểu; route phải đặt tên nó
               là <code>:uuid</code>. Không phải UUID → 422 <code>{"uuid":"uuid must be a valid UUID"}</code>; route không có
               param này → 422 <code>{"uuid":"uuid is required"}</code>; nếu <code>uuid.Parse</code> vẫn lỗi sau khi tag
-              <code>uuid</code> đã đạt → 400 <code>"invalid_uuid"</code>. Khi có <a href="middleware.html#api"><code>RoutePatterns</code></a>
+              <code>uuid</code> đã đạt → 400 <code>ErrInvalidUUID</code>. Khi có <a href="middleware.html#api"><code>RoutePatterns</code></a>
               global với rule <code>IsUUID</code> (như Jungo), <code>:uuid</code> sai định dạng nhận 404 trước khi handler chạy.</p>
+          </div>
+          <div class="jd-sym c-red">
+            <div class="jd-sym-head"><span class="jd-kind">var</span><span class="jd-sym-name">ErrValidation · ErrInvalidUUID</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">
+ErrValidation  = response.New(response.UnprocessableEntity, "validation_error")
+ErrInvalidUUID = response.New(response.BadRequest, "invalid_uuid")
+</pre>
+            </div>
+            <p lang="en">The errors the bind helpers answer with, exported so an app can list them in its API docs
+              (<a href="apidoc.html#api"><code>apidoc</code></a> adds <code>ErrValidation</code> to every route with a body
+              or query). <code>ErrValidation</code>'s <code>"error"</code> holds field → message, or one message when
+              the body is not valid JSON at all.</p>
+            <p lang="vi">Các lỗi mà bind helper trả về, được export để app liệt kê trong tài liệu API
+              (<a href="apidoc.html#api"><code>apidoc</code></a> thêm <code>ErrValidation</code> cho mọi route có body
+              hoặc query). <code>"error"</code> của <code>ErrValidation</code> chứa field → message, hoặc một message
+              khi body hoàn toàn không phải JSON hợp lệ.</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top:22px"><span lang="en">Rule patterns</span><span lang="vi">Pattern của rule</span></h3>
+        <div class="jd-syms">
+          <div class="jd-sym c-purple">
+            <div class="jd-sym-head"><span class="jd-kind">func</span><span class="jd-sym-name">Pattern</span></div>
+            <div class="jd-term">
+              <pre data-hl="go">func Pattern(rule string) (pattern string, ok bool)</pre>
+            </div>
+            <p lang="en">Returns the ECMAScript regular expression a value must match to pass <code>rule</code>, for API
+              docs and client-side checks: <code>email_advanced</code>, <code>password_strong</code>, <code>slug</code>,
+              <code>search</code>, <code>alphanum_dash</code>, <code>phone_advanced</code>. <code>ok</code> is
+              <code>false</code> for any other rule. <code>email_advanced</code> also checks the domain on the server
+              (disposable list, mail host), which no pattern can, so passing the pattern does not mean the server
+              accepts the email.</p>
+            <p lang="vi">Trả về biểu thức chính quy ECMAScript mà giá trị phải khớp để qua <code>rule</code>, dùng cho
+              tài liệu API và kiểm tra phía client: <code>email_advanced</code>, <code>password_strong</code>,
+              <code>slug</code>, <code>search</code>, <code>alphanum_dash</code>, <code>phone_advanced</code>.
+              <code>ok</code> là <code>false</code> với mọi rule khác. <code>email_advanced</code> còn kiểm tra domain
+              trên server (danh sách email tạm, mail host), điều mà pattern không làm được, nên khớp pattern không có
+              nghĩa là server chấp nhận email đó.</p>
           </div>
         </div>
 

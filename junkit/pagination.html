@@ -43,7 +43,7 @@
       {"from":"p1","to":"p2","color":"blue","label":"?page=2"},
       {"from":"p2","to":"p3","color":"blue","label":"OFFSET 10"},
       {"from":"p3","to":"p4","color":"blue","label":"total = 35"}]'>
-      <div class="jd-node is-tint c-blue" data-node="p1"><span class="k">1 · bind</span><span class="t mono" style="font-size:15px">pagination.Request</span><div class="d" lang="en"><code>ShouldBindQuery</code> reads page, page_size, search, sort_by, sort_order.</div><div class="d" lang="vi"><code>ShouldBindQuery</code> đọc page, page_size, search, sort_by, sort_order.</div></div>
+      <div class="jd-node is-tint c-blue" data-node="p1"><span class="k">1 · bind</span><span class="t mono" style="font-size:15px">pagination.Request</span><div class="d" lang="en"><code>ShouldBindQuery</code> reads page, page_size, search, sort_by, sort_order (<code>PageRequest</code>: page, page_size only).</div><div class="d" lang="vi"><code>ShouldBindQuery</code> đọc page, page_size, search, sort_by, sort_order (<code>PageRequest</code>: chỉ page, page_size).</div></div>
       <div class="jd-node is-tint c-blue" data-node="p2"><span class="k"><span lang="en">2 · defaults</span><span lang="vi">2 · mặc định</span></span><span class="t mono" style="font-size:15px">req.SetDefaults(…)</span><div class="d" lang="en">Fills page = 1, page_size = 10 and your default sort.</div><div class="d" lang="vi">Điền page = 1, page_size = 10 và cách sắp xếp mặc định của bạn.</div></div>
       <div class="jd-node is-tint c-green" data-node="p3"><span class="k"><span lang="en">3 · query</span><span lang="vi">3 · truy vấn</span></span><span class="t mono" style="font-size:15px">GetOffset · GetLimit</span><div class="d" lang="en">Pass to SQL; also COUNT(*) the total.</div><div class="d" lang="vi">Truyền vào SQL; đồng thời COUNT(*) tổng số.</div></div>
       <div class="jd-node is-tint c-blue" data-node="p4"><span class="k"><span lang="en">4 · respond</span><span lang="vi">4 · trả về</span></span><span class="t mono" style="font-size:15px">NewPagination(…)</span><div class="d" lang="en">Builds page counts and next / prev for the response.</div><div class="d" lang="vi">Tính số trang và trang kế / trước cho response.</div></div>
@@ -89,7 +89,7 @@ func (h *ProductHandler) List(ctx *gin.Context) {
 </pre></div>
       </div></div>
       <div class="jd-explain">
-        <div class="jd-ex c-blue" data-code="#code-quick-dto" data-show="1-3"><span class="n">1</span><span class="w"><span lang="en">Embed pagination.Request</span><span lang="vi">Nhúng pagination.Request</span></span><span class="x" lang="en">Your request struct gets the five query params and their validation rules for free. Add your own filters next to it.</span><span class="x" lang="vi">Struct request của bạn có sẵn năm query param cùng luật kiểm tra. Thêm bộ lọc riêng ngay bên cạnh.</span></div>
+        <div class="jd-ex c-blue" data-code="#code-quick-dto" data-show="1-3"><span class="n">1</span><span class="w"><span lang="en">Embed pagination.Request</span><span lang="vi">Nhúng pagination.Request</span></span><span class="x" lang="en">Your request struct gets the five query params and their validation rules for free. Add your own filters next to it. A list with its own search or sort rules embeds <code>pagination.PageRequest</code> instead (page and page_size only) and declares the rest itself.</span><span class="x" lang="vi">Struct request của bạn có sẵn năm query param cùng luật kiểm tra. Thêm bộ lọc riêng ngay bên cạnh. Danh sách có luật search hay sort riêng thì nhúng <code>pagination.PageRequest</code> (chỉ page và page_size) và tự khai báo phần còn lại.</span></div>
         <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="3-5"><span class="n">2</span><span class="w">validation.BindQuery</span><span class="x" lang="en"><code>ShouldBindQuery</code> plus the 422 answer (see <a href="validation.html">validation</a>). Rejects a negative <code>page</code>, a negative <code>page_size</code> or one above 100, and a <code>sort_order</code> other than asc / desc → answer 422. <code>0</code> passes (<code>omitempty</code>) and becomes the default in the next step.</span><span class="x" lang="vi"><code>ShouldBindQuery</code> kèm response 422 (xem <a href="validation.html">validation</a>). Từ chối <code>page</code> âm, <code>page_size</code> âm hoặc lớn hơn 100, và <code>sort_order</code> khác asc / desc → trả 422. Giá trị <code>0</code> vẫn qua (<code>omitempty</code>) và thành giá trị mặc định ở bước sau.</span></div>
         <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="6"><span class="n">3</span><span class="w">SetDefaults</span><span class="x" lang="en">Missing page → 1, missing page_size → 10, empty sort → the values you pass.</span><span class="x" lang="vi">Thiếu page → 1, thiếu page_size → 10, sort trống → giá trị bạn truyền vào.</span></div>
         <div class="jd-ex c-blue" data-code="#code-quick-hdl" data-show="8"><span class="n">4</span><span class="w">GetLimit / GetOffset</span><span class="x" lang="en">Both return <code>int32</code> — the type sqlc generates for LIMIT / OFFSET params. Also count the total rows.</span><span class="x" lang="vi">Cả hai trả <code>int32</code> — đúng kiểu sqlc sinh ra cho tham số LIMIT / OFFSET. Nhớ đếm luôn tổng số dòng.</span></div>
@@ -136,18 +136,22 @@ func (h *ProductHandler) List(ctx *gin.Context) {
     <div class="jd-syms" style="margin-top:18px">
 
       <div class="jd-sym c-blue">
-        <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">Request</span></div>
+        <div class="jd-sym-head"><span class="jd-kind">type</span><span class="jd-sym-name">PageRequest · Request</span></div>
         <div class="jd-term"><pre data-hl="go">
+type PageRequest struct {
+    Page     int `form:"page" binding:"omitempty,min=1" example:"1"`
+    PageSize int `form:"page_size" binding:"omitempty,min=1,max=100" example:"10"`
+}
+
 type Request struct {
-    Page      int    `form:"page" binding:"omitempty,min=1" example:"1"`
-    PageSize  int    `form:"page_size" binding:"omitempty,min=1,max=100" example:"10"`
+    PageRequest
     Search    string `form:"search" binding:"omitempty" example:"John"`
     SortBy    string `form:"sort_by" binding:"omitempty" example:"created_at"`
     SortOrder string `form:"sort_order" binding:"omitempty,oneof=asc desc" example:"desc"`
 }
 </pre></div>
-        <p lang="en">Standard list query parameters. Embed it in your own request struct and bind with <code>ShouldBindQuery</code>.</p>
-        <p lang="vi">Các query param chuẩn cho danh sách. Nhúng vào struct request của bạn và bind bằng <code>ShouldBindQuery</code>.</p>
+        <p lang="en"><code>Request</code> holds the standard list query parameters; <code>PageRequest</code> is its page part alone, for lists that neither search nor sort, or that declare their own search and sort fields with stricter rules. Embed one in your own request struct and bind with <code>ShouldBindQuery</code>; <code>Page</code> and <code>PageSize</code> are promoted, so <code>req.Page</code> works with either.</p>
+        <p lang="vi"><code>Request</code> chứa các query param chuẩn cho danh sách; <code>PageRequest</code> chỉ là phần trang của nó, cho danh sách không search cũng không sort, hoặc tự khai báo field search và sort với luật chặt hơn. Nhúng một trong hai vào struct request của bạn và bind bằng <code>ShouldBindQuery</code>; <code>Page</code> và <code>PageSize</code> được promote, nên <code>req.Page</code> dùng được với cả hai.</p>
         <div class="jd-tablewrap"><table class="jd-params">
           <tr><th>field · query</th><th><span lang="en">rule</span><span lang="vi">luật</span></th><th><span lang="en">meaning</span><span lang="vi">ý nghĩa</span></th></tr>
           <tr><td>Page · page</td><td>int · min=1</td><td lang="en">Page number, starting at 1. Default 1.</td><td lang="vi">Số trang, bắt đầu từ 1. Mặc định 1.</td></tr>
@@ -159,22 +163,25 @@ type Request struct {
       </div>
 
       <div class="jd-sym c-blue">
-        <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">(*Request) SetDefaults</span></div>
-        <div class="jd-term"><pre data-hl="go">func (r *Request) SetDefaults(defaultSortBy, defaultSortOrder string)</pre></div>
+        <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">SetDefaults</span></div>
+        <div class="jd-term"><pre data-hl="go">
+func (r *PageRequest) SetDefaults()
+func (r *Request) SetDefaults(defaultSortBy, defaultSortOrder string)
+</pre></div>
         <ul>
-          <li lang="en"><code>Page &lt;= 0</code> → 1 · <code>PageSize &lt;= 0</code> → 10</li><li lang="vi"><code>Page &lt;= 0</code> → 1 · <code>PageSize &lt;= 0</code> → 10</li>
-          <li lang="en">empty <code>SortBy</code> / <code>SortOrder</code> → the arguments. Values the client sent are kept.</li><li lang="vi"><code>SortBy</code> / <code>SortOrder</code> trống → lấy tham số truyền vào. Giá trị client đã gửi được giữ nguyên.</li>
+          <li lang="en"><code>Page &lt;= 0</code> → 1 · <code>PageSize &lt;= 0</code> → 10 (both)</li><li lang="vi"><code>Page &lt;= 0</code> → 1 · <code>PageSize &lt;= 0</code> → 10 (cả hai)</li>
+          <li lang="en"><code>Request</code> only: empty <code>SortBy</code> / <code>SortOrder</code> → the arguments. Values the client sent are kept.</li><li lang="vi">Chỉ <code>Request</code>: <code>SortBy</code> / <code>SortOrder</code> trống → lấy tham số truyền vào. Giá trị client đã gửi được giữ nguyên.</li>
         </ul>
       </div>
 
       <div class="jd-sym c-blue">
-        <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">(*Request) GetOffset · GetLimit</span></div>
+        <div class="jd-sym-head"><span class="jd-kind">method</span><span class="jd-sym-name">(*PageRequest) GetOffset · GetLimit</span></div>
         <div class="jd-term"><pre data-hl="go">
-func (r *Request) GetOffset() int32 // (Page - 1) * GetLimit(), never negative, clamped to math.MaxInt32
-func (r *Request) GetLimit() int32  // PageSize clamped to [1, 100]
+func (r *PageRequest) GetOffset() int32 // (Page - 1) * GetLimit(), never negative, clamped to math.MaxInt32
+func (r *PageRequest) GetLimit() int32  // PageSize clamped to [1, 100]
 </pre></div>
-        <p lang="en">Both are safe on a Request you built by hand, without binding: <code>GetLimit</code> clamps the page size to 1–100 and <code>GetOffset</code> uses it, returning 0 for page ≤ 1. Call <code>SetDefaults</code> first anyway so the default page size is 10, not 1.</p>
-        <p lang="vi">Cả hai an toàn với Request tự dựng, không qua bind: <code>GetLimit</code> kẹp page size trong 1–100 và <code>GetOffset</code> dùng nó, trả 0 khi page ≤ 1. Vẫn nên gọi <code>SetDefaults</code> trước để page size mặc định là 10 chứ không phải 1.</p>
+        <p lang="en">Defined on <code>PageRequest</code> and promoted to <code>Request</code>. Both are safe on a Request you built by hand, without binding: <code>GetLimit</code> clamps the page size to 1–100 and <code>GetOffset</code> uses it, returning 0 for page ≤ 1. Call <code>SetDefaults</code> first anyway so the default page size is 10, not 1.</p>
+        <p lang="vi">Khai báo trên <code>PageRequest</code> và được promote lên <code>Request</code>. Cả hai an toàn với Request tự dựng, không qua bind: <code>GetLimit</code> kẹp page size trong 1–100 và <code>GetOffset</code> dùng nó, trả 0 khi page ≤ 1. Vẫn nên gọi <code>SetDefaults</code> trước để page size mặc định là 10 chứ không phải 1.</p>
         <p lang="en"><code>page</code> has no upper bound, so a huge one (<code>?page=3000000000</code>) would overflow <code>int32</code> into a negative OFFSET and a 500. <code>GetOffset</code> clamps it to <code>math.MaxInt32</code> instead: the client just gets an empty page.</p>
         <p lang="vi"><code>page</code> không có giới hạn trên, nên một giá trị rất lớn (<code>?page=3000000000</code>) sẽ tràn <code>int32</code> thành OFFSET âm và gây lỗi 500. <code>GetOffset</code> chặn nó ở <code>math.MaxInt32</code>: client chỉ nhận về một trang rỗng.</p>
       </div>
@@ -229,9 +236,9 @@ type Pagination struct {
     </div>
     <div class="jd-tablewrap" style="margin-top:16px"><table class="jd-params c-orange">
       <tr><th>file</th><th><span lang="en">what it does</span><span lang="vi">làm gì</span></th></tr>
-      <tr><td>internal/features/user/dto/v1/user_dto.go</td><td lang="en"><code>ListUsersRequest</code> embeds <code>pagination.Request</code>; <code>ToUserListFilter(req)</code> copies search, <code>GetLimit()</code>, <code>GetOffset()</code> and sort order into the domain filter.</td><td lang="vi"><code>ListUsersRequest</code> nhúng <code>pagination.Request</code>; <code>ToUserListFilter(req)</code> chép search, <code>GetLimit()</code>, <code>GetOffset()</code> và sort order vào filter của domain.</td></tr>
-      <tr><td>internal/features/user/handler/v1/user_handler.go</td><td lang="en"><code>ListUsers</code>: <code>validation.BindQuery</code> → <code>SetDefaults("created_at", "desc")</code> → service → <code>NewPagination</code> → <code>responder.Pagination</code>.</td><td lang="vi"><code>ListUsers</code>: <code>validation.BindQuery</code> → <code>SetDefaults("created_at", "desc")</code> → service → <code>NewPagination</code> → <code>responder.Pagination</code>.</td></tr>
-      <tr><td>internal/features/user/repository/user_repository.go</td><td lang="en">Runs <code>ListUsersNewest</code> or <code>ListUsersOldest</code> (by <code>sort_order</code>; LIMIT/OFFSET on the <code>(created_at, id)</code> index), then <code>CountUsers</code> for the total. A short page that is not past the end is the last one, so it already gives the total and skips the count. Not <code>count(*) OVER()</code>: that makes PostgreSQL read and sort every matching row to return one page, while with the index the page query can stop after <code>OFFSET + LIMIT</code> rows.</td><td lang="vi">Chạy <code>ListUsersNewest</code> hoặc <code>ListUsersOldest</code> (theo <code>sort_order</code>; LIMIT/OFFSET trên index <code>(created_at, id)</code>), rồi <code>CountUsers</code> để lấy tổng. Trang thiếu dòng mà không vượt quá cuối danh sách chính là trang cuối, nên đã biết tổng và bỏ qua lệnh đếm. Không dùng <code>count(*) OVER()</code>: nó bắt PostgreSQL đọc và sort mọi dòng khớp chỉ để trả một trang, còn nhờ index, query lấy trang có thể dừng sau <code>OFFSET + LIMIT</code> dòng.</td></tr>
+      <tr><td>internal/features/user/dto/v1/user_dto.go</td><td lang="en"><code>ListUsersRequest</code> embeds <code>pagination.PageRequest</code> and declares <code>search</code>, <code>status</code>, <code>role_uuid</code>, <code>sort_by</code> (with a <code>oneof</code> whitelist) and <code>sort_order</code> itself; <code>ToUserListFilter(req)</code> copies them, <code>GetLimit()</code> and <code>GetOffset()</code> into the domain filter, defaulting to <code>created_at</code> <code>desc</code>. <code>GET /roles</code> (<code>ListRolesRequest</code>) and <code>GET /audit-logs</code> (<code>ListAuditLogsRequest</code>) do the same.</td><td lang="vi"><code>ListUsersRequest</code> nhúng <code>pagination.PageRequest</code> và tự khai báo <code>search</code>, <code>status</code>, <code>role_uuid</code>, <code>sort_by</code> (có danh sách cho phép <code>oneof</code>) và <code>sort_order</code>; <code>ToUserListFilter(req)</code> chép chúng, <code>GetLimit()</code> và <code>GetOffset()</code> vào filter của domain, mặc định <code>created_at</code> <code>desc</code>. <code>GET /roles</code> (<code>ListRolesRequest</code>) và <code>GET /audit-logs</code> (<code>ListAuditLogsRequest</code>) làm tương tự.</td></tr>
+      <tr><td>internal/features/user/handler/v1/user_handler.go</td><td lang="en"><code>ListUsers</code>: <code>validation.BindQuery</code> → <code>SetDefaults()</code> → service → <code>NewPagination</code> → <code>responder.Pagination</code>.</td><td lang="vi"><code>ListUsers</code>: <code>validation.BindQuery</code> → <code>SetDefaults()</code> → service → <code>NewPagination</code> → <code>responder.Pagination</code>.</td></tr>
+      <tr><td>internal/features/user/repository/user_repository.go</td><td lang="en">Runs <code>ListUsersNewest</code> or <code>ListUsersOldest</code> (by <code>sort_order</code>; LIMIT/OFFSET on the <code>(created_at, id)</code> index), or <code>ListUsersSorted</code> for any other <code>sort_by</code>, then <code>CountUsers</code> for the total. A short page that is not past the end is the last one, so it already gives the total and skips the count. Not <code>count(*) OVER()</code>: that makes PostgreSQL read and sort every matching row to return one page, while with the index the page query can stop after <code>OFFSET + LIMIT</code> rows.</td><td lang="vi">Chạy <code>ListUsersNewest</code> hoặc <code>ListUsersOldest</code> (theo <code>sort_order</code>; LIMIT/OFFSET trên index <code>(created_at, id)</code>), hoặc <code>ListUsersSorted</code> với mọi <code>sort_by</code> khác, rồi <code>CountUsers</code> để lấy tổng. Trang thiếu dòng mà không vượt quá cuối danh sách chính là trang cuối, nên đã biết tổng và bỏ qua lệnh đếm. Không dùng <code>count(*) OVER()</code>: nó bắt PostgreSQL đọc và sort mọi dòng khớp chỉ để trả một trang, còn nhờ index, query lấy trang có thể dừng sau <code>OFFSET + LIMIT</code> dòng.</td></tr>
     </table></div>
     <div class="jd-term" data-copy="commands" style="margin-top:14px"><div class="jd-term-bar"><i></i><i></i><i></i><span>terminal</span></div>
 <pre data-hl="bash">
@@ -248,8 +255,8 @@ $ curl -s "localhost:$API_SERVER_PORT/api/v1/users?page=1&amp;page_size=2&amp;se
     </div>
     <div class="jd-explain" style="margin-top:16px">
       <div class="jd-ex c-red" style="cursor:default"><span class="n">1</span><span class="w"><span lang="en">page_size, not limit</span><span lang="vi">page_size, không phải limit</span></span><span class="x" lang="en">Unknown params such as <code>?limit=</code> are ignored silently — the client gets the default 10.</span><span class="x" lang="vi">Param lạ như <code>?limit=</code> bị bỏ qua mà không báo lỗi — client nhận mặc định 10.</span></div>
-      <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">sort_by is raw input</span><span lang="vi">sort_by là input thô</span></span><span class="x" lang="en">Never paste it into SQL. Map allowed values to columns yourself. (The user feature currently ignores <code>sort_by</code> and only uses <code>sort_order</code>.)</span><span class="x" lang="vi">Không bao giờ chèn thẳng vào SQL. Tự ánh xạ các giá trị cho phép sang tên cột. (Feature user hiện bỏ qua <code>sort_by</code>, chỉ dùng <code>sort_order</code>.)</span></div>
-      <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">Count with the same filter</span><span lang="vi">Đếm với cùng bộ lọc</span></span><span class="x" lang="en">The total must use the same <code>search</code> as the page query, or <code>total_pages</code> will be wrong.</span><span class="x" lang="vi">Phép đếm tổng phải dùng cùng <code>search</code> với câu query lấy trang, nếu không <code>total_pages</code> sẽ sai.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">2</span><span class="w"><span lang="en">sort_by is raw input</span><span lang="vi">sort_by là input thô</span></span><span class="x" lang="en">Never paste it into SQL. Map allowed values to columns yourself, or declare your own <code>sort_by</code> with a <code>oneof</code> rule next to <code>PageRequest</code>, as Jungo's lists do.</span><span class="x" lang="vi">Không bao giờ chèn thẳng vào SQL. Tự ánh xạ các giá trị cho phép sang tên cột, hoặc tự khai báo <code>sort_by</code> với luật <code>oneof</code> cạnh <code>PageRequest</code>, như các danh sách của Jungo.</span></div>
+      <div class="jd-ex c-red" style="cursor:default"><span class="n">3</span><span class="w"><span lang="en">Count with the same filter</span><span lang="vi">Đếm với cùng bộ lọc</span></span><span class="x" lang="en">The total must use the same filters (<code>search</code> and the rest) as the page query, or <code>total_pages</code> will be wrong.</span><span class="x" lang="vi">Phép đếm tổng phải dùng cùng bộ lọc (<code>search</code> và các bộ lọc khác) với câu query lấy trang, nếu không <code>total_pages</code> sẽ sai.</span></div>
     </div>
   </section>
 
